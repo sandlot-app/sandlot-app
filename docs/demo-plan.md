@@ -2,11 +2,33 @@
 
 Last updated October 22, 2026. Christian Alcala.
 
-The demo shows one moment a reviewer remembers: a parent scores a real game by voice, keeps scoring with no signal, and their family watches it live and gets a stat card of their kid at the end. The YC application is due November 2, 2026. This plan cuts milestones 2 to 9 of [plan.md](plan.md) down to what the demo shows, and nothing else.
+The deliverable is a submitted YC Winter 2027 application, due November 2, 2026. The demo video is its centerpiece. It shows one moment a reviewer remembers: a parent scores a real game by voice, keeps scoring with no signal, and their family watches it live and gets a stat card of their kid at the end. This plan cuts milestones 2 to 9 of [plan.md](plan.md) down to what the application needs, and nothing else.
+
+## What the application needs
+
+Every field maps to something we make or write. Fields only a founder can answer stay with the founders.
+
+| Field | What we submit | Owner |
+| --- | --- | --- |
+| Founder profiles and co-founder | Christian and Kevin both listed, both profiles complete. The form won't submit otherwise. | Christian and Kevin |
+| Founder video | One minute, both founders on camera: who we are, why this, why us | Christian and Kevin |
+| Company name and 50-character description | "Sandlot" and a line such as "Voice scorekeeping for youth baseball and softball" | Christian |
+| Demo | The demo video below, under 3 minutes and 100 MB | Both |
+| Product link | The family live page for the recorded demo game, deployed at a public URL, with no login | Kevin |
+| What you're making | Drafted from the lead and the family features in plan.md | Claude drafts, Christian edits |
+| Who writes code | Christian and Kevin, each directing Claude Code and Codex. No code from non-founders. | Claude drafts |
+| Tech stack, AI models and coding tools | Expo, React Native, TypeScript, Supabase, OpenAI speech-to-text, an AI parser model, a hosted streaming service, Claude Code and Codex | Claude drafts |
+| Are people using the product | The parents who scored a game with Sandlot before the deadline, and what they said | Both |
+| Competitors and what we understand | GameChanger, Bleacher Notes, Rizzler and the rest, after we try Bleacher Notes ourselves | Claude drafts, Christian edits |
+| How you'll make money | Leagues pay, families use it free, plus sponsors and a paid family tier. Christian picks the lead model. | Christian, with a Claude draft |
+| Other ideas | Ideas from the brainstorm that didn't make the plan | Christian |
+| Location, time worked, legal entity, investment, why YC, how you heard | Only the founders know these | Christian and Kevin |
+
+The drafted answers live in a shared doc, not in this repo, because the application includes personal details.
 
 ## The story the demo tells
 
-The demo video runs about two minutes. Each scene shows one reason a team would switch.
+The demo video runs about two minutes, under the application's 3-minute limit. Each scene shows one reason a team would switch.
 
 | # | Scene | What the viewer sees | Length |
 | --- | --- | --- | --- |
@@ -28,7 +50,7 @@ Everything the scorer and the family touch is real. Only setup that a reviewer n
 | Rules engine | Real. Every play goes through it. |
 | Tap and voice scoring | Real. Voice needs signal and falls back to taps without it. |
 | Offline scoring | Real for taps, shown with airplane mode |
-| Family live page | Real, on a private link |
+| Family live page | Real, deployed at a public URL. The same link goes in the application as the product link. |
 | Video stream | Real, from a second phone through a hosted service. Cut if not ready. |
 | Stat card | Real, computed from the scored game |
 | Accounts and sign-in | Staged. One demo team and one demo family are built in, with no sign-in. |
@@ -43,10 +65,10 @@ Everything the scorer and the family touch is real. Only setup that a reviewer n
 | 3. Engine core | Mustang pitches, walks, strikeouts, hits with runner advances, steals, outs, innings, score, undo, bunt rejection, pitch-count warning, box score | Christian | Correction preview, missed-play suggestions, time limit, outs-per-day across games |
 | 4. Tap scoring app | Preloaded lineup, diamond, pitch bar, outcome buttons, undo, an upload queue on the phone, a "plays waiting to sync" badge | Christian | Lineup editor, play log editing, handing off scoring |
 | 5. Voice | Hold to talk, clip uploaded for transcription, a phrase list plus an AI parser, confirm card, read-back banner | Christian | Streaming transcription, a large test set |
-| 6. Family live page | A page in `apps/web` that subscribes to one game's events, replays them through the engine, and shows the score, diamond and play-by-play | Kevin | Accounts, public pages |
+| 6. Family live page | A page in `apps/web` that subscribes to one game's events, replays them through the engine, and shows the score, diamond and play-by-play. Deployed at a public URL. | Kevin | Accounts, public pages |
 | 7. Live streaming | A hosted service, a second phone with an existing streaming app, a player on the live page, the score overlay | Kevin | Our own broadcaster, recording, clips |
 | 8. Game stat card | One child's line as an image, shared from the phone's share sheet | Christian | Card designs for other divisions |
-| 9. YC demo | Rehearse, record, edit, write the application | Both | |
+| 9. YC demo | Real parents trying the app, the demo video, the founder video, the written answers, the submitted application | Both | |
 
 ## The shared contract
 
@@ -119,17 +141,21 @@ create table events (
 
 ## Order of work after tonight
 
-Each step ends in a check. Christian's and Kevin's steps run side by side.
+Each step ends in a check. Christian's and Kevin's steps run side by side, and the evidence steps can start as soon as the tap app works.
 
 1. **Engine core for the demo plays.** Done when a fixture for every play in the script passes.
-2. **Live page replays events through the engine** (Kevin). Done when the page shows the right score for the sample events.
+2. **Live page replays events through the engine and is deployed** (Kevin). Done when the public URL shows the right score for the sample events on a phone that isn't on our network.
 3. **Tap app scores a half-inning and syncs.** Done when the live page matches the phone, play for play.
-4. **Voice.** Done when 50 spoken plays recorded over the demo footage parse right, and complex plays show a confirm card.
-5. **Streaming with the score overlay** (Kevin). Done when the video plays on the live page with the right score on top.
-6. **Stat card.** Done when the card matches the box score.
-7. **Film and score the demo game live.** Done when the whole game is scored in the app and the live page matches.
-8. **Rehearse the script twice, then record.** Keep a backup take of every scene.
-9. **Write the application and record the founder video.** Done when the application is submitted.
+4. **Try Bleacher Notes and talk to the Moraga commissioner.** Done when we have scored a game video with Bleacher Notes, and have written notes from the commissioner on scores, pitch counts and playing time. Both feed the competitors answer.
+5. **Voice.** Done when 50 spoken plays recorded over the demo footage parse right, and complex plays show a confirm card.
+6. **Streaming with the score overlay** (Kevin). Done when the video plays on the live page with the right score on top.
+7. **Stat card.** Done when the card matches the box score.
+8. **Put Sandlot in front of real parents.** At least three parents who keep score score an inning or more with the app, live or from video. Done when we have their names, what they scored, and what they said in their own words.
+9. **Film and score the demo game live.** Done when the whole game is scored in the app and the live page matches.
+10. **Rehearse the script twice, then record the demo.** Keep a backup take of every scene. Export at 1080p. About 5 Mbps keeps a 2-minute video near 75 MB, under the 100 MB limit. Done when the exported file is under 3 minutes and under 100 MB.
+11. **Record the founder video.** One minute, both founders. Done when the file is under 100 MB and both founders approve it.
+12. **Write the answers.** Claude drafts the answers in the table above, and the founders write the rest. Done when both founders have read every answer.
+13. **Submit.** Both profiles complete, every required field filled. Done when the application shows as submitted.
 
 ## If time runs short
 
@@ -139,7 +165,7 @@ Cut in this order:
 2. The offline scene, shortened to a few seconds.
 3. The stat card's styling. A plain card still works.
 
-Never cut voice scoring, the rule rejection, or the family live page. Those three are the story.
+Never cut voice scoring, the rule rejection, the family live page, the real-parent step or the founder video. The first three are the story. The last two are what the application asks for.
 
 ## Demo risks
 
@@ -150,6 +176,8 @@ Never cut voice scoring, the rule rejection, or the family live page. Those thre
 | Footage of children | Film adults only. No youth game footage until consent rules exist. |
 | The live page lags | Measure play-to-page time before recording, and fix anything over a few seconds. |
 | A secret lands in the repo | Keys stay in `.env` files, which git ignores. |
+| No one is using the product yet | Step 8 puts the app in front of at least three real parents before the deadline, and the answer cites them honestly. |
+| The product link breaks after we submit | Keep the demo game's live page deployed and unchanged until YC decides. |
 
 ## What the demo leaves out
 
