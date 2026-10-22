@@ -2,7 +2,7 @@
 
 Last updated October 22, 2026. Christian Alcala.
 
-Sandlot is a GameChanger competitor for baseball and softball that wins on scoring. A parent scores by voice or one tap, fixes any mistake in one step, and keeps scoring with no signal, while family follow the score and the video live. This plan orders the work by dependency, not by date. Christian and Kevin build two tracks side by side, which meet at the YC demo and then grow into the beta and the public launch.
+Sandlot is a GameChanger competitor for baseball and softball that wins on scoring. A parent scores by voice or one tap, fixes any mistake in one step, and keeps scoring with no signal, while family follow the score and the video live. After every game, each registered family gets a stat card and highlight clips of their own child. This plan orders the work by dependency, not by date. Christian and Kevin build two tracks side by side, which meet at the YC demo and then grow into the beta and the public launch.
 
 ## Team and ownership
 
@@ -10,8 +10,8 @@ Two people build Sandlot, each directing their own coding agents. Each person ow
 
 | Person | Owns | Directories |
 | --- | --- | --- |
-| Christian, with Claude Code and Codex | Rules engine, tap scoring app, voice | `packages/engine`, `packages/voice`, `apps/mobile` |
-| Kevin, with Claude Code and Codex | Supabase backend, event sync, the family live page, live streaming | `supabase/`, `apps/web` |
+| Christian, with Claude Code and Codex | Rules engine, tap scoring app, voice, stat cards | `packages/engine`, `packages/voice`, `apps/mobile` |
+| Kevin, with Claude Code and Codex | Supabase backend, event sync, the family live page, live streaming, highlight clips, GameChanger import | `supabase/`, `apps/web` |
 
 - **Shared contract.** The engine's `Event` type, the events table's columns, and the app's upload function. Both people agree on these before the tracks split, and both sign off on any later change.
 - **Root files.** Only one person at a time changes root config or `pnpm-lock.yaml`.
@@ -27,7 +27,11 @@ A team switches only when scoring gets clearly easier for the scorekeeper and th
 | Fixing mistakes | Undo, spoken fixes, and a play log that previews what a fix changes | Parents flag a play they think is wrong |
 | Scoring with no signal | A whole game offline, synced afterward | |
 | Live score and play-by-play for family | A private web link, with no app to install | Public game pages |
-| Live video | A second phone streams through a hosted service, shown on the family live page | Our own in-app broadcaster, replays and highlights |
+| Live video | A second phone streams through a hosted service, shown on the family live page | Our own in-app broadcaster and replays |
+| Stat card for each kid | After every game, shareable in one tap | |
+| Highlight clips of your own kid | | Automatic clips of each of your child's plays, exported in one tap |
+| GameChanger import | | Rosters and season stats, before the beta |
+| Recruiting profile | | For players 13 and up, built from verified stats |
 | Box scores and season stats | Yes | Spray charts, more stats |
 | Pitch-count report for the league | Yes | |
 | Roster, lineups, handing scoring to another parent | Yes | |
@@ -84,6 +88,8 @@ type GameState = {
 - Game state is always computed from the events. The stored copy on the server is a cache that can be rebuilt.
 - Events and stats refer to players by ID. Names live in one table, which keeps privacy rules in one place.
 - IDs are branded types, so an event ID can never be passed where a group ID belongs.
+- The engine lists the players in every play and their roles: batter, pitcher, fielders, runners. Stat cards and highlight clips both read that list to find one child's plays.
+- Imported stats are their own record type, never events. A GameChanger export has stat lines, not plays, so imported lines add to season totals but can't be replayed or corrected.
 - Sport is part of the rule set from day one. Adding softball later, after these types are fixed, would mean rewriting the engine.
 
 ## Rules engine
@@ -100,6 +106,7 @@ The engine is the critical path. Voice, stats, corrections and the family view a
 | `previewCorrection` | Show what a fix changes: score, stats, and later plays it changes or breaks |
 | `missedPlayCandidates` | Suggest the missed play that would make a rejected play legal |
 | `stats` | Box score and pitching lines from the replayed game |
+| `participants` | The players in a play and their roles, for stat cards and highlight clips |
 
 **Baseball and softball.** Each league's rules are a rule set, which is data. A preset like Little League Minors is a published rule set, and a local league's rules are a preset plus overrides. The September plan's settings already cover innings, fielders, batting order, walks, stealing, leadoffs, dropped third strikes, run limits, mercy rules and pitch counts. Softball adds settings, such as slowpitch rules that start the count at one ball and one strike or call the batter out on a foul with two strikes. Check each against the league's rule book before writing the fixture.
 
@@ -177,6 +184,16 @@ The prototype is thrown away. Its recorded test set and the on-phone phrase pars
 
 The first version records the whole press, then uploads the clip for transcription. It is simpler to build and test, and it runs in Expo Go. Streaming transcription, which shows words while the scorer speaks, comes before the beta.
 
+## Family features
+
+Every game gives each family something about their own child: a stat card, highlight clips, and over time a recruiting profile. This is what gets families to register, and it is something they notice every game.
+
+- **Who sees what.** Cards, clips and profiles are only for registered families who have claimed their child. The server checks the claim before it shows or exports anything. No family ever gets another child's card or clip.
+- **Game stat card.** After each game, the app makes a card with the child's line, like "2 for 3, a double, 2 RBI", styled to share the way Strava shares a run. The engine computes the line from the replayed game. The card shows only stats the division uses, so a Pinto card has no walks or pitching. A parent exports it as an image in one tap.
+- **Highlight clips.** Each event records when it happened and who took part. With the recording's start time, the server cuts a short clip around each play the child was in: a hit, a catch, a throw, a strikeout. Clips come from game recordings, so they need streaming with recording and media consent. How exactly the phone's clock lines up with the recording's clock is still to be tested.
+- **GameChanger import.** GameChanger exports only CSV and PDF files ([Dugout](https://www.getdugout.com/gamechanger-api)), with rosters and season stat lines but no plays. Sandlot imports the rosters and stat lines, marks them imported, and adds them to season totals. A team switching mid-season keeps its history.
+- **Recruiting profile.** For players 13 and up. It shows stats scored in Sandlot as verified, separate from imported ones. A parent manages it, chooses who can see it, and shares a link. Accounts stay adults-only, and the profile shows no contact details.
+
 ## Server
 
 Supabase stores every event, checks each one again with the same engine, and pushes the live game to family members. It also handles accounts, teams and privacy rules. It keeps September's design for these parts. Video runs through a hosted service for now, and payments wait.
@@ -193,6 +210,8 @@ Supabase stores every event, checks each one again with the same engine, and pus
 | Privacy | Row-level security on every table, with database tests. In-app deletion of a child or an account. Voice transcripts deleted after 30 days. |
 | Family live page | A web page in `apps/web` on a private link. It shows the live score and play-by-play from Realtime, and the video when a stream is running. Kevin owns it. |
 | Live streaming | A hosted service, Amazon IVS or Mux, takes the stream from a second phone. The live page plays it and draws the score from the game's events. Kevin owns it. |
+| Cards and clips | Checks the family's claim before showing or exporting anything. Cuts clips from game recordings and keeps them as long as the recording. Kevin owns clips, and Christian owns cards. |
+| Imports | Reads a GameChanger CSV export into rosters and imported stat lines. Kevin owns it. |
 
 The server always wins. If its game state differs from the phone's, the phone takes the server's version and shows "Game re-synced". The table for who sees which name, and public game pages, wait until public pages ship.
 
@@ -200,7 +219,7 @@ The server always wins. If its game state differs from the phone's, the phone ta
 
 Milestones follow dependencies, not dates. Each one ends in a check that has to pass before anything built on it starts. Christian's and Kevin's tracks run side by side and meet at the YC demo.
 
-![Two tracks meet at the YC demo, then the app grows toward launch. Milestones 3 to 5 are Christian's track, 6 and 7 are Kevin's, and 9 to 13 follow the demo in order.](images/milestones.png)
+![Two tracks meet at the YC demo, then the app grows toward launch. Milestones 3 to 5 and 8 are Christian's track, 6 and 7 are Kevin's, and 10 to 17 follow the demo in order.](images/milestones.png)
 
 | # | Milestone | Owner | Includes | Done when |
 | --- | --- | --- | --- | --- |
@@ -211,12 +230,16 @@ Milestones follow dependencies, not dates. Each one ends in a check that has to 
 | 5 | Voice | Christian | Hold to talk, recorded clip sent for transcription, AI parser, engine check, confirm card | Meets the five targets in Voice scoring |
 | 6 | Event sync and family live page | Kevin | Events uploaded to Supabase, live score on a private web link | A second device sees each play within a few seconds |
 | 7 | Live streaming | Kevin | A second phone streams through an existing app to a hosted service. The live page plays it with the score drawn on top. The demo uses footage that needs no consent. | Video plays on the live page with a correct score overlay |
-| 8 | YC demo | Both | One recorded game scored and streamed end to end, the demo video, the application | Application submitted |
-| 9 | Accounts, teams and privacy | Both | Sign in with Apple and Google, invite links, parent claims, row-level security, deletion | Database tests pass for every visibility rule, and a parent claims and deletes a test child |
-| 10 | Beta with the Moraga Mustang team | Both | Apple developer account, TestFlight, streaming transcription for voice, weekly releases | Six games in a row match GameChanger's box scores, with zero data loss |
-| 11 | In-app broadcaster, replays and moderation | Kevin | Development build with a streaming module, media consent, replays, highlights, report and stop-stream tools | A full game streamed from the app, with replay and highlights |
-| 12 | Payments | Kevin | Paid tier through the app stores | Sandbox purchases work on both stores |
-| 13 | Public launch | Both | Pinto, softball and Little League presets, store listings, load test | Store review approves |
+| 8 | Game stat card | Christian | A card of one child's game line, styled for sharing, exported as an image. It shows only the stats the division uses. | After a scored game, the card exports in one tap and matches the box score |
+| 9 | YC demo | Both | One recorded game scored and streamed end to end, a stat card, the demo video, the application | Application submitted |
+| 10 | Accounts, teams and privacy | Both | Sign in with Apple and Google, invite links, parent claims, row-level security, deletion | Database tests pass for every visibility rule, and a parent claims and deletes a test child |
+| 11 | GameChanger import | Kevin | Rosters and season stat lines from GameChanger's CSV export, marked imported | A real team's export loads, and its season totals match GameChanger's |
+| 12 | Beta with the Moraga Mustang team | Both | Apple developer account, TestFlight, streaming transcription for voice, weekly releases | Six games in a row match GameChanger's box scores, with zero data loss |
+| 13 | In-app broadcaster, replays and moderation | Kevin | Development build with a streaming module, recording, media consent, replays, report and stop-stream tools | A full game streamed from the app, with a replay |
+| 14 | Highlight clips for each child | Both | Clips cut around each of a child's plays, a clip list for each family, one-tap export | After a streamed game, a parent sees clips of only their child and exports one |
+| 15 | Payments | Kevin | Paid tier through the app stores | Sandbox purchases work on both stores |
+| 16 | Recruiting profiles | Both | Profiles for players 13 and up, verified stats kept apart from imported ones, parent-controlled sharing, PONY Pony and Colt presets | A test player's profile shows verified stats, and only the people the parent chose can open it |
+| 17 | Public launch | Both | Pinto, softball and Little League presets, store listings, load test | Store review approves |
 
 Milestone 7 is optional for the demo. If streaming isn't ready, the demo shows the live score page without video and nothing else changes.
 
@@ -236,6 +259,7 @@ The architecture stays. What changes is the order of work, so the riskiest parts
 | Live video | Our own broadcaster module before launch | A second phone through a hosted service first. Our own broadcaster after the beta. | No native module or developer account needed for the demo |
 | Family view | In the app, for team members | A private web link, with no app to install | Family follow along without installing anything |
 | Payments | Before the public launch | After parents show they like the app | Prove the product first |
+| Family features | Highlights as bookmarks on a stream | Stat cards, clips of each child, GameChanger import and recruiting profiles | They make families register and set Sandlot apart |
 | Schedule | Fixed dates for every milestone | Ordered by dependency, with a check ending each milestone | The plan stays true when dates move |
 
 ## Risks and open questions
@@ -252,15 +276,19 @@ The biggest risk is voice failing the prototype, because voice is the main reaso
 | Streaming children without consent | Legal and trust problems | The demo streams footage that needs no consent. Media consent and moderation ship with the in-app broadcaster. |
 | Saturday-morning traffic peaks | Voice, live updates or streams fail at the busiest time | Load test before launch. OpenAI, Supabase and streaming limits per plan are unverified. |
 | Children's privacy law | Required changes late in the project | Adults-only accounts, names in one table, and an attorney review before the public launch |
+| Clips show other people's children | Families object, and consent problems | Clips come only from games where every player on the field has media consent. A family can remove their child from clips. Attorney review before clips ship. |
+| Recruiting profiles expose minors' stats | Privacy and safety problems | Off by default, players 13 and up only, the parent picks who can see it, and no contact details |
+| GameChanger changes its export | The import breaks | The import is a convenience. Check the file format each season. |
 
 **Decisions.**
 
 - **Beta division.** Mustang in Moraga, which uses PONY rules with local changes.
-- **Team.** Christian owns the engine, tap scoring app and voice. Kevin owns Supabase, event sync, the family live page and streaming.
+- **Team.** Christian owns the engine, tap scoring app, voice and stat cards. Kevin owns Supabase, event sync, the family live page, streaming, highlight clips and the GameChanger import.
 - **Who writes the code.** Christian and Kevin both use Claude Code and Codex for now. Claude Code orchestrates each track and writes most of the code. Codex takes implementation tasks Claude Code hands it. Every agent follows `AGENTS.md`.
 - **Schedule and messaging.** The app has a team schedule. It has no messaging.
 - **GameChanger.** No partnership approach is planned.
 - **Email.** None in the first version. Parents sign in with Apple or Google, and invites are links a parent texts from the phone's share sheet. Add an email service such as Resend only if parents ask for email sign-in.
+- **Family features.** Stat cards, highlight clips, GameChanger import and recruiting profiles are in the product. Cards and clips are only for registered families, and only for their own child.
 - **Developer programs.** The Apple and Google programs wait until the beta needs them. The demo runs in Expo Go.
 
 **Open questions.**
@@ -268,6 +296,8 @@ The biggest risk is voice failing the prototype, because voice is the main reaso
 - [ ] Did the Mustang coaches vote to allow leadoffs and steals in the second half this season?
 - [ ] Can Christian and Kevin each merge the other's PRs after reviewing them? `AGENTS.md` now says only Christian merges.
 - [ ] Which hosted streaming service, Amazon IVS or Mux? Kevin decides with a short test.
+- [ ] Do stat cards ship for every division? The default is yes, showing only the stats each division uses.
+- [ ] Should the YC demo include a highlight clip? The default is no. The demo shows a stat card, and clips come after the beta, once recording and consent exist.
 
 ## Sources
 
