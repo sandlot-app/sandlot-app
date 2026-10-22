@@ -1,0 +1,14 @@
+name: Mustang rejects a bunt
+cite: Moraga Mustang Rules (revised 2/2024), D.7
+preset: moraga-mustang-first-half
+pending: true
+given:
+  status: in_progress
+when:
+  - kind: ball_in_play
+    outcome: sacrifice_bunt
+    trajectory: bunt
+    fielders: [P, 1B]
+    advances: []
+then:
+  rejected: bunting_not_allowed

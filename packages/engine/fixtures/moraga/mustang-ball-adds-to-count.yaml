@@ -1,0 +1,11 @@
+name: A ball adds one to the count
+cite: PONY Baseball Rules and Regulations, Official Baseball Rules 5.05(b)
+preset: moraga-mustang-first-half
+pending: true
+given:
+  status: in_progress
+when:
+  - kind: pitch
+    result: ball
+then:
+  count: { balls: 1, strikes: 0, pitches: 1 }
