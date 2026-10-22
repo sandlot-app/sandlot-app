@@ -6,3 +6,6 @@ coverage/
 !.env.example
 .DS_Store
 *.log
+.expo/
+ios/
+android/

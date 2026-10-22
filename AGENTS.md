@@ -6,12 +6,13 @@ A youth baseball and softball scoring app for the parents who keep the book. Sco
 
 - `packages/engine`: the rules engine. Pure TypeScript, zero runtime dependencies.
 - `packages/engine/fixtures`: YAML scenarios the engine must pass, each citing its rule book.
-- `apps/mobile`: the Expo app (not created yet).
+- `apps/mobile`: the Expo app. It has its own `AGENTS.md` with Expo rules. Read it before touching the app.
 
 ## Commands
 
 - `pnpm install`
-- `pnpm verify` runs typecheck and tests for every package. CI runs the same command. Run it before every PR.
+- `pnpm verify` runs typecheck and tests for every package. Run it before every PR.
+- `pnpm --filter @sandlot/mobile bundle` builds the app's iOS and Android bundles. CI runs it too, which proves the app still imports the engine.
 
 ## Rules
 
@@ -25,5 +26,7 @@ A youth baseball and softball scoring app for the parents who keep the book. Sco
 ## Workflow
 
 - Claude Code orchestrates every task and writes most of the code. Codex takes implementation tasks Claude Code hands it. Both read this file.
+- Each agent works in its own git worktree, for example `git worktree add ../sandlot-codex -b <branch>`. Two agents never share a checkout.
 - One task per branch and PR. Small diffs. `pnpm verify` must pass.
+- Agents push branches and open PRs. Agents never push to `main` and never merge. Christian merges every PR.
 - Christian reviews anything that changes engine rules, security, or privacy.
