@@ -2,6 +2,8 @@
 
 A youth baseball and softball scoring app for the parents who keep the book. Scoring by voice or one tap, one-step fixes, and full games with no signal.
 
+The plan is in [docs/plan.md](docs/plan.md): who owns what, the milestones in order, and the check that ends each one. Read it before starting a task.
+
 ## Layout
 
 - `packages/engine`: the rules engine. Pure TypeScript, zero runtime dependencies.
