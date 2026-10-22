@@ -39,20 +39,7 @@ GameChanger has no public API, so nothing can be written into it ([Dugout](https
 
 ## Architecture at a glance
 
-```mermaid
-flowchart TB
-  subgraph phone["Scorer's phone"]
-    input["Tap or voice<br/>one press or tap"] --> engine1["Rules engine<br/>accepts or rejects"] --> log["Event log<br/>SQLite on the phone"]
-  end
-  input -- audio --> voice["Voice services<br/>speech to text and the AI parser"]
-  voice -- proposed plays --> engine1
-  log -- uploads events when online --> sync
-  subgraph server["Supabase server"]
-    sync["sync-events<br/>checks the lock"] --> engine2["Rules engine<br/>same code, rechecks"] --> pg["Postgres<br/>events and stats"] --> rt["Realtime<br/>pushes new state"]
-  end
-  rt -- live updates --> page["Family live page<br/>score and video"]
-  film["Filming phone<br/>streams the game"] -- video --> stream["Streaming service<br/>Amazon IVS or Mux"] -- video --> page
-```
+![The phone scores, the server rechecks, and family watch it live. The scorer's phone runs the rules engine and keeps the event log, voice services propose plays, Supabase rechecks and pushes live updates, and a filming phone streams video through a hosted service to the family live page.](images/architecture.png)
 
 Only the scorer's phone writes events. The server runs the same engine on every event, and the family live page only reads the result. Video goes from a filming phone through the streaming service, never through Supabase.
 
@@ -213,16 +200,7 @@ The server always wins. If its game state differs from the phone's, the phone ta
 
 Milestones follow dependencies, not dates. Each one ends in a check that has to pass before anything built on it starts. Christian's and Kevin's tracks run side by side and meet at the YC demo.
 
-```mermaid
-flowchart TB
-  m1["1. Foundations (done)"] --> m2["2. Shared contract<br/>Both"]
-  m2 --> m3["3. Engine core<br/>Christian"] --> m4["4. Tap scoring app<br/>Christian"] --> m5["5. Voice<br/>Christian"] --> m8
-  m2 --> m6["6. Event sync and family live page<br/>Kevin"] --> m7["7. Live streaming<br/>Kevin"]
-  m6 --> m8
-  m7 -. optional for the demo .-> m8["8. YC demo<br/>Both"]
-  m8 --> m9["9. Accounts, teams and privacy<br/>Both"] --> m10["10. Beta with the Moraga Mustang team<br/>Both"]
-  m10 --> m11["11. In-app broadcaster, replays and moderation<br/>Kevin"] --> m12["12. Payments<br/>Kevin"] --> m13["13. Public launch<br/>Both"]
-```
+![Two tracks meet at the YC demo, then the app grows toward launch. Milestones 3 to 5 are Christian's track, 6 and 7 are Kevin's, and 9 to 13 follow the demo in order.](images/milestones.png)
 
 | # | Milestone | Owner | Includes | Done when |
 | --- | --- | --- | --- | --- |
