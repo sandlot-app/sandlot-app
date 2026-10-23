@@ -2,7 +2,7 @@
 
 Last updated October 22, 2026. Christian Alcala.
 
-Status: proposed. Christian has signed off. Kevin's sign-off is still needed.
+Status: agreed. Christian and Kevin signed off in PR 2. The Event time section is a proposed addition that still needs Kevin's sign-off.
 
 This is how plays move from the scorer's phone to the server and on to the family live page. It answers the open questions in Kevin's backend design, on the `docs/backend-design` branch. When this file and another doc disagree, this file wins. Change it only when both Christian and Kevin agree.
 
@@ -74,6 +74,16 @@ Then it writes the events, the group row, the new revision, and the cached state
 - A reused ID with different content returns `id_conflict`.
 - The content hash is SHA-256 of the parsed events with keys in a fixed order. Only the server computes it.
 - `events.at` stores the original text from the phone, so it reads back exactly as sent.
+
+## Event time
+
+Proposed. Kevin's sign-off is still needed.
+
+- `Event.at` is when the scorer started the action: the tap, or the start of the voice press. It is not when the group saved, which can be seconds later after a confirm card.
+- Every event in one group has the same `at`.
+- The phone's clock sets `at`, and the server never changes it.
+- Highlight clips find a play in the game recording from `at` and the recording's clock offset. The play happens before the scorer starts the action, so a clip starts about 10 to 15 seconds before `at`.
+- The clock offset lives with the recording in Kevin's `recordings` table, not in the game's `setup`. `setup` is fixed when the game is created, and the offset is known only after the first pitch. The engine never reads the offset.
 
 ## Engine interface
 
@@ -160,6 +170,6 @@ This test proves the connection works. It does not finish milestone 6.
 
 ## Process
 
-- Christian's doc branches merge first, in this order: `docs/family-features`, then `docs/demo-plan`. Kevin then rebases `docs/backend-design` onto `main` and resolves its conflicts.
+- This contract merged before Christian's doc branches. `docs/growth-decisions` carries `docs/family-features` and `docs/demo-plan`, rebased onto `main`. After it merges, Kevin rebases `docs/backend-design` onto `main` and resolves its conflicts.
 - `plan.md` and `demo-plan.md` link to this file instead of repeating the contract.
 - AGENTS.md says only Christian merges. Whether Kevin can also merge after review is still open.
