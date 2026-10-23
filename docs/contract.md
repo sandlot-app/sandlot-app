@@ -1,8 +1,8 @@
 # Sync contract
 
-Last updated October 22, 2026. Christian Alcala.
+Last updated October 23, 2026. Christian Alcala.
 
-Status: agreed. Christian and Kevin signed off in PR 2. The Event time section is a proposed addition that still needs Kevin's sign-off.
+Status: agreed. Christian and Kevin signed off in PR 2, and on the Event time section in PR 3.
 
 This is how plays move from the scorer's phone to the server and on to the family live page. It answers the open questions in Kevin's backend design, on the `docs/backend-design` branch. When this file and another doc disagree, this file wins. Change it only when both Christian and Kevin agree.
 
@@ -77,7 +77,7 @@ Then it writes the events, the group row, the new revision, and the cached state
 
 ## Event time
 
-Proposed. Kevin's sign-off is still needed.
+Agreed in PR 3.
 
 - `Event.at` is when the scorer started the action: the tap, or the start of the voice press. It is not when the group saved, which can be seconds later after a confirm card.
 - Every event in one group has the same `at`.
