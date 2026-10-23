@@ -77,7 +77,7 @@ Everything the scorer and the family touch is real. Only setup that a reviewer n
 
 Both tracks build against [contract.md](contract.md), which Christian and Kevin agreed in PR 2. It covers the upload request, the commit checks, errors, the live page and demo access, and it wins when another doc disagrees. Its first connection test is the first step of work.
 
-Two additions for the clip are proposed in it and wait on Kevin's sign-off: `Event.at` marks when the scorer started the action, and the clock offset lives in Kevin's `recordings` table, not in the game's fixed `setup`.
+Two additions for the clip were agreed in PR 3: `Event.at` marks when the scorer started the action, and the clock offset lives in Kevin's `recordings` table, not in the game's fixed `setup`.
 
 **Secrets.** Supabase keys go in `.env` files, which git already ignores. Share them directly, never in the repo.
 
