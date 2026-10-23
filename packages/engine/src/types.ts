@@ -146,6 +146,7 @@ export type Event = {
   /** Which scorer session wrote the event. */
   lockEpoch: number;
   source: 'tap' | 'voice';
+  /** When the scorer started the action: the tap, or the start of the voice press. Every event in a group shares it. */
   at: Timestamp;
   command: Command;
 };
