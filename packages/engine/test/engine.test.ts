@@ -87,7 +87,8 @@ describe('applyGroup', () => {
 
   it('refuses an unresolved stored play before an outcome in a later play', () => {
     expect(replay(setup, started.concat(events([
-        [{ kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] }],
+      [{ kind: 'pitch', result: 'in_play' }],
+      [{ kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] }],
     ])))).toEqual({ ok: false, code: 'in_play_needs_outcome' });
   });
 

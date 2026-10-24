@@ -137,7 +137,7 @@ function applyPlay(setup: GameSetup, state: GameState, commands: Command[]): App
   let needsOutcome = false;
   for (const command of commands) {
     if (needsOutcome && command.kind !== 'ball_in_play') return { ok: false, code: 'in_play_needs_outcome' };
-    if (game.status !== 'pregame' && command.kind === 'ball_in_play' && !needsOutcome) {
+    if (game.status === 'in_progress' && command.kind === 'ball_in_play' && !needsOutcome) {
       return { ok: false, code: 'ball_in_play_needs_pitch' };
     }
     const code = applyCommand(setup, game, command);
