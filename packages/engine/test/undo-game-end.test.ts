@@ -283,6 +283,78 @@ describe('undo and game end through the event log', () => {
 
 describe('balls in play with undo, final innings, and pitch-count alerts', () => {
   for (const inning of [6, 7]) {
+    for (const awayLead of [0, 1]) {
+      it(`stops an ordinary bottom-${inning} walkoff after the winning run from a ${awayLead}-run deficit (OBR 7.01(e)(3), 9.06(f))`, () => {
+        const book = game();
+        for (let half = 0; half < inning * 2 - 2; half++) book.finishHalf();
+        if (awayLead) book.record(
+          { kind: 'pitch', result: 'in_play' },
+          { kind: 'ball_in_play', outcome: 'home_run', trajectory: 'fly', fielders: ['CF'], advances: [] },
+        );
+        book.finishHalf();
+        for (let runner = 0; runner < 3; runner++) book.record({ kind: 'pitch', result: 'hit_by_pitch' });
+        book.record({ kind: 'pitch', result: 'called_strike' });
+        const before = structuredClone(book.state);
+        const oldEvents = structuredClone(book.events);
+        const target = book.record(
+          { kind: 'pitch', result: 'in_play' },
+          {
+            kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['CF'],
+            advances: ([3, 2, 1] as const).map((base) => ({ runner: before.bases[base]!.player, to: 'home' })),
+          },
+        );
+        expect(book.state).toMatchObject({
+          status: 'final', inning, half: 'bottom', score: { home: awayLead + 1, away: awayLead },
+          runsThisHalf: awayLead + 1, count: { balls: 0, strikes: 0, pitches: 0 },
+        });
+        expect(book.state.bases).toEqual({ 1: { player: before.lineups.home[before.nextBatter.home]!.player, chargedTo: away(1) } });
+        expect(book.state.nextBatter).toEqual({ ...before.nextBatter, home: (before.nextBatter.home + 1) % 9 });
+        expect(book.state.pitchCounts['away-1']).toBe(before.pitchCounts['away-1']! + 1);
+        expect(book.state.removedPitchers).toEqual(before.removedPitchers);
+        expect(book.events.slice(-2).map((event) => event.group)).toEqual([target, target]);
+        expect(applyGroup(book.pins, book.events, [{ kind: 'pitch', result: 'ball' }])).toEqual({ ok: false, code: 'game_over' });
+        book.record({ kind: 'undo', target });
+        expect(book.state).toEqual(before);
+        expect(book.events.slice(0, oldEvents.length)).toEqual(oldEvents);
+        book.record({ kind: 'pitch', result: 'ball' });
+        expect(book.state).toMatchObject({ status: 'in_progress', count: { balls: 1, strikes: 1, pitches: 2 } });
+      });
+    }
+
+    it(`counts every eligible run on an out-of-field bottom-${inning} walkoff home run (OBR 7.01(e)(3) exception, 9.06(g))`, () => {
+      const book = game();
+      for (let half = 0; half < inning * 2 - 1; half++) book.finishHalf();
+      for (let runner = 0; runner < 3; runner++) book.record({ kind: 'pitch', result: 'hit_by_pitch' });
+      const before = structuredClone(book.state);
+      const target = book.record(
+        { kind: 'pitch', result: 'in_play' },
+        {
+          kind: 'ball_in_play', outcome: 'home_run', trajectory: 'fly', fielders: ['CF'],
+          advances: ([3, 2, 1] as const).map((base) => ({ runner: before.bases[base]!.player, to: 'home' })),
+        },
+      );
+      expect(book.state).toMatchObject({ status: 'final', inning, half: 'bottom', score: { home: 4, away: 0 }, runsThisHalf: 4, bases: {} });
+      book.record({ kind: 'undo', target });
+      expect(book.state).toEqual(before);
+    });
+  }
+
+  it('uses the pinned regulation length when limiting ordinary walkoff runs (OBR 7.01(e)(3))', () => {
+    const book = game({ ...setup.rules, innings: 2 });
+    for (let half = 0; half < 3; half++) book.finishHalf();
+    for (let runner = 0; runner < 2; runner++) book.record({ kind: 'pitch', result: 'hit_by_pitch' });
+    const before = structuredClone(book.state);
+    book.record(
+      { kind: 'pitch', result: 'in_play' },
+      {
+        kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['CF'],
+        advances: ([2, 1] as const).map((base) => ({ runner: before.bases[base]!.player, to: 'home' })),
+      },
+    );
+    expect(book.state).toMatchObject({ status: 'final', inning: 2, half: 'bottom', score: { home: 1, away: 0 }, runsThisHalf: 1 });
+  });
+
+  for (const inning of [6, 7]) {
     it(`undoes both commands of a bottom-${inning} walkoff and reopens the game (OBR 5.08(a), 7.01(g)(3))`, () => {
       const book = game();
       for (let half = 0; half < inning * 2 - 1; half++) book.finishHalf();

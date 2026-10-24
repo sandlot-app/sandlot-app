@@ -126,6 +126,7 @@ The scorer records what happened. Starting bases alone cannot prove that a force
 - Explicit outs occur in `advances` array order. Safe destinations describe final bases, not intermediate touches or timing.
 - A home entry asserts an eligible crossing before the third out, if any. Omit crossings after the third out. `Event.at` does not establish timing within a play.
 - Under [OBR 5.08(a) and 5.09(b)(6)](https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf), a third out classified as `force` or `batter_before_first` suppresses every run on that play. Otherwise eligible home entries count. An earlier force out alone does not suppress a run on a later non-force third out.
+- In the home half of the last regulation inning or an extra inning, an ordinary walkoff counts only the runs needed to take the lead. A `home_run` retains all eligible runs under the out-of-field home-run exception. Third-out suppression still applies. See OBR 7.01(e)(3) and 9.06(f) and (g).
 
 For example, begin with two outs and runners R1 on first and R3 on third. On a fielder's choice, the batter reaches first and R3 crosses home before R1 is retired.
 

@@ -321,7 +321,10 @@ function ballInPlay(setup: GameSetup, game: GameState, command: Extract<Command,
   const plan = planBallInPlay(game, command);
   if (typeof plan === 'string') return plan;
   game.bases = plan.bases;
-  for (let run = 0; run < plan.runs; run++) scoreRun(game);
+  const runs = game.half === 'bottom' && game.inning >= setup.rules.innings && command.outcome !== 'home_run'
+    ? Math.min(plan.runs, game.score.away - game.score.home + 1)
+    : plan.runs;
+  for (let run = 0; run < runs; run++) scoreRun(game);
   endAtBat(setup, game);
   if (plan.totalOuts >= 3) endHalf(setup, game);
   else game.outs = plan.totalOuts as GameState['outs'];
