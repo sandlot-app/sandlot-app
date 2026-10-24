@@ -6,6 +6,8 @@ export type EventId = Brand<string, 'EventId'>;
 export type GroupId = Brand<string, 'GroupId'>;
 export type PlayerId = Brand<string, 'PlayerId'>;
 export type OpponentId = Brand<string, 'OpponentId'>;
+/** One scorer's hold on a game, issued by the server when scoring is taken over. */
+export type SessionId = Brand<string, 'SessionId'>;
 /** ISO 8601 timestamp. The engine never reads a clock, so all time arrives as data. */
 export type Timestamp = Brand<string, 'Timestamp'>;
 

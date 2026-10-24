@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
-import { apply, initialState, presets, type ApplyResult, type Command, type GameState } from '../src';
+import { apply, initialState, presets, type ApplyResult, type Command, type GameState } from '../src/index.ts';
 
 type Fixture = {
   name: string;

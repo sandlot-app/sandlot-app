@@ -2,13 +2,13 @@
 
 Last updated October 23, 2026. Christian Alcala.
 
-Status: agreed. Christian and Kevin signed off in PR 2, and on the Event time section in PR 3.
+Status: agreed. Christian and Kevin signed off in PR 2, on the Event time section in PR 3, and on the duplicate recheck in handler steps 3 and 5 in PR 8.
 
 This is how plays move from the scorer's phone to the server and on to the family live page. It answers the open questions in Kevin's backend design, on the `docs/backend-design` branch. When this file and another doc disagree, this file wins. Change it only when both Christian and Kevin agree.
 
 ## Facts this contract rests on
 
-- Supabase Edge Functions run on Deno. Today Deno cannot load the engine. `deno run` fails with `Module not found .../src/types`, because the engine imports have no `.ts` extension. With `--unstable-sloppy-imports`, the engine loads.
+- Supabase Edge Functions run on Deno. Before PR 8, Deno could not load the engine: `deno run` failed with `Module not found .../src/types`, because the engine imports had no `.ts` extension. PR 8 switched the engine to `.ts` imports.
 - Nobody has tried `supabase functions deploy` with the engine yet. The engine sits outside `supabase/functions/`.
 - The engine's `apply` returns `not_implemented` for every command. `GameState` keeps no history of groups.
 - Supabase anonymous users get the `authenticated` role, and their token carries `is_anonymous`. Realtime `postgres_changes` applies row-level security to `anon` when that role has a select grant. A new function in the `public` schema can be called by `anon` and `authenticated` through `/rest/v1/rpc` unless execute is revoked.
@@ -50,13 +50,15 @@ The caller's identity comes from the sign-in token only, never from the request 
 2. Parse the request with `parseUploadRequest`.
 3. Look up the group by `(game_id, group_id)`.
    - If the content hash and the user match, return the stored acknowledgment and stop.
-   - If the hash differs, return `id_conflict` and stop.
+   - If the hash or the user differs, return `id_conflict` and stop.
 4. Call `get_base(game_id)`. It returns the pins, the revision, and every accepted event in one statement.
-5. If the revision is not the group's first `seq` minus 1, return `stale_revision`.
+5. If the revision is not the group's first `seq` minus 1, look up the group again. If it is there now, apply the rule in step 3. If it is still missing, return `stale_revision`.
 6. Replay the accepted events and apply the group with the engine. If the engine rejects any command, reject the whole group.
 7. Call `commit_group(user_id, session_id, game_id, base_revision, events, new_state)`.
 
 Step 3 comes before the engine on purpose. A retry after a lost response is a group the server already saved. Running it through the engine again would reject a play that is already accepted.
+
+Step 5 looks again because two identical requests can both miss the group in step 3. One commits first, and the other then sees a higher revision. Without the second lookup, that retry would get `stale_revision` and stop the phone's queue over a play the server already holds.
 
 ## Commit checks
 
@@ -162,10 +164,10 @@ Kevin must agree to these changes before they count.
 This test proves the connection works. It does not finish milestone 6.
 
 1. Deploy a function that imports `ENGINE_VERSION` from the engine and returns it. If the deploy fails, fix that before anything else.
-2. Christian switches the engine to `.ts` imports. `pnpm --filter @sandlot/engine sample-events` prints a half-inning as `UploadRequest[]`.
+2. Christian switches the engine to `.ts` imports. `pnpm -s --filter @sandlot/engine sample-events --game <id> --session <id>` prints a half-inning as `UploadRequest[]`, using the IDs from `supabase/scripts/seed-test-game.sql`. The same arguments always print the same requests.
 3. Kevin adds the tables, `commit_group`, `get_base`, the row-level security policies, Realtime on `games`, and `sync-events`.
 4. The engine has no game logic yet, so `sync-events` skips the engine step for now. A milestone 6 test requires the engine step, so this shortcut cannot reach the demo.
-5. Christian sends the sample requests twice. The second run returns the same acknowledgments and adds no rows. Kevin's page shows each play once.
+5. Kevin's `send-samples` script signs in, posts each sample request in order to `sync-events`, and prints each response. Christian runs it twice. The second run returns the same acknowledgments and adds no rows. Kevin's page shows each play once.
 6. When milestone 3 lands, delete the test games.
 
 ## Process

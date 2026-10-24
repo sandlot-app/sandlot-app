@@ -1,4 +1,4 @@
-import type { RuleSet } from './types';
+import type { RuleSet } from './types.ts';
 
 // Moraga Baseball Association local rules over PONY.
 // Source: https://www.moragabaseball.org/pony-rules/ (Mustang revised 2/2024, Pinto revised 4/2025).
