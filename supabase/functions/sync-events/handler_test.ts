@@ -23,7 +23,7 @@ function request(seq = 1, group = 'g1'): UploadRequest {
 
 function memoryStore() {
   const groups = new Map<string, StoredGroup>();
-  const base: Base = { revision: 0, state: {}, events: [] };
+  const base: Base = { schemaVersion: EVENT_SCHEMA_VERSION, revision: 0, state: {}, events: [] };
   const store: Store = {
     findGroup: (_gameId, groupId) => Promise.resolve(groups.get(groupId) ?? null),
     getBase: () => Promise.resolve(structuredClone(base)),
@@ -173,6 +173,15 @@ Deno.test('an upload without a schemaVersion is unsupported_version, even when i
   for (const body of [legacy, { ...legacy, events: [{ ...legacy.events[0], command: { kind: 'nope' } }] }]) {
     deepStrictEqual(await syncEvents(USER, body, store), { ok: false, code: 'unsupported_version' });
   }
+  strictEqual(groups.size, 0);
+  deepStrictEqual(base.events, []);
+  strictEqual(base.revision, 0);
+});
+
+Deno.test('a game pinned to a different schema version is unsupported_version', async () => {
+  const { store, groups, base } = memoryStore();
+  base.schemaVersion = EVENT_SCHEMA_VERSION + 1;
+  deepStrictEqual(await syncEvents(USER, request(), store), { ok: false, code: 'unsupported_version' });
   strictEqual(groups.size, 0);
   deepStrictEqual(base.events, []);
   strictEqual(base.revision, 0);

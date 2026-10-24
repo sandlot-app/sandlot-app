@@ -27,7 +27,7 @@ export type Outcome = { ok: true; revision: number } | { ok: false; code: ErrorC
 
 export type StoredGroup = { userId: string; contentHash: string; ackRevision: number };
 
-export type Base = { revision: number; state: unknown; events: UploadEvent[] };
+export type Base = { schemaVersion: number; revision: number; state: unknown; events: UploadEvent[] };
 
 export type Store = {
   findGroup(gameId: string, groupId: string): Promise<StoredGroup | null>;
@@ -72,7 +72,7 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
   const parsed = parseUploadRequest(body);
   if (!parsed.ok) return { ok: false, code: parsed.code };
 
-  const { events, sessionId } = parsed.request;
+  const { events, schemaVersion, sessionId } = parsed.request;
   const [first] = events as [UploadEvent, ...UploadEvent[]];
   const hash = await contentHash(events);
 
@@ -83,6 +83,7 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
 
   const base = await store.getBase(first.gameId);
   if (!base) return { ok: false, code: 'invalid' };
+  if (base.schemaVersion !== schemaVersion) return { ok: false, code: 'unsupported_version' };
   if (base.revision !== first.seq - 1) {
     const committed = await store.findGroup(first.gameId, first.group);
     return committed ? savedOutcome(committed, userId, hash) : { ok: false, code: 'stale_revision' };
