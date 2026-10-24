@@ -1,0 +1,36 @@
+name: A run counts before the runner from second is tagged off third after both runners reach third on a triple
+cite: Official Baseball Rules 5.08(a), 5.09(b)(6), 9.05(b)(1), 9.06(b)
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 2
+  nextBatter: { home: 0, away: 3 }
+  bases:
+    "2":
+      player: { kind: opponent, id: away-2 }
+      chargedTo: { kind: player, id: home-1 }
+    "3":
+      player: { kind: opponent, id: away-1 }
+      chargedTo: { kind: player, id: home-1 }
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: triple
+      trajectory: line
+      fielders: [RF, SS, 3B, C]
+      advances:
+        - runner: { kind: opponent, id: away-1 }
+          to: home
+        - runner: { kind: opponent, id: away-2 }
+          to: out
+then:
+  score: { home: 0, away: 1 }
+  half: bottom
+  outs: 0
+  bases: {}
+  count: { balls: 0, strikes: 0, pitches: 0 }
+  nextBatter: { home: 0, away: 4 }
+  pitchCounts: { home-1: 1, away-1: 0 }
+  runsThisHalf: 0
