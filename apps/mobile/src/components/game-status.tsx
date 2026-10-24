@@ -6,6 +6,7 @@ import {
   View,
 } from 'react-native';
 import { useOfflineGame } from '../scoring/use-offline-game.tsx';
+import { blockedMessages } from '../scoring/game-summary.ts';
 
 export function GameStatus() {
   const { view, reopen } = useOfflineGame();
@@ -17,14 +18,7 @@ export function GameStatus() {
       </View>
     );
   if (view.kind !== 'blocked') return null;
-  const message = {
-    version:
-      'This game needs a different app version. Your saved plays have been kept. Update the app before scoring.',
-    corrupt:
-      'This saved game could not be read safely. Your plays have been kept. Scoring is paused.',
-    storage:
-      'Your saved game could not be opened. Scoring is paused so no play is lost. Try opening it again.',
-  }[view.reason];
+  const message = blockedMessages[view.reason];
   return (
     <View style={styles.status} accessibilityLiveRegion="polite">
       <Text style={styles.message} testID="game-error">

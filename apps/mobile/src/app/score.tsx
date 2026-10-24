@@ -14,6 +14,7 @@ import {
 } from 'react-native-safe-area-context';
 import { BaseDiamond, Field } from '../components/field.tsx';
 import { GameStatus } from '../components/game-status.tsx';
+import { basesSummary, gameSummary } from '../scoring/game-summary.ts';
 import { useOfflineGame } from '../scoring/use-offline-game.tsx';
 
 const pitches: {
@@ -98,11 +99,8 @@ export default function ScoreScreen() {
   const pitchingSide = state.half === 'top' ? 'home' : 'away';
   const pitcher = state.pitchers[pitchingSide];
   const batterIndex = state.nextBatter[battingSide];
-  const occupied = ([1, 2, 3] as const).filter((base) => state.bases[base]);
-  const basesLabel = occupied.length
-    ? `Runners on ${occupied.map((base) => ['first', 'second', 'third'][base - 1]).join(' and ')}.`
-    : 'Bases empty.';
-  const summary = `Inning ${state.inning}, ${state.half}. ${state.outs} outs. Count ${state.count.balls}-${state.count.strikes}. ${basesLabel}`;
+  const basesLabel = basesSummary(state.bases);
+  const summary = gameSummary(state);
 
   const gameContent = (
     <>

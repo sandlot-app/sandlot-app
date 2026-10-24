@@ -1,7 +1,9 @@
 import { randomUUID } from 'expo-crypto';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { PropsWithChildren } from 'react';
+import { AccessibilityInfo, Platform } from 'react-native';
 import type { SqlDatabase } from './database.ts';
+import { blockedMessages, gameSummary } from './game-summary.ts';
 import { openNativeDatabase } from './native-database.ts';
 import { openOfflineGame } from './offline-game.ts';
 import type { DemoAction, OpenResult, SavedGame } from './offline-game.ts';
@@ -29,6 +31,30 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
   const session = useRef<Session | null>(null);
   const operation = useRef<Promise<unknown> | null>(null);
   const closing = useRef<Promise<void>>(Promise.resolve());
+
+  useEffect(() => {
+    if (
+      Platform.OS !== 'ios' ||
+      view.kind === 'loading' ||
+      view.kind === 'saving'
+    )
+      return;
+    const message =
+      view.kind === 'blocked'
+        ? blockedMessages[view.reason]
+        : view.message;
+    if (!message) return;
+    const announcement = view.game
+      ? `${message} ${gameSummary(view.game.state)}`
+      : message;
+    try {
+      AccessibilityInfo.announceForAccessibilityWithOptions(announcement, {
+        queue: true,
+      });
+    } catch {
+      console.error('Sandlot could not announce the scoring result.');
+    }
+  }, [view]);
 
   useEffect(() => {
     let disposed = false;
@@ -80,7 +106,12 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
           setView({
             kind: 'ready',
             game: result.game,
-            message: 'Saved on this phone',
+            message:
+              action.kind === 'start'
+                ? null
+                : action.kind === 'undo'
+                  ? 'Last pitch undone. Saved on this phone.'
+                  : 'Pitch saved on this phone.',
           });
           return true;
         case 'busy':
