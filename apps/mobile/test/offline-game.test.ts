@@ -35,6 +35,33 @@ function connect(path: string): SqlDatabase {
 
 const boundary = { newId: randomUUID, now: () => '2026-10-24T17:00:00.000Z' };
 
+test('a committed play is recovered by its original group if commit completion is uncertain', async () => {
+  const database = connect(':memory:');
+  let loseCompletion = false;
+  const uncertain: SqlDatabase = {
+    ...database,
+    async transaction(task) {
+      await database.transaction(task);
+      if (loseCompletion) { loseCompletion = false; throw new Error('Commit response lost'); }
+    },
+  };
+  const opened = await openOfflineGame(uncertain, boundary);
+  assert.equal(opened.kind, 'ready');
+  if (opened.kind !== 'ready') return;
+  await opened.record({ kind: 'start' });
+  loseCompletion = true;
+  const pitched = await opened.record({ kind: 'pitch', result: 'ball' });
+  assert.equal(pitched.kind, 'saved');
+  if (pitched.kind === 'saved') {
+    assert.equal(pitched.game.state.count.balls, 1);
+    assert.equal(pitched.game.waitingPlays, 2);
+  }
+  const reopened = await openOfflineGame(database, boundary);
+  assert.equal(reopened.kind, 'ready');
+  if (reopened.kind === 'ready') assert.deepEqual(reopened.game, pitched.kind === 'saved' ? pitched.game : null);
+  await database.close();
+});
+
 test('a scorer saves a pitch and reopens the same game from a fresh SQLite connection', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'sandlot-offline-'));
   const path = join(directory, 'games.db');
