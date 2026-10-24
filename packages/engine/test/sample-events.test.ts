@@ -25,7 +25,7 @@ describe('sample-events', () => {
 
   it('meets the parser rules in docs/contract.md for each request', () => {
     for (const request of sampleHalfInning(options)) {
-      expect(parseUploadRequest(request)).toEqual(request);
+      expect(parseUploadRequest(request)).toEqual({ ok: true, request });
     }
   });
 

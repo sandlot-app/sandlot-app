@@ -2,6 +2,7 @@ import { deepStrictEqual, strictEqual } from 'node:assert/strict';
 import { type Base, contentHash, type Store, type StoredGroup, syncEvents, type UploadRequest } from './handler.ts';
 import { parseUploadRequest } from '../../../packages/engine/src/contract.ts';
 import type { PlayerId } from '../../../packages/engine/src/types.ts';
+import { EVENT_SCHEMA_VERSION } from '../../../packages/engine/src/version.ts';
 
 const GAME = '11111111-1111-1111-1111-111111111111';
 const USER = '00000000-0000-0000-0000-00000000000a';
@@ -9,14 +10,15 @@ const OTHER_USER = '00000000-0000-0000-0000-00000000000b';
 
 function request(seq = 1, group = 'g1'): UploadRequest {
   const parsed = parseUploadRequest({
+    schemaVersion: EVENT_SCHEMA_VERSION,
     sessionId: '22222222-2222-2222-2222-222222222222',
     events: [{
       id: `e${seq}`, gameId: GAME, seq, group, lockEpoch: 1, source: 'tap',
       at: '2026-10-23T18:00:00.000Z', command: { kind: 'pitch', result: 'ball' },
     }],
   });
-  if (!parsed) throw new Error('Invalid upload test fixture');
-  return parsed;
+  if (!parsed.ok) throw new Error('Invalid upload test fixture');
+  return parsed.request;
 }
 
 function memoryStore() {
@@ -157,9 +159,20 @@ Deno.test('a saved retry ignores later revisions and command key ordering', asyn
 
 Deno.test('invalid input saves no group or events', async () => {
   const { store, groups, base } = memoryStore();
-  deepStrictEqual(await syncEvents(USER, { sessionId: 'invalid', events: [] }, store), {
+  deepStrictEqual(await syncEvents(USER, { schemaVersion: EVENT_SCHEMA_VERSION, sessionId: 'invalid', events: [] }, store), {
     ok: false, code: 'invalid',
   });
+  strictEqual(groups.size, 0);
+  deepStrictEqual(base.events, []);
+  strictEqual(base.revision, 0);
+});
+
+Deno.test('an upload without a schemaVersion is unsupported_version, even when its commands are unreadable', async () => {
+  const { store, groups, base } = memoryStore();
+  const { schemaVersion: _, ...legacy } = request();
+  for (const body of [legacy, { ...legacy, events: [{ ...legacy.events[0], command: { kind: 'nope' } }] }]) {
+    deepStrictEqual(await syncEvents(USER, body, store), { ok: false, code: 'unsupported_version' });
+  }
   strictEqual(groups.size, 0);
   deepStrictEqual(base.events, []);
   strictEqual(base.revision, 0);

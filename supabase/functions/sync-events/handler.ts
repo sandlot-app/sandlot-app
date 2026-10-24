@@ -69,10 +69,10 @@ function savedOutcome(stored: StoredGroup, userId: string, hash: string): Outcom
 }
 
 export async function syncEvents(userId: string, body: unknown, store: Store): Promise<Outcome> {
-  const request = parseUploadRequest(body);
-  if (!request) return { ok: false, code: 'invalid' };
+  const parsed = parseUploadRequest(body);
+  if (!parsed.ok) return { ok: false, code: parsed.code };
 
-  const { events, sessionId } = request;
+  const { events, sessionId } = parsed.request;
   const [first] = events as [UploadEvent, ...UploadEvent[]];
   const hash = await contentHash(events);
 
