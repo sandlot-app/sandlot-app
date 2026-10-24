@@ -1,0 +1,9 @@
+name: A pitcher removed before throwing a pitch cannot return
+cite: Moraga Mustang C.3 and E.6, https://www.moragabaseball.org/pony-rules/
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: substitution, side: home, change: { kind: pitching_change, in: { kind: player, id: home-2 } } }]
+  - [{ kind: substitution, side: home, change: { kind: pitching_change, in: { kind: player, id: home-1 } } }]
+then:
+  rejected: pitcher_reentry_not_allowed

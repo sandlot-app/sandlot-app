@@ -1,0 +1,11 @@
+name: Mustang has no balks
+cite: Moraga Mustang D.18, https://www.moragabaseball.org/pony-rules/
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    1: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - [{ kind: runner, event: balk, runner: { kind: opponent, id: away-1 }, to: 2 }]
+then:
+  rejected: balks_not_allowed

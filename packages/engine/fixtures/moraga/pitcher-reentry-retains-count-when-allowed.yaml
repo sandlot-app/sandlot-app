@@ -1,0 +1,40 @@
+name: When re-entry is allowed a returning pitcher keeps their count
+cite: Issue 10 league-rules-as-data and pitch-count decisions
+preset: moraga-mustang-first-half
+started: true
+rules:
+  pitcherReentry: true
+given: {}
+when:
+  - - kind: pitch
+      result: ball
+  - - kind: substitution
+      side: home
+      change:
+        kind: pitching_change
+        in:
+          kind: player
+          id: home-2
+  - - kind: pitch
+      result: ball
+  - - kind: substitution
+      side: home
+      change:
+        kind: pitching_change
+        in:
+          kind: player
+          id: home-1
+  - - kind: pitch
+      result: foul
+then:
+  pitchers:
+    home:
+      kind: player
+      id: home-1
+    away:
+      kind: opponent
+      id: away-1
+  pitchCounts:
+    home-1: 2
+    away-1: 0
+    home-2: 1

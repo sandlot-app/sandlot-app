@@ -29,6 +29,7 @@ type Fixture = {
   name: string;
   cite: string;
   preset: keyof typeof presets;
+  rules?: Partial<GameSetup['rules']>;
   pending?: boolean;
   /** Replaces the standard roster: away-1 to away-12 as opponents, home-1 to home-12 as players. */
   roster?: GameSetup['roster'];
@@ -88,7 +89,7 @@ function toEvents(plays: Command[][]): Event[] {
 
 function setupFor(fixture: Fixture): GameSetup {
   return {
-    rules: presets[fixture.preset],
+    rules: { ...presets[fixture.preset], ...fixture.rules },
     roster: fixture.roster ?? { home: team('home', 12), away: team('away', 12) },
     pitcherOutsEarlierToday: {},
   };

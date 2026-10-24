@@ -1,0 +1,29 @@
+name: Second-half Mustang accepts a steal from second to third
+cite: Moraga Mustang, https://www.moragabaseball.org/pony-rules/ D.1
+preset: moraga-mustang-second-half
+started: true
+given:
+  bases:
+    "2":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: stolen_base
+      runner:
+        kind: opponent
+        id: away-1
+      to: 3
+then:
+  bases:
+    "3":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1

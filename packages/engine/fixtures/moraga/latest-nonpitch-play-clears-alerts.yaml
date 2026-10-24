@@ -1,0 +1,22 @@
+name: A pitching change clears the previous plays alert
+cite: Moraga Mustang E.2; Pitch Smart ages 9-10 daily max 75,
+  https://www.mlb.com/pitch-smart/pitching-guidelines/ages-9-12; issue 10 alert
+  policy
+preset: moraga-mustang-first-half
+started: true
+given:
+  pitchCounts:
+    home-1: 64
+    away-1: 0
+when:
+  - - kind: pitch
+      result: foul
+  - - kind: substitution
+      side: home
+      change:
+        kind: pitching_change
+        in:
+          kind: player
+          id: home-2
+then:
+  alerts: []

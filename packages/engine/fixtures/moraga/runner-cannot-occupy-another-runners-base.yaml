@@ -1,0 +1,29 @@
+name: A runner cannot move onto another occupied base
+cite: Official Baseball Rules 5.06(a)(2); issue 10 base_occupied decision
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+    "2":
+      player:
+        kind: opponent
+        id: away-2
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: stolen_base
+      runner:
+        kind: opponent
+        id: away-1
+      to: 2
+then:
+  rejected: base_occupied

@@ -1,0 +1,23 @@
+name: left_early remains out of scope
+cite: Issue 10 Runner events in scope decision; Official Baseball Rules 9.07(g),
+  5.09(b)
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: left_early
+      runner:
+        kind: opponent
+        id: away-1
+      to: 2
+then:
+  rejected: not_implemented

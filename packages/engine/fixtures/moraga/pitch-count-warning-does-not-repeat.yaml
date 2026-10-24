@@ -1,0 +1,20 @@
+name: The pitch after the warning clears the alert
+cite: Moraga Mustang E.2; Pitch Smart ages 9-10 daily max 75,
+  https://www.mlb.com/pitch-smart/pitching-guidelines/ages-9-12; issue 10 alert
+  policy
+preset: moraga-mustang-first-half
+started: true
+given:
+  pitchCounts:
+    home-1: 64
+    away-1: 0
+when:
+  - - kind: pitch
+      result: foul
+  - - kind: pitch
+      result: foul
+then:
+  pitchCounts:
+    home-1: 66
+    away-1: 0
+  alerts: []
