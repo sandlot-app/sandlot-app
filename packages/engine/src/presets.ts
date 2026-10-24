@@ -29,7 +29,8 @@ const moragaMustang = {
   runLimit: null,
   mercy: [],
   timeLimit: { noNewInningAfterMinutes: 120, extraInningsIfTiedAtLimit: 1, extraInningsIfTiedBeforeLimit: 1 },
-  pitchCountTable: 'pitch_smart_9_10',
+  // Pitch Smart, ages 9 and 10: 75 pitches a day. Warn with 10 left.
+  pitchCountLimits: { warnAt: 65, limit: 75 },
   pitcherOutsPerDay: 6,
   minDefensiveInnings: 4,
   battingOutOfOrder: 'notify_umpire',
@@ -70,7 +71,7 @@ export const presets = {
     runLimit: { runs: 5, throughInning: 5 },
     mercy: [],
     timeLimit: { noNewInningAfterMinutes: 120, extraInningsIfTiedAtLimit: 1, extraInningsIfTiedBeforeLimit: 3 },
-    pitchCountTable: null,
+    pitchCountLimits: null,
     pitcherOutsPerDay: null,
     minDefensiveInnings: null,
     battingOutOfOrder: 'one_out_penalty',

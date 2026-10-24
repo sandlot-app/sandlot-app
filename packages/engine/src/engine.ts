@@ -29,8 +29,10 @@ export type RejectCode =
   | 'duplicate_runner'
   | 'batter_destination_missing'
   | 'outs_dont_match_outcome'
+  | 'too_many_outs'
   | 'invalid_out_type'
   | 'undo_not_latest'
+  | 'undo_must_be_alone'
   | 'cannot_undo_undo'
   | 'nothing_to_undo'
   | 'game_over'
@@ -106,8 +108,7 @@ function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending
   function next(commands: Command[]): ApplyResult {
     const undo = commands.find((command) => command.kind === 'undo');
     if (!undo) return applyPlay(setup, state, commands);
-    if (commands.length !== 1) return { ok: false, code: 'undo_not_latest' };
-    if (state.status === 'pregame') return { ok: false, code: 'game_not_started' };
+    if (commands.length !== 1) return { ok: false, code: 'undo_must_be_alone' };
     if (undoGroups.has(undo.target)) return { ok: false, code: 'cannot_undo_undo' };
     const latest = active.at(-1);
     if (!latest) return { ok: false, code: 'nothing_to_undo' };
@@ -263,12 +264,12 @@ function pitch(setup: GameSetup, game: GameState, result: PitchResult): RejectCo
   if (!pitcher) return 'no_pitcher';
   game.pitchCounts[pitcher.id] = (game.pitchCounts[pitcher.id] ?? 0) + 1;
   game.count.pitches += 1;
-  if (setup.rules.pitchCountTable === 'pitch_smart_9_10' && game.pitchCounts[pitcher.id] === 65) {
-    game.alerts.push({ kind: 'pitch_count_near_limit', pitcher, remaining: 10 });
+  const limits = setup.rules.pitchCountLimits;
+  const thrown = game.pitchCounts[pitcher.id];
+  if (limits && thrown === limits.warnAt) {
+    game.alerts.push({ kind: 'pitch_count_near_limit', pitcher, remaining: limits.limit - limits.warnAt });
   }
-  if (setup.rules.pitchCountTable === 'pitch_smart_9_10' && game.pitchCounts[pitcher.id] === 75) {
-    game.alerts.push({ kind: 'pitch_count_at_limit', pitcher });
-  }
+  if (limits && thrown === limits.limit) game.alerts.push({ kind: 'pitch_count_at_limit', pitcher });
   switch (result) {
     case 'ball':
       game.count.balls += 1;
@@ -358,6 +359,7 @@ function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball
   const recordedOuts = destinations.filter(({ to }) => to === 'out').length;
   const expectedOuts = command.outcome === 'double_play' ? 2 : command.outcome === 'triple_play' ? 3 : null;
   if (expectedOuts !== null && recordedOuts !== expectedOuts) return 'outs_dont_match_outcome';
+  if (game.outs + recordedOuts > 3) return 'too_many_outs';
   const bases = { ...game.bases };
   for (const { from } of destinations) {
     if (from !== 0) delete bases[from];

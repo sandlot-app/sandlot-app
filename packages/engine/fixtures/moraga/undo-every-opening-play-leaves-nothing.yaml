@@ -1,5 +1,5 @@
-name: After undoing start the pregame restriction rejects another undo
-cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+name: Undoing every opening play leaves nothing to undo
+cite: Sandlot docs/contract.md Undo (undo works before the start; with no play left, nothing_to_undo)
 preset: moraga-mustang-first-half
 started: false
 when:
@@ -29,5 +29,9 @@ when:
       target: play-3
   - - kind: undo
       target: play-2
+  - - kind: undo
+      target: play-1
+  - - kind: undo
+      target: play-1
 then:
-  rejected: game_not_started
+  rejected: nothing_to_undo

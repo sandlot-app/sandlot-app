@@ -58,7 +58,8 @@ export type RuleSet = {
     extraInningsIfTiedAtLimit: number;
     extraInningsIfTiedBeforeLimit: number;
   } | null;
-  pitchCountTable: 'pitch_smart_9_10' | null;
+  /** One pitcher's daily pitches: an alert at `warnAt`, another at `limit`. Alerts never reject a pitch. */
+  pitchCountLimits: { warnAt: number; limit: number } | null;
   /** Outs a pitcher may record in one calendar day, across every game that day. */
   pitcherOutsPerDay: number | null;
   minDefensiveInnings: number | null;

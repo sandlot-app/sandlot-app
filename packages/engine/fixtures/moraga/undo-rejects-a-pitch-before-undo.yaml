@@ -1,5 +1,5 @@
 name: A pitch cannot precede undo in the same play
-cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+cite: Sandlot docs/contract.md Undo (an undo play holds only the undo command); issue 10 Undo and Game status implementation decisions
 preset: moraga-mustang-first-half
 started: true
 when:
@@ -10,4 +10,4 @@ when:
     - kind: undo
       target: play-1
 then:
-  rejected: undo_not_latest
+  rejected: undo_must_be_alone

@@ -170,6 +170,8 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 ## Undo
 
 - Undo is an ordinary group with one `undo` command. It targets the latest group that is not already undone, whether that group is accepted or still on the phone.
+- An undo group holds only the `undo` command. A group that mixes it with other commands is rejected with `undo_must_be_alone`.
+- Undo works before the game starts too, so it can take back the start or a lineup. When no group is left to undo, it is rejected with `nothing_to_undo`.
 - An undo group cannot itself be undone. The demo has no redo.
 
 ## Errors

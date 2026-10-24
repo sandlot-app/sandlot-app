@@ -1,0 +1,9 @@
+name: Undo before any play is recorded has nothing to undo
+cite: Sandlot docs/contract.md Undo (undo works before the start; with no play left, nothing_to_undo)
+preset: moraga-mustang-first-half
+started: false
+when:
+  - - kind: undo
+      target: play-1
+then:
+  rejected: nothing_to_undo
