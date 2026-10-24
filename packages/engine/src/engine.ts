@@ -248,11 +248,11 @@ function ballInPlay(setup: GameSetup, game: GameState, command: Extract<Command,
   }
   let outs: number = game.outs;
   let thirdOutPreventsRuns = false;
-  const batterHitSafely = ['single', 'double', 'ground_rule_double', 'triple', 'home_run'].includes(command.outcome);
+  const hitRecorded = ['single', 'double', 'ground_rule_double', 'triple', 'home_run'].includes(command.outcome);
   for (const { from, to } of destinations) {
     if (to !== 'out') continue;
     outs += 1;
-    if (outs === 3) thirdOutPreventsRuns = from === 0 ? !batterHitSafely : from <= forceThrough;
+    if (outs === 3) thirdOutPreventsRuns = !hitRecorded && from <= forceThrough;
     forceThrough = Math.min(forceThrough, from - 1);
   }
   game.bases = bases;
