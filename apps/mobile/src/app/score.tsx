@@ -104,220 +104,243 @@ export default function ScoreScreen() {
     : 'Bases empty.';
   const summary = `Inning ${state.inning}, ${state.half}. ${state.outs} outs. Count ${state.count.balls}-${state.count.strikes}. ${basesLabel}`;
 
-  return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <ScrollView contentContainerStyle={styles.page}>
-        <View style={[styles.header, largeText && styles.wrap]}>
-          <Pressable
-            onPress={() => router.replace('/')}
-            style={({ pressed }) => [styles.nav, pressed && styles.pressed]}
-            accessibilityRole="button"
-            testID="games-navigation"
-          >
-            <Text style={styles.navLabel}>‹ Games</Text>
-          </Pressable>
-          <Text
-            style={styles.brand}
-            accessibilityLabel="Sandlot"
-            testID="sandlot-brand"
-          >
-            sandlot.
-          </Text>
-          <Text style={styles.local}>Local game</Text>
-        </View>
-        <View style={styles.board}>
-          <Text style={styles.meta}>
-            {state.half === 'top' ? '▲ Top' : '▼ Bottom'} {state.inning} ·
-            Mustang{state.status === 'final' ? ' · Final' : ''}
-          </Text>
-          <View style={styles.teams}>
-            <View style={[styles.team, largeText && styles.column]}>
-              <Text style={styles.teamName}>Away</Text>
-              <Text style={styles.score}>{state.score.away}</Text>
+  const gameContent = (
+    <>
+      <View style={[styles.header, largeText && styles.wrap]}>
+        <Pressable
+          onPress={() => router.replace('/')}
+          style={({ pressed }) => [styles.nav, pressed && styles.pressed]}
+          accessibilityRole="button"
+          testID="games-navigation"
+        >
+          <Text style={styles.navLabel}>‹ Games</Text>
+        </Pressable>
+        <Text
+          style={styles.brand}
+          accessibilityLabel="Sandlot"
+          testID="sandlot-brand"
+        >
+          sandlot.
+        </Text>
+        <Text style={styles.local}>Local game</Text>
+      </View>
+      <View style={styles.board}>
+        <Text style={styles.meta}>
+          {state.half === 'top' ? '▲ Top' : '▼ Bottom'} {state.inning} ·
+          Mustang{state.status === 'final' ? ' · Final' : ''}
+        </Text>
+        <View style={styles.teams}>
+          <View style={[styles.team, largeText && styles.column]}>
+            <Text style={styles.teamName}>Away</Text>
+            <Text style={styles.score}>{state.score.away}</Text>
+          </View>
+          {!largeText && (
+            <View accessibilityLabel={basesLabel}>
+              <BaseDiamond bases={state.bases} />
             </View>
-            {!largeText && (
-              <View accessibilityLabel={basesLabel}>
-                <BaseDiamond bases={state.bases} />
-              </View>
-            )}
-            <View
-              style={[styles.team, styles.homeTeam, largeText && styles.column]}
-            >
-              <Text style={styles.teamName}>Home</Text>
-              <Text style={styles.score}>{state.score.home}</Text>
-            </View>
-          </View>
-          <View style={[styles.count, largeText && styles.wrap]}>
-            <CountDots
-              label="balls"
-              value={state.count.balls}
-              total={4}
-              color="#147b55"
-            />
-            <CountDots
-              label="strikes"
-              value={state.count.strikes}
-              total={3}
-              color="#b17613"
-            />
-            <CountDots
-              label="outs"
-              value={state.outs}
-              total={3}
-              color="#b74640"
-            />
-          </View>
-          <Text
-            testID="score-summary"
-            accessibilityLiveRegion="polite"
-            style={styles.summary}
-          >
-            {summary}
-          </Text>
-        </View>
-        <View style={[styles.matchup, largeText && styles.column]}>
-          <View style={styles.playerCard}>
-            <Text style={styles.cardLabel}>
-              PITCHING · {pitchingSide.toUpperCase()}
-            </Text>
-            <Text style={styles.player}>
-              Pitcher #
-              {state.lineups[pitchingSide].findIndex(
-                (slot) => slot.player.id === pitcher?.id,
-              ) + 1}
-            </Text>
-            <Text style={styles.playerDetail} testID="pitch-total">
-              {pitcher ? (state.pitchCounts[pitcher.id] ?? 0) : 0} pitches
-            </Text>
-          </View>
-          <View style={styles.playerCard}>
-            <Text style={styles.cardLabel}>
-              BATTING · {battingSide.toUpperCase()}
-            </Text>
-            <Text style={styles.player}>Batter #{batterIndex + 1}</Text>
-            <Text style={styles.playerDetail}>
-              Batting {batterIndex + 1} in the order
-            </Text>
-          </View>
-        </View>
-        {!largeText && (
+          )}
           <View
-            style={styles.field}
-            importantForAccessibility="no-hide-descendants"
-            accessibilityElementsHidden
+            style={[styles.team, styles.homeTeam, largeText && styles.column]}
           >
-            <Field bases={state.bases} height={fieldHeight} />
+            <Text style={styles.teamName}>Home</Text>
+            <Text style={styles.score}>{state.score.home}</Text>
           </View>
-        )}
-        <View style={styles.dock}>
-          <View style={[styles.dockHeading, largeText && styles.wrap]}>
-            <Text style={styles.dockTitle}>Record a pitch</Text>
-            <Text style={styles.hint}>
-              {saving ? 'Saving…' : 'Tap to score'}
-            </Text>
-          </View>
-          <View style={[styles.mainButtons, largeText && styles.column]}>
-            {pitches
-              .filter((pitch) => pitch.main)
-              .map((pitch) => (
-                <Pressable
-                  key={pitch.result}
-                  testID={`pitch-${pitch.result}`}
-                  disabled={!enabled}
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: !enabled }}
-                  onPress={() => {
-                    void record({ kind: 'pitch', result: pitch.result });
-                  }}
-                  style={({ pressed }) => [
-                    styles.pitch,
-                    pitch.result === 'ball' ? styles.ball : styles.strike,
-                    (!enabled || pressed) && styles.pressed,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.pitchLabel,
-                      pitch.result === 'ball'
-                        ? styles.ballLabel
-                        : styles.strikeLabel,
-                    ]}
-                  >
-                    {pitch.label}
-                  </Text>
-                </Pressable>
-              ))}
-          </View>
-          <View style={[styles.secondaryButtons, largeText && styles.column]}>
-            {pitches
-              .filter((pitch) => !pitch.main)
-              .map((pitch) => (
-                <Pressable
-                  key={pitch.result}
-                  testID={`pitch-${pitch.result}`}
-                  disabled={!enabled}
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: !enabled }}
-                  onPress={() => {
-                    void record({ kind: 'pitch', result: pitch.result });
-                  }}
-                  style={({ pressed }) => [
-                    styles.secondary,
-                    (!enabled || pressed) && styles.pressed,
-                  ]}
-                >
-                  <Text style={styles.secondaryLabel}>{pitch.label}</Text>
-                </Pressable>
-              ))}
-          </View>
-          <View style={[styles.statusRow, largeText && styles.column]}>
-            <View style={styles.saveStatus} accessibilityLiveRegion="polite">
-              <Text style={styles.saved} testID="save-status">
-                {saving
-                  ? 'Saving on this phone…'
-                  : `${game.waitingPlays} ${game.waitingPlays === 1 ? 'play' : 'plays'} saved on this phone`}
-              </Text>
-              <Text style={styles.pending} testID="waiting-plays">
-                {game.waitingPlays} waiting to sync · Local demo
-              </Text>
-            </View>
+        </View>
+        <View style={[styles.count, largeText && styles.wrap]}>
+          <CountDots
+            label="balls"
+            value={state.count.balls}
+            total={4}
+            color="#147b55"
+          />
+          <CountDots
+            label="strikes"
+            value={state.count.strikes}
+            total={3}
+            color="#b17613"
+          />
+          <CountDots
+            label="outs"
+            value={state.outs}
+            total={3}
+            color="#b74640"
+          />
+        </View>
+        <Text
+          testID="score-summary"
+          accessibilityLiveRegion="polite"
+          style={styles.summary}
+        >
+          {summary}
+        </Text>
+      </View>
+      <View style={[styles.matchup, largeText && styles.column]}>
+        <View style={styles.playerCard}>
+          <Text style={styles.cardLabel}>
+            PITCHING · {pitchingSide.toUpperCase()}
+          </Text>
+          <Text style={styles.player}>
+            Pitcher #
+            {state.lineups[pitchingSide].findIndex(
+              (slot) => slot.player.id === pitcher?.id,
+            ) + 1}
+          </Text>
+          <Text style={styles.playerDetail} testID="pitch-total">
+            {pitcher ? (state.pitchCounts[pitcher.id] ?? 0) : 0} pitches
+          </Text>
+        </View>
+        <View style={styles.playerCard}>
+          <Text style={styles.cardLabel}>
+            BATTING · {battingSide.toUpperCase()}
+          </Text>
+          <Text style={styles.player}>Batter #{batterIndex + 1}</Text>
+          <Text style={styles.playerDetail}>
+            Batting {batterIndex + 1} in the order
+          </Text>
+        </View>
+      </View>
+      {!largeText && (
+        <View
+          style={styles.field}
+          importantForAccessibility="no-hide-descendants"
+          accessibilityElementsHidden
+        >
+          <Field bases={state.bases} height={fieldHeight} />
+        </View>
+      )}
+    </>
+  );
+  const dock = (
+    <View style={styles.dock}>
+      <View style={[styles.dockHeading, largeText && styles.wrap]}>
+        <Text style={styles.dockTitle}>Record a pitch</Text>
+        <Text style={styles.hint}>
+          {saving ? 'Saving…' : 'Tap to score'}
+        </Text>
+      </View>
+      <View style={[styles.mainButtons, largeText && styles.column]}>
+        {pitches
+          .filter((pitch) => pitch.main)
+          .map((pitch) => (
             <Pressable
-              testID="undo-play"
-              disabled={view.kind !== 'ready' || !game.canUndo}
+              key={pitch.result}
+              testID={`pitch-${pitch.result}`}
+              disabled={!enabled}
               accessibilityRole="button"
-              accessibilityLabel="Undo last pitch"
-              accessibilityState={{
-                disabled: view.kind !== 'ready' || !game.canUndo,
-              }}
+              accessibilityState={{ disabled: !enabled }}
               onPress={() => {
-                void record({ kind: 'undo' });
+                void record({ kind: 'pitch', result: pitch.result });
               }}
               style={({ pressed }) => [
-                styles.undo,
-                (!game.canUndo || saving || pressed) && styles.pressed,
+                styles.pitch,
+                pitch.result === 'ball' ? styles.ball : styles.strike,
+                (!enabled || pressed) && styles.pressed,
               ]}
             >
-              <Text style={styles.undoLabel}>↶ Undo</Text>
+              <Text
+                style={[
+                  styles.pitchLabel,
+                  pitch.result === 'ball'
+                    ? styles.ballLabel
+                    : styles.strikeLabel,
+                ]}
+              >
+                {pitch.label}
+              </Text>
             </Pressable>
-          </View>
-          {view.kind === 'ready' && view.message && (
-            <Text
-              testID="action-message"
-              style={styles.feedback}
-              accessibilityLiveRegion="polite"
+          ))}
+      </View>
+      <View style={[styles.secondaryButtons, largeText && styles.column]}>
+        {pitches
+          .filter((pitch) => !pitch.main)
+          .map((pitch) => (
+            <Pressable
+              key={pitch.result}
+              testID={`pitch-${pitch.result}`}
+              disabled={!enabled}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !enabled }}
+              onPress={() => {
+                void record({ kind: 'pitch', result: pitch.result });
+              }}
+              style={({ pressed }) => [
+                styles.secondary,
+                (!enabled || pressed) && styles.pressed,
+              ]}
             >
-              {view.message}
-            </Text>
-          )}
-          <GameStatus />
+              <Text style={styles.secondaryLabel}>{pitch.label}</Text>
+            </Pressable>
+          ))}
+      </View>
+      <View style={[styles.statusRow, largeText && styles.column]}>
+        <View style={styles.saveStatus} accessibilityLiveRegion="polite">
+          <Text style={styles.saved} testID="save-status">
+            {saving
+              ? 'Saving on this phone…'
+              : `${game.waitingPlays} ${game.waitingPlays === 1 ? 'play' : 'plays'} saved on this phone`}
+          </Text>
+          <Text style={styles.pending} testID="waiting-plays">
+            {game.waitingPlays} waiting to sync · Local demo
+          </Text>
         </View>
-      </ScrollView>
+        <Pressable
+          testID="undo-play"
+          disabled={view.kind !== 'ready' || !game.canUndo}
+          accessibilityRole="button"
+          accessibilityLabel="Undo last pitch"
+          accessibilityState={{
+            disabled: view.kind !== 'ready' || !game.canUndo,
+          }}
+          onPress={() => {
+            void record({ kind: 'undo' });
+          }}
+          style={({ pressed }) => [
+            styles.undo,
+            (!game.canUndo || saving || pressed) && styles.pressed,
+          ]}
+        >
+          <Text style={styles.undoLabel}>↶ Undo</Text>
+        </Pressable>
+      </View>
+      {view.kind === 'ready' && view.message && (
+        <Text
+          testID="action-message"
+          style={styles.feedback}
+          accessibilityLiveRegion="polite"
+        >
+          {view.message}
+        </Text>
+      )}
+      <GameStatus />
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      {largeText ? (
+        <ScrollView contentContainerStyle={styles.page}>
+          {gameContent}
+          {dock}
+        </ScrollView>
+      ) : (
+        <>
+          <ScrollView
+            testID="game-content"
+            style={styles.scrolling}
+            contentContainerStyle={styles.page}
+          >
+            {gameContent}
+          </ScrollView>
+          {dock}
+        </>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#fff' },
+  scrolling: { flex: 1 },
   page: { flexGrow: 1 },
   header: {
     paddingHorizontal: 18,
