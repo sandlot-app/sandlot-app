@@ -12,6 +12,14 @@ const store: Store = {
       from public.groups where game_id = ${gameId} and group_id = ${groupId}`;
     return row ?? null;
   },
+  async sessionEpoch(gameId, sessionId, userId) {
+    const [row] = await sql<{ epoch: number }[]>`
+      select s.epoch
+      from public.scoring_sessions s join public.games g on g.id = s.game_id
+      where s.id = ${sessionId} and s.game_id = ${gameId} and s.user_id = ${userId}
+        and s.epoch = g.lock_epoch`;
+    return row?.epoch ?? null;
+  },
   async getBase(gameId) {
     const [row] = await sql`select private.get_base(${gameId}) as base`;
     return row?.base ?? null;

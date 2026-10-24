@@ -52,6 +52,7 @@ The caller's identity comes from the sign-in token only, never from the request 
 3. Look up the group by `(game_id, group_id)`.
    - If the content hash and the user match, return the stored acknowledgment and stop.
    - If the hash or the user differs, return `id_conflict` and stop.
+   - If the group is not there, check that the request's session is this user's current session for the game and that its epoch matches the events' `lockEpoch`. If not, return `stale_session` and stop. A caller who does not hold scoring never reaches the engine. `commit_group` checks again under the lock.
 4. Call `get_base(game_id)`. It returns the pins, the revision, and every accepted event in one statement.
    - If the game's `engineVersion` pin differs from the server's `ENGINE_VERSION`, or its `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
 5. If the revision is not the group's first `seq` minus 1, look up the group again. If it is there now, apply the rule in step 3. If it is still missing, return `stale_revision`.
@@ -60,6 +61,8 @@ The caller's identity comes from the sign-in token only, never from the request 
 7. Call `commit_group(user_id, session_id, game_id, base_revision, events, new_state, content_hash)`. `new_state` is the state the engine returned in step 6. The handler computes `content_hash` in step 3.
 
 Step 3 comes before the engine on purpose. A retry after a lost response is a group the server already saved. Running it through the engine again would reject a play that is already accepted.
+
+The session check in step 3 comes before `get_base` because `sync-events` reads the game as the database owner. Without the check, a caller who does not hold scoring could learn a private game's state from the `reason` on a `rejected` response.
 
 Step 5 looks again because two identical requests can both miss the group in step 3. One commits first, and the other then sees a higher revision. Without the second lookup, that retry would get `stale_revision` and stop the phone's queue over a play the server already holds.
 

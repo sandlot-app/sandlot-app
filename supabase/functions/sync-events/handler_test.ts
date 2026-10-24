@@ -8,6 +8,7 @@ import { ENGINE_VERSION, EVENT_SCHEMA_VERSION } from '../../../packages/engine/s
 
 const GAME = '11111111-1111-1111-1111-111111111111';
 const SESSION = '22222222-2222-2222-2222-222222222222';
+const NEW_SESSION = '33333333-3333-3333-3333-333333333333';
 const USER = '00000000-0000-0000-0000-00000000000a';
 const OTHER_USER = '00000000-0000-0000-0000-00000000000b';
 
@@ -15,12 +16,14 @@ const sample = sampleHalfInning({ gameId: GAME as GameId, sessionId: SESSION as 
 const [awayLineup, homeLineup] = sample.map(({ events }) => events[0].command);
 const [awayLeadoff] = sampleSetup().roster.away;
 
-function request(seq = 1, group = 'g1', commands: Command[] = [awayLineup]): UploadRequest {
+function request(
+  seq = 1, group = 'g1', commands: Command[] = [awayLineup], { sessionId = SESSION, lockEpoch = 1 } = {},
+): UploadRequest {
   const parsed = parseUploadRequest({
     schemaVersion: EVENT_SCHEMA_VERSION,
-    sessionId: SESSION,
+    sessionId,
     events: commands.map((command, i) => ({
-      id: `e${seq + i}`, gameId: GAME, seq: seq + i, group, lockEpoch: 1, source: 'tap',
+      id: `e${seq + i}`, gameId: GAME, seq: seq + i, group, lockEpoch, source: 'tap',
       at: '2026-10-23T18:00:00.000Z', command,
     })),
   });
@@ -34,9 +37,16 @@ function memoryStore() {
   const base: Base = {
     engineVersion: ENGINE_VERSION, schemaVersion: EVENT_SCHEMA_VERSION, rules, setup, revision: 0, state: null, events: [],
   };
+  const session = { id: SESSION as string, userId: USER, epoch: 1 };
+  const reads = { base: 0 };
   const store: Store = {
     findGroup: (_gameId, groupId) => Promise.resolve(groups.get(groupId) ?? null),
-    getBase: () => Promise.resolve(structuredClone(base)),
+    sessionEpoch: (_gameId, sessionId, userId) =>
+      Promise.resolve(sessionId === session.id && userId === session.userId ? session.epoch : null),
+    getBase: () => {
+      reads.base++;
+      return Promise.resolve(structuredClone(base));
+    },
     commitGroup: (commit) => {
       const groupId = commit.events[0].group;
       const saved = groups.get(groupId);
@@ -57,8 +67,12 @@ function memoryStore() {
       return Promise.resolve({ ok: true, revision: base.revision });
     },
   };
-  return { store, groups, base };
+  return { store, groups, base, session, reads };
 }
+
+const takeOver = ({ session }: ReturnType<typeof memoryStore>, userId: string) => {
+  Object.assign(session, { id: NEW_SESSION, userId, epoch: session.epoch + 1 });
+};
 
 const stored = ({ groups, base }: ReturnType<typeof memoryStore>) => structuredClone({ groups: [...groups], base });
 
@@ -118,9 +132,17 @@ Deno.test('a concurrent upload with changed content returns id_conflict', async 
   deepStrictEqual(base.events, request().events);
 });
 
-Deno.test('a concurrent upload from another user returns id_conflict', async () => {
+Deno.test('a concurrent upload from a user who is not the scorer returns stale_session', async () => {
   const { outcomes, groups, base } = await race(OTHER_USER);
-  deepStrictEqual(outcomes, [{ ok: true, revision: 1 }, { ok: false, code: 'id_conflict' }]);
+  deepStrictEqual(outcomes, [{ ok: true, revision: 1 }, { ok: false, code: 'stale_session' }]);
+  strictEqual(groups.size, 1);
+  deepStrictEqual(base.events, request().events);
+});
+
+Deno.test('a saved group uploaded again by another user returns id_conflict', async () => {
+  const { store, groups, base } = memoryStore();
+  deepStrictEqual(await syncEvents(USER, request(), store), { ok: true, revision: 1 });
+  deepStrictEqual(await syncEvents(OTHER_USER, request(), store), { ok: false, code: 'id_conflict' });
   strictEqual(groups.size, 1);
   deepStrictEqual(base.events, request().events);
 });
@@ -241,6 +263,7 @@ Deno.test('a game pinned to a different schema version is unsupported_version', 
 Deno.test('malformed commands are invalid before any store access', async () => {
   const untouched: Store = {
     findGroup: () => Promise.reject(new Error('findGroup called')),
+    sessionEpoch: () => Promise.reject(new Error('sessionEpoch called')),
     getBase: () => Promise.reject(new Error('getBase called')),
     commitGroup: () => Promise.reject(new Error('commitGroup called')),
   };
@@ -280,6 +303,7 @@ Deno.test('saved retries retain hashes of unknown command and nested fields', as
 Deno.test('input the database cannot store is invalid before it reaches the database', async () => {
   const untouched: Store = {
     findGroup: () => Promise.reject(new Error('findGroup called')),
+    sessionEpoch: () => Promise.reject(new Error('sessionEpoch called')),
     getBase: () => Promise.reject(new Error('getBase called')),
     commitGroup: () => Promise.reject(new Error('commitGroup called')),
   };
@@ -375,6 +399,68 @@ Deno.test('an illegal group is rejected with the engine reason, stores nothing, 
     await sendAll(db.store, sample.slice(played));
     strictEqual(db.base.revision, sample.flatMap((r) => r.events).length, name);
   }
+});
+
+const runnerNotOnBase: Command[] = [{ kind: 'runner', event: 'stolen_base', runner: awayLeadoff, to: 2 }];
+const legalNext = sample[3].events.map((e) => e.command);
+
+const notTheScorer = [
+  { name: 'another user on the scorer session', userId: OTHER_USER },
+  { name: 'another user on a session of its own', userId: OTHER_USER, sessionId: NEW_SESSION },
+];
+const staleSession = [
+  { name: 'the scorer after another user took over', userId: USER, takeOverBy: OTHER_USER },
+  { name: 'the scorer on its old session after taking over again', userId: USER, takeOverBy: USER },
+  { name: 'the new scorer on the old lock epoch', userId: OTHER_USER, sessionId: NEW_SESSION, takeOverBy: OTHER_USER },
+];
+
+async function staleSessionBeforeTheEngine(
+  callers: { name: string; userId: string; sessionId?: string; takeOverBy?: string }[],
+  commands: Command[],
+) {
+  for (const { name, userId, sessionId, takeOverBy } of callers) {
+    const db = memoryStore();
+    await sendAll(db.store, sample.slice(0, 3));
+    if (takeOverBy) takeOver(db, takeOverBy);
+    const saved = stored(db);
+    const baseReads = db.reads.base;
+    deepStrictEqual(
+      await syncEvents(userId, request(db.base.revision + 1, 'next', commands, { sessionId }), db.store),
+      { ok: false, code: 'stale_session' },
+      name,
+    );
+    deepStrictEqual(stored(db), saved, name);
+    strictEqual(db.reads.base, baseReads, name);
+  }
+}
+
+Deno.test('a user who is not the scorer gets stale_session for an illegal play, with no engine reason', () =>
+  staleSessionBeforeTheEngine(notTheScorer, runnerNotOnBase));
+
+Deno.test('a stale session gets stale_session for an illegal play, with no engine reason', () =>
+  staleSessionBeforeTheEngine(staleSession, runnerNotOnBase));
+
+Deno.test('a caller who does not hold scoring gets stale_session for a legal play and nothing is saved', () =>
+  staleSessionBeforeTheEngine([...notTheScorer, ...staleSession], legalNext));
+
+Deno.test('an accepted group is acknowledged again to its scorer after a takeover', async () => {
+  const db = memoryStore();
+  await sendAll(db.store, sample.slice(0, 3));
+  takeOver(db, OTHER_USER);
+  const saved = stored(db);
+  const baseReads = db.reads.base;
+  deepStrictEqual(await syncEvents(USER, sample[2], db.store), { ok: true, revision: 3 });
+  deepStrictEqual(stored(db), saved);
+  strictEqual(db.reads.base, baseReads);
+});
+
+Deno.test('after a takeover the new session scores with the new lock epoch', async () => {
+  const db = memoryStore();
+  await sendAll(db.store, sample.slice(0, 3));
+  takeOver(db, OTHER_USER);
+  const next = request(4, 'next', legalNext, { sessionId: NEW_SESSION, lockEpoch: db.session.epoch });
+  deepStrictEqual(await syncEvents(OTHER_USER, next, db.store), { ok: true, revision: 4 });
+  strictEqual(db.groups.size, 4);
 });
 
 Deno.test('a game pinned to a different engine version is unsupported_version', async () => {

@@ -44,6 +44,7 @@ export type Base = {
 
 export type Store = {
   findGroup(gameId: string, groupId: string): Promise<StoredGroup | null>;
+  sessionEpoch(gameId: string, sessionId: string, userId: string): Promise<number | null>;
   getBase(gameId: string): Promise<Base | null>;
   commitGroup(commit: {
     userId: string;
@@ -93,6 +94,11 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
   // server already saved, and replaying it would reject an accepted play.
   const stored = await store.findGroup(first.gameId, first.group);
   if (stored) return savedOutcome(stored, userId, hash);
+
+  // Before the base on purpose: getBase reads as the database owner, so without this
+  // a caller who does not hold scoring could probe a private game through engine reasons.
+  const epoch = await store.sessionEpoch(first.gameId, sessionId, userId);
+  if (epoch === null || epoch !== first.lockEpoch) return { ok: false, code: 'stale_session' };
 
   const base = await store.getBase(first.gameId);
   if (!base) return { ok: false, code: 'invalid' };
