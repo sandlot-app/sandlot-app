@@ -1,0 +1,25 @@
+name: Demo scratch that restores the whole single including the pitch and scoring advance
+cite: Sandlot whole-play undo contract, docs/contract.md Undo; scoring from Official Baseball Rules 5.08(a) and 9.06(a), https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  count: { balls: 2, strikes: 1, pitches: 3 }
+  bases:
+    2: { player: { kind: opponent, id: away-9 }, chargedTo: { kind: player, id: home-1 } }
+  pitchCounts: { home-1: 64, away-1: 0 }
+when:
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: single
+      trajectory: line
+      fielders: [LF]
+      advances: [{ runner: { kind: opponent, id: away-9 }, to: home }]
+  - - { kind: undo, target: play-1 }
+then:
+  count: { balls: 2, strikes: 1, pitches: 3 }
+  bases:
+    2: { player: { kind: opponent, id: away-9 }, chargedTo: { kind: player, id: home-1 } }
+  score: { home: 0, away: 0 }
+  nextBatter: { home: 0, away: 0 }
+  pitchCounts: { home-1: 64, away-1: 0 }
+  alerts: []
