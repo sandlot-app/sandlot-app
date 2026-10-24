@@ -35,7 +35,7 @@ type UploadRequest = { schemaVersion: typeof EVENT_SCHEMA_VERSION; sessionId: Se
 
 The server reads the game, the group, and the expected revision from the events. The parser rejects a request unless all of these hold:
 
-- `schemaVersion` is the engine's `EVENT_SCHEMA_VERSION`. The parser checks this first. A missing or different value returns `unsupported_version`, not `invalid`, before the parser reads the session, the events, or any command.
+- `schemaVersion` is the engine's `EVENT_SCHEMA_VERSION`. The parser first checks the envelope that every schema version shares: the body is an object, `sessionId` is non-empty text, and `events` is a non-empty array. A body that fails this returns `invalid`. The parser then checks `schemaVersion`. A missing or different value returns `unsupported_version`, not `invalid`, before the parser checks the session ID format, the event count, any event, or any command.
 - Every event has the same `gameId`, `group`, and `lockEpoch`.
 - The `seq` values are consecutive.
 - No event ID appears twice.

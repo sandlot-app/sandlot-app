@@ -167,13 +167,13 @@ function parseEvent(value: unknown): Event | null {
 
 /**
  * Checks wire shape and play consistency. Game legality belongs to the engine.
- * The schema version is checked first, because a body in another event format cannot be read by the rest of this parser.
+ * Only the envelope every schema version shares is read before the version check,
+ * because a body in another event format cannot be read by the rest of this parser.
  */
 export function parseUploadRequest(body: unknown): ParsedUpload {
-  if (!isRecord(body)) return INVALID;
+  if (!isRecord(body) || !isText(body.sessionId) || !Array.isArray(body.events) || body.events.length < 1) return INVALID;
   if (body.schemaVersion !== EVENT_SCHEMA_VERSION) return { ok: false, code: 'unsupported_version' };
-  if (!isText(body.sessionId) || !UUID.test(body.sessionId) ||
-    !Array.isArray(body.events) || body.events.length < 1 || body.events.length > 20) return INVALID;
+  if (!UUID.test(body.sessionId) || body.events.length > 20) return INVALID;
   const events = parseArray(body.events, parseEvent);
   const first = events?.[0];
   if (!events || !first) return INVALID;

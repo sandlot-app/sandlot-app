@@ -232,27 +232,41 @@ describe('parseUploadRequest', () => {
 
   it('returns unsupported_version when schemaVersion is missing or not the current version', () => {
     expect(parseUploadRequest(changeField(upload(), ['schemaVersion'], false))).toEqual(unsupportedUpload);
-    for (const value of [0, 2, EVENT_SCHEMA_VERSION + 1, -1, 1.5, '1', null, true, [1], {}]) {
+    for (const value of [EVENT_SCHEMA_VERSION - 1, EVENT_SCHEMA_VERSION + 1, 0, -1, 1.5, String(EVENT_SCHEMA_VERSION), null, true, [EVENT_SCHEMA_VERSION], {}]) {
       expect(parseUploadRequest(changeField(upload(), ['schemaVersion'], true, value)), JSON.stringify(value)).toEqual(unsupportedUpload);
     }
-    expect(parseUploadRequest({})).toEqual(unsupportedUpload);
   });
 
-  it('checks schemaVersion before it reads the session, events or commands', () => {
+  it('checks schemaVersion before anything a schema version could change', () => {
     const malformed = [
       upload({ kind: 'nope' }),
       upload({ kind: 'pitch' }),
       upload(null),
       { ...upload(), sessionId: 'not-a-uuid' },
-      { ...upload(), events: 'events' },
-      { ...upload(), events: [] },
       { ...upload(), events: [null] },
+      withEvents(21),
     ];
     for (const body of malformed) {
       const name = JSON.stringify(body);
       expect(parseUploadRequest(changeField(body, ['schemaVersion'], false)), name).toEqual(unsupportedUpload);
       expect(parseUploadRequest({ ...body, schemaVersion: EVENT_SCHEMA_VERSION + 1 }), name).toEqual(unsupportedUpload);
       expect(parseUploadRequest({ ...body, schemaVersion: EVENT_SCHEMA_VERSION }), name).toEqual(invalidUpload);
+    }
+  });
+
+  it('returns invalid, not unsupported_version, for a body that is not an upload envelope', () => {
+    const notUploads = [
+      {},
+      changeField(upload(), ['sessionId'], false),
+      { ...upload(), sessionId: '' },
+      changeField(upload(), ['events'], false),
+      { ...upload(), events: 'events' },
+      { ...upload(), events: [] },
+    ];
+    for (const body of notUploads) {
+      const name = JSON.stringify(body);
+      expect(parseUploadRequest(changeField(body, ['schemaVersion'], false)), name).toEqual(invalidUpload);
+      expect(parseUploadRequest(changeField(body, ['schemaVersion'], true, EVENT_SCHEMA_VERSION + 1)), name).toEqual(invalidUpload);
     }
   });
 
