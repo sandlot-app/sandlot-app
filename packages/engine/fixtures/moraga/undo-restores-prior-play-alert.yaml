@@ -1,0 +1,30 @@
+name: Undo restores the alert raised by the active latest play
+cite: Moraga Mustang E.2, https://www.moragabaseball.org/pony-rules/; Pitch Smart ages 9-10; issue 10 65/75 alert
+  policy; Sandlot docs/contract.md Undo; issue 10 whole-play undo
+preset: moraga-mustang-first-half
+started: true
+given:
+  pitchCounts:
+    home-1: 64
+    away-1: 0
+when:
+  - - &a1
+      kind: pitch
+      result: foul
+  - - *a1
+  - - kind: undo
+      target: play-2
+then:
+  pitchCounts:
+    home-1: 65
+    away-1: 0
+  count:
+    balls: 0
+    strikes: 1
+    pitches: 1
+  alerts:
+    - kind: pitch_count_near_limit
+      pitcher:
+        kind: player
+        id: home-1
+      remaining: 10

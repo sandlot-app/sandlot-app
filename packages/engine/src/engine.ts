@@ -4,6 +4,7 @@ import type {
   GameControl,
   GameSetup,
   GameState,
+  GroupId,
   LineupSlot,
   PitchResult,
   PlayerRef,
@@ -17,6 +18,10 @@ export type RejectCode =
   | 'game_not_started'
   | 'game_already_started'
   | 'no_pitcher'
+  | 'undo_not_latest'
+  | 'cannot_undo_undo'
+  | 'nothing_to_undo'
+  | 'game_over'
   | 'runner_not_on_base'
   | 'base_occupied'
   | 'invalid_runner_destination'
@@ -61,31 +66,60 @@ export function applyGroup(setup: GameSetup, events: Event[], commands: Command[
 
 /** `replay` from a given state instead of the start. Fixtures use it to begin mid-game; the app and server never do. */
 export function replayFrom(setup: GameSetup, from: GameState, events: Event[]): ApplyResult {
-  let state = from;
-  for (const play of plays(events)) {
-    const result = applyPlay(setup, state, play);
-    if (!result.ok) return result;
-    state = result.state;
-  }
-  return { ok: true, state };
+  return foldHistory(setup, from, events);
 }
 
 /** `applyGroup` from a given state instead of the start. Fixtures use it to begin mid-game; the app and server never do. */
 export function applyGroupFrom(setup: GameSetup, from: GameState, events: Event[], commands: Command[]): ApplyResult {
-  const replayed = replayFrom(setup, from, events);
-  return replayed.ok ? applyPlay(setup, replayed.state, commands) : replayed;
+  return foldHistory(setup, from, events, commands);
 }
 
+type StoredPlay = { id: GroupId; commands: Command[] };
+
 /** Splits the event log into plays: each run of events sharing a group. */
-function plays(events: Event[]): Command[][] {
-  const result: Command[][] = [];
+function plays(events: Event[]): StoredPlay[] {
+  const result: StoredPlay[] = [];
   let group: Event['group'] | null = null;
   for (const event of events) {
-    if (event.group !== group) result.push([]);
+    if (event.group !== group) result.push({ id: event.group, commands: [] });
     group = event.group;
-    result[result.length - 1]!.push(event.command);
+    result[result.length - 1]!.commands.push(event.command);
   }
   return result;
+}
+
+function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending?: Command[]): ApplyResult {
+  let state = from;
+  const active: StoredPlay[] = [];
+  const undoGroups = new Set<GroupId>();
+
+  function next(commands: Command[]): ApplyResult {
+    const undo = commands.find((command) => command.kind === 'undo');
+    if (!undo) return applyPlay(setup, state, commands);
+    if (commands.length !== 1) return { ok: false, code: 'undo_not_latest' };
+    if (state.status === 'pregame') return { ok: false, code: 'game_not_started' };
+    if (undoGroups.has(undo.target)) return { ok: false, code: 'cannot_undo_undo' };
+    const latest = active.at(-1);
+    if (!latest) return { ok: false, code: 'nothing_to_undo' };
+    if (latest.id !== undo.target) return { ok: false, code: 'undo_not_latest' };
+    active.pop();
+    let restored = from;
+    for (const play of active) {
+      const result = applyPlay(setup, restored, play.commands);
+      if (!result.ok) return result;
+      restored = result.state;
+    }
+    return { ok: true, state: restored };
+  }
+
+  for (const play of plays(events)) {
+    const result = next(play.commands);
+    if (!result.ok) return result;
+    state = result.state;
+    if (play.commands[0]?.kind === 'undo') undoGroups.add(play.id);
+    else active.push(play);
+  }
+  return pending ? next(pending) : { ok: true, state };
 }
 
 function applyPlay(setup: GameSetup, state: GameState, commands: Command[]): ApplyResult {
@@ -95,6 +129,9 @@ function applyPlay(setup: GameSetup, state: GameState, commands: Command[]): App
   for (const command of commands) {
     const code = applyCommand(setup, game, command);
     if (code) return { ok: false, code };
+    if (game.status === 'in_progress' && game.half === 'bottom' && game.inning >= setup.rules.innings && game.score.home > game.score.away) {
+      game.status = 'final';
+    }
   }
   return { ok: true, state: game };
 }
@@ -115,8 +152,9 @@ function copy(state: GameState): GameState {
 }
 
 function applyCommand(setup: GameSetup, game: GameState, command: Command): RejectCode | null {
+  if (game.status === 'final') return 'game_over';
   if (!namedPlayers(command).every(({ player, side }) => onRoster(setup, player, side))) return 'unknown_player';
-  if (command.kind === 'game') return applyControl(game, command.control);
+  if (command.kind === 'game') return applyControl(setup, game, command.control);
   if (game.status === 'pregame') return 'game_not_started';
   switch (command.kind) {
     case 'pitch':
@@ -172,7 +210,7 @@ function moveRunner(setup: GameSetup, game: GameState, command: Extract<Command,
   return null;
 }
 
-function applyControl(game: GameState, control: GameControl): RejectCode | null {
+function applyControl(setup: GameSetup, game: GameState, control: GameControl): RejectCode | null {
   switch (control.kind) {
     case 'lineup_set':
       if (game.status !== 'pregame') return 'game_already_started';
@@ -190,8 +228,14 @@ function applyControl(game: GameState, control: GameControl): RejectCode | null 
       game.pitchCounts[away.id] ??= 0;
       return null;
     }
-    default:
-      return game.status === 'pregame' ? 'game_not_started' : 'not_implemented';
+    case 'end_half':
+      if (game.status === 'pregame') return 'game_not_started';
+      endHalf(setup, game);
+      return null;
+    case 'end_game':
+      if (game.status === 'pregame') return 'game_not_started';
+      game.status = 'final';
+      return null;
   }
 }
 
@@ -263,9 +307,18 @@ function endAtBat(setup: GameSetup, game: GameState) {
 
 function endHalf(setup: GameSetup, game: GameState) {
   game.outs = 0;
+  game.count = { ...setup.rules.startingCount, pitches: 0 };
   game.bases = {};
   game.runsThisHalf = 0;
-  game.count = { ...setup.rules.startingCount, pitches: 0 };
+  if (game.inning >= setup.rules.innings) {
+    const homeLeads = game.score.home > game.score.away;
+    const tied = game.score.home === game.score.away;
+    const lastInning = setup.rules.innings + (setup.rules.timeLimit?.extraInningsIfTiedBeforeLimit ?? 0);
+    if ((game.half === 'top' && homeLeads) || (game.half === 'bottom' && (!tied || game.inning >= lastInning))) {
+      game.status = 'final';
+      return;
+    }
+  }
   if (game.half === 'top') {
     game.half = 'bottom';
   } else {

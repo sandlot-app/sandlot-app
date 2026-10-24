@@ -104,9 +104,6 @@ describe('applyGroup', () => {
     [{ kind: 'runner', event: 'defensive_indifference', runner: away(1), to: 2 }],
     [{ kind: 'batter_out', reason: 'thrown_bat' }],
     [{ kind: 'substitution', side: 'home', change: { kind: 'defensive', in: home(2), position: 'SS' } }],
-    [{ kind: 'game', control: { kind: 'end_half', reason: 'manual' } }],
-    [{ kind: 'game', control: { kind: 'end_game', reason: 'called' } }],
-    [{ kind: 'undo', target: 'p-2' as GroupId }],
     [{ kind: 'correct', target: 'p-2' as GroupId, replacement: [] }],
   ];
   for (const commands of notYet) {

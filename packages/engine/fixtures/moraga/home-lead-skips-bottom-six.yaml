@@ -1,0 +1,27 @@
+name: A home lead after top six skips the bottom half
+cite: Moraga Mustang rules revised February 2024 D.16; 2026 Official Baseball Rules 7.01(e); issue 10 Game end and Game
+  status
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: top
+  outs: 2
+  count:
+    balls: 0
+    strikes: 2
+    pitches: 2
+  score:
+    home: 2
+    away: 1
+when:
+  - - kind: pitch
+      result: called_strike
+then:
+  status: final
+  inning: 6
+  half: top
+  count:
+    balls: 0
+    strikes: 0
+    pitches: 0

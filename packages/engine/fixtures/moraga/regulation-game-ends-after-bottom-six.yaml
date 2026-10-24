@@ -1,0 +1,19 @@
+name: The third out of bottom six ends a game with an away lead
+cite: Moraga Mustang rules revised February 2024 D.16; 2026 Official Baseball Rules 7.01(e)(2)
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: bottom
+  outs: 2
+  count: { balls: 1, strikes: 2, pitches: 3 }
+  score: { home: 1, away: 2 }
+when:
+  - [{ kind: pitch, result: swinging_strike }]
+then:
+  status: final
+  inning: 6
+  half: bottom
+  outs: 0
+  count: { balls: 0, strikes: 0, pitches: 0 }
+  bases: {}

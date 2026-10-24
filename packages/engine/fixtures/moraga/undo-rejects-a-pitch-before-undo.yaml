@@ -1,0 +1,13 @@
+name: A pitch cannot precede undo in the same play
+cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - kind: pitch
+      result: ball
+  - - kind: pitch
+      result: called_strike
+    - kind: undo
+      target: play-1
+then:
+  rejected: undo_not_latest

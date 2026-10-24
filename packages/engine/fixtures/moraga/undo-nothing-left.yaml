@@ -1,0 +1,13 @@
+name: Undo rejects when every play in the in-progress fixture history is already undone
+cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - kind: pitch
+      result: ball
+  - - kind: undo
+      target: play-1
+  - - kind: undo
+      target: play-1
+then:
+  rejected: nothing_to_undo
