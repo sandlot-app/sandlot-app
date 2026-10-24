@@ -88,8 +88,15 @@ cmd_launch() {
     log "creating simulator $SIM_NAME"
     udid=$(xcrun simctl create "$SIM_NAME" "$DEVICE_TYPE" "$(latest_ios_runtime)")
   fi
+  # Own the simulator only if this run booted it, so cleanup never shuts down or deletes a
+  # simulator another worktree's run is driving under the same name.
+  if [ "$(sim_state "$udid")" != "Booted" ]; then
+    xcrun simctl boot "$udid"
+    touch "$RUN/booted-by-us"
+  elif [ ! -f "$RUN/booted-by-us" ]; then
+    die "simulator $SIM_NAME is already booted by something else. Set SANDLOT_SIM_NAME and SANDLOT_METRO_PORT to your own values."
+  fi
   echo "$udid" >"$RUN/udid"
-  [ "$(sim_state "$udid")" = "Booted" ] || xcrun simctl boot "$udid"
   xcrun simctl bootstatus "$udid" -b >/dev/null
   log "simulator $SIM_NAME ($udid) booted"
 
@@ -149,6 +156,8 @@ cmd_drive() {
   local flow=${1:?usage: verify.sh drive <flow.yaml>} udid dir name status=0
   [ -f "$flow" ] || flow="$SKILL_DIR/flows/$flow"
   [ -f "$flow" ] || die "no flow at $1"
+  # Maestro runs from the evidence folder, so a relative path must be made absolute first.
+  flow="$(cd "$(dirname "$flow")" && pwd)/$(basename "$flow")"
   udid=$(cat "$RUN/udid" 2>/dev/null) || die "not launched. Run: verify.sh launch"
   name=$(basename "$flow" .yaml)
   dir=$(new_evidence_dir "$name")
@@ -186,10 +195,12 @@ cmd_cleanup() {
     pid=$(cat "$RUN/metro.listener.pid")
     [ "$(listener_pid || true)" = "$pid" ] && kill -TERM "$pid" 2>/dev/null || true
   fi
-  udid=$(sim_udid || true)
-  if [ -n "$udid" ]; then
+  if [ -f "$RUN/booted-by-us" ] && [ -f "$RUN/udid" ]; then
+    udid=$(cat "$RUN/udid")
     [ "$(sim_state "$udid")" = "Shutdown" ] || xcrun simctl shutdown "$udid" 2>/dev/null || true
     [ "${1:-}" = "--delete-sim" ] && xcrun simctl delete "$udid" && log "deleted simulator $SIM_NAME"
+  else
+    log "left simulator $SIM_NAME alone: this run did not boot it"
   fi
   rm -rf "$RUN"
   log "cleaned up. Evidence kept in $EVIDENCE_ROOT"

@@ -26,14 +26,14 @@ The script turns off Maestro and Expo telemetry for every command.
 
 Run `verify.sh launch`. It:
 
-1. Creates the `sandlot-verify` simulator (iPhone 17 Pro, newest iOS runtime) if it doesn't exist, and boots it.
+1. Creates the `sandlot-verify` simulator (iPhone 17 Pro, newest iOS runtime) if it doesn't exist, and boots it. If that simulator is already booted and this worktree's run didn't boot it, `launch` refuses, because another run (often another worktree) is driving it.
 2. Installs Expo Go from `~/.expo/ios-simulator-app-cache`. With no cached copy, it lets the Expo CLI download Expo Go, and refuses if any other simulator is booted, because the CLI installs on whichever one is booted.
 3. Starts Metro with `npx expo start --localhost --port 8091` in `apps/mobile`, in CI mode, and waits for `/status` to answer `packager-status:running`. It refuses to start if another process holds the port.
 4. Opens `exp://localhost:8091` in Expo Go and runs `flows/_ready.yaml`, which waits until the text `Sandlot` is on screen.
 
 Ready means the line `[verify] READY: Sandlot is on screen in sandlot-verify, Metro on port 8091`. A first launch on a new simulator can take several minutes while Expo Go downloads. Later launches take about two minutes, most of it Expo Go's slow first start after a boot. Each `drive` takes another two to three minutes, because Maestro starts a Java process and a driver app on the simulator every time. Run long commands in the background rather than under a short timeout.
 
-To run a second instance alongside the first, set both `SANDLOT_SIM_NAME` and `SANDLOT_METRO_PORT` to new values for every command of that run.
+To run a second instance alongside the first, such as an agent in another worktree, set both `SANDLOT_SIM_NAME` and `SANDLOT_METRO_PORT` to new values for every command of that run. Run state lives in each worktree's `.verify/run/`, but the simulator name and port are shared across the machine.
 
 ## Doctor
 
@@ -71,6 +71,6 @@ Proof standards:
 
 ## Cleanup
 
-Run `verify.sh cleanup`. It stops only the Metro process this skill started (by the PID it recorded), shuts down `sandlot-verify`, and removes `.verify/run/`. It never kills by process name. Evidence in `.verify/evidence/` stays. Add `--delete-sim` to delete the simulator too. The next `launch` recreates it.
+Run `verify.sh cleanup`. It stops only the Metro process this run started (by the PID it recorded), shuts down the simulator only if this run booted it, and removes `.verify/run/`. It never kills by process name and never touches a simulator it has no record of booting. Evidence in `.verify/evidence/` stays. Add `--delete-sim` to delete the simulator too, under the same rule. The next `launch` recreates it.
 
 Run cleanup after every failed attempt as well, so a broken run doesn't leave Metro holding port 8091.
