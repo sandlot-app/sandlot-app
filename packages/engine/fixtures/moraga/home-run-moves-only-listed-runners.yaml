@@ -1,0 +1,52 @@
+name: A home run derives the batter score and leaves an unlisted runner in place
+cite: Official Baseball Rules 5.06(a)(1), 5.09; parent spec 10 runner identity,
+  explicit destinations, atomic plays; ADR 0001
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter:
+    home: 0
+    away: 2
+  bases:
+    "2":
+      player:
+        kind: opponent
+        id: away-2
+      chargedTo:
+        kind: player
+        id: home-1
+    "3":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: home_run
+      trajectory: ground
+      fielders: []
+      advances:
+        - runner:
+            kind: opponent
+            id: away-1
+          to: home
+then:
+  bases:
+    "2":
+      player:
+        kind: opponent
+        id: away-2
+      chargedTo:
+        kind: player
+        id: home-1
+  score:
+    home: 0
+    away: 2
+  runsThisHalf: 2
+  nextBatter:
+    home: 0
+    away: 3

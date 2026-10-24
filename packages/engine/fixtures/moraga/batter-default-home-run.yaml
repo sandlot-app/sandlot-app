@@ -1,0 +1,29 @@
+name: The batter destination for home_run is home
+cite: Official Baseball Rules 9.06(a)
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: home_run
+      trajectory: null
+      fielders: []
+      advances: []
+then:
+  bases: {}
+  score:
+    home: 0
+    away: 1
+  outs: 0
+  nextBatter:
+    home: 0
+    away: 1
+  count:
+    balls: 0
+    strikes: 0
+    pitches: 0
+  pitchCounts:
+    home-1: 1
+    away-1: 0

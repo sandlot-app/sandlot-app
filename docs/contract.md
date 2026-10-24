@@ -1,8 +1,8 @@
 # Sync contract
 
-Last updated October 23, 2026. Christian Alcala.
+Last updated October 24, 2026. Christian Alcala.
 
-Status: agreed. Christian and Kevin signed off in PR 2, on the Event time section in PR 3, and on the duplicate recheck in handler steps 3 and 5 in PR 8.
+Status: agreed. Christian and Kevin signed off in PR 2, on the Event time section in PR 3, and on the duplicate recheck in handler steps 3 and 5 in PR 8. The schema-2 out classification below was agreed by [Kevin](https://github.com/sandlot-app/sandlot-app/issues/13#issuecomment-6381341472) and [Christian](https://github.com/sandlot-app/sandlot-app/issues/13#issuecomment-6381412333).
 
 This is how plays move from the scorer's phone to the server and on to the family live page. It answers the open questions in Kevin's backend design, on the `docs/backend-design` branch. When this file and another doc disagree, this file wins. Change it only when both Christian and Kevin agree.
 
@@ -10,7 +10,7 @@ This is how plays move from the scorer's phone to the server and on to the famil
 
 - Supabase Edge Functions run on Deno. Before PR 8, Deno could not load the engine: `deno run` failed with `Module not found .../src/types`, because the engine imports had no `.ts` extension. PR 8 switched the engine to `.ts` imports.
 - Nobody has tried `supabase functions deploy` with the engine yet. The engine sits outside `supabase/functions/`.
-- The engine's `apply` returns `not_implemented` for every command. `GameState` keeps no history of groups.
+- The pure engine applies plays through `applyGroup` and rebuilds state through `replay`. The first-connection handler still bypasses gameplay validation. Milestone 6 must connect it before full scoring sync.
 - Supabase anonymous users get the `authenticated` role, and their token carries `is_anonymous`. Realtime `postgres_changes` applies row-level security to `anon` when that role has a select grant. A new function in the `public` schema can be called by `anon` and `authenticated` through `/rest/v1/rpc` unless execute is revoked.
 
 ## Write path
@@ -99,11 +99,64 @@ The engine takes the event list rather than a cached state, because undo needs t
 
 The contract types and `parseUploadRequest` live in `packages/engine/src/contract.ts`. Engine imports use `.ts` extensions with `allowImportingTsExtensions`, so Deno, Metro, and Vitest load the same files. `tsconfig.base.json` already sets `noEmit`, which that option requires.
 
+## Ball-in-play outs and runs
+
+A ball in play holds an `in_play` pitch followed by its outcome in the same play. Every explicit out in `ball_in_play.advances` records its classification.
+
+```ts
+type OutType = 'force' | 'batter_before_first' | 'non_force';
+type Advance =
+	| { runner: PlayerRef; to: Exclude<Destination, 'out'>; outType?: never }
+	| { runner: PlayerRef; to: 'out'; outType: OutType };
+```
+
+| Value | Meaning |
+| --- | --- |
+| `force` | An existing runner is retired while still forced to advance. A tag of the runner can be a force out. |
+| `batter_before_first` | The current batter is retired before legally reaching first, including the ordinary caught-ball or ground-out default. |
+| `non_force` | An ordinary supported tag without a force. For the batter, this asserts that first was already legally reached. |
+
+The scorer records what happened. Starting bases alone cannot prove that a force remained active after a runner touched the required base. The later scorer UI prefills the usual classification from the bases and asks the parent when the answer could change whether a run counts. This issue adds no tap or voice UI.
+
+### Defaults, out order, and crossings
+
+- Single, double, ground-rule double, triple, and home run keep their batter destinations. Error and fielder's choice put the batter on first unless listed.
+- Out, sacrifice fly, and sacrifice bunt put an omitted batter out with `batter_before_first`. That implied out occurs before explicit outs. To record another classification or order, list the batter explicitly. Mustang still rejects bunts.
+- Double and triple plays require an explicit batter destination and exactly two or three outs.
+- Explicit outs occur in `advances` array order. Safe destinations describe final bases, not intermediate touches or timing.
+- A home entry asserts an eligible crossing before the third out, if any. Omit crossings after the third out. `Event.at` does not establish timing within a play.
+- Under [OBR 5.08(a) and 5.09(b)(6)](https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf), a third out classified as `force` or `batter_before_first` suppresses every run on that play. Otherwise eligible home entries count. An earlier force out alone does not suppress a run on a later non-force third out.
+- In the home half of the last regulation inning or an extra inning, an ordinary walkoff counts only the runs needed to take the lead. A `home_run` retains all eligible runs under the out-of-field home-run exception. Third-out suppression still applies. See OBR 7.01(e)(3) and 9.06(f) and (g).
+
+For example, begin with two outs and runners R1 on first and R3 on third. On a fielder's choice, the batter reaches first and R3 crosses home before R1 is retired.
+
+| R1's out | Recorded classification | Runs |
+| --- | --- | --- |
+| R1 is retired while forced toward second | `force` | 0 |
+| R1 touches second, then is tagged after oversliding or continuing toward third | `non_force` | 1 |
+
+Likewise, with two outs and R3 crossing before the batter's out on an error, `batter_before_first` suppresses the run. A batter who reaches first and is tagged trying for second uses `non_force`, and the earlier run counts.
+
+### Validation and hashing
+
+`parseUploadRequest` requires a valid `outType` on explicit outs and forbids the field on safe destinations. Missing, null, or unknown values produce `invalid`, including inside nested correction replacements. The parser preserves recorded classifications and never inserts uploaded defaults.
+
+The engine rejects contradictory classifications with `invalid_out_type`. `batter_before_first` can name only the current batter. `force` can name only an existing runner whose starting occupancy and prior trailing outs permit a force. A prior trailing out removes force eligibility for runners ahead. An initially forced runner may use `non_force` to assert a tag after reaching the required base. A credited hit cannot accompany `force` or `batter_before_first` under OBR 9.05. The engine does not invent missing base-touch history.
+
+Roster, active-runner, duplicate-runner, collision, and out-count checks remain. A rejection discards the whole play, including the in-play pitch, pitch counts, and threshold alerts. When milestone 6 enables gameplay validation, it maps these rejections to the existing `rejected` response with HTTP 422.
+
+The hash includes `outType`. Identical retries return the stored acknowledgment. A changed classification with the same accepted group ID returns `id_conflict`. Storage preserves the field without a database migration, as Kevin confirmed. IDs, event numbering, timestamps, and the commit transaction remain unchanged.
+
+Missed-base appeals, advantageous fourth outs, interference, and other special rulings remain unsupported. They cannot be represented by calling them `non_force`.
+
 ## Version pins
 
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
-- The engine exports `ENGINE_VERSION` and `EVENT_SCHEMA_VERSION`. CI fails if fixture results change and `ENGINE_VERSION` does not.
-- The server refuses to write to a game pinned to a different engine version and returns `unsupported_version`. The phone reads the pins when it opens a game. If they do not match its own engine, it does not score the game.
+- This change exports `EVENT_SCHEMA_VERSION = 2` and the intermediate `ENGINE_VERSION = '0.1.0-alpha.1'`. Issue #16 supplies the final `0.1.0` release and fixture-result lock. That CI lock is not implemented by #13.
+- Milestone 6 requires the server to return `unsupported_version` for incompatible pins and the phone to refuse scoring under mismatched pins. The current first-connection handler does not enforce that gate.
+- Joint decision #13 uses schema 2 without an old-request decoder. Existing stored games are first-connection test games. The existing reset workflow must clear those test games before the next full scoring and sync rehearsal. Targets and execution are tracked in [#21](https://github.com/sandlot-app/sandlot-app/issues/21). This local change performs no hosted reset or deployment.
+- Do not rewrite historical events, hashes, or immutable pins. An old offline request retains its original content.
+- #21 separately adds a mandatory request-level `schemaVersion` and checks it before command parsing, returning `unsupported_version` for old formats. The current `UploadRequest` above has no such field or gate. Until #21 lands, a malformed old out can return `invalid`. No automatic compatibility machinery or production scoring is enabled here.
 
 ## Undo
 
@@ -166,9 +219,9 @@ This test proves the connection works. It does not finish milestone 6.
 1. Deploy a function that imports `ENGINE_VERSION` from the engine and returns it. If the deploy fails, fix that before anything else.
 2. Christian switches the engine to `.ts` imports. `pnpm -s --filter @sandlot/engine sample-events --game <id> --session <id>` prints a half-inning as `UploadRequest[]`, using the IDs from `supabase/scripts/seed-test-game.sql`. The same arguments always print the same requests.
 3. Kevin adds the tables, `commit_group`, `get_base`, the row-level security policies, Realtime on `games`, and `sync-events`.
-4. The engine has no game logic yet, so `sync-events` skips the engine step for now. A milestone 6 test requires the engine step, so this shortcut cannot reach the demo.
+4. The first-connection `sync-events` still skips the engine step. A milestone 6 test requires the engine step, so this shortcut cannot reach the demo.
 5. Kevin's `send-samples` script signs in, posts each sample request in order to `sync-events`, and prints each response. Christian runs it twice. The second run returns the same acknowledgments and adds no rows. Kevin's page shows each play once.
-6. When milestone 3 lands, delete the test games.
+6. Before the full scoring and sync rehearsal, clear the first-connection test games through the existing reset workflow, coordinated in #21. No old-event migration is supported.
 
 ## Process
 

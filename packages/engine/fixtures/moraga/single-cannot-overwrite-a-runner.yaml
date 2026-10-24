@@ -1,0 +1,13 @@
+name: A single cannot overwrite an unlisted runner on first
+cite: Official Baseball Rules 5.06(a)(1) https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter: { home: 0, away: 1 }
+  bases:
+    1: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - - { kind: pitch, result: in_play }
+    - { kind: ball_in_play, outcome: single, trajectory: line, fielders: [LF], advances: [] }
+then:
+  rejected: base_occupied

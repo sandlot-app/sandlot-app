@@ -56,6 +56,42 @@ describe('applyGroup', () => {
     expect(started).toEqual(before);
   });
 
+  it('discards the pitch, bases and batting order when a later outcome in the play collides', () => {
+    const before = structuredClone(started);
+    const single: Command = { kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] };
+    const inPlay: Command = { kind: 'pitch', result: 'in_play' };
+    expect(applyGroup(setup, started, [inPlay, single, inPlay, single]))
+      .toEqual({ ok: false, code: 'base_occupied' });
+    expect(started).toEqual(before);
+    const accepted = applyGroup(setup, started, [inPlay, single]);
+    expect(accepted.ok && {
+      bases: accepted.state.bases,
+      nextBatter: accepted.state.nextBatter,
+      pitchCounts: accepted.state.pitchCounts,
+    }).toEqual({
+      bases: { 1: { player: away(1), chargedTo: home(1) } },
+      nextBatter: { home: 0, away: 1 },
+      pitchCounts: { 'home-1': 1, 'away-1': 0 },
+    });
+  });
+
+  it('rolls back a complete outcome when its play ends on another unresolved in-play pitch', () => {
+    const single: Command = { kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] };
+    const inPlay: Command = { kind: 'pitch', result: 'in_play' };
+    expect(applyGroup(setup, started, [inPlay, single, inPlay]))
+      .toEqual({ ok: false, code: 'in_play_needs_outcome' });
+    const original = replay(setup, started);
+    expect(original.ok && original.state.bases).toEqual({});
+    expect(original.ok && original.state.pitchCounts).toEqual({ 'home-1': 0, 'away-1': 0 });
+  });
+
+  it('refuses an unresolved stored play before an outcome in a later play', () => {
+    expect(replay(setup, started.concat(events([
+      [{ kind: 'pitch', result: 'in_play' }],
+      [{ kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] }],
+    ])))).toEqual({ ok: false, code: 'in_play_needs_outcome' });
+  });
+
   it('rejects a stored play that breaks the rules when replaying', () => {
     expect(replay(setup, events([[{ kind: 'pitch', result: 'ball' }]]))).toEqual({ ok: false, code: 'game_not_started' });
   });
@@ -99,8 +135,6 @@ describe('applyGroup', () => {
   });
 
   const notYet: Command[][] = [
-    [{ kind: 'pitch', result: 'in_play' }],
-    [{ kind: 'pitch', result: 'in_play' }, { kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] }],
     [{ kind: 'runner', event: 'defensive_indifference', runner: away(1), to: 2 }],
     [{ kind: 'batter_out', reason: 'thrown_bat' }],
     [{ kind: 'substitution', side: 'home', change: { kind: 'defensive', in: home(2), position: 'SS' } }],

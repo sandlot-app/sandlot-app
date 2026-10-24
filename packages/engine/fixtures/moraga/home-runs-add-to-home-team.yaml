@@ -1,0 +1,25 @@
+name: A bottom-half home run adds only to the home score
+cite: Official Baseball Rules 5.06(a)(1), 5.09; parent spec 10 runner identity,
+  explicit destinations, atomic plays; ADR 0001
+preset: moraga-mustang-first-half
+started: true
+given:
+  half: bottom
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: home_run
+      trajectory: ground
+      fielders: []
+      advances: []
+then:
+  score:
+    home: 1
+    away: 0
+  nextBatter:
+    home: 1
+    away: 0
+  pitchCounts:
+    home-1: 0
+    away-1: 1

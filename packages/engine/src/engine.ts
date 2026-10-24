@@ -1,11 +1,15 @@
 import type {
+  BallInPlayOutcome,
+  Base,
   Command,
+  Destination,
   Event,
   GameControl,
   GameSetup,
   GameState,
   GroupId,
   LineupSlot,
+  OutType,
   PitchResult,
   PlayerRef,
   Runner,
@@ -18,12 +22,18 @@ export type RejectCode =
   | 'game_not_started'
   | 'game_already_started'
   | 'no_pitcher'
+  | 'ball_in_play_needs_pitch'
+  | 'in_play_needs_outcome'
+  | 'base_occupied'
+  | 'runner_not_on_base'
+  | 'duplicate_runner'
+  | 'batter_destination_missing'
+  | 'outs_dont_match_outcome'
+  | 'invalid_out_type'
   | 'undo_not_latest'
   | 'cannot_undo_undo'
   | 'nothing_to_undo'
   | 'game_over'
-  | 'runner_not_on_base'
-  | 'base_occupied'
   | 'invalid_runner_destination'
   | 'stealing_home_not_allowed'
   | 'balks_not_allowed'
@@ -126,13 +136,20 @@ function applyPlay(setup: GameSetup, state: GameState, commands: Command[]): App
   // Commands change this copy in place. A rejection throws the copy away, so nothing from the play is kept.
   const game = copy(state);
   game.alerts = [];
+  let needsOutcome = false;
   for (const command of commands) {
+    if (needsOutcome && command.kind !== 'ball_in_play') return { ok: false, code: 'in_play_needs_outcome' };
+    if (game.status === 'in_progress' && command.kind === 'ball_in_play' && !needsOutcome) {
+      return { ok: false, code: 'ball_in_play_needs_pitch' };
+    }
     const code = applyCommand(setup, game, command);
     if (code) return { ok: false, code };
+    needsOutcome = command.kind === 'pitch' && command.result === 'in_play';
     if (game.status === 'in_progress' && game.half === 'bottom' && game.inning >= setup.rules.innings && game.score.home > game.score.away) {
       game.status = 'final';
     }
   }
+  if (needsOutcome) return { ok: false, code: 'in_play_needs_outcome' };
   return { ok: true, state: game };
 }
 
@@ -159,6 +176,8 @@ function applyCommand(setup: GameSetup, game: GameState, command: Command): Reje
   switch (command.kind) {
     case 'pitch':
       return pitch(setup, game, command.result);
+    case 'ball_in_play':
+      return ballInPlay(setup, game, command);
     case 'runner':
       return moveRunner(setup, game, command);
     case 'substitution':
@@ -240,7 +259,6 @@ function applyControl(setup: GameSetup, game: GameState, control: GameControl): 
 }
 
 function pitch(setup: GameSetup, game: GameState, result: PitchResult): RejectCode | null {
-  if (result === 'in_play') return 'not_implemented';
   const pitcher = game.pitchers[fielding(game)];
   if (!pitcher) return 'no_pitcher';
   game.pitchCounts[pitcher.id] = (game.pitchCounts[pitcher.id] ?? 0) + 1;
@@ -274,6 +292,106 @@ function pitch(setup: GameSetup, game: GameState, result: PitchResult): RejectCo
 function strike(setup: GameSetup, game: GameState) {
   game.count.strikes += 1;
   if (game.count.strikes === 3) batterOut(setup, game);
+}
+
+const batterDestinations: Record<BallInPlayOutcome, Destination | null> = {
+  single: 1,
+  double: 2,
+  ground_rule_double: 2,
+  triple: 3,
+  home_run: 'home',
+  out: 'out',
+  sacrifice_fly: 'out',
+  sacrifice_bunt: 'out',
+  error: 1,
+  fielders_choice: 1,
+  double_play: null,
+  triple_play: null,
+};
+
+type PlannedAdvance = { from: 0 | Base; runner: Runner } & (
+  | { to: Exclude<Destination, 'out'>; outType?: never }
+  | { to: 'out'; outType: OutType }
+);
+
+type BallInPlayPlan = { bases: GameState['bases']; runs: number; totalOuts: number };
+
+function ballInPlay(setup: GameSetup, game: GameState, command: Extract<Command, { kind: 'ball_in_play' }>): RejectCode | null {
+  if (!setup.rules.bunting && (command.trajectory === 'bunt' || command.outcome === 'sacrifice_bunt')) return 'bunting_not_allowed';
+  const plan = planBallInPlay(game, command);
+  if (typeof plan === 'string') return plan;
+  game.bases = plan.bases;
+  const runs = game.half === 'bottom' && game.inning >= setup.rules.innings && command.outcome !== 'home_run'
+    ? Math.min(plan.runs, game.score.away - game.score.home + 1)
+    : plan.runs;
+  for (let run = 0; run < runs; run++) scoreRun(game);
+  endAtBat(setup, game);
+  if (plan.totalOuts >= 3) endHalf(setup, game);
+  else game.outs = plan.totalOuts as GameState['outs'];
+  return null;
+}
+
+function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball_in_play' }>): BallInPlayPlan | RejectCode {
+  const batter: Runner = { player: batterUp(game), chargedTo: game.pitchers[fielding(game)]! };
+  const active: { from: 0 | Base; runner: Runner }[] = [{ from: 0, runner: batter }];
+  for (const from of [1, 2, 3] as const) {
+    const runner = game.bases[from];
+    if (runner) active.push({ from, runner });
+  }
+  const destinations: PlannedAdvance[] = [];
+  if (!command.advances.some((advance) => samePlayer(advance.runner, batter.player))) {
+    const to = batterDestinations[command.outcome];
+    if (to === null) return 'batter_destination_missing';
+    destinations.push(to === 'out'
+      ? { from: 0, runner: batter, to, outType: 'batter_before_first' }
+      : { from: 0, runner: batter, to });
+  }
+  const seen = new Set<string>();
+  for (const advance of command.advances) {
+    const key = `${advance.runner.kind}:${advance.runner.id}`;
+    if (seen.has(key)) return 'duplicate_runner';
+    seen.add(key);
+    const source = active.find(({ runner }) => samePlayer(runner.player, advance.runner));
+    if (!source) return 'runner_not_on_base';
+    destinations.push({ ...advance, ...source });
+  }
+  const recordedOuts = destinations.filter(({ to }) => to === 'out').length;
+  const expectedOuts = command.outcome === 'double_play' ? 2 : command.outcome === 'triple_play' ? 3 : null;
+  if (expectedOuts !== null && recordedOuts !== expectedOuts) return 'outs_dont_match_outcome';
+  const bases = { ...game.bases };
+  for (const { from } of destinations) {
+    if (from !== 0) delete bases[from];
+  }
+  for (const { runner, to } of destinations) {
+    if (typeof to === 'number') {
+      if (bases[to]) return 'base_occupied';
+      bases[to] = runner;
+    }
+  }
+  let forceThrough = 0;
+  for (const base of [1, 2, 3] as const) {
+    if (!game.bases[base]) break;
+    forceThrough = base;
+  }
+  let totalOuts: number = game.outs;
+  let thirdOutPreventsRuns = false;
+  const hitRecorded = ['single', 'double', 'ground_rule_double', 'triple', 'home_run'].includes(command.outcome);
+  for (const advance of destinations) {
+    if (advance.to !== 'out') continue;
+    const { from, outType } = advance;
+    if ((outType === 'batter_before_first' && from !== 0) ||
+      (outType === 'force' && (from === 0 || from > forceThrough)) ||
+      (hitRecorded && outType !== 'non_force')) return 'invalid_out_type';
+    totalOuts += 1;
+    if (totalOuts === 3) thirdOutPreventsRuns = outType !== 'non_force';
+    forceThrough = Math.min(forceThrough, from - 1);
+  }
+  const runs = thirdOutPreventsRuns ? 0 : destinations.filter(({ to }) => to === 'home').length;
+  return { bases, runs, totalOuts };
+}
+
+function samePlayer(a: PlayerRef, b: PlayerRef): boolean {
+  return a.kind === b.kind && a.id === b.id;
 }
 
 /** Puts the batter on first. Each runner forced off a base moves up one, and a runner forced off third scores. */

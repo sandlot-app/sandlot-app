@@ -1,0 +1,16 @@
+name: A single puts the batter on first and starts the next at-bat
+cite: Official Baseball Rules 9.06(a); Moraga Mustang Rules C.1 https://www.moragabaseball.org/pony-rules/
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: ball }]
+  - - { kind: pitch, result: in_play }
+    - { kind: ball_in_play, outcome: single, trajectory: line, fielders: [LF], advances: [] }
+then:
+  bases:
+    1: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+  count: { balls: 0, strikes: 0, pitches: 0 }
+  outs: 0
+  score: { home: 0, away: 0 }
+  nextBatter: { home: 0, away: 1 }
+  pitchCounts: { home-1: 2, away-1: 0 }

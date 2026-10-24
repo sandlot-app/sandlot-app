@@ -58,7 +58,13 @@ function parsePlayerRef(value: unknown): PlayerRef | null {
 function parseAdvance(value: unknown): Advance | null {
   if (!isRecord(value) || !isOneOf(value.to, DESTINATIONS)) return null;
   const runner = parsePlayerRef(value.runner);
-  return runner ? { ...value, runner, to: value.to } : null;
+  if (!runner) return null;
+  if (value.to === 'out') {
+    return isOneOf(value.outType, ['force', 'batter_before_first', 'non_force'])
+      ? { ...value, runner, to: 'out', outType: value.outType }
+      : null;
+  }
+  return 'outType' in value ? null : { ...value, runner, to: value.to };
 }
 
 function parseSubstitution(value: unknown): Substitution | null {

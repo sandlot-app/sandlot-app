@@ -1,0 +1,49 @@
+name: double_play requires the batter destination
+cite: Official Baseball Rules 9.11; Definitions of Terms, Double Play and Triple
+  Play; parent spec 10 explicit batter and exact out totals
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter:
+    home: 0
+    away: 3
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-3
+      chargedTo:
+        kind: player
+        id: home-1
+    "2":
+      player:
+        kind: opponent
+        id: away-2
+      chargedTo:
+        kind: player
+        id: home-1
+    "3":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: double_play
+      trajectory: ground
+      fielders:
+        - SS
+        - 2B
+        - 1B
+      advances:
+        - runner:
+            kind: opponent
+            id: away-3
+          to: out
+          outType: force
+then:
+  rejected: batter_destination_missing
