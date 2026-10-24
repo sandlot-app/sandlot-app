@@ -7,6 +7,8 @@ export type SqlConnection = {
 };
 
 export type SqlDatabase = SqlConnection & {
-  transaction(task: (connection: SqlConnection) => Promise<void>): Promise<void>;
+  transaction(
+    task: (connection: SqlConnection) => Promise<void>,
+  ): Promise<void>;
   close(): Promise<void>;
 };

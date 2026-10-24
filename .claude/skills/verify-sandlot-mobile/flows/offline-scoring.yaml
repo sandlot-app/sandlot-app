@@ -1,0 +1,104 @@
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+- assertVisible:
+    id: "pitch-ball"
+    enabled: true
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- takeScreenshot: offline-before-pitch
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 1} waiting to sync · Local demo"
+    timeout: 15000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText !== output.before}
+- copyTextFrom:
+    id: "waiting-plays"
+- assertTrue: ${parseInt(maestro.copiedText, 10) === output.waiting + 1}
+- takeScreenshot: offline-saved-pitch
+- tapOn:
+    id: "undo-play"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 2} waiting to sync · Local demo"
+    timeout: 15000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText === output.before}
+- copyTextFrom:
+    id: "waiting-plays"
+- assertTrue: ${parseInt(maestro.copiedText, 10) === output.waiting + 2}
+- evalScript: ${output.afterWaiting = maestro.copiedText}
+- takeScreenshot: offline-undone-pitch
+- tapOn:
+    id: "games-navigation"
+- takeScreenshot: offline-saved-game-list
+- tapOn:
+    id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText === output.before}
+- copyTextFrom:
+    id: "waiting-plays"
+- assertTrue: ${maestro.copiedText === output.afterWaiting}
+- takeScreenshot: offline-reopened-game
+- stopApp
+- openLink: "exp://localhost:8091?__expo_disable_fab=1&__expo_disable_auto_launch=1&__expo_disable_onboarding=1"
+- extendedWaitUntil:
+    visible:
+      id: "resume-game"
+    timeout: 90000
+- tapOn:
+    id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText === output.before}
+- copyTextFrom:
+    id: "waiting-plays"
+- assertTrue: ${maestro.copiedText === output.afterWaiting}
+- takeScreenshot: offline-after-app-relaunch
