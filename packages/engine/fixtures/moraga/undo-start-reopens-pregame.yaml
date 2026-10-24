@@ -1,0 +1,37 @@
+name: Undoing start restores the configured pregame
+cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+preset: moraga-mustang-first-half
+started: false
+when:
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: away
+        lineup: &a1
+          - player:
+              kind: opponent
+              id: away-1
+            position: P
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: home
+        lineup: &a2
+          - player:
+              kind: player
+              id: home-1
+            position: P
+  - - kind: game
+      control:
+        kind: start
+        umpireStart: 2026-10-25T17:00:00.000Z
+  - - kind: undo
+      target: play-3
+then:
+  status: pregame
+  umpireStart: null
+  pitchers: {}
+  pitchCounts: {}
+  lineups:
+    away: *a1
+    home: *a2

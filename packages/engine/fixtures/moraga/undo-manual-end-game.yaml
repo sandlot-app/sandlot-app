@@ -1,0 +1,19 @@
+name: Undoing a called game reopens it and scoring can resume
+cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - kind: game
+      control:
+        kind: end_game
+        reason: called
+  - - kind: undo
+      target: play-1
+  - - kind: pitch
+      result: ball
+then:
+  status: in_progress
+  count:
+    balls: 1
+    strikes: 0
+    pitches: 1

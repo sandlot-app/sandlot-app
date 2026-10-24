@@ -1,0 +1,33 @@
+name: After undoing start the pregame restriction rejects another undo
+cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+preset: moraga-mustang-first-half
+started: false
+when:
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: away
+        lineup:
+          - player:
+              kind: opponent
+              id: away-1
+            position: P
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: home
+        lineup:
+          - player:
+              kind: player
+              id: home-1
+            position: P
+  - - kind: game
+      control:
+        kind: start
+        umpireStart: 2026-10-25T17:00:00.000Z
+  - - kind: undo
+      target: play-3
+  - - kind: undo
+      target: play-2
+then:
+  rejected: game_not_started

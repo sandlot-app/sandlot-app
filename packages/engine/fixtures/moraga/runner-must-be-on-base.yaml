@@ -1,0 +1,14 @@
+name: A roster player who is not on base cannot appear on second
+cite: Issue 10 runner-advance decision; Official Baseball Rules 5.06(a)(1)
+preset: moraga-mustang-first-half
+started: true
+given: {}
+when:
+  - - kind: runner
+      event: wild_pitch
+      runner:
+        kind: opponent
+        id: away-1
+      to: 2
+then:
+  rejected: runner_not_on_base

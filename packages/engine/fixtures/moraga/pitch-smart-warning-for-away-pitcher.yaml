@@ -1,0 +1,13 @@
+name: The visiting pitcher receives the same warning in the bottom half
+cite: Moraga Mustang E.2; Pitch Smart ages 9-10 daily max 75, https://www.mlb.com/pitch-smart/pitching-guidelines/ages-9-12; issue 10 warning policy
+preset: moraga-mustang-first-half
+started: true
+given:
+  half: bottom
+  pitchCounts: { home-1: 10, away-1: 64 }
+when:
+  - [{ kind: pitch, result: swinging_strike }]
+then:
+  pitchCounts: { home-1: 10, away-1: 65 }
+  alerts:
+    - { kind: pitch_count_near_limit, pitcher: { kind: opponent, id: away-1 }, remaining: 10 }

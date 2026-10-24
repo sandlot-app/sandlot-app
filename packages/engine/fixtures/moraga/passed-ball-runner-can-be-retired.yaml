@@ -1,0 +1,13 @@
+name: A runner thrown out advancing on a passed ball is retired
+cite: Official Baseball Rules 5.09(b)(4) and 9.13(b)
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    3: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - [{ kind: runner, event: passed_ball, runner: { kind: opponent, id: away-1 }, to: out }]
+then:
+  outs: 1
+  bases: {}
+  score: { home: 0, away: 0 }

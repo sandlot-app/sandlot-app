@@ -1,0 +1,22 @@
+name: pickoff must retire the runner
+cite: Official Baseball Rules 5.09(b)(4); issue 14 retirement event semantics
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: pickoff
+      runner:
+        kind: opponent
+        id: away-1
+      to: 2
+then:
+  rejected: invalid_runner_destination

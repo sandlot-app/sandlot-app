@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { applyGroupFrom } from '../src/engine.ts';
 import {
   applyGroup,
   presets,
@@ -86,8 +87,7 @@ describe('applyGroup', () => {
 
   it('refuses an unresolved stored play before an outcome in a later play', () => {
     expect(replay(setup, started.concat(events([
-      [{ kind: 'pitch', result: 'in_play' }],
-      [{ kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] }],
+        [{ kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] }],
     ])))).toEqual({ ok: false, code: 'in_play_needs_outcome' });
   });
 
@@ -95,13 +95,48 @@ describe('applyGroup', () => {
     expect(replay(setup, events([[{ kind: 'pitch', result: 'ball' }]]))).toEqual({ ok: false, code: 'game_not_started' });
   });
 
+  it('changes the pitcher without changing either batting lineup or place in the order', () => {
+    const before = replay(setup, started);
+    const after = applyGroup(setup, started, [{ kind: 'substitution', side: 'home', change: { kind: 'pitching_change', in: home(2) } }]);
+    expect(before.ok).toBe(true);
+    expect(after.ok).toBe(true);
+    if (!before.ok || !after.ok) return;
+    expect(after.state.lineups).toEqual(before.state.lineups);
+    expect(after.state.nextBatter).toEqual(before.state.nextBatter);
+    expect(after.state.pitchers.home).toEqual(home(2));
+  });
+
+  it('does not retain a pitching change or its removed-pitcher history when a later command fails', () => {
+    const opened = replay(setup, started);
+    expect(opened.ok).toBe(true);
+    if (!opened.ok) return;
+    const before = structuredClone(opened.state);
+    expect(applyGroupFrom(setup, opened.state, [], [
+      { kind: 'substitution', side: 'home', change: { kind: 'pitching_change', in: home(2) } },
+      { kind: 'runner', event: 'wild_pitch', runner: away(1), to: 2 },
+    ])).toEqual({ ok: false, code: 'runner_not_on_base' });
+    expect(opened.state).toEqual(before);
+    const resumed = applyGroupFrom(setup, opened.state, [], [{ kind: 'pitch', result: 'ball' }]);
+    expect(resumed.ok && resumed.state.pitchCounts).toEqual({ 'home-1': 1, 'away-1': 0 });
+  });
+
+  it('does not score or move a runner when a later command in the play fails', () => {
+    const walked = events([...started.map((event) => [event.command]), [{ kind: 'pitch', result: 'hit_by_pitch' }]]);
+    const opened = replay(setup, walked);
+    expect(opened.ok).toBe(true);
+    if (!opened.ok) return;
+    const before = structuredClone(opened.state);
+    expect(applyGroupFrom(setup, opened.state, [], [
+      { kind: 'runner', event: 'advance_on_error', runner: away(1), to: 'home' },
+      { kind: 'runner', event: 'wild_pitch', runner: away(1), to: 2 },
+    ])).toEqual({ ok: false, code: 'runner_not_on_base' });
+    expect(opened.state).toEqual(before);
+  });
+
   const notYet: Command[][] = [
-    [{ kind: 'runner', event: 'wild_pitch', runner: away(1), to: 2 }],
+    [{ kind: 'runner', event: 'defensive_indifference', runner: away(1), to: 2 }],
     [{ kind: 'batter_out', reason: 'thrown_bat' }],
-    [{ kind: 'substitution', side: 'home', change: { kind: 'pitching_change', in: home(2) } }],
-    [{ kind: 'game', control: { kind: 'end_half', reason: 'manual' } }],
-    [{ kind: 'game', control: { kind: 'end_game', reason: 'called' } }],
-    [{ kind: 'undo', target: 'p-2' as GroupId }],
+    [{ kind: 'substitution', side: 'home', change: { kind: 'defensive', in: home(2), position: 'SS' } }],
     [{ kind: 'correct', target: 'p-2' as GroupId, replacement: [] }],
   ];
   for (const commands of notYet) {

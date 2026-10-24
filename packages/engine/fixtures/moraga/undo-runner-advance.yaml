@@ -1,0 +1,14 @@
+name: Undo restores a runner move and its charged pitcher
+cite: Sandlot docs/contract.md Undo; Moraga Mustang D.1 and D.3, https://www.moragabaseball.org/pony-rules/
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    1: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - [{ kind: runner, event: stolen_base, runner: { kind: opponent, id: away-1 }, to: 2 }]
+  - [{ kind: undo, target: play-1 }]
+then:
+  bases:
+    1: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+  count: { balls: 0, strikes: 0, pitches: 0 }

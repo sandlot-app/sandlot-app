@@ -1,0 +1,13 @@
+name: An undo play cannot itself be undone
+cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - kind: pitch
+      result: ball
+  - - kind: undo
+      target: play-1
+  - - kind: undo
+      target: play-2
+then:
+  rejected: cannot_undo_undo

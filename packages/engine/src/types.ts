@@ -42,6 +42,7 @@ export type RuleSet = {
   /** Slowpitch: a foul with two strikes is an out. */
   foulWithTwoStrikesIsOut: boolean;
   stealing: 'none' | 'after_pitch_crosses_plate' | 'full';
+  stealingHome: 'passed_ball_only' | 'allowed';
   leadoffs: boolean;
   /** What happens when a runner leaves the base before the ball is hit, in divisions without stealing. */
   leavingEarly: 'allowed' | 'team_warning_then_out';
@@ -189,6 +190,7 @@ export type GameState = {
   /** Index into the batting side's lineup of the batter due up. */
   nextBatter: Record<TeamSide, number>;
   pitchers: Partial<Record<TeamSide, PlayerRef>>;
+  removedPitchers: Record<TeamSide, PlayerRef[]>;
   /** Pitches thrown, keyed by player or opponent ID. */
   pitchCounts: Record<string, number>;
   umpireStart: Timestamp | null;

@@ -1,0 +1,53 @@
+name: One play that crosses both thresholds retains both alerts
+cite: Moraga Mustang E.2; Pitch Smart ages 9-10 daily max 75,
+  https://www.mlb.com/pitch-smart/pitching-guidelines/ages-9-12; issue 10 alert
+  policy
+preset: moraga-mustang-first-half
+started: true
+given:
+  pitchCounts:
+    home-1: 64
+    away-1: 0
+  count:
+    balls: 0
+    strikes: 2
+    pitches: 2
+when:
+  - - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+then:
+  pitchCounts:
+    home-1: 76
+    away-1: 0
+  alerts:
+    - kind: pitch_count_near_limit
+      pitcher:
+        kind: player
+        id: home-1
+      remaining: 10
+    - kind: pitch_count_at_limit
+      pitcher:
+        kind: player
+        id: home-1
