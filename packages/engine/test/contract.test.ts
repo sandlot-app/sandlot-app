@@ -150,7 +150,7 @@ describe('parseUploadRequest', () => {
       { ...examples.ball_in_play, fielders: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'ROVER'] },
       ...['stolen_base', 'caught_stealing', 'pickoff', 'wild_pitch', 'passed_ball', 'balk', 'advance_on_error', 'defensive_indifference', 'left_early', 'missed_base'].map((event) => ({ ...examples.runner, event })),
       ...[1, 2, 3, 'home', 'out'].flatMap((to) => [
-        { ...examples.runner, to }, { ...examples.ball_in_play, advances: [{ runner: player, to }] },
+        { ...examples.runner, to }, { ...examples.ball_in_play, advances: [{ runner: player, to, ...(to === 'out' ? { outType: 'non_force' } : {}) }] },
       ]),
       ...['thrown_bat', 'batting_out_of_order', 'max_pitches'].map((reason) => ({ ...examples.batter_out, reason })),
       { ...examples.ball_in_play, fielders: [], advances: [] },
@@ -296,4 +296,28 @@ describe('parseUploadRequest', () => {
     }
     expect(parseUploadRequest({ ...upload(), events: [{ ...upload().events[0], extra: { ['bad\0key']: 1 } }] })).toEqual(invalidUpload);
   });
+});
+
+
+describe('explicit ball-in-play out classification', () => {
+  const outcome = { ...examples.ball_in_play, outcome: 'fielders_choice' };
+  for (const outType of ['force', 'batter_before_first', 'non_force']) {
+    it(`preserves ${outType}, including nested correction replacements`, () => {
+      const command = { ...outcome, advances: [{ runner: player, to: 'out', outType }] };
+      for (const value of [command, { kind: 'correct', target: 'p', replacement: [command] }]) {
+        expect(parseUploadRequest(upload(value))).toEqual(parsed(upload(value)));
+      }
+    });
+  }
+  for (const advance of [
+    { runner: player, to: 'out' },
+    ...[null, 'tag', 1, {}].map((outType) => ({ runner: player, to: 'out', outType })),
+    ...[1, 2, 3, 'home'].map((to) => ({ runner: player, to, outType: 'non_force' })),
+  ]) {
+    it(`rejects malformed classification ${JSON.stringify(advance)}`, () => {
+      const command = { ...outcome, advances: [advance] };
+      expect(parseUploadRequest(upload(command))).toEqual(invalidUpload);
+      expect(parseUploadRequest(upload({ kind: 'correct', target: 'p', replacement: [command] }))).toEqual(invalidUpload);
+    });
+  }
 });

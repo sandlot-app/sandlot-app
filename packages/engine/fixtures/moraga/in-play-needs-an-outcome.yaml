@@ -1,0 +1,8 @@
+name: An in-play pitch needs its outcome in the same play
+cite: ADR 0001; Official Baseball Rules 5.05(a)(1) https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: in_play }]
+then:
+  rejected: in_play_needs_outcome

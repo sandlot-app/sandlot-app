@@ -1,0 +1,64 @@
+name: A force third out suppresses all proposed walkoff runs
+cite: 2026 Official Baseball Rules 7.01(e)(3), 9.06(f) and (g), and 5.08(a); Moraga Mustang D.16; issue 10 story 41
+sourceUrl: https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf#page=106
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: bottom
+  bases:
+    "1":
+      player:
+        kind: player
+        id: home-2
+      chargedTo:
+        kind: opponent
+        id: away-1
+    "2":
+      player:
+        kind: player
+        id: home-3
+      chargedTo:
+        kind: opponent
+        id: away-1
+    "3":
+      player:
+        kind: player
+        id: home-4
+      chargedTo:
+        kind: opponent
+        id: away-1
+  score:
+    home: 0
+    away: 0
+  outs: 2
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: fielders_choice
+      trajectory: ground
+      fielders:
+        - CF
+      advances:
+        - runner:
+            kind: player
+            id: home-4
+          to: home
+        - runner:
+            kind: player
+            id: home-3
+          to: home
+        - runner:
+            kind: player
+            id: home-2
+          to: out
+          outType: force
+then:
+  status: in_progress
+  inning: 7
+  half: top
+  score:
+    home: 0
+    away: 0
+  runsThisHalf: 0

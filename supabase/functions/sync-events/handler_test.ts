@@ -251,3 +251,23 @@ Deno.test('input the database cannot store is invalid before it reaches the data
     deepStrictEqual(await syncEvents(USER, body, untouched), { ok: false, code: 'invalid' }, name);
   }
 });
+
+Deno.test('out classification roundtrips and changed classification conflicts with the saved play', async () => {
+  const { store, groups, base } = memoryStore();
+  const original = request();
+  original.events[0].command = {
+    kind: 'ball_in_play', outcome: 'fielders_choice', trajectory: 'ground', fielders: ['SS', '2B'],
+    advances: [{ runner: { kind: 'player', id: 'player-1' as PlayerId }, to: 'out', outType: 'force' }],
+  };
+  const wire = JSON.parse(JSON.stringify(original));
+  deepStrictEqual(parseUploadRequest(wire), { ok: true, request: original });
+  deepStrictEqual(await syncEvents(USER, wire, store), { ok: true, revision: 1 });
+  deepStrictEqual(base.events, original.events);
+  deepStrictEqual(await syncEvents(USER, JSON.parse(JSON.stringify(wire)), store), { ok: true, revision: 1 });
+  const changed = structuredClone(wire);
+  changed.events[0].command.advances[0].outType = 'non_force';
+  strictEqual(await contentHash(changed.events) === await contentHash(original.events), false);
+  deepStrictEqual(await syncEvents(USER, changed, store), { ok: false, code: 'id_conflict' });
+  strictEqual(groups.size, 1);
+  deepStrictEqual(base.events, original.events);
+});

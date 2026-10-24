@@ -1,0 +1,12 @@
+name: An outcome needs an in-play pitch in the same play
+cite: ADR 0001; Official Baseball Rules 5.05(a)(1) https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - kind: ball_in_play
+      outcome: single
+      trajectory: line
+      fielders: [LF]
+      advances: []
+then:
+  rejected: ball_in_play_needs_pitch

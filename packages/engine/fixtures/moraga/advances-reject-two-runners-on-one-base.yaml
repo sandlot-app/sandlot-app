@@ -1,0 +1,42 @@
+name: Two explicit advances cannot finish on one base
+cite: Official Baseball Rules 5.06(a)(1), 5.09; parent spec 10 runner identity,
+  explicit destinations, atomic plays; ADR 0001
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter:
+    home: 0
+    away: 2
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-2
+      chargedTo:
+        kind: player
+        id: home-1
+    "2":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: double
+      trajectory: ground
+      fielders: []
+      advances:
+        - runner:
+            kind: opponent
+            id: away-2
+          to: 3
+        - runner:
+            kind: opponent
+            id: away-1
+          to: 3
+then:
+  rejected: base_occupied

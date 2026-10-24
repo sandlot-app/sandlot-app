@@ -1,0 +1,30 @@
+name: A run counts before the batter is tagged trying for home after a triple
+cite: Official Baseball Rules 5.08(a), 9.06(c)
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 2
+  nextBatter: { home: 0, away: 3 }
+  bases:
+    "3":
+      player: { kind: opponent, id: away-1 }
+      chargedTo: { kind: player, id: home-1 }
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: triple
+      trajectory: line
+      fielders: [RF, 2B, C]
+      advances:
+        - runner: { kind: opponent, id: away-1 }
+          to: home
+        - runner: { kind: opponent, id: away-4 }
+          to: out
+          outType: non_force
+then:
+  score: { home: 0, away: 1 }
+  half: bottom
+  outs: 0
+  bases: {}
