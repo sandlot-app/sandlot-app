@@ -1,0 +1,27 @@
+name: A single moves listed runners together and leaves an unlisted runner on third
+cite: Official Baseball Rules 5.06(a)(1), 5.08(a), 9.06; parent spec 10 runner advances
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter: { home: 0, away: 3 }
+  bases:
+    1: { player: { kind: opponent, id: away-3 }, chargedTo: { kind: player, id: home-1 } }
+    2: { player: { kind: opponent, id: away-2 }, chargedTo: { kind: player, id: home-2 } }
+    3: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: single
+      trajectory: line
+      fielders: [LF]
+      advances:
+        - { runner: { kind: opponent, id: away-3 }, to: 2 }
+        - { runner: { kind: opponent, id: away-2 }, to: home }
+then:
+  bases:
+    1: { player: { kind: opponent, id: away-4 }, chargedTo: { kind: player, id: home-1 } }
+    2: { player: { kind: opponent, id: away-3 }, chargedTo: { kind: player, id: home-1 } }
+    3: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+  score: { home: 0, away: 1 }
+  runsThisHalf: 1
+  nextBatter: { home: 0, away: 4 }

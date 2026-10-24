@@ -1,0 +1,32 @@
+name: An allowed sacrifice bunt uses the explicit batter destination
+cite: Official Baseball Rules 5.06(a)(1), 5.09; parent spec 10 runner identity,
+  explicit destinations, atomic plays; ADR 0001
+preset: moraga-mustang-first-half
+started: true
+rules:
+  bunting: true
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: sacrifice_bunt
+      trajectory: ground
+      fielders: []
+      advances:
+        - runner:
+            kind: opponent
+            id: away-1
+          to: 1
+then:
+  outs: 0
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+  nextBatter:
+    home: 0
+    away: 1

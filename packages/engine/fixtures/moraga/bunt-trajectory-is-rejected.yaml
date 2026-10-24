@@ -1,0 +1,9 @@
+name: A single with bunt trajectory is rejected when bunting is off
+cite: Moraga Mustang Rules (revised 2/2024), D.7 https://www.moragabaseball.org/pony-rules/
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: in_play }
+    - { kind: ball_in_play, outcome: single, trajectory: bunt, fielders: [P], advances: [] }
+then:
+  rejected: bunting_not_allowed

@@ -1,0 +1,77 @@
+name: Retiring the trailing runner removes the force from the runner ahead
+cite: Official Baseball Rules 5.08(a), 5.09(b)(6), Definitions of Terms Force
+  Play
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 1
+  nextBatter:
+    home: 0
+    away: 3
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-3
+      chargedTo:
+        kind: player
+        id: home-1
+    "2":
+      player:
+        kind: opponent
+        id: away-2
+      chargedTo:
+        kind: player
+        id: home-1
+    "3":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: double_play
+      trajectory: ground
+      fielders:
+        - SS
+        - 1B
+      advances:
+        - runner:
+            kind: opponent
+            id: away-3
+          to: out
+        - runner:
+            kind: opponent
+            id: away-1
+          to: home
+        - runner:
+            kind: opponent
+            id: away-2
+          to: out
+        - runner:
+            kind: opponent
+            id: away-4
+          to: 1
+then:
+  score:
+    home: 0
+    away: 1
+  half: bottom
+  outs: 0
+  bases: {}
+  count:
+    balls: 0
+    strikes: 0
+    pitches: 0
+  nextBatter:
+    home: 0
+    away: 4
+  pitchCounts:
+    home-1: 1
+    away-1: 0
+  runsThisHalf: 0

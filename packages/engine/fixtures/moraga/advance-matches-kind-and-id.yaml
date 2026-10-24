@@ -1,0 +1,72 @@
+name: A matching ID with the wrong reference kind cannot move the active runner
+cite: Official Baseball Rules 5.06(a)(1), 5.09; parent spec 10 runner identity,
+  explicit destinations, atomic plays; ADR 0001
+preset: moraga-mustang-first-half
+started: true
+roster:
+  home:
+    - kind: player
+      id: home-1
+    - kind: player
+      id: home-2
+    - kind: player
+      id: home-3
+    - kind: player
+      id: home-4
+    - kind: player
+      id: home-5
+    - kind: player
+      id: home-6
+    - kind: player
+      id: home-7
+    - kind: player
+      id: home-8
+    - kind: player
+      id: home-9
+    - kind: player
+      id: away-2
+  away:
+    - kind: opponent
+      id: away-1
+    - kind: opponent
+      id: away-2
+    - kind: opponent
+      id: away-3
+    - kind: opponent
+      id: away-4
+    - kind: opponent
+      id: away-5
+    - kind: opponent
+      id: away-6
+    - kind: opponent
+      id: away-7
+    - kind: opponent
+      id: away-8
+    - kind: opponent
+      id: away-9
+given:
+  nextBatter:
+    home: 0
+    away: 2
+  bases:
+    "2":
+      player:
+        kind: opponent
+        id: away-2
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: single
+      trajectory: ground
+      fielders: []
+      advances:
+        - runner:
+            kind: player
+            id: away-2
+          to: 2
+then:
+  rejected: runner_not_on_base

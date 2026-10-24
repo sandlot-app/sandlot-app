@@ -1,7 +1,6 @@
 name: Mustang rejects a bunt
-cite: Moraga Mustang Rules (revised 2/2024), D.7
+cite: Moraga Mustang Rules (revised 2/2024), D.7 https://www.moragabaseball.org/pony-rules/
 preset: moraga-mustang-first-half
-pending: true
 started: true
 when:
   - - kind: pitch

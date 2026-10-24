@@ -129,6 +129,7 @@ export type Command =
       outcome: BallInPlayOutcome;
       trajectory: Trajectory | null;
       fielders: Position[];
+      /** Destinations apply together. Outs follow list order, after any derived batter out. */
       advances: Advance[];
     }
   | { kind: 'runner'; event: RunnerEvent; runner: PlayerRef; to: Destination }

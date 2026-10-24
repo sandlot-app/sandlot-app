@@ -1,0 +1,44 @@
+name: A correctly listed double play validates its two outs before clearing the half
+cite: Official Baseball Rules 5.06(a)(1), 5.09; parent spec 10 runner identity,
+  explicit destinations, atomic plays; ADR 0001
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 2
+  nextBatter:
+    home: 0
+    away: 1
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: double_play
+      trajectory: ground
+      fielders: []
+      advances:
+        - runner:
+            kind: opponent
+            id: away-2
+          to: out
+        - runner:
+            kind: opponent
+            id: away-1
+          to: out
+then:
+  outs: 0
+  half: bottom
+  bases: {}
+  nextBatter:
+    home: 0
+    away: 2
+  score:
+    home: 0
+    away: 0
