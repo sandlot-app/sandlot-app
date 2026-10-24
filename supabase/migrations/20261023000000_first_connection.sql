@@ -26,11 +26,14 @@ create table public.scoring_sessions (
   unique (game_id, epoch)
 );
 
+-- Accepted history keeps its scorer, session and group from being deleted. The
+-- references inside a game are NO ACTION, not RESTRICT, because deleting a game removes
+-- its sessions, groups and events in one statement and only a check at its end allows that.
 create table public.groups (
   game_id uuid not null references public.games (id) on delete cascade,
   group_id text not null,
-  user_id uuid not null references auth.users (id) on delete cascade,
-  session_id uuid not null references public.scoring_sessions (id) on delete cascade,
+  user_id uuid not null references auth.users (id) on delete restrict,
+  session_id uuid not null references public.scoring_sessions (id) on delete no action,
   content_hash text not null,
   ack_revision integer not null,
   created_at timestamptz not null default now(),
@@ -48,8 +51,13 @@ create table public.events (
   command jsonb not null,
   primary key (game_id, id),
   unique (game_id, seq),
-  foreign key (game_id, group_id) references public.groups (game_id, group_id) on delete cascade
+  foreign key (game_id, group_id) references public.groups (game_id, group_id) on delete no action
 );
+
+-- Deleting an account checks these columns for remaining history.
+create index groups_user_id_idx on public.groups (user_id);
+create index groups_session_id_idx on public.groups (session_id);
+create index scoring_sessions_user_id_idx on public.scoring_sessions (user_id);
 
 create function private.block_pin_changes() returns trigger
 language plpgsql set search_path = '' as $$
@@ -65,8 +73,9 @@ end $$;
 create trigger games_pins_fixed before update on public.games
   for each row execute function private.block_pin_changes();
 
-revoke insert, update, delete, truncate on public.games, public.events, public.scoring_sessions from anon, authenticated;
-revoke all on public.groups from anon, authenticated;
+revoke insert, update, delete, truncate on public.games, public.events, public.scoring_sessions
+  from public, anon, authenticated;
+revoke all on public.groups from public, anon, authenticated;
 
 alter table public.games enable row level security;
 alter table public.scoring_sessions enable row level security;
@@ -204,3 +213,8 @@ begin
 end $$;
 
 revoke execute on all functions in schema private from public, anon, authenticated;
+
+grant usage on schema private to service_role;
+grant execute on function private.get_base(uuid), private.take_over(uuid, uuid),
+  private.commit_group(uuid, uuid, uuid, integer, jsonb, jsonb, text)
+  to service_role;
