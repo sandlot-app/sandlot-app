@@ -30,11 +30,12 @@ The phone sends each group to one Edge Function, `sync-events`. The function che
 ## Request
 
 ```ts
-type UploadRequest = { sessionId: SessionId; events: Event[] };
+type UploadRequest = { schemaVersion: typeof EVENT_SCHEMA_VERSION; sessionId: SessionId; events: Event[] };
 ```
 
 The server reads the game, the group, and the expected revision from the events. The parser rejects a request unless all of these hold:
 
+- `schemaVersion` is the engine's `EVENT_SCHEMA_VERSION`. The parser checks this first. A missing or different value returns `unsupported_version`, not `invalid`, before the parser reads the session, the events, or any command.
 - Every event has the same `gameId`, `group`, and `lockEpoch`.
 - The `seq` values are consecutive.
 - No event ID appears twice.
@@ -47,11 +48,12 @@ The caller's identity comes from the sign-in token only, never from the request 
 `sync-events` does these steps in this order:
 
 1. Reject a request with no token or an `anon` token.
-2. Parse the request with `parseUploadRequest`.
+2. Parse the request with `parseUploadRequest`. A request with a missing or different `schemaVersion` returns `unsupported_version`. Any other malformed request returns `invalid`.
 3. Look up the group by `(game_id, group_id)`.
    - If the content hash and the user match, return the stored acknowledgment and stop.
    - If the hash or the user differs, return `id_conflict` and stop.
 4. Call `get_base(game_id)`. It returns the pins, the revision, and every accepted event in one statement.
+   - If the game's `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
 5. If the revision is not the group's first `seq` minus 1, look up the group again. If it is there now, apply the rule in step 3. If it is still missing, return `stale_revision`.
 6. Replay the accepted events and apply the group with the engine. If the engine rejects any command, reject the whole group.
 7. Call `commit_group(user_id, session_id, game_id, base_revision, events, new_state, content_hash)`. The handler computes `content_hash` in step 3.
@@ -93,7 +95,7 @@ Christian owns these functions:
 
 - `applyGroup(setup, events, commands)` returns the new state or one reject code. It applies all of the commands or none of them.
 - `replay(setup, events)` builds the state from the start.
-- `parseUploadRequest(unknown)` returns an `UploadRequest` or an error. It has no dependencies. It is one exhaustive `switch` over `Command['kind']`, so a new command kind does not compile until the parser handles it. A test parses one example of every kind.
+- `parseUploadRequest(unknown)` returns an `UploadRequest`, `invalid`, or `unsupported_version`. It has no dependencies. It is one exhaustive `switch` over `Command['kind']`, so a new command kind does not compile until the parser handles it. A test parses one example of every kind.
 
 The engine takes the event list rather than a cached state, because undo needs to know which groups exist. The game's roster IDs are part of `setup`, and the engine rejects a player ID that is not on the roster. Time comes only from `Event.at` and the `start` command.
 
