@@ -10,7 +10,7 @@ This is how plays move from the scorer's phone to the server and on to the famil
 
 - Supabase Edge Functions run on Deno. Before PR 8, Deno could not load the engine: `deno run` failed with `Module not found .../src/types`, because the engine imports had no `.ts` extension. PR 8 switched the engine to `.ts` imports.
 - Nobody has tried `supabase functions deploy` with the engine yet. The engine sits outside `supabase/functions/`.
-- The pure engine applies plays through `applyGroup` and rebuilds state through `replay`. The first-connection handler still bypasses gameplay validation. Milestone 6 must connect it before full scoring sync.
+- The pure engine applies plays through `applyGroup` and rebuilds state through `replay`. Before milestone 6, the first-connection handler bypassed gameplay validation. It now applies every group with `applyGroup` before it saves.
 - Supabase anonymous users get the `authenticated` role, and their token carries `is_anonymous`. Realtime `postgres_changes` applies row-level security to `anon` when that role has a select grant. A new function in the `public` schema can be called by `anon` and `authenticated` through `/rest/v1/rpc` unless execute is revoked.
 
 ## Write path
@@ -52,15 +52,21 @@ The caller's identity comes from the sign-in token only, never from the request 
 3. Look up the group by `(game_id, group_id)`.
    - If the content hash and the user match, return the stored acknowledgment and stop.
    - If the hash or the user differs, return `id_conflict` and stop.
+   - If the group is not there, check that the request's session is this user's current session for the game and that its epoch matches the events' `lockEpoch`. If not, return `stale_session` and stop. A caller who does not hold scoring never reaches the engine. `commit_group` checks again under the lock.
 4. Call `get_base(game_id)`. It returns the pins, the revision, and every accepted event in one statement.
-   - If the game's `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
+   - If the game's `engineVersion` pin differs from the server's `ENGINE_VERSION`, or its `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
 5. If the revision is not the group's first `seq` minus 1, look up the group again. If it is there now, apply the rule in step 3. If it is still missing, return `stale_revision`.
-6. Replay the accepted events and apply the group with the engine. If the engine rejects any command, reject the whole group.
-7. Call `commit_group(user_id, session_id, game_id, base_revision, events, new_state, content_hash)`. The handler computes `content_hash` in step 3.
+6. Replay the accepted events and apply the group with the engine. If the engine rejects any command, reject the whole group. The `rejected` response carries the engine's reject code as `reason`.
+   - Before it returns `rejected`, look up the group again. If an accepted group with that ID is there now, apply the rule in step 3 instead.
+7. Call `commit_group(user_id, session_id, game_id, base_revision, events, new_state, content_hash)`. `new_state` is the state the engine returned in step 6. The handler computes `content_hash` in step 3.
 
 Step 3 comes before the engine on purpose. A retry after a lost response is a group the server already saved. Running it through the engine again would reject a play that is already accepted.
 
+The session check in step 3 comes before `get_base` because `sync-events` reads the game as the database owner. Without the check, a caller who does not hold scoring could learn a private game's state from the `reason` on a `rejected` response.
+
 Step 5 looks again because two identical requests can both miss the group in step 3. One commits first, and the other then sees a higher revision. Without the second lookup, that retry would get `stale_revision` and stop the phone's queue over a play the server already holds.
+
+Step 6 looks again because two requests with the same group ID can both read the same base. One commits first. The other can be illegal against the base it read, even though its group ID is now taken. A reused ID with different content is the phone's bug, so it returns `id_conflict`, not a rule rejection.
 
 ## Commit checks
 
@@ -145,7 +151,7 @@ Likewise, with two outs and R3 crossing before the batter's out on an error, `ba
 
 The engine rejects contradictory classifications with `invalid_out_type`. `batter_before_first` can name only the current batter. `force` can name only an existing runner whose starting occupancy and prior trailing outs permit a force. A prior trailing out removes force eligibility for runners ahead. An initially forced runner may use `non_force` to assert a tag after reaching the required base. A credited hit cannot accompany `force` or `batter_before_first` under OBR 9.05. The engine does not invent missing base-touch history.
 
-Roster, active-runner, duplicate-runner, collision, and out-count checks remain. A rejection discards the whole play, including the in-play pitch, pitch counts, and threshold alerts. When milestone 6 enables gameplay validation, it maps these rejections to the existing `rejected` response with HTTP 422.
+Roster, active-runner, duplicate-runner, collision, and out-count checks remain. A rejection discards the whole play, including the in-play pitch, pitch counts, and threshold alerts. The handler maps these rejections to the existing `rejected` response with HTTP 422.
 
 The hash includes `outType`. Identical retries return the stored acknowledgment. A changed classification with the same accepted group ID returns `id_conflict`. Storage preserves the field without a database migration, as Kevin confirmed. IDs, event numbering, timestamps, and the commit transaction remain unchanged.
 
@@ -157,7 +163,7 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 - The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.0'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
 - Local verification compares that artifact with the current engine and fixtures. CI also compares it with the trusted PR base or main-push predecessor and rejects changed results without an engine-version increase. [Engine verification](engine-verification.md) describes the commands and the initial release baseline.
 - Each upload carries `schemaVersion`. The server returns `unsupported_version` when it differs from the server's `EVENT_SCHEMA_VERSION` or from the game's pinned `schema_version`. The parser checks it before any command, so an old-format request returns `unsupported_version`, not `invalid`.
-- Milestone 6 also requires the server to return `unsupported_version` for a game pinned to a different engine version, and the phone to refuse scoring under mismatched pins. The first-connection handler does not enforce the engine pin yet.
+- The server also returns `unsupported_version` for a game pinned to a different engine version. Milestone 6 still requires the phone to refuse scoring under mismatched pins.
 - Joint decision #13 uses schema 2 without an old-request decoder. Existing stored games are first-connection test games. The existing reset workflow must clear those test games before the next full scoring and sync rehearsal. Targets and execution are tracked in [#21](https://github.com/sandlot-app/sandlot-app/issues/21). This local change performs no hosted reset or deployment.
 - Do not rewrite historical events, hashes, or immutable pins. An old offline request retains its original content.
 
@@ -176,7 +182,7 @@ The phone takes one action for each error:
 | Server error | 5xx | Retry the same request later |
 | `unauthenticated` | 401 | Refresh the token, then retry |
 | `invalid` | 400 | Stop the queue. The phone has a bug. |
-| `rejected` | 422 | Stop the queue and show that sync is stuck |
+| `rejected` | 422 | Stop the queue and show that sync is stuck. The response carries the engine's reject code as `reason`. |
 | `id_conflict` | 409 | Stop the queue. The phone has a bug. |
 | `stale_revision` | 409 | Stop the queue. Another writer moved the game, or an earlier group is missing. |
 | `stale_session` | 403 | Stop the queue. Someone else now holds scoring. |
@@ -220,9 +226,9 @@ Kevin must agree to these changes before they count.
 This test proves the connection works. It does not finish milestone 6.
 
 1. Deploy a function that imports `ENGINE_VERSION` from the engine and returns it. If the deploy fails, fix that before anything else.
-2. Christian switches the engine to `.ts` imports. `pnpm -s --filter @sandlot/engine sample-events --game <id> --session <id>` prints a half-inning as `UploadRequest[]`, using the IDs from `supabase/scripts/seed-test-game.sql`. The same arguments always print the same requests.
+2. Christian switches the engine to `.ts` imports. `pnpm -s --filter @sandlot/engine sample-events --game <id> --session <id>` prints a half-inning as `UploadRequest[]`, using the IDs from `supabase/scripts/seed-test-game.sql`. The same arguments always print the same requests. `sample-events --pins` prints the version pins, rules, and setup that the seed script writes, so the engine accepts the half-inning.
 3. Kevin adds the tables, `commit_group`, `get_base`, the row-level security policies, Realtime on `games`, and `sync-events`.
-4. The first-connection `sync-events` still skips the engine step. A milestone 6 test requires the engine step, so this shortcut cannot reach the demo.
+4. The first-connection `sync-events` skipped the engine step. Milestone 6 added it, so the handler now returns `rejected` for a sample play the engine finds illegal.
 5. Kevin's `send-samples` script signs in, posts each sample request in order to `sync-events`, and prints each response. Christian runs it twice. The second run returns the same acknowledgments and adds no rows. Kevin's page shows each play once.
 6. Before the full scoring and sync rehearsal, clear the first-connection test games through the existing reset workflow, coordinated in #21. No old-event migration is supported.
 

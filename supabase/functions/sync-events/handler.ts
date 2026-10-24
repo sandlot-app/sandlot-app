@@ -1,5 +1,7 @@
 import { parseUploadRequest } from '../../../packages/engine/src/contract.ts';
-import type { Event } from '../../../packages/engine/src/types.ts';
+import { applyGroup, type RejectCode } from '../../../packages/engine/src/engine.ts';
+import type { Event, GameSetup, RuleSet } from '../../../packages/engine/src/types.ts';
+import { ENGINE_VERSION } from '../../../packages/engine/src/version.ts';
 
 export type { UploadRequest } from '../../../packages/engine/src/contract.ts';
 export type UploadEvent = Event;
@@ -23,14 +25,26 @@ export const STATUS: Record<ErrorCode, number> = {
   unsupported_version: 409,
 };
 
-export type Outcome = { ok: true; revision: number } | { ok: false; code: ErrorCode };
+export type Outcome =
+  | { ok: true; revision: number }
+  | { ok: false; code: Exclude<ErrorCode, 'rejected'> }
+  | { ok: false; code: 'rejected'; reason: RejectCode };
 
 export type StoredGroup = { userId: string; contentHash: string; ackRevision: number };
 
-export type Base = { schemaVersion: number; revision: number; state: unknown; events: UploadEvent[] };
+export type Base = {
+  engineVersion: string;
+  schemaVersion: number;
+  rules: RuleSet;
+  setup: Omit<GameSetup, 'rules'>;
+  revision: number;
+  state: unknown;
+  events: UploadEvent[];
+};
 
 export type Store = {
   findGroup(gameId: string, groupId: string): Promise<StoredGroup | null>;
+  sessionEpoch(gameId: string, sessionId: string, userId: string): Promise<number | null>;
   getBase(gameId: string): Promise<Base | null>;
   commitGroup(commit: {
     userId: string;
@@ -81,18 +95,26 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
   const stored = await store.findGroup(first.gameId, first.group);
   if (stored) return savedOutcome(stored, userId, hash);
 
+  // Before the base on purpose: getBase reads as the database owner, so without this
+  // a caller who does not hold scoring could probe a private game through engine reasons.
+  const epoch = await store.sessionEpoch(first.gameId, sessionId, userId);
+  if (epoch === null || epoch !== first.lockEpoch) return { ok: false, code: 'stale_session' };
+
   const base = await store.getBase(first.gameId);
   if (!base) return { ok: false, code: 'invalid' };
-  if (base.schemaVersion !== schemaVersion) return { ok: false, code: 'unsupported_version' };
-  if (base.revision !== first.seq - 1) {
-    const committed = await store.findGroup(first.gameId, first.group);
-    return committed ? savedOutcome(committed, userId, hash) : { ok: false, code: 'stale_revision' };
+  if (base.engineVersion !== ENGINE_VERSION || base.schemaVersion !== schemaVersion) {
+    return { ok: false, code: 'unsupported_version' };
   }
+  // A concurrent request can commit this group after the lookup above, which makes
+  // the group stale or illegal against the base read here. The saved group decides.
+  const savedOr = async (failure: Outcome): Promise<Outcome> => {
+    const saved = await store.findGroup(first.gameId, first.group);
+    return saved ? savedOutcome(saved, userId, hash) : failure;
+  };
+  if (base.revision !== first.seq - 1) return savedOr({ ok: false, code: 'stale_revision' });
 
-  // First connection test only: the engine has no game logic yet, so the group is
-  // stored without replaying or applying it, and the cached state is unchanged.
-  // Milestone 6 requires the engine step here.
-  const newState = base.state;
+  const applied = applyGroup({ ...base.setup, rules: base.rules }, base.events, events.map((e) => e.command));
+  if (!applied.ok) return savedOr({ ok: false, code: 'rejected', reason: applied.code });
 
   return store.commitGroup({
     userId,
@@ -100,7 +122,7 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
     gameId: first.gameId,
     baseRevision: base.revision,
     events,
-    newState,
+    newState: applied.state,
     contentHash: hash,
   });
 }
