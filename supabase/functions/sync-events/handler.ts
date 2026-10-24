@@ -1,3 +1,9 @@
+import { parseUploadRequest } from '../../../packages/engine/src/contract.ts';
+import type { Event } from '../../../packages/engine/src/types.ts';
+
+export type { UploadRequest } from '../../../packages/engine/src/contract.ts';
+export type UploadEvent = Event;
+
 export type ErrorCode =
   | 'unauthenticated'
   | 'invalid'
@@ -16,19 +22,6 @@ export const STATUS: Record<ErrorCode, number> = {
   stale_session: 403,
   unsupported_version: 409,
 };
-
-export type UploadEvent = {
-  id: string;
-  gameId: string;
-  seq: number;
-  group: string;
-  lockEpoch: number;
-  source: 'tap' | 'voice';
-  at: string;
-  command: { kind: string } & Record<string, unknown>;
-};
-
-export type UploadRequest = { sessionId: string; events: UploadEvent[] };
 
 export type Outcome = { ok: true; revision: number } | { ok: false; code: ErrorCode };
 
@@ -50,62 +43,8 @@ export type Store = {
   }): Promise<Outcome>;
 };
 
-const MAX_EVENTS = 20;
-const MAX_INTEGER = 2 ** 31 - 1;
-const MAX_ID_LENGTH = 128;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
-const isText = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
-const isCount = (v: unknown): v is number =>
-  Number.isInteger(v) && (v as number) > 0 && (v as number) <= MAX_INTEGER;
-const isId = (v: unknown): v is string => isText(v) && v.length <= MAX_ID_LENGTH;
-// Postgres text and jsonb cannot hold U+0000.
-const hasNull = (v: unknown): boolean =>
-  typeof v === 'string'
-    ? v.includes('\0')
-    : Array.isArray(v)
-    ? v.some(hasNull)
-    : isRecord(v) && Object.entries(v).some(([key, value]) => key.includes('\0') || hasNull(value));
-
-function parseEvent(v: unknown): UploadEvent | null {
-  if (!isRecord(v) || hasNull(v)) return null;
-  const { id, gameId, seq, group, lockEpoch, source, at, command } = v;
-  if (
-    !isId(id) || !isText(gameId) || !UUID.test(gameId) || !isCount(seq) || !isId(group) ||
-    !isCount(lockEpoch) || (source !== 'tap' && source !== 'voice') || !isText(at) ||
-    !isRecord(command) || !isText(command.kind)
-  ) {
-    return null;
-  }
-  return { id, gameId, seq, group, lockEpoch, source, at, command: command as UploadEvent['command'] };
-}
-
-// Checks the request's shape only. The engine's parseUploadRequest replaces this
-// once it exists, and it also checks every command.
-export function parseUploadRequest(body: unknown): UploadRequest | null {
-  if (!isRecord(body) || !isText(body.sessionId) || !UUID.test(body.sessionId)) return null;
-  if (!Array.isArray(body.events) || body.events.length === 0 || body.events.length > MAX_EVENTS) return null;
-
-  const events: UploadEvent[] = [];
-  for (const raw of body.events) {
-    const event = parseEvent(raw);
-    if (!event) return null;
-    events.push(event);
-  }
-
-  const [first] = events as [UploadEvent, ...UploadEvent[]];
-  const ids = new Set(events.map((e) => e.id));
-  const consistent = events.every(
-    (e, i) =>
-      e.gameId === first.gameId && e.group === first.group &&
-      e.lockEpoch === first.lockEpoch && e.at === first.at && e.seq === first.seq + i,
-  );
-  if (!consistent || ids.size !== events.length) return null;
-
-  return { sessionId: body.sessionId, events };
-}
 
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);

@@ -2,9 +2,9 @@ name: Backend
 
 on:
   pull_request:
-    paths: ['supabase/**', '.github/workflows/backend.yml']
+    paths: ['supabase/**', 'packages/engine/**', '.github/workflows/backend.yml']
   push:
-    paths: ['supabase/**', '.github/workflows/backend.yml']
+    paths: ['supabase/**', 'packages/engine/**', '.github/workflows/backend.yml']
 
 jobs:
   backend:
