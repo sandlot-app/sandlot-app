@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { sampleHalfInning } from '../scripts/sample-events.ts';
-import { applyGroup, parseUploadRequest, presets, replay, type Event, type GameId, type GameSetup, type SessionId } from '../src/index.ts';
+import { sampleHalfInning, sampleSetup } from '../scripts/sample-events.ts';
+import {
+  applyGroup, ENGINE_VERSION, EVENT_SCHEMA_VERSION, parseUploadRequest, replay,
+  type Event, type GameId, type GameSetup, type SessionId,
+} from '../src/index.ts';
 
 const options = {
   gameId: '11111111-1111-1111-1111-111111111111' as GameId,
@@ -21,18 +24,7 @@ describe('sample-events', () => {
       if (!parsed.ok) throw new Error('sample-events printed an invalid upload request');
       return parsed.request;
     });
-    const setup: GameSetup = {
-      rules: presets['moraga-mustang-first-half'],
-      roster: { home: [], away: [] },
-      pitcherOutsEarlierToday: {},
-    };
-    for (const request of requests) {
-      for (const { command } of request.events) {
-        if (command.kind === 'game' && command.control.kind === 'lineup_set') {
-          setup.roster[command.control.side] = command.control.lineup.map(({ player }) => player);
-        }
-      }
-    }
+    const setup = sampleSetup();
     const events: Event[] = [];
     for (const request of requests) {
       const applied = applyGroup(setup, events, request.events.map(({ command }) => command));
@@ -44,6 +36,18 @@ describe('sample-events', () => {
       ok: true, state: { inning: 1, half: 'bottom', outs: 0, bases: {}, score: { home: 0, away: 0 }, pitchCounts: { 'home-1': 8, 'away-1': 0 } },
     });
   });
+  it('prints the pins of a game that accepts the sample half-inning on one JSON line with --pins', () => {
+    const output = execFileSync(process.execPath, ['scripts/sample-events.ts', '--pins'], {
+      cwd: new URL('..', import.meta.url), encoding: 'utf8',
+    });
+    expect(output.trimEnd().split('\n')).toHaveLength(1);
+    const { rules, ...setup } = sampleSetup();
+    const pins: { rules: GameSetup['rules']; setup: Omit<GameSetup, 'rules'> } = JSON.parse(output);
+    expect(pins).toEqual({ engineVersion: ENGINE_VERSION, schemaVersion: EVENT_SCHEMA_VERSION, rules, setup });
+    const events = sampleHalfInning(options).flatMap((request) => request.events);
+    expect(replay({ ...pins.setup, rules: pins.rules }, events)).toMatchObject({ ok: true });
+  });
+
   it('prints the same requests on every run', () => {
     expect(sampleHalfInning(options)).toEqual(sampleHalfInning(options));
   });

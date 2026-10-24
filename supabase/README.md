@@ -40,7 +40,7 @@ Step 5 of the first connection test in `docs/contract.md` sends the engine's sam
 
 ```sh
 scorer=$(deno run -A supabase/scripts/send-samples.ts whoami)
-psql "$SUPABASE_DB_URL" -q -At -F' ' -v scorer=$scorer -f supabase/scripts/seed-test-game.sql
+psql "$SUPABASE_DB_URL" -q -At -F' ' -v scorer=$scorer -v pins="$(pnpm -s --filter @sandlot/engine sample-events --pins)" -f supabase/scripts/seed-test-game.sql
 pnpm -s --filter @sandlot/engine sample-events --game <game_id> --session <session_id> > supabase/.temp/samples.json
 deno run -A supabase/scripts/send-samples.ts < supabase/.temp/samples.json
 deno run -A supabase/scripts/send-samples.ts < supabase/.temp/samples.json

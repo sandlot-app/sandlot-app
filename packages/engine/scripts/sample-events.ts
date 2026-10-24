@@ -1,6 +1,8 @@
 // Prints a hand-built half-inning as UploadRequest[] for the first connection test in docs/contract.md.
 // Usage: pnpm -s --filter @sandlot/engine sample-events --game <id> --session <id> [--epoch 1]
+//        pnpm -s --filter @sandlot/engine sample-events --pins
 // Every run with the same arguments prints the same requests, so a second send must add nothing.
+// --pins prints the version pins and setup a game needs for the sample half-inning to be accepted.
 import { createHash } from 'node:crypto';
 import { parseArgs } from 'node:util';
 import type {
@@ -8,6 +10,7 @@ import type {
   Event,
   EventId,
   GameId,
+  GameSetup,
   GroupId,
   LineupSlot,
   OpponentId,
@@ -18,7 +21,7 @@ import type {
   Timestamp,
   UploadRequest,
 } from '../src/index.ts';
-import { EVENT_SCHEMA_VERSION } from '../src/index.ts';
+import { ENGINE_VERSION, EVENT_SCHEMA_VERSION, presets } from '../src/index.ts';
 
 export type SampleOptions = { gameId: GameId; sessionId: SessionId; lockEpoch: number };
 
@@ -30,6 +33,15 @@ const home = (n: number): PlayerRef => ({ kind: 'player', id: `home-${n}` as Pla
 const away = (n: number): PlayerRef => ({ kind: 'opponent', id: `away-${n}` as OpponentId });
 const lineup = (ref: (n: number) => PlayerRef): LineupSlot[] =>
   POSITIONS.map((position, i) => ({ player: ref(i + 1), position }));
+
+/** The setup a game needs for `sampleHalfInning` to be accepted: Mustang rules and the two lineups as the roster. */
+export function sampleSetup(): GameSetup {
+  return {
+    rules: presets['moraga-mustang-first-half'],
+    roster: { home: lineup(home).map((slot) => slot.player), away: lineup(away).map((slot) => slot.player) },
+    pitcherOutsEarlierToday: {},
+  };
+}
 
 /** The plays of the half-inning, in order. Each inner list is one play. */
 function plays(at: (play: number) => Timestamp): Command[][] {
@@ -88,16 +100,25 @@ export function sampleHalfInning({ gameId, sessionId, lockEpoch }: SampleOptions
 
 if (import.meta.main) {
   const { values } = parseArgs({
-    options: { game: { type: 'string' }, session: { type: 'string' }, epoch: { type: 'string', default: '1' } },
+    options: {
+      game: { type: 'string' },
+      session: { type: 'string' },
+      epoch: { type: 'string', default: '1' },
+      pins: { type: 'boolean' },
+    },
   });
-  if (!values.game || !values.session) {
-    console.error('Usage: pnpm -s --filter @sandlot/engine sample-events --game <id> --session <id> [--epoch 1]');
+  if (values.pins) {
+    const { rules, ...setup } = sampleSetup();
+    console.log(JSON.stringify({ engineVersion: ENGINE_VERSION, schemaVersion: EVENT_SCHEMA_VERSION, rules, setup }));
+  } else if (values.game && values.session) {
+    const requests = sampleHalfInning({
+      gameId: values.game as GameId,
+      sessionId: values.session as SessionId,
+      lockEpoch: Number(values.epoch),
+    });
+    console.log(JSON.stringify(requests, null, 2));
+  } else {
+    console.error('Usage: pnpm -s --filter @sandlot/engine sample-events (--game <id> --session <id> [--epoch 1] | --pins)');
     process.exit(2);
   }
-  const requests = sampleHalfInning({
-    gameId: values.game as GameId,
-    sessionId: values.session as SessionId,
-    lockEpoch: Number(values.epoch),
-  });
-  console.log(JSON.stringify(requests, null, 2));
 }
