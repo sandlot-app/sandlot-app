@@ -144,7 +144,7 @@ describe('parseUploadRequest', () => {
       { ...examples.ball_in_play, fielders: ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'ROVER'] },
       ...['stolen_base', 'caught_stealing', 'pickoff', 'wild_pitch', 'passed_ball', 'balk', 'advance_on_error', 'defensive_indifference', 'left_early', 'missed_base'].map((event) => ({ ...examples.runner, event })),
       ...[1, 2, 3, 'home', 'out'].flatMap((to) => [
-        { ...examples.runner, to }, { ...examples.ball_in_play, advances: [{ runner: player, to }] },
+        { ...examples.runner, to }, { ...examples.ball_in_play, advances: [{ runner: player, to, ...(to === 'out' ? { outType: 'non_force' } : {}) }] },
       ]),
       ...['thrown_bat', 'batting_out_of_order', 'max_pitches'].map((reason) => ({ ...examples.batter_out, reason })),
       { ...examples.ball_in_play, fielders: [], advances: [] },

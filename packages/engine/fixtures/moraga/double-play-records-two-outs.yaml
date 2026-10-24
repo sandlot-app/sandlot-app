@@ -44,10 +44,12 @@ when:
             kind: opponent
             id: away-3
           to: out
+          outType: force
         - runner:
             kind: opponent
             id: away-4
           to: out
+          outType: batter_before_first
 then:
   outs: 2
   bases:

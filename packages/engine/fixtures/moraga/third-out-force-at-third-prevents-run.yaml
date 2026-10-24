@@ -49,6 +49,7 @@ when:
             kind: opponent
             id: away-2
           to: out
+          outType: force
         - runner:
             kind: opponent
             id: away-3

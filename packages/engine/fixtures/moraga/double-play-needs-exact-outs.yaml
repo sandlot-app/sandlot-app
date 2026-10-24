@@ -45,5 +45,6 @@ when:
             kind: opponent
             id: away-4
           to: out
+          outType: batter_before_first
 then:
   rejected: outs_dont_match_outcome

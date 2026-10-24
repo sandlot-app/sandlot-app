@@ -42,6 +42,7 @@ when:
             kind: opponent
             id: away-3
           to: out
+          outType: force
 then:
   score:
     home: 0

@@ -44,5 +44,6 @@ when:
             kind: opponent
             id: away-3
           to: out
+          outType: force
 then:
   rejected: batter_destination_missing

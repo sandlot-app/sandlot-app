@@ -23,10 +23,12 @@ when:
       advances:
         - runner: { kind: opponent, id: away-4 }
           to: out
+          outType: non_force
         - runner: { kind: opponent, id: away-1 }
           to: home
         - runner: { kind: opponent, id: away-3 }
           to: out
+          outType: non_force
 then:
   score: { home: 0, away: 1 }
   half: bottom

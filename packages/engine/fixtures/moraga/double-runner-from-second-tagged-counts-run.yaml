@@ -28,6 +28,7 @@ when:
           to: home
         - runner: { kind: opponent, id: away-2 }
           to: out
+          outType: non_force
         - runner: { kind: opponent, id: away-3 }
           to: 3
 then:

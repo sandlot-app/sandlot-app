@@ -42,6 +42,7 @@ when:
             kind: opponent
             id: away-2
           to: out
+          outType: non_force
 then:
   score:
     home: 0

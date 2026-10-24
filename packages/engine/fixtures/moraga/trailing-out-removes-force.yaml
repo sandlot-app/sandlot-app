@@ -45,6 +45,7 @@ when:
             kind: opponent
             id: away-3
           to: out
+          outType: force
         - runner:
             kind: opponent
             id: away-1
@@ -53,6 +54,7 @@ when:
             kind: opponent
             id: away-2
           to: out
+          outType: non_force
         - runner:
             kind: opponent
             id: away-4

@@ -30,6 +30,7 @@ when:
           to: 3
         - runner: { kind: opponent, id: away-3 }
           to: out
+          outType: non_force
 then:
   score: { home: 0, away: 1 }
   half: bottom

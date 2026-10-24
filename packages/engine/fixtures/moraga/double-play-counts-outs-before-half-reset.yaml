@@ -28,10 +28,12 @@ when:
             kind: opponent
             id: away-2
           to: out
+          outType: batter_before_first
         - runner:
             kind: opponent
             id: away-1
           to: out
+          outType: non_force
 then:
   outs: 0
   half: bottom

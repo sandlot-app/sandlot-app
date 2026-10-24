@@ -92,8 +92,11 @@ export type Trajectory = 'ground' | 'line' | 'fly' | 'popup' | 'bunt';
 
 export type Destination = Base | 'home' | 'out';
 
-/** Where one runner, or the batter, ended up after a play. */
-export type Advance = { runner: PlayerRef; to: Destination };
+export type OutType = 'force' | 'batter_before_first' | 'non_force';
+
+export type Advance =
+  | { runner: PlayerRef; to: Exclude<Destination, 'out'>; outType?: never }
+  | { runner: PlayerRef; to: 'out'; outType: OutType };
 
 export type RunnerEvent =
   | 'stolen_base'

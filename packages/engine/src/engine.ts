@@ -9,6 +9,7 @@ import type {
   GameState,
   GroupId,
   LineupSlot,
+  OutType,
   PitchResult,
   PlayerRef,
   Runner,
@@ -28,6 +29,7 @@ export type RejectCode =
   | 'duplicate_runner'
   | 'batter_destination_missing'
   | 'outs_dont_match_outcome'
+  | 'invalid_out_type'
   | 'undo_not_latest'
   | 'cannot_undo_undo'
   | 'nothing_to_undo'
@@ -307,19 +309,39 @@ const batterDestinations: Record<BallInPlayOutcome, Destination | null> = {
   triple_play: null,
 };
 
+type PlannedAdvance = { from: 0 | Base; runner: Runner } & (
+  | { to: Exclude<Destination, 'out'>; outType?: never }
+  | { to: 'out'; outType: OutType }
+);
+
+type BallInPlayPlan = { bases: GameState['bases']; runs: number; totalOuts: number };
+
 function ballInPlay(setup: GameSetup, game: GameState, command: Extract<Command, { kind: 'ball_in_play' }>): RejectCode | null {
   if (!setup.rules.bunting && (command.trajectory === 'bunt' || command.outcome === 'sacrifice_bunt')) return 'bunting_not_allowed';
+  const plan = planBallInPlay(game, command);
+  if (typeof plan === 'string') return plan;
+  game.bases = plan.bases;
+  for (let run = 0; run < plan.runs; run++) scoreRun(game);
+  endAtBat(setup, game);
+  if (plan.totalOuts >= 3) endHalf(setup, game);
+  else game.outs = plan.totalOuts as GameState['outs'];
+  return null;
+}
+
+function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball_in_play' }>): BallInPlayPlan | RejectCode {
   const batter: Runner = { player: batterUp(game), chargedTo: game.pitchers[fielding(game)]! };
   const active: { from: 0 | Base; runner: Runner }[] = [{ from: 0, runner: batter }];
   for (const from of [1, 2, 3] as const) {
     const runner = game.bases[from];
     if (runner) active.push({ from, runner });
   }
-  const destinations: { from: 0 | Base; runner: Runner; to: Destination }[] = [];
+  const destinations: PlannedAdvance[] = [];
   if (!command.advances.some((advance) => samePlayer(advance.runner, batter.player))) {
     const to = batterDestinations[command.outcome];
     if (to === null) return 'batter_destination_missing';
-    destinations.push({ from: 0, runner: batter, to });
+    destinations.push(to === 'out'
+      ? { from: 0, runner: batter, to, outType: 'batter_before_first' }
+      : { from: 0, runner: batter, to });
   }
   const seen = new Set<string>();
   for (const advance of command.advances) {
@@ -328,7 +350,7 @@ function ballInPlay(setup: GameSetup, game: GameState, command: Extract<Command,
     seen.add(key);
     const source = active.find(({ runner }) => samePlayer(runner.player, advance.runner));
     if (!source) return 'runner_not_on_base';
-    destinations.push({ ...source, to: advance.to });
+    destinations.push({ ...advance, ...source });
   }
   const recordedOuts = destinations.filter(({ to }) => to === 'out').length;
   const expectedOuts = command.outcome === 'double_play' ? 2 : command.outcome === 'triple_play' ? 3 : null;
@@ -348,25 +370,21 @@ function ballInPlay(setup: GameSetup, game: GameState, command: Extract<Command,
     if (!game.bases[base]) break;
     forceThrough = base;
   }
-  let outs: number = game.outs;
+  let totalOuts: number = game.outs;
   let thirdOutPreventsRuns = false;
   const hitRecorded = ['single', 'double', 'ground_rule_double', 'triple', 'home_run'].includes(command.outcome);
-  for (const { from, to } of destinations) {
-    if (to !== 'out') continue;
-    outs += 1;
-    if (outs === 3) thirdOutPreventsRuns = !hitRecorded && from <= forceThrough;
+  for (const advance of destinations) {
+    if (advance.to !== 'out') continue;
+    const { from, outType } = advance;
+    if ((outType === 'batter_before_first' && from !== 0) ||
+      (outType === 'force' && (from === 0 || from > forceThrough)) ||
+      (hitRecorded && outType !== 'non_force')) return 'invalid_out_type';
+    totalOuts += 1;
+    if (totalOuts === 3) thirdOutPreventsRuns = outType !== 'non_force';
     forceThrough = Math.min(forceThrough, from - 1);
   }
-  game.bases = bases;
-  if (!thirdOutPreventsRuns) {
-    for (const { to } of destinations) {
-      if (to === 'home') scoreRun(game);
-    }
-  }
-  endAtBat(setup, game);
-  if (outs >= 3) endHalf(setup, game);
-  else game.outs = outs as GameState['outs'];
-  return null;
+  const runs = thirdOutPreventsRuns ? 0 : destinations.filter(({ to }) => to === 'home').length;
+  return { bases, runs, totalOuts };
 }
 
 function samePlayer(a: PlayerRef, b: PlayerRef): boolean {
