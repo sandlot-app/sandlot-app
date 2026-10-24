@@ -145,11 +145,12 @@ function blocked(error: unknown): { kind: 'blocked'; reason: BlockReason } {
 export async function openOfflineGame(database: SqlDatabase, boundary: Boundary): Promise<OpenResult> {
   try {
     await initialize(database);
-    const loaded = await load(database);
+    const snapshot: { loaded: LoadedGame | null } = { loaded: null };
+    await database.transaction(async (connection) => { snapshot.loaded = await load(connection); });
     let saving = false;
     let stopped: BlockReason | null = null;
     return {
-      kind: 'ready', game: loaded?.game ?? null,
+      kind: 'ready', game: snapshot.loaded?.game ?? null,
       async record(action) {
         if (stopped) return { kind: 'blocked', reason: stopped };
         if (saving) return { kind: 'busy' };
