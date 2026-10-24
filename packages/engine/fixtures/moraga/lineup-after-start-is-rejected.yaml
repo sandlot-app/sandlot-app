@@ -1,0 +1,13 @@
+name: Setting a lineup after the game starts is rejected
+cite: Official Baseball Rules 4.03 and 5.10
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: home
+        lineup:
+          - { player: { kind: player, id: home-10 }, position: P }
+then:
+  rejected: game_already_started

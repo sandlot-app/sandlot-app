@@ -1,0 +1,7 @@
+name: A pitch before the game starts is rejected
+cite: Official Baseball Rules 5.01
+preset: moraga-mustang-first-half
+when:
+  - [{ kind: pitch, result: ball }]
+then:
+  rejected: game_not_started

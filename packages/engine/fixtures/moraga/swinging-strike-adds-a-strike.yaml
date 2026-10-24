@@ -1,0 +1,9 @@
+name: A swinging strike adds a strike
+cite: Official Baseball Rules, Definition of Terms, Strike (a)
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: swinging_strike }]
+then:
+  count: { balls: 1, strikes: 1, pitches: 2 }

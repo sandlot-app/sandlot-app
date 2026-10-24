@@ -1,0 +1,21 @@
+name: The game can't start when a lineup has no pitcher
+cite: Official Baseball Rules 5.01; Moraga Mustang Rules (revised 2/2024), E.2
+preset: moraga-mustang-first-half
+when:
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: away
+        lineup:
+          - { player: { kind: opponent, id: away-1 }, position: P }
+          - { player: { kind: opponent, id: away-2 }, position: C }
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: home
+        lineup:
+          - { player: { kind: player, id: home-1 }, position: C }
+          - { player: { kind: player, id: home-2 }, position: null }
+  - [{ kind: game, control: { kind: start, umpireStart: "2026-10-25T17:00:00.000Z" } }]
+then:
+  rejected: no_pitcher

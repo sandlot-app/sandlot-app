@@ -1,0 +1,32 @@
+name: Starting the game sets each team's pitcher and brings up the first away batter
+cite: Official Baseball Rules 5.01 and 5.04(a)(1)
+preset: moraga-mustang-first-half
+when:
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: away
+        lineup:
+          - { player: { kind: opponent, id: away-1 }, position: C }
+          - { player: { kind: opponent, id: away-2 }, position: P }
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: home
+        lineup:
+          - { player: { kind: player, id: home-1 }, position: null }
+          - { player: { kind: player, id: home-2 }, position: SS }
+          - { player: { kind: player, id: home-3 }, position: P }
+  - [{ kind: game, control: { kind: start, umpireStart: "2026-10-25T17:00:00.000Z" } }]
+then:
+  status: in_progress
+  inning: 1
+  half: top
+  outs: 0
+  count: { balls: 0, strikes: 0, pitches: 0 }
+  bases: {}
+  score: { home: 0, away: 0 }
+  nextBatter: { home: 0, away: 0 }
+  pitchers: { home: { kind: player, id: home-3 }, away: { kind: opponent, id: away-2 } }
+  pitchCounts: { home-3: 0, away-2: 0 }
+  umpireStart: "2026-10-25T17:00:00.000Z"

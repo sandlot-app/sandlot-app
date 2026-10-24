@@ -155,6 +155,8 @@ export type Event = {
 
 export type GameSetup = {
   rules: RuleSet;
+  /** Every player who may appear in the game, per side. The scorer's team are players, the other team opponents. */
+  roster: Record<TeamSide, PlayerRef[]>;
   /** Outs each pitcher already recorded earlier on the same calendar day, in other games. */
   pitcherOutsEarlierToday: Partial<Record<PlayerId, number>>;
 };

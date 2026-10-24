@@ -1,0 +1,18 @@
+name: The third out in the bottom half starts the top of the next inning
+cite: Official Baseball Rules, Definition of Terms, Inning; Official Baseball Rules 5.09(a)(2)
+preset: moraga-mustang-first-half
+started: true
+given:
+  half: bottom
+  outs: 2
+  nextBatter: { home: 2, away: 3 }
+when:
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+then:
+  inning: 2
+  half: top
+  outs: 0
+  nextBatter: { home: 3, away: 3 }
+  pitchCounts: { home-1: 0, away-1: 3 }

@@ -1,0 +1,13 @@
+name: A lineup with a player from the other side's roster is rejected
+cite: Official Baseball Rules 4.03
+preset: moraga-mustang-first-half
+when:
+  - - kind: game
+      control:
+        kind: lineup_set
+        side: home
+        lineup:
+          - { player: { kind: player, id: home-1 }, position: P }
+          - { player: { kind: opponent, id: away-2 }, position: C }
+then:
+  rejected: unknown_player

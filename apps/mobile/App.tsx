@@ -2,7 +2,7 @@ import { initialState, presets } from '@sandlot/engine';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 
-const setup = { rules: presets['moraga-mustang-first-half'], pitcherOutsEarlierToday: {} };
+const setup = { rules: presets['moraga-mustang-first-half'], roster: { home: [], away: [] }, pitcherOutsEarlierToday: {} };
 const state = initialState(setup);
 
 export default function App() {
