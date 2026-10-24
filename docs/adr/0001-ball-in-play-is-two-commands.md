@@ -1,0 +1,3 @@
+# A ball in play is two commands in one play
+
+A hit or a fielded out is recorded as one play holding two commands: `pitch` with result `in_play`, then `ball_in_play` with the outcome and runner advances. The engine rejects a `ball_in_play` that doesn't follow an `in_play` pitch in the same play, and a play that ends on a bare `in_play` pitch. We kept the two commands because the event types the sync contract parses already separate them, and the pitch command is what counts toward the pitcher's pitch count. The alternative, letting `ball_in_play` count the pitch itself, is simpler for voice and taps, but changing it now would change how every stored game replays.

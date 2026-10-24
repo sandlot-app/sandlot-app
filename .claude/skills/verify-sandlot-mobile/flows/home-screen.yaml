@@ -1,0 +1,6 @@
+# Proves the home screen shows the engine's starting game state for Moraga Mustang.
+appId: host.exp.Exponent
+---
+- assertVisible: "Sandlot"
+- assertVisible: "Inning 1, top. 0 outs. Count 0-0."
+- takeScreenshot: home-screen

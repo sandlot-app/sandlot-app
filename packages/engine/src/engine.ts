@@ -1,4 +1,4 @@
-import type { Command, GameSetup, GameState } from './types';
+import type { Command, GameSetup, GameState } from './types.ts';
 
 export type RejectCode = 'not_implemented' | 'bunting_not_allowed';
 

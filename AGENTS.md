@@ -15,6 +15,7 @@ The plan is in [docs/plan.md](docs/plan.md): who owns what, the milestones in or
 - `pnpm install`
 - `pnpm verify` runs typecheck and tests for every package. Run it before every PR.
 - `pnpm --filter @sandlot/mobile bundle` builds the app's iOS and Android bundles. CI runs it too, which proves the app still imports the engine.
+- `.claude/skills/verify-sandlot-mobile/scripts/verify.sh launch`, then `drive <flow>.yaml` and `cleanup`, opens the app in its own iOS simulator and saves proof that a change works. Read `.claude/skills/verify-sandlot-mobile/SKILL.md` before using it. It needs a Mac with Xcode, Java 17 and Maestro.
 
 ## Rules
 
@@ -46,3 +47,27 @@ The five default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready
 ### Domain docs
 
 Single-context: one `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## pstack models
+
+The model each pstack role runs on, set with `/setup-pstack` at the `large` budget (xhigh reasoning). The same lines are in `~/.cursor/rules/pstack-models.mdc` for Cursor. In Claude Code, `claude-sonnet-5-5-xhigh` means a subagent with `model: sonnet` and `effort: xhigh`.
+
+```
+feature, refactoring: claude-sonnet-5-5-xhigh
+bug-fix: claude-sonnet-5-5-xhigh
+perf-issue: claude-sonnet-5-5-xhigh
+hillclimb: claude-sonnet-5-5-xhigh
+judgment and prose: claude-opus-5-5-xhigh
+hardest tasks: claude-opus-5-5-xhigh
+how explorer: claude-sonnet-5-5-xhigh
+how explainer: claude-opus-5-5-xhigh
+why investigators: claude-sonnet-5-5-xhigh
+why synthesizer: claude-opus-5-5-xhigh
+reflect tooling: claude-sonnet-5-5-xhigh
+reflect judgment, divergent, synthesizer: claude-opus-5-5-xhigh
+arena runners: claude-opus-5-5-xhigh, claude-sonnet-5-5-xhigh
+arena cross-judge pool: claude-opus-5-5-xhigh, claude-sonnet-5-5-xhigh
+swarm workers: claude-sonnet-5-5-xhigh
+architect runners: claude-opus-5-5-xhigh, claude-sonnet-5-5-xhigh
+interrogate reviewers: claude-opus-5-5-xhigh, claude-sonnet-5-5-xhigh
+```
