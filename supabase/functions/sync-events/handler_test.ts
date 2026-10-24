@@ -1,21 +1,28 @@
 import { deepStrictEqual, strictEqual } from 'node:assert/strict';
 import { type Base, contentHash, type Store, type StoredGroup, syncEvents, type UploadRequest } from './handler.ts';
+import { sampleHalfInning, sampleSetup } from '../../../packages/engine/scripts/sample-events.ts';
 import { parseUploadRequest } from '../../../packages/engine/src/contract.ts';
-import type { PlayerId } from '../../../packages/engine/src/types.ts';
-import { EVENT_SCHEMA_VERSION } from '../../../packages/engine/src/version.ts';
+import { replay } from '../../../packages/engine/src/engine.ts';
+import type { Command, GameId, PlayerId, SessionId } from '../../../packages/engine/src/types.ts';
+import { ENGINE_VERSION, EVENT_SCHEMA_VERSION } from '../../../packages/engine/src/version.ts';
 
 const GAME = '11111111-1111-1111-1111-111111111111';
+const SESSION = '22222222-2222-2222-2222-222222222222';
 const USER = '00000000-0000-0000-0000-00000000000a';
 const OTHER_USER = '00000000-0000-0000-0000-00000000000b';
 
-function request(seq = 1, group = 'g1'): UploadRequest {
+const sample = sampleHalfInning({ gameId: GAME as GameId, sessionId: SESSION as SessionId, lockEpoch: 1 });
+const [awayLineup, homeLineup] = sample.map(({ events }) => events[0].command);
+const [awayLeadoff] = sampleSetup().roster.away;
+
+function request(seq = 1, group = 'g1', commands: Command[] = [awayLineup]): UploadRequest {
   const parsed = parseUploadRequest({
     schemaVersion: EVENT_SCHEMA_VERSION,
-    sessionId: '22222222-2222-2222-2222-222222222222',
-    events: [{
-      id: `e${seq}`, gameId: GAME, seq, group, lockEpoch: 1, source: 'tap',
-      at: '2026-10-23T18:00:00.000Z', command: { kind: 'pitch', result: 'ball' },
-    }],
+    sessionId: SESSION,
+    events: commands.map((command, i) => ({
+      id: `e${seq + i}`, gameId: GAME, seq: seq + i, group, lockEpoch: 1, source: 'tap',
+      at: '2026-10-23T18:00:00.000Z', command,
+    })),
   });
   if (!parsed.ok) throw new Error('Invalid upload test fixture');
   return parsed.request;
@@ -23,7 +30,10 @@ function request(seq = 1, group = 'g1'): UploadRequest {
 
 function memoryStore() {
   const groups = new Map<string, StoredGroup>();
-  const base: Base = { schemaVersion: EVENT_SCHEMA_VERSION, revision: 0, state: {}, events: [] };
+  const { rules, ...setup } = sampleSetup();
+  const base: Base = {
+    engineVersion: ENGINE_VERSION, schemaVersion: EVENT_SCHEMA_VERSION, rules, setup, revision: 0, state: null, events: [],
+  };
   const store: Store = {
     findGroup: (_gameId, groupId) => Promise.resolve(groups.get(groupId) ?? null),
     getBase: () => Promise.resolve(structuredClone(base)),
@@ -50,6 +60,14 @@ function memoryStore() {
   return { store, groups, base };
 }
 
+const stored = ({ groups, base }: ReturnType<typeof memoryStore>) => structuredClone({ groups: [...groups], base });
+
+async function sendAll(store: Store, requests: UploadRequest[]) {
+  for (const r of requests) {
+    deepStrictEqual(await syncEvents(USER, r, store), { ok: true, revision: r.events.at(-1)!.seq });
+  }
+}
+
 function barrier() {
   const ready = Promise.withResolvers<void>();
   let arrivals = 0;
@@ -74,7 +92,7 @@ async function race(secondUser = USER, secondRequest = request(), laterGroup = f
     getBase: async (gameId) => {
       await first;
       if (laterGroup) {
-        deepStrictEqual(await syncEvents(USER, request(2, 'g2'), db.store), { ok: true, revision: 2 });
+        deepStrictEqual(await syncEvents(USER, request(2, 'g2', [homeLineup]), db.store), { ok: true, revision: 2 });
       }
       return db.store.getBase(gameId);
     },
@@ -111,7 +129,7 @@ Deno.test('a concurrent retry returns its saved acknowledgment after a later gro
   const { outcomes, groups, base } = await race(USER, request(), true);
   deepStrictEqual(outcomes, [{ ok: true, revision: 1 }, { ok: true, revision: 1 }]);
   strictEqual(groups.size, 2);
-  deepStrictEqual(base.events, [...request().events, ...request(2, 'g2').events]);
+  deepStrictEqual(base.events, [...request().events, ...request(2, 'g2', [homeLineup]).events]);
   strictEqual(base.revision, 2);
 });
 
@@ -149,9 +167,9 @@ Deno.test('a missing group at an old or future sequence remains stale_revision',
 Deno.test('a saved retry ignores later revisions and command key ordering', async () => {
   const { store, groups, base } = memoryStore();
   deepStrictEqual(await syncEvents(USER, request(), store), { ok: true, revision: 1 });
-  deepStrictEqual(await syncEvents(USER, request(2, 'g2'), store), { ok: true, revision: 2 });
+  deepStrictEqual(await syncEvents(USER, request(2, 'g2', [homeLineup]), store), { ok: true, revision: 2 });
   const reordered = request();
-  reordered.events[0].command = { result: 'ball', kind: 'pitch' };
+  reordered.events[0].command = Object.fromEntries(Object.entries(awayLineup).reverse()) as Command;
   deepStrictEqual(await syncEvents(USER, reordered, store), { ok: true, revision: 1 });
   strictEqual(groups.size, 2);
   strictEqual(base.events.length, 2);
@@ -254,20 +272,83 @@ Deno.test('input the database cannot store is invalid before it reaches the data
 
 Deno.test('out classification roundtrips and changed classification conflicts with the saved play', async () => {
   const { store, groups, base } = memoryStore();
-  const original = request();
-  original.events[0].command = {
-    kind: 'ball_in_play', outcome: 'fielders_choice', trajectory: 'ground', fielders: ['SS', '2B'],
-    advances: [{ runner: { kind: 'player', id: 'player-1' as PlayerId }, to: 'out', outType: 'force' }],
-  };
+  const runnerOnFirst = sample.slice(0, 6);
+  await sendAll(store, runnerOnFirst);
+  const original = request(base.revision + 1, 'force-out', [
+    { kind: 'pitch', result: 'in_play' },
+    {
+      kind: 'ball_in_play', outcome: 'fielders_choice', trajectory: 'ground', fielders: ['SS', '2B'],
+      advances: [{ runner: awayLeadoff, to: 'out', outType: 'force' }],
+    },
+  ]);
+  const accepted = { ok: true, revision: original.events[1].seq };
   const wire = JSON.parse(JSON.stringify(original));
   deepStrictEqual(parseUploadRequest(wire), { ok: true, request: original });
-  deepStrictEqual(await syncEvents(USER, wire, store), { ok: true, revision: 1 });
-  deepStrictEqual(base.events, original.events);
-  deepStrictEqual(await syncEvents(USER, JSON.parse(JSON.stringify(wire)), store), { ok: true, revision: 1 });
+  deepStrictEqual(await syncEvents(USER, wire, store), accepted);
+  const history = [...runnerOnFirst.flatMap((r) => r.events), ...original.events];
+  deepStrictEqual(base.events, history);
+  deepStrictEqual(await syncEvents(USER, JSON.parse(JSON.stringify(wire)), store), accepted);
   const changed = structuredClone(wire);
-  changed.events[0].command.advances[0].outType = 'non_force';
+  changed.events[1].command.advances[0].outType = 'non_force';
   strictEqual(await contentHash(changed.events) === await contentHash(original.events), false);
   deepStrictEqual(await syncEvents(USER, changed, store), { ok: false, code: 'id_conflict' });
-  strictEqual(groups.size, 1);
-  deepStrictEqual(base.events, original.events);
+  strictEqual(groups.size, runnerOnFirst.length + 1);
+  deepStrictEqual(base.events, history);
+});
+
+Deno.test('the sample half-inning is accepted in order and its state is the replay of its events', async () => {
+  const db = memoryStore();
+  await sendAll(db.store, sample);
+  const events = sample.flatMap((r) => r.events);
+  const replayed = replay(sampleSetup(), events);
+  if (!replayed.ok) throw new Error('The sample half-inning does not replay');
+  strictEqual(db.base.revision, events.at(-1)!.seq);
+  deepStrictEqual(db.base.events, events);
+  deepStrictEqual(db.base.state, replayed.state);
+  strictEqual(db.groups.size, sample.length);
+});
+
+Deno.test('sending the sample half-inning again returns the same acknowledgments and stores nothing new', async () => {
+  const db = memoryStore();
+  await sendAll(db.store, sample);
+  const saved = stored(db);
+  await sendAll(db.store, sample);
+  deepStrictEqual(stored(db), saved);
+});
+
+Deno.test('an illegal group is rejected with the engine reason, stores nothing, and leaves the game playable', async () => {
+  const ball: Command = { kind: 'pitch', result: 'ball' };
+  const cases: { name: string; played: number; commands: Command[]; reason: string }[] = [
+    { name: 'a pitch before the game starts', played: 0, commands: [ball], reason: 'game_not_started' },
+    {
+      name: 'a runner who is not on base', played: 3, reason: 'runner_not_on_base',
+      commands: [{ kind: 'runner', event: 'stolen_base', runner: awayLeadoff, to: 2 }],
+    },
+    {
+      name: 'a legal pitch followed by a ball in play with no in-play pitch', played: 3, reason: 'ball_in_play_needs_pitch',
+      commands: [ball, { kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] }],
+    },
+  ];
+  for (const { name, played, commands, reason } of cases) {
+    const db = memoryStore();
+    await sendAll(db.store, sample.slice(0, played));
+    const saved = stored(db);
+    deepStrictEqual(
+      await syncEvents(USER, request(db.base.revision + 1, 'illegal', commands), db.store),
+      { ok: false, code: 'rejected', reason },
+      name,
+    );
+    deepStrictEqual(stored(db), saved, name);
+    await sendAll(db.store, sample.slice(played));
+    strictEqual(db.base.revision, sample.flatMap((r) => r.events).length, name);
+  }
+});
+
+Deno.test('a game pinned to a different engine version is unsupported_version', async () => {
+  const { store, groups, base } = memoryStore();
+  base.engineVersion = '0.0.0';
+  deepStrictEqual(await syncEvents(USER, request(), store), { ok: false, code: 'unsupported_version' });
+  strictEqual(groups.size, 0);
+  deepStrictEqual(base.events, []);
+  strictEqual(base.revision, 0);
 });

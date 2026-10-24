@@ -47,7 +47,9 @@ Deno.serve(async (req) => {
     if (invalidData(error)) return { ok: false, code: 'invalid' } as const;
     throw error;
   });
-  return outcome.ok
-    ? reply(200, { revision: outcome.revision })
-    : reply(STATUS[outcome.code], { error: outcome.code });
+  if (outcome.ok) return reply(200, { revision: outcome.revision });
+  return reply(
+    STATUS[outcome.code],
+    outcome.code === 'rejected' ? { error: outcome.code, reason: outcome.reason } : { error: outcome.code },
+  );
 });

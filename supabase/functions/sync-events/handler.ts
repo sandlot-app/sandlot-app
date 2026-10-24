@@ -1,5 +1,7 @@
 import { parseUploadRequest } from '../../../packages/engine/src/contract.ts';
-import type { Event } from '../../../packages/engine/src/types.ts';
+import { applyGroup, type RejectCode } from '../../../packages/engine/src/engine.ts';
+import type { Event, GameSetup, RuleSet } from '../../../packages/engine/src/types.ts';
+import { ENGINE_VERSION } from '../../../packages/engine/src/version.ts';
 
 export type { UploadRequest } from '../../../packages/engine/src/contract.ts';
 export type UploadEvent = Event;
@@ -23,11 +25,22 @@ export const STATUS: Record<ErrorCode, number> = {
   unsupported_version: 409,
 };
 
-export type Outcome = { ok: true; revision: number } | { ok: false; code: ErrorCode };
+export type Outcome =
+  | { ok: true; revision: number }
+  | { ok: false; code: Exclude<ErrorCode, 'rejected'> }
+  | { ok: false; code: 'rejected'; reason: RejectCode };
 
 export type StoredGroup = { userId: string; contentHash: string; ackRevision: number };
 
-export type Base = { schemaVersion: number; revision: number; state: unknown; events: UploadEvent[] };
+export type Base = {
+  engineVersion: string;
+  schemaVersion: number;
+  rules: RuleSet;
+  setup: Omit<GameSetup, 'rules'>;
+  revision: number;
+  state: unknown;
+  events: UploadEvent[];
+};
 
 export type Store = {
   findGroup(gameId: string, groupId: string): Promise<StoredGroup | null>;
@@ -83,16 +96,16 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
 
   const base = await store.getBase(first.gameId);
   if (!base) return { ok: false, code: 'invalid' };
-  if (base.schemaVersion !== schemaVersion) return { ok: false, code: 'unsupported_version' };
+  if (base.engineVersion !== ENGINE_VERSION || base.schemaVersion !== schemaVersion) {
+    return { ok: false, code: 'unsupported_version' };
+  }
   if (base.revision !== first.seq - 1) {
     const committed = await store.findGroup(first.gameId, first.group);
     return committed ? savedOutcome(committed, userId, hash) : { ok: false, code: 'stale_revision' };
   }
 
-  // First connection test only: the engine has no game logic yet, so the group is
-  // stored without replaying or applying it, and the cached state is unchanged.
-  // Milestone 6 requires the engine step here.
-  const newState = base.state;
+  const applied = applyGroup({ ...base.setup, rules: base.rules }, base.events, events.map((e) => e.command));
+  if (!applied.ok) return { ok: false, code: 'rejected', reason: applied.code };
 
   return store.commitGroup({
     userId,
@@ -100,7 +113,7 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
     gameId: first.gameId,
     baseRevision: base.revision,
     events,
-    newState,
+    newState: applied.state,
     contentHash: hash,
   });
 }
