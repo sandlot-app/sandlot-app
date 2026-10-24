@@ -1,0 +1,20 @@
+name: Demo highlight double puts the batter on second and scores the listed runner
+cite: Official Baseball Rules 5.08(a) and 9.06(a), https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    3: { player: { kind: opponent, id: away-9 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: double
+      trajectory: line
+      fielders: [RF]
+      advances: [{ runner: { kind: opponent, id: away-9 }, to: home }]
+then:
+  bases:
+    2: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+  score: { home: 0, away: 1 }
+  nextBatter: { home: 0, away: 1 }
+  pitchCounts: { home-1: 1, away-1: 0 }
