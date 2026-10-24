@@ -1,0 +1,22 @@
+name: A stolen base cannot record caught stealing
+cite: Official Baseball Rules 9.07; issue 14 stolen-base event semantics
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: stolen_base
+      runner:
+        kind: opponent
+        id: away-1
+      to: out
+then:
+  rejected: invalid_runner_destination

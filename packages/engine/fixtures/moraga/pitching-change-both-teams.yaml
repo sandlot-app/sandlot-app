@@ -1,0 +1,28 @@
+name: Both teams keep their pitching counts when pitchers change
+cite: Moraga Mustang, https://www.moragabaseball.org/pony-rules/ E.2
+preset: moraga-mustang-first-half
+started: true
+given:
+  half: bottom
+when:
+  - - kind: substitution
+      side: away
+      change:
+        kind: pitching_change
+        in:
+          kind: opponent
+          id: away-2
+  - - kind: pitch
+      result: ball
+then:
+  pitchers:
+    home:
+      kind: player
+      id: home-1
+    away:
+      kind: opponent
+      id: away-2
+  pitchCounts:
+    home-1: 0
+    away-1: 0
+    away-2: 1

@@ -1,0 +1,51 @@
+name: Undo restores the runner, count, and half before a caught-stealing third out
+cite: Moraga Mustang revised February 2024 D.3 and D.16, https://www.moragabaseball.org/pony-rules/; issue 10 Game end;
+  Sandlot docs/contract.md Undo; issue 10 whole-play undo
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 2
+  count:
+    balls: 2
+    strikes: 1
+    pitches: 3
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+  nextBatter:
+    home: 0
+    away: 4
+when:
+  - - kind: runner
+      event: caught_stealing
+      runner:
+        kind: opponent
+        id: away-1
+      to: out
+  - - kind: undo
+      target: play-1
+then:
+  status: in_progress
+  inning: 1
+  half: top
+  outs: 2
+  count:
+    balls: 2
+    strikes: 1
+    pitches: 3
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+  nextBatter:
+    home: 0
+    away: 4

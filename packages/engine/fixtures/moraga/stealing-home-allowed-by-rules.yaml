@@ -1,0 +1,27 @@
+name: A rule-set override permits stealing home
+cite: Issue 10 rule-set override decision; Official Baseball Rules 5.06(b)(1)
+preset: moraga-mustang-first-half
+started: true
+rules:
+  stealingHome: allowed
+given:
+  bases:
+    "3":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: stolen_base
+      runner:
+        kind: opponent
+        id: away-1
+      to: home
+then:
+  bases: {}
+  score:
+    home: 0
+    away: 1

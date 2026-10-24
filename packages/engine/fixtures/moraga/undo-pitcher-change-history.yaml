@@ -1,0 +1,33 @@
+name: Undoing a pitching change removes the new pitcher and restores re-entry history
+cite: Moraga Mustang C.3 and E.6, https://www.moragabaseball.org/pony-rules/; Sandlot docs/contract.md Undo; issue 10
+  whole-play undo
+preset: moraga-mustang-first-half
+started: true
+given:
+  pitchCounts:
+    home-1: 12
+    away-1: 0
+when:
+  - - kind: substitution
+      side: home
+      change:
+        kind: pitching_change
+        in:
+          kind: player
+          id: home-2
+  - - kind: undo
+      target: play-1
+then:
+  pitchers:
+    home:
+      kind: player
+      id: home-1
+    away:
+      kind: opponent
+      id: away-1
+  pitchCounts:
+    home-1: 12
+    away-1: 0
+  removedPitchers:
+    home: []
+    away: []

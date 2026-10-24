@@ -164,4 +164,118 @@ describe('undo and game end through the event log', () => {
     const undo = { ...illegal, id: `event-${seq + 1}` as EventId, seq: seq + 1, group: 'undo' as GroupId, command: { kind: 'undo', target: 'bad' as GroupId } satisfies Command };
     expect(replay(book.pins, [...book.events, illegal, undo])).toEqual({ ok: false, code: 'game_already_started' });
   });
+
+  it('undoes every command of a multi-pitch play and preserves the original play identity', () => {
+    const book = game();
+    const before = structuredClone(book.state);
+    const target = book.record({ kind: 'pitch', result: 'ball' }, { kind: 'pitch', result: 'called_strike' });
+    expect(book.state.count).toEqual({ balls: 1, strikes: 1, pitches: 2 });
+    const stored = structuredClone(book.events);
+    book.record({ kind: 'undo', target });
+    expect(book.state).toEqual(before);
+    expect(book.events.slice(0, -1)).toEqual(stored);
+  });
+
+  it('undoes runner movement and a third-out half transition from actual accepted events', () => {
+    const book = game();
+    book.record({ kind: 'pitch', result: 'hit_by_pitch' });
+    const beforeMove = structuredClone(book.state);
+    const move = book.record({ kind: 'runner', event: 'stolen_base', runner: away(1), to: 2 });
+    expect(book.state.bases[2]?.player).toEqual(away(1));
+    book.record({ kind: 'undo', target: move });
+    expect(book.state).toEqual(beforeMove);
+    for (let pitch = 0; pitch < 6; pitch++) book.record({ kind: 'pitch', result: 'called_strike' });
+    book.record({ kind: 'pitch', result: 'ball' });
+    const beforeOut = structuredClone(book.state);
+    const out = book.record({ kind: 'runner', event: 'caught_stealing', runner: away(1), to: 'out' });
+    expect(book.state).toMatchObject({ half: 'bottom', outs: 0, bases: {}, nextBatter: { away: 3, home: 0 } });
+    book.record({ kind: 'undo', target: out });
+    expect(book.state).toEqual(beforeOut);
+  });
+
+  it('undoes pitching changes, counts, and removal history while rejecting re-entry atomically', () => {
+    const book = game();
+    book.record({ kind: 'pitch', result: 'ball' });
+    const before = structuredClone(book.state);
+    const change = book.record({ kind: 'substitution', side: 'home', change: { kind: 'pitching_change', in: home(2) } });
+    const pitch = book.record({ kind: 'pitch', result: 'called_strike' });
+    expect(book.state.pitchCounts).toEqual({ 'home-1': 1, 'away-1': 0, 'home-2': 1 });
+    book.record({ kind: 'undo', target: pitch });
+    expect(book.state.pitchCounts['home-2']).toBe(0);
+    book.record({ kind: 'undo', target: change });
+    expect(book.state).toEqual(before);
+    const retried = book.record({ kind: 'substitution', side: 'home', change: { kind: 'pitching_change', in: home(2) } });
+    const changed = structuredClone(book.state);
+    expect(applyGroup(book.pins, book.events, [
+      { kind: 'pitch', result: 'ball' },
+      { kind: 'substitution', side: 'home', change: { kind: 'pitching_change', in: home(1) } },
+    ])).toEqual({ ok: false, code: 'pitcher_reentry_not_allowed' });
+    expect(replay(book.pins, book.events)).toEqual({ ok: true, state: changed });
+    book.record({ kind: 'undo', target: retried });
+    expect(book.state).toEqual(before);
+    book.record({ kind: 'pitch', result: 'ball' });
+    expect(book.state.pitchCounts).toEqual({ 'home-1': 2, 'away-1': 0 });
+  });
+
+  for (const threshold of [65, 75]) {
+    it(`undoes and can repeat the ${threshold}th pitch alert from a complete event log`, () => {
+      const book = game();
+      for (let pitch = 0; pitch < threshold - 1; pitch++) book.record({ kind: 'pitch', result: 'foul' });
+      const before = structuredClone(book.state);
+      const target = book.record({ kind: 'pitch', result: 'foul' });
+      const alerts = threshold === 65
+        ? [{ kind: 'pitch_count_near_limit', pitcher: home(1), remaining: 10 }]
+        : [{ kind: 'pitch_count_at_limit', pitcher: home(1) }];
+      expect(book.state.alerts).toEqual(alerts);
+      book.record({ kind: 'undo', target });
+      expect(book.state).toEqual(before);
+      book.record({ kind: 'pitch', result: 'foul' });
+      expect(book.state.alerts).toEqual(alerts);
+      const clear = book.record({ kind: 'pitch', result: 'ball' });
+      expect(book.state.alerts).toEqual([]);
+      book.record({ kind: 'undo', target: clear });
+      expect(book.state.pitchCounts['home-1']).toBe(threshold);
+      expect(book.state.alerts).toEqual(alerts);
+    });
+  }
+
+  for (const inning of [6, 7]) {
+    it(`undoes a runner walkoff in bottom ${inning} from an actual occupied base`, () => {
+      const book = game();
+      for (let half = 0; half < inning * 2 - 1; half++) book.finishHalf();
+      book.walk();
+      const runner = book.state.bases[1]!.player;
+      book.record({ kind: 'runner', event: 'passed_ball', runner, to: 3 });
+      const before = structuredClone(book.state);
+      const target = book.record({ kind: 'runner', event: 'passed_ball', runner, to: 'home' });
+      expect(book.state).toMatchObject({ status: 'final', inning, half: 'bottom', score: { home: 1, away: 0 }, bases: {} });
+      book.record({ kind: 'undo', target });
+      expect(book.state).toEqual(before);
+      book.record({ kind: 'pitch', result: 'ball' });
+      expect(book.state.status).toBe('in_progress');
+    });
+  }
+
+  it('undoes a final runner out and restores the unchanged batter due', () => {
+    const book = game();
+    for (let walk = 0; walk < 4; walk++) book.walk();
+    for (let half = 0; half < 11; half++) book.finishHalf();
+    book.walk();
+    const runner = book.state.bases[1]!.player;
+    for (let pitch = 0; pitch < 6; pitch++) book.record({ kind: 'pitch', result: 'called_strike' });
+    book.record({ kind: 'pitch', result: 'ball' });
+    const before = structuredClone(book.state);
+    const target = book.record({ kind: 'runner', event: 'pickoff', runner, to: 'out' });
+    expect(book.state).toMatchObject({ status: 'final', inning: 6, half: 'bottom', outs: 0, nextBatter: before.nextBatter });
+    book.record({ kind: 'undo', target });
+    expect(book.state).toEqual(before);
+  });
+
+  it('restores pregame when start is undone and then enforces the parent pregame restriction', () => {
+    const book = game();
+    book.record({ kind: 'undo', target: 'play-3' as GroupId });
+    expect(book.state).toMatchObject({ status: 'pregame', pitchers: {}, removedPitchers: { home: [], away: [] }, pitchCounts: {} });
+    expect(applyGroup(book.pins, book.events, [{ kind: 'undo', target: 'play-2' as GroupId }]))
+      .toEqual({ ok: false, code: 'game_not_started' });
+  });
 });

@@ -1,0 +1,40 @@
+name: Undo reopens a runner walkoff in inning 6
+cite: Moraga Mustang revised February 2024 D.3 and D.16, https://www.moragabaseball.org/pony-rules/; issue 10 Game end;
+  Sandlot docs/contract.md Undo; issue 10 whole-play undo
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: bottom
+  score: &a1
+    home: 2
+    away: 2
+  bases: &a2
+    "3":
+      player:
+        kind: player
+        id: home-1
+      chargedTo:
+        kind: opponent
+        id: away-1
+when:
+  - - kind: runner
+      event: passed_ball
+      runner:
+        kind: player
+        id: home-1
+      to: home
+  - - kind: undo
+      target: play-1
+then:
+  inning: 6
+  half: bottom
+  score: *a1
+  bases: *a2
+  status: in_progress
+  outs: 0
+  count:
+    balls: 0
+    strikes: 0
+    pitches: 0
+  runsThisHalf: 0

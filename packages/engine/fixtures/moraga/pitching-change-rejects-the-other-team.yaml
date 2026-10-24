@@ -1,0 +1,15 @@
+name: A pitcher must be on the specified side roster
+cite: Issue 10 roster decision; Moraga Mustang E.2
+preset: moraga-mustang-first-half
+started: true
+given: {}
+when:
+  - - kind: substitution
+      side: home
+      change:
+        kind: pitching_change
+        in:
+          kind: opponent
+          id: away-1
+then:
+  rejected: unknown_player
