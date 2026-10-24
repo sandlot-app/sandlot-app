@@ -17,9 +17,7 @@ export async function openNativeDatabase(): Promise<SqlDatabase> {
     useNewConnection: true,
   });
   try {
-    await database.execAsync(
-      'PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON',
-    );
+    await database.execAsync('PRAGMA journal_mode = WAL');
   } catch (error) {
     await database.closeAsync();
     throw error;
