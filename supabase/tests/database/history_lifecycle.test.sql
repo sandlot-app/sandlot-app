@@ -1,5 +1,5 @@
 begin;
-select plan(15);
+select plan(17);
 
 insert into auth.users (id) values ('00000000-0000-0000-0000-00000000000a');
 insert into public.games (id, engine_version, schema_version, rules, setup)
@@ -36,6 +36,13 @@ select throws_ok(
 );
 select is(pg_temp.history(), (select value from saved_history),
   'refused session deletion preserves exact user, session, group, events, revision and cache');
+
+select throws_ok(
+  $$ delete from public.groups where game_id = '11111111-1111-1111-1111-111111111111' and group_id = 'g1' $$,
+  '23503', null, 'an accepted group cannot be deleted out from under its events'
+);
+select is(pg_temp.history(), (select value from saved_history),
+  'refused group deletion preserves exact user, session, group, events, revision and cache');
 
 select throws_ok(
   $$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000a' $$,

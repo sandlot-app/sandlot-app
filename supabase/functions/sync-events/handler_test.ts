@@ -160,3 +160,29 @@ Deno.test('invalid input saves no group or events', async () => {
   deepStrictEqual(base.events, []);
   strictEqual(base.revision, 0);
 });
+
+Deno.test('input the database cannot store is invalid before it reaches the database', async () => {
+  const untouched: Store = {
+    findGroup: () => Promise.reject(new Error('findGroup called')),
+    getBase: () => Promise.reject(new Error('getBase called')),
+    commitGroup: () => Promise.reject(new Error('commitGroup called')),
+  };
+  const withEvent = (change: Record<string, unknown>) => {
+    const body = request();
+    Object.assign(body.events[0], change);
+    return body;
+  };
+  const cases = {
+    'seq past the integer range': withEvent({ seq: 2 ** 31 }),
+    'lockEpoch past the integer range': withEvent({ lockEpoch: 2 ** 31 }),
+    'a null character in an ID': withEvent({ id: 'e\u00001' }),
+    'a null character deep in a command': withEvent({ command: { kind: 'pitch', note: ['a\u0000b'] } }),
+    'a null character in a command key': withEvent({ command: { kind: 'pitch', ['k\u0000']: 1 } }),
+    'a null character in at': withEvent({ at: '2026-10-23T18:00:00.000Z\u0000' }),
+    'an oversized event ID': withEvent({ id: 'e'.repeat(129) }),
+    'an oversized group ID': withEvent({ group: 'g'.repeat(129) }),
+  };
+  for (const [name, body] of Object.entries(cases)) {
+    deepStrictEqual(await syncEvents(USER, body, untouched), { ok: false, code: 'invalid' }, name);
+  }
+});

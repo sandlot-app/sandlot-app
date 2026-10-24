@@ -51,18 +51,29 @@ export type Store = {
 };
 
 const MAX_EVENTS = 20;
+const MAX_INTEGER = 2 ** 31 - 1;
+const MAX_ID_LENGTH = 128;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 const isText = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
-const isCount = (v: unknown): v is number => Number.isInteger(v) && (v as number) > 0;
+const isCount = (v: unknown): v is number =>
+  Number.isInteger(v) && (v as number) > 0 && (v as number) <= MAX_INTEGER;
+const isId = (v: unknown): v is string => isText(v) && v.length <= MAX_ID_LENGTH;
+// Postgres text and jsonb cannot hold U+0000.
+const hasNull = (v: unknown): boolean =>
+  typeof v === 'string'
+    ? v.includes('\0')
+    : Array.isArray(v)
+    ? v.some(hasNull)
+    : isRecord(v) && Object.entries(v).some(([key, value]) => key.includes('\0') || hasNull(value));
 
 function parseEvent(v: unknown): UploadEvent | null {
-  if (!isRecord(v)) return null;
+  if (!isRecord(v) || hasNull(v)) return null;
   const { id, gameId, seq, group, lockEpoch, source, at, command } = v;
   if (
-    !isText(id) || !isText(gameId) || !UUID.test(gameId) || !isCount(seq) || !isText(group) ||
+    !isId(id) || !isText(gameId) || !UUID.test(gameId) || !isCount(seq) || !isId(group) ||
     !isCount(lockEpoch) || (source !== 'tap' && source !== 'voice') || !isText(at) ||
     !isRecord(command) || !isText(command.kind)
   ) {
