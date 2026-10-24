@@ -131,6 +131,7 @@ The scorer records what happened. Starting bases alone cannot prove that a force
 - Single, double, ground-rule double, triple, and home run keep their batter destinations. Error and fielder's choice put the batter on first unless listed.
 - Out, sacrifice fly, and sacrifice bunt put an omitted batter out with `batter_before_first`. That implied out occurs before explicit outs. To record another classification or order, list the batter explicitly. Mustang still rejects bunts.
 - Double and triple plays require an explicit batter destination and exactly two or three outs.
+- A play whose outs would take the half-inning past three is rejected with `too_many_outs`, such as a double play with two outs or a triple play with one.
 - Explicit outs occur in `advances` array order. Safe destinations describe final bases, not intermediate touches or timing.
 - A home entry asserts an eligible crossing before the third out, if any. Omit crossings after the third out. `Event.at` does not establish timing within a play.
 - Under [OBR 5.08(a) and 5.09(b)(6)](https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf), a third out classified as `force` or `batter_before_first` suppresses every run on that play. Otherwise eligible home entries count. An earlier force out alone does not suppress a run on a later non-force third out.
@@ -160,7 +161,7 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 ## Version pins
 
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
-- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.0'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
+- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.1'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
 - Local verification compares that artifact with the current engine and fixtures. CI also compares it with the trusted PR base or main-push predecessor and rejects changed results without an engine-version increase. [Engine verification](engine-verification.md) describes the commands and the initial release baseline.
 - Each upload carries `schemaVersion`. The server returns `unsupported_version` when it differs from the server's `EVENT_SCHEMA_VERSION` or from the game's pinned `schema_version`. The parser checks it before any command, so an old-format request returns `unsupported_version`, not `invalid`.
 - The server also returns `unsupported_version` for a game pinned to a different engine version. Milestone 6 still requires the phone to refuse scoring under mismatched pins.

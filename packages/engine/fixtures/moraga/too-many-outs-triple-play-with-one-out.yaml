@@ -1,0 +1,53 @@
+name: A triple play with one out already is rejected, because a half-inning ends at the third out
+cite: Official Baseball Rules 5.08(a), 5.09(b)(6) (a half-inning ends when three offensive players are put out)
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 1
+  nextBatter:
+    home: 0
+    away: 1
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+    "2":
+      player:
+        kind: opponent
+        id: away-9
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: pitch
+      result: in_play
+    - kind: ball_in_play
+      outcome: triple_play
+      trajectory: ground
+      fielders:
+        - SS
+        - 2B
+        - 1B
+      advances:
+        - runner:
+            kind: opponent
+            id: away-9
+          to: out
+          outType: force
+        - runner:
+            kind: opponent
+            id: away-1
+          to: out
+          outType: force
+        - runner:
+            kind: opponent
+            id: away-2
+          to: out
+          outType: batter_before_first
+then:
+  rejected: too_many_outs
