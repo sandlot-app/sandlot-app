@@ -106,6 +106,7 @@ The contract types and `parseUploadRequest` live in `packages/engine/src/contrac
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
 - The engine exports `ENGINE_VERSION` and `EVENT_SCHEMA_VERSION`. CI fails if fixture results change and `ENGINE_VERSION` does not.
 - The server refuses to write to a game pinned to a different engine version and returns `unsupported_version`. The phone reads the pins when it opens a game. If they do not match its own engine, it does not score the game.
+- Each upload carries `schemaVersion`. The server returns `unsupported_version` when it differs from the server's `EVENT_SCHEMA_VERSION` or from the game's pinned `schema_version`.
 
 ## Undo
 
