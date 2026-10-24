@@ -7,7 +7,7 @@ import type {
 
 export function connect(path: string, beforeOutbox?: () => void): SqlDatabase {
   const database = new DatabaseSync(path);
-  database.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 1');
+  database.exec('PRAGMA foreign_keys = OFF; PRAGMA busy_timeout = 1');
   if (beforeOutbox)
     database.function('before_outbox', () => {
       beforeOutbox();

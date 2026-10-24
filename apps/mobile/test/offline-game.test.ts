@@ -293,6 +293,11 @@ for (const mutation of [
     reason: 'corrupt',
   },
   { sql: 'DELETE FROM local_outbox', reason: 'corrupt' },
+  { sql: "UPDATE local_outbox SET game_id = 'orphan'", reason: 'corrupt' },
+  {
+    sql: "UPDATE local_events SET game_id = 'orphan' WHERE seq = 2",
+    reason: 'corrupt',
+  },
   { sql: 'UPDATE local_outbox SET event_count = 99', reason: 'corrupt' },
   { sql: 'UPDATE local_events SET seq = 99 WHERE seq = 2', reason: 'corrupt' },
 ]) {
