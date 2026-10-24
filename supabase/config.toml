@@ -1,0 +1,10 @@
+project_id = "sandlot"
+
+[auth]
+enable_anonymous_sign_ins = true
+
+[auth.rate_limit]
+anonymous_users = 30
+
+[functions.sync-events]
+verify_jwt = true
