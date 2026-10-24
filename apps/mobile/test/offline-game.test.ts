@@ -13,6 +13,21 @@ import { connect } from './database.ts';
 
 const boundary = { newId: randomUUID, now: () => '2026-10-24T17:00:00.000Z' };
 
+test('an attempted new play cannot be mistaken for an older play with the same generated group ID', async () => {
+  const database = connect(':memory:');
+  const olderGroup = randomUUID();
+  let calls = 0;
+  const opened = await openOfflineGame(database, { ...boundary, newId: () => ++calls === 1 || calls === 6 ? olderGroup : randomUUID() });
+  assert.equal(opened.kind, 'ready');
+  if (opened.kind !== 'ready') return;
+  const started = await opened.record({ kind: 'start' });
+  assert.deepEqual(await opened.record({ kind: 'pitch', result: 'ball' }), { kind: 'unsaved' });
+  const reopened = await openOfflineGame(database, boundary);
+  assert.equal(reopened.kind, 'ready');
+  if (reopened.kind === 'ready' && started.kind === 'saved') assert.deepEqual(reopened.game, started.game);
+  await database.close();
+});
+
 test('an interrupted process loses no earlier plays and a committed process survives a fresh open', async () => {
   const directory = mkdtempSync(join(tmpdir(), 'sandlot-crash-'));
   const path = join(directory, 'games.db');
