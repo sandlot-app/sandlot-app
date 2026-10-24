@@ -10,6 +10,7 @@ import type { SqlDatabase, SqlConnection, SqlValue } from '../src/scoring/databa
 
 function connect(path: string): SqlDatabase {
   const database = new DatabaseSync(path);
+  database.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 1');
   const connection: SqlConnection = {
     async exec(sql) { database.exec(sql); },
     async all<T>(sql: string, values: SqlValue[] = []): Promise<T[]> {
@@ -34,6 +35,18 @@ function connect(path: string): SqlDatabase {
 }
 
 const boundary = { newId: randomUUID, now: () => '2026-10-24T17:00:00.000Z' };
+
+test('a local storage format changed after opening blocks scoring without appending a play', async () => {
+  const database = connect(':memory:');
+  const opened = await openOfflineGame(database, boundary);
+  assert.equal(opened.kind, 'ready');
+  if (opened.kind !== 'ready') return;
+  await opened.record({ kind: 'start' });
+  await database.exec('PRAGMA user_version = 2');
+  assert.deepEqual(await opened.record({ kind: 'pitch', result: 'ball' }), { kind: 'blocked', reason: 'version' });
+  assert.deepEqual(await database.all('SELECT count(*) AS saved FROM local_events'), [{ saved: 3 }]);
+  await database.close();
+});
 
 test('a committed play is recovered by its original group if commit completion is uncertain', async () => {
   const database = connect(':memory:');
