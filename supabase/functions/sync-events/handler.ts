@@ -99,13 +99,16 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
   if (base.engineVersion !== ENGINE_VERSION || base.schemaVersion !== schemaVersion) {
     return { ok: false, code: 'unsupported_version' };
   }
-  if (base.revision !== first.seq - 1) {
-    const committed = await store.findGroup(first.gameId, first.group);
-    return committed ? savedOutcome(committed, userId, hash) : { ok: false, code: 'stale_revision' };
-  }
+  // A concurrent request can commit this group after the lookup above, which makes
+  // the group stale or illegal against the base read here. The saved group decides.
+  const savedOr = async (failure: Outcome): Promise<Outcome> => {
+    const saved = await store.findGroup(first.gameId, first.group);
+    return saved ? savedOutcome(saved, userId, hash) : failure;
+  };
+  if (base.revision !== first.seq - 1) return savedOr({ ok: false, code: 'stale_revision' });
 
   const applied = applyGroup({ ...base.setup, rules: base.rules }, base.events, events.map((e) => e.command));
-  if (!applied.ok) return { ok: false, code: 'rejected', reason: applied.code };
+  if (!applied.ok) return savedOr({ ok: false, code: 'rejected', reason: applied.code });
 
   return store.commitGroup({
     userId,

@@ -152,6 +152,39 @@ Deno.test('identical uploads that both read the old base still store only one gr
   deepStrictEqual(base.events, request().events);
 });
 
+Deno.test('a changed illegal upload that read the old base returns id_conflict once its group commits', async () => {
+  const { store, groups, base } = memoryStore();
+  const changed = request();
+  changed.events[0].command = { kind: 'pitch', result: 'foul' };
+  deepStrictEqual(await syncEvents(USER, changed, memoryStore().store), {
+    ok: false, code: 'rejected', reason: 'game_not_started',
+  });
+  const bothRead = barrier();
+  const readOldBase: Store['getBase'] = async (gameId) => {
+    const snapshot = await store.getBase(gameId);
+    await bothRead();
+    return snapshot;
+  };
+  const legal = syncEvents(USER, request(), { ...store, getBase: readOldBase });
+  let changedRead = false;
+  const illegal = syncEvents(USER, changed, {
+    ...store,
+    getBase: async (gameId) => {
+      const snapshot = await readOldBase(gameId);
+      changedRead = true;
+      return snapshot;
+    },
+    findGroup: async (gameId, groupId) => {
+      if (changedRead) await legal;
+      return store.findGroup(gameId, groupId);
+    },
+  });
+  deepStrictEqual(await Promise.all([legal, illegal]), [{ ok: true, revision: 1 }, { ok: false, code: 'id_conflict' }]);
+  strictEqual(groups.size, 1);
+  deepStrictEqual(base.events, request().events);
+  strictEqual(base.revision, 1);
+});
+
 Deno.test('a missing group at an old or future sequence remains stale_revision', async () => {
   const { store, groups, base } = memoryStore();
   deepStrictEqual(await syncEvents(USER, request(), store), { ok: true, revision: 1 });
