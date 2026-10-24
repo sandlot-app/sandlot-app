@@ -70,6 +70,8 @@ async function initialize(database: SqlDatabase): Promise<void> {
 }
 
 async function load(connection: SqlConnection): Promise<LoadedGame | null> {
+  const version = (await connection.all<{ user_version: number }>('PRAGMA user_version'))[0]?.user_version;
+  if (version !== formatVersion) throw new SavedDataError('version');
   const rows = await connection.all<GameRow>('SELECT id, setup_json, engine_version, schema_version, context, bootstrap_group FROM local_games');
   const eventRows = await connection.all<EventRow>('SELECT * FROM local_events ORDER BY seq');
   const outbox = await connection.all<OutboxRow>('SELECT * FROM local_outbox ORDER BY first_seq');
