@@ -1,0 +1,8 @@
+name: A command naming a player who isn't on the roster is rejected
+cite: Official Baseball Rules 4.03
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: runner, event: stolen_base, runner: { kind: opponent, id: away-99 }, to: 2 }]
+then:
+  rejected: unknown_player

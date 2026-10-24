@@ -1,0 +1,13 @@
+name: A foul tip on two strikes is a strikeout
+cite: Official Baseball Rules, Definition of Terms, Strike (g) and Foul Tip; Official Baseball Rules 5.09(a)(2)
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: foul }]
+  - [{ kind: pitch, result: foul }]
+  - [{ kind: pitch, result: foul_tip }]
+then:
+  outs: 1
+  count: { balls: 0, strikes: 0, pitches: 0 }
+  nextBatter: { home: 0, away: 1 }
+  pitchCounts: { home-1: 3, away-1: 0 }

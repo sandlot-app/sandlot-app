@@ -1,0 +1,39 @@
+name: Each side's place in the batting order carries across innings
+cite: Official Baseball Rules 5.04(a)(1) and 5.04(a)(2); Moraga Mustang Rules (revised 2/2024), E.2
+preset: moraga-mustang-first-half
+started: true
+when:
+  # Top 1: away-1, away-2 and away-3 strike out.
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  # Bottom 1: home-1 walks, then home-2, home-3 and home-4 strike out.
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  # Top 2: away-4 leads off and takes a ball.
+  - [{ kind: pitch, result: ball }]
+then:
+  inning: 2
+  half: top
+  outs: 0
+  bases: {}
+  count: { balls: 1, strikes: 0, pitches: 1 }
+  nextBatter: { home: 4, away: 3 }
+  pitchCounts: { home-1: 10, away-1: 13 }

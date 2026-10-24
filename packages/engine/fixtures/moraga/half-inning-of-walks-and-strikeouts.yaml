@@ -1,0 +1,51 @@
+name: A half-inning of walks and strikeouts ends with the right score, outs and next batter
+cite: Official Baseball Rules 5.04(a), 5.05(b)(1), 5.06(b)(3)(B), 5.08(a) and 5.09(a)(2); Moraga Mustang Rules (revised 2/2024), E.2
+preset: moraga-mustang-first-half
+started: true
+when:
+  # away-1 and away-2 walk.
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  # away-3 strikes out swinging.
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  # away-4 walks to load the bases, and away-5 walks in a run.
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  # away-6 strikes out looking, then on a foul tip.
+  - [{ kind: pitch, result: called_strike }]
+  - [{ kind: pitch, result: called_strike }]
+  - [{ kind: pitch, result: foul_tip }]
+  # away-7 fouls off three two-strike pitches, takes a ball, and strikes out for the third out.
+  - [{ kind: pitch, result: foul }]
+  - [{ kind: pitch, result: foul }]
+  - [{ kind: pitch, result: foul }]
+  - [{ kind: pitch, result: foul }]
+  - [{ kind: pitch, result: foul }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: swinging_strike }]
+  # Bottom 1: home-1 takes a ball.
+  - [{ kind: pitch, result: ball }]
+then:
+  inning: 1
+  half: bottom
+  outs: 0
+  bases: {}
+  count: { balls: 1, strikes: 0, pitches: 1 }
+  score: { home: 0, away: 1 }
+  runsThisHalf: 0
+  nextBatter: { home: 0, away: 7 }
+  pitchCounts: { home-1: 29, away-1: 1 }

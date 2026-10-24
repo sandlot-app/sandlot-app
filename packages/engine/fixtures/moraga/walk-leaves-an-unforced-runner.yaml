@@ -1,0 +1,17 @@
+name: A walk leaves a runner on second who isn't forced
+cite: Official Baseball Rules 5.05(b)(1) and 5.06(b)(3)(B)
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter: { home: 0, away: 1 }
+  bases:
+    2: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+then:
+  bases:
+    1: { player: { kind: opponent, id: away-2 }, chargedTo: { kind: player, id: home-1 } }
+    2: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }

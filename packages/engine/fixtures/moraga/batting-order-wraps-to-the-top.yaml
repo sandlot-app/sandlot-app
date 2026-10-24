@@ -1,0 +1,12 @@
+name: After the last batter in the lineup, the order goes back to the first
+cite: Official Baseball Rules 5.04(a)(1)
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter: { home: 0, away: 8 }
+when:
+  - [{ kind: pitch, result: hit_by_pitch }]
+then:
+  bases:
+    1: { player: { kind: opponent, id: away-9 }, chargedTo: { kind: player, id: home-1 } }
+  nextBatter: { home: 0, away: 0 }

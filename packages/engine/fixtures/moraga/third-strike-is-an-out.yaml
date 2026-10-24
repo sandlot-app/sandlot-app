@@ -1,0 +1,15 @@
+name: The third strike puts the batter out and brings up the next batter
+cite: Official Baseball Rules 5.09(a)(2) and 5.04(a)(1)
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: called_strike }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: called_strike }]
+then:
+  outs: 1
+  count: { balls: 0, strikes: 0, pitches: 0 }
+  bases: {}
+  nextBatter: { home: 0, away: 1 }
+  pitchCounts: { home-1: 4, away-1: 0 }

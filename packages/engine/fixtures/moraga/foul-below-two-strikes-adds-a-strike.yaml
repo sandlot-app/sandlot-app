@@ -1,0 +1,9 @@
+name: A foul below two strikes adds a strike
+cite: Official Baseball Rules, Definition of Terms, Strike (c)
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: foul }]
+  - [{ kind: pitch, result: foul }]
+then:
+  count: { balls: 0, strikes: 2, pitches: 2 }

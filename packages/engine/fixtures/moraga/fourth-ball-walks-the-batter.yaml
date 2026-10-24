@@ -1,0 +1,17 @@
+name: The fourth ball walks the batter to first
+cite: Official Baseball Rules 5.05(b)(1)
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: called_strike }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+then:
+  outs: 0
+  count: { balls: 0, strikes: 0, pitches: 0 }
+  bases:
+    1: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+  nextBatter: { home: 0, away: 1 }
+  pitchCounts: { home-1: 5, away-1: 0 }

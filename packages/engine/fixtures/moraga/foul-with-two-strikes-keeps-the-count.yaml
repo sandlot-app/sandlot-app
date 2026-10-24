@@ -1,0 +1,14 @@
+name: A foul with two strikes adds a pitch but no strike
+cite: Official Baseball Rules, Definition of Terms, Strike (c) and Foul Ball
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: called_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: foul }]
+  - [{ kind: pitch, result: foul }]
+then:
+  outs: 0
+  count: { balls: 0, strikes: 2, pitches: 4 }
+  nextBatter: { home: 0, away: 0 }
+  pitchCounts: { home-1: 4, away-1: 0 }

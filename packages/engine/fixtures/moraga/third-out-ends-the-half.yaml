@@ -1,0 +1,27 @@
+name: The third out ends the half, clears the bases and resets the count
+cite: Official Baseball Rules, Definition of Terms, Inning; Official Baseball Rules 5.09(a)(2)
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 2
+  nextBatter: { home: 0, away: 5 }
+  score: { home: 0, away: 1 }
+  runsThisHalf: 1
+  bases:
+    1: { player: { kind: opponent, id: away-5 }, chargedTo: { kind: player, id: home-1 } }
+    2: { player: { kind: opponent, id: away-4 }, chargedTo: { kind: player, id: home-1 } }
+    3: { player: { kind: opponent, id: away-3 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: called_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: swinging_strike }]
+then:
+  inning: 1
+  half: bottom
+  outs: 0
+  count: { balls: 0, strikes: 0, pitches: 0 }
+  bases: {}
+  score: { home: 0, away: 1 }
+  runsThisHalf: 0
+  nextBatter: { home: 0, away: 6 }

@@ -1,0 +1,8 @@
+name: Starting a game that already started is rejected
+cite: Official Baseball Rules 5.01
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: game, control: { kind: start, umpireStart: "2026-10-25T17:05:00.000Z" } }]
+then:
+  rejected: game_already_started

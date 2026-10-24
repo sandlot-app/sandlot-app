@@ -1,0 +1,9 @@
+name: A foul tip below two strikes is a strike
+cite: Official Baseball Rules, Definition of Terms, Strike (g) and Foul Tip
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: foul_tip }]
+then:
+  outs: 0
+  count: { balls: 0, strikes: 1, pitches: 1 }

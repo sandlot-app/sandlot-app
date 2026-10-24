@@ -1,0 +1,13 @@
+name: A hit by pitch awards the batter first base
+cite: Official Baseball Rules 5.05(b)(2)
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: called_strike }]
+  - [{ kind: pitch, result: hit_by_pitch }]
+then:
+  count: { balls: 0, strikes: 0, pitches: 0 }
+  bases:
+    1: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+  nextBatter: { home: 0, away: 1 }
+  pitchCounts: { home-1: 2, away-1: 0 }
