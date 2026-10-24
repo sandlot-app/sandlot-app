@@ -1,0 +1,11 @@
+name: Mustang rejects a stolen base to home
+cite: Moraga Mustang D.3, https://www.moragabaseball.org/pony-rules/
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    3: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - [{ kind: runner, event: stolen_base, runner: { kind: opponent, id: away-1 }, to: home }]
+then:
+  rejected: stealing_home_not_allowed

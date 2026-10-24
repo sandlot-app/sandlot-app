@@ -1,0 +1,42 @@
+name: A pickoff third out in the bottom starts the next inning without advancing
+  the batter
+cite: Official Baseball Rules 5.09(b)(4), 5.04(a)(3), 5.06(c)(1)
+preset: moraga-mustang-first-half
+started: true
+given:
+  half: bottom
+  outs: 2
+  bases:
+    "1":
+      player:
+        kind: player
+        id: home-1
+      chargedTo:
+        kind: opponent
+        id: away-1
+  count:
+    balls: 1
+    strikes: 2
+    pitches: 3
+  nextBatter:
+    home: 2
+    away: 0
+when:
+  - - kind: runner
+      event: pickoff
+      runner:
+        kind: player
+        id: home-1
+      to: out
+then:
+  inning: 2
+  half: top
+  outs: 0
+  bases: {}
+  count:
+    balls: 0
+    strikes: 0
+    pitches: 0
+  nextBatter:
+    home: 2
+    away: 0

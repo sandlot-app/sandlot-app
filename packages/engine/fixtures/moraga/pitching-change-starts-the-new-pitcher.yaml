@@ -1,0 +1,15 @@
+name: Any roster player can pitch and the batting lineup stays intact
+cite: Moraga Mustang E.2 and C.1, https://www.moragabaseball.org/pony-rules/
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: substitution, side: home, change: { kind: pitching_change, in: { kind: player, id: home-12 } } }]
+  - [{ kind: pitch, result: ball }]
+then:
+  pitchers:
+    home: { kind: player, id: home-12 }
+    away: { kind: opponent, id: away-1 }
+  pitchCounts: { home-1: 1, away-1: 0, home-12: 1 }
+  nextBatter: { home: 0, away: 0 }
+  count: { balls: 2, strikes: 0, pitches: 2 }

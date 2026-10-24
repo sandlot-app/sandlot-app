@@ -1,0 +1,23 @@
+name: An advance must move a runner forward
+cite: Official Baseball Rules 5.06(b)(1), 5.09(b)(10); issue 14 advance command
+  semantics
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    "2":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: wild_pitch
+      runner:
+        kind: opponent
+        id: away-1
+      to: 2
+then:
+  rejected: invalid_runner_destination

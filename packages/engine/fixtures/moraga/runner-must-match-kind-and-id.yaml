@@ -1,0 +1,65 @@
+name: A roster ID with a different kind does not identify the active runner
+cite: Issue 10 PlayerRef identity and runner-advance decisions
+preset: moraga-mustang-first-half
+started: true
+roster:
+  home:
+    - kind: player
+      id: home-1
+    - kind: player
+      id: home-2
+    - kind: player
+      id: home-3
+    - kind: player
+      id: home-4
+    - kind: player
+      id: home-5
+    - kind: player
+      id: home-6
+    - kind: player
+      id: home-7
+    - kind: player
+      id: home-8
+    - kind: player
+      id: home-9
+    - kind: player
+      id: shared-id
+  away:
+    - kind: opponent
+      id: away-1
+    - kind: opponent
+      id: away-2
+    - kind: opponent
+      id: away-3
+    - kind: opponent
+      id: away-4
+    - kind: opponent
+      id: away-5
+    - kind: opponent
+      id: away-6
+    - kind: opponent
+      id: away-7
+    - kind: opponent
+      id: away-8
+    - kind: opponent
+      id: away-9
+    - kind: opponent
+      id: shared-id
+given:
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: shared-id
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: wild_pitch
+      runner:
+        kind: player
+        id: shared-id
+      to: 2
+then:
+  rejected: runner_not_on_base

@@ -1,0 +1,22 @@
+name: Second-half Mustang also rejects a steal to home
+cite: Moraga Mustang, https://www.moragabaseball.org/pony-rules/ D.3
+preset: moraga-mustang-second-half
+started: true
+given:
+  bases:
+    "3":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: stolen_base
+      runner:
+        kind: opponent
+        id: away-1
+      to: home
+then:
+  rejected: stealing_home_not_allowed

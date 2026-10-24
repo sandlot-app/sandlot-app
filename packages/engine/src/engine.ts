@@ -17,6 +17,12 @@ export type RejectCode =
   | 'game_not_started'
   | 'game_already_started'
   | 'no_pitcher'
+  | 'runner_not_on_base'
+  | 'base_occupied'
+  | 'invalid_runner_destination'
+  | 'stealing_home_not_allowed'
+  | 'balks_not_allowed'
+  | 'pitcher_reentry_not_allowed'
   | 'bunting_not_allowed';
 
 export type ApplyResult =
@@ -36,6 +42,7 @@ export function initialState(setup: GameSetup): GameState {
     lineups: { home: [], away: [] },
     nextBatter: { home: 0, away: 0 },
     pitchers: {},
+    removedPitchers: { home: [], away: [] },
     pitchCounts: {},
     umpireStart: null,
     alerts: [],
@@ -101,6 +108,7 @@ function copy(state: GameState): GameState {
     lineups: { home: [...state.lineups.home], away: [...state.lineups.away] },
     nextBatter: { ...state.nextBatter },
     pitchers: { ...state.pitchers },
+    removedPitchers: { home: [...state.removedPitchers.home], away: [...state.removedPitchers.away] },
     pitchCounts: { ...state.pitchCounts },
     alerts: [...state.alerts],
   };
@@ -113,9 +121,55 @@ function applyCommand(setup: GameSetup, game: GameState, command: Command): Reje
   switch (command.kind) {
     case 'pitch':
       return pitch(setup, game, command.result);
+    case 'runner':
+      return moveRunner(setup, game, command);
+    case 'substitution':
+      return command.change.kind === 'pitching_change'
+        ? changePitcher(setup, game, command.side, command.change.in)
+        : 'not_implemented';
     default:
       return 'not_implemented';
   }
+}
+
+function changePitcher(setup: GameSetup, game: GameState, side: TeamSide, incoming: PlayerRef): RejectCode | null {
+  const current = game.pitchers[side];
+  if (current?.kind === incoming.kind && current.id === incoming.id) return null;
+  if (!setup.rules.pitcherReentry && game.removedPitchers[side].some((player) => player.kind === incoming.kind && player.id === incoming.id)) {
+    return 'pitcher_reentry_not_allowed';
+  }
+  if (current) game.removedPitchers[side].push(current);
+  game.pitchers[side] = incoming;
+  game.pitchCounts[incoming.id] ??= 0;
+  return null;
+}
+
+function moveRunner(setup: GameSetup, game: GameState, command: Extract<Command, { kind: 'runner' }>): RejectCode | null {
+  if (command.event === 'balk' && !setup.rules.balks) return 'balks_not_allowed';
+  if (!['stolen_base', 'caught_stealing', 'pickoff', 'wild_pitch', 'passed_ball', 'advance_on_error'].includes(command.event)) {
+    return 'not_implemented';
+  }
+  const from = ([1, 2, 3] as const).find((base) => {
+    const player = game.bases[base]?.player;
+    return player?.kind === command.runner.kind && player.id === command.runner.id;
+  });
+  if (!from) return 'runner_not_on_base';
+  const { to } = command;
+  if (command.event === 'stolen_base' && to === 'home' && setup.rules.stealingHome === 'passed_ball_only') {
+    return 'stealing_home_not_allowed';
+  }
+  if ((command.event === 'caught_stealing' || command.event === 'pickoff') && to !== 'out') return 'invalid_runner_destination';
+  if (command.event === 'stolen_base' && to === 'out') return 'invalid_runner_destination';
+  if (typeof to === 'number' && to <= from) return 'invalid_runner_destination';
+  if (typeof to === 'number' && game.bases[to]) return 'base_occupied';
+  const runner = game.bases[from]!;
+  delete game.bases[from];
+  if (to === 'out') {
+    if (game.outs === 2) endHalf(setup, game);
+    else game.outs += 1;
+  } else if (to === 'home') scoreRun(game);
+  else game.bases[to] = runner;
+  return null;
 }
 
 function applyControl(game: GameState, control: GameControl): RejectCode | null {
@@ -147,6 +201,12 @@ function pitch(setup: GameSetup, game: GameState, result: PitchResult): RejectCo
   if (!pitcher) return 'no_pitcher';
   game.pitchCounts[pitcher.id] = (game.pitchCounts[pitcher.id] ?? 0) + 1;
   game.count.pitches += 1;
+  if (setup.rules.pitchCountTable === 'pitch_smart_9_10' && game.pitchCounts[pitcher.id] === 65) {
+    game.alerts.push({ kind: 'pitch_count_near_limit', pitcher, remaining: 10 });
+  }
+  if (setup.rules.pitchCountTable === 'pitch_smart_9_10' && game.pitchCounts[pitcher.id] === 75) {
+    game.alerts.push({ kind: 'pitch_count_at_limit', pitcher });
+  }
   switch (result) {
     case 'ball':
       game.count.balls += 1;
@@ -189,7 +249,7 @@ function awardFirst(setup: GameSetup, game: GameState, pitcher: PlayerRef) {
 function batterOut(setup: GameSetup, game: GameState) {
   endAtBat(setup, game);
   if (game.outs === 2) {
-    endHalf(game);
+    endHalf(setup, game);
   } else {
     game.outs += 1;
   }
@@ -201,10 +261,11 @@ function endAtBat(setup: GameSetup, game: GameState) {
   game.count = { ...setup.rules.startingCount, pitches: 0 };
 }
 
-function endHalf(game: GameState) {
+function endHalf(setup: GameSetup, game: GameState) {
   game.outs = 0;
   game.bases = {};
   game.runsThisHalf = 0;
+  game.count = { ...setup.rules.startingCount, pitches: 0 };
   if (game.half === 'top') {
     game.half = 'bottom';
   } else {

@@ -1,0 +1,42 @@
+name: No pitch-count table means no pitch-count alerts
+cite: Issue 10 rule-set data and alert decisions
+preset: moraga-mustang-first-half
+started: true
+rules:
+  pitchCountTable: null
+given:
+  pitchCounts:
+    home-1: 64
+    away-1: 0
+  count:
+    balls: 0
+    strikes: 2
+    pitches: 2
+when:
+  - - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+    - kind: pitch
+      result: foul
+then:
+  pitchCounts:
+    home-1: 75
+    away-1: 0
+  alerts: []

@@ -1,0 +1,24 @@
+name: An allowed balk remains out of scope
+cite: Issue 10 Runner events in scope decision; Official Baseball Rules 6.02(a)
+preset: moraga-mustang-first-half
+started: true
+rules:
+  balks: true
+given:
+  bases:
+    "1":
+      player:
+        kind: opponent
+        id: away-1
+      chargedTo:
+        kind: player
+        id: home-1
+when:
+  - - kind: runner
+      event: balk
+      runner:
+        kind: opponent
+        id: away-1
+      to: 2
+then:
+  rejected: not_implemented

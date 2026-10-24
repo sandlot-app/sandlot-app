@@ -1,0 +1,22 @@
+name: Selecting the current pitcher does not remove them or reset their count
+cite: Moraga Mustang, https://www.moragabaseball.org/pony-rules/ E.6
+preset: moraga-mustang-first-half
+started: true
+given: {}
+when:
+  - - kind: pitch
+      result: ball
+  - - kind: substitution
+      side: home
+      change:
+        kind: pitching_change
+        in:
+          kind: player
+          id: home-1
+then:
+  removedPitchers:
+    home: []
+    away: []
+  pitchCounts:
+    home-1: 1
+    away-1: 0
