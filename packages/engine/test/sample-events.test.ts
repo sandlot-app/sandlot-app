@@ -17,9 +17,9 @@ describe('sample-events', () => {
     expect(printed).toEqual(sampleHalfInning(options));
     if (!Array.isArray(printed)) throw new Error('sample-events must print a request array');
     const requests = printed.map((value) => {
-      const request = parseUploadRequest(value);
-      if (!request) throw new Error('sample-events printed an invalid upload request');
-      return request;
+      const parsed = parseUploadRequest(value);
+      if (!parsed.ok) throw new Error('sample-events printed an invalid upload request');
+      return parsed.request;
     });
     const setup: GameSetup = {
       rules: presets['moraga-mustang-first-half'],
@@ -60,7 +60,7 @@ describe('sample-events', () => {
 
   it('meets the parser rules in docs/contract.md for each request', () => {
     for (const request of sampleHalfInning(options)) {
-      expect(parseUploadRequest(request)).toEqual(request);
+      expect(parseUploadRequest(request)).toEqual({ ok: true, request });
     }
   });
 

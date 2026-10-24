@@ -30,11 +30,12 @@ The phone sends each group to one Edge Function, `sync-events`. The function che
 ## Request
 
 ```ts
-type UploadRequest = { sessionId: SessionId; events: Event[] };
+type UploadRequest = { schemaVersion: typeof EVENT_SCHEMA_VERSION; sessionId: SessionId; events: Event[] };
 ```
 
 The server reads the game, the group, and the expected revision from the events. The parser rejects a request unless all of these hold:
 
+- `schemaVersion` is the engine's `EVENT_SCHEMA_VERSION`. The parser first checks the envelope that every schema version shares: the body is an object, `sessionId` is non-empty text, and `events` is a non-empty array. A body that fails this returns `invalid`. The parser then checks `schemaVersion`. A missing or different value returns `unsupported_version`, not `invalid`, before the parser checks the session ID format, the event count, any event, or any command.
 - Every event has the same `gameId`, `group`, and `lockEpoch`.
 - The `seq` values are consecutive.
 - No event ID appears twice.
@@ -47,11 +48,12 @@ The caller's identity comes from the sign-in token only, never from the request 
 `sync-events` does these steps in this order:
 
 1. Reject a request with no token or an `anon` token.
-2. Parse the request with `parseUploadRequest`.
+2. Parse the request with `parseUploadRequest`. A request with a missing or different `schemaVersion` returns `unsupported_version`. Any other malformed request returns `invalid`.
 3. Look up the group by `(game_id, group_id)`.
    - If the content hash and the user match, return the stored acknowledgment and stop.
    - If the hash or the user differs, return `id_conflict` and stop.
 4. Call `get_base(game_id)`. It returns the pins, the revision, and every accepted event in one statement.
+   - If the game's `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
 5. If the revision is not the group's first `seq` minus 1, look up the group again. If it is there now, apply the rule in step 3. If it is still missing, return `stale_revision`.
 6. Replay the accepted events and apply the group with the engine. If the engine rejects any command, reject the whole group.
 7. Call `commit_group(user_id, session_id, game_id, base_revision, events, new_state, content_hash)`. The handler computes `content_hash` in step 3.
@@ -93,7 +95,7 @@ Christian owns these functions:
 
 - `applyGroup(setup, events, commands)` returns the new state or one reject code. It applies all of the commands or none of them.
 - `replay(setup, events)` builds the state from the start.
-- `parseUploadRequest(unknown)` returns an `UploadRequest` or an error. It has no dependencies. It is one exhaustive `switch` over `Command['kind']`, so a new command kind does not compile until the parser handles it. A test parses one example of every kind.
+- `parseUploadRequest(unknown)` returns an `UploadRequest`, `invalid`, or `unsupported_version`. It has no dependencies. It is one exhaustive `switch` over `Command['kind']`, so a new command kind does not compile until the parser handles it. A test parses one example of every kind.
 
 The engine takes the event list rather than a cached state, because undo needs to know which groups exist. The game's roster IDs are part of `setup`, and the engine rejects a player ID that is not on the roster. Time comes only from `Event.at` and the `start` command.
 
@@ -154,10 +156,10 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
 - The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.0'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
 - Local verification compares that artifact with the current engine and fixtures. CI also compares it with the trusted PR base or main-push predecessor and rejects changed results without an engine-version increase. [Engine verification](engine-verification.md) describes the commands and the initial release baseline.
-- Milestone 6 requires the server to return `unsupported_version` for incompatible pins and the phone to refuse scoring under mismatched pins. The current first-connection handler does not enforce that gate.
+- Each upload carries `schemaVersion`. The server returns `unsupported_version` when it differs from the server's `EVENT_SCHEMA_VERSION` or from the game's pinned `schema_version`. The parser checks it before any command, so an old-format request returns `unsupported_version`, not `invalid`.
+- Milestone 6 also requires the server to return `unsupported_version` for a game pinned to a different engine version, and the phone to refuse scoring under mismatched pins. The first-connection handler does not enforce the engine pin yet.
 - Joint decision #13 uses schema 2 without an old-request decoder. Existing stored games are first-connection test games. The existing reset workflow must clear those test games before the next full scoring and sync rehearsal. Targets and execution are tracked in [#21](https://github.com/sandlot-app/sandlot-app/issues/21). This local change performs no hosted reset or deployment.
 - Do not rewrite historical events, hashes, or immutable pins. An old offline request retains its original content.
-- #21 separately adds a mandatory request-level `schemaVersion` and checks it before command parsing, returning `unsupported_version` for old formats. The current `UploadRequest` above has no such field or gate. Until #21 lands, a malformed old out can return `invalid`. No automatic compatibility machinery or production scoring is enabled here.
 
 ## Undo
 

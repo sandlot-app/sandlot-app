@@ -3,7 +3,7 @@
 \set ON_ERROR_STOP on
 
 insert into public.games (visibility, engine_version, schema_version, rules, setup)
-values ('public', '0.0.0', 1, '{}', '{}')
+values ('public', '0.1.0', 2, '{}', '{}')
 returning id as game_id \gset
 
 select :'game_id' as game_id, private.take_over(:'game_id', :'scorer') as session_id;

@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { parseUploadRequest } from '../src/contract.ts';
 import type { Command } from '../src/types.ts';
+import { EVENT_SCHEMA_VERSION } from '../src/version.ts';
+
+const invalidUpload = { ok: false, code: 'invalid' };
+const unsupportedUpload = { ok: false, code: 'unsupported_version' };
+const parsed = (request: unknown) => ({ ok: true, request });
 
 const player = { kind: 'player', id: 'player-1' } as const;
 const opponent = { kind: 'opponent', id: 'opponent-1' } as const;
 
 function upload(command: unknown = { kind: 'pitch', result: 'ball' }) {
   return {
+    schemaVersion: EVENT_SCHEMA_VERSION,
     sessionId: '22222222-2222-2222-2222-222222222222',
     events: [{
       id: 'event-1', gameId: '11111111-1111-1111-1111-111111111111', seq: 1,
@@ -79,36 +85,36 @@ function withExtras(value: unknown): unknown {
 describe('parseUploadRequest', () => {
   it('rejects a pitch missing its result before it can enter the event log (docs/contract.md, Request and Engine boundary)', () => {
     const malformedUploadFixture = upload({ kind: 'pitch' });
-    expect(parseUploadRequest(malformedUploadFixture)).toBeNull();
+    expect(parseUploadRequest(malformedUploadFixture)).toEqual(invalidUpload);
   });
 
   for (const command of commands) {
     it(`parses ${JSON.stringify(command)} without changing the payload`, () => {
       const body = upload(command);
-      expect(parseUploadRequest(body)).toEqual(body);
+      expect(parseUploadRequest(body)).toEqual(parsed(body));
     });
 
     for (const path of fieldPaths(command)) {
       const name = `${command.kind}.${path.join('.')}`;
       it(`rejects missing ${name}`, () => {
-        expect(parseUploadRequest(upload(changeField(command, path, false)))).toBeNull();
+        expect(parseUploadRequest(upload(changeField(command, path, false)))).toEqual(invalidUpload);
       });
       it(`rejects the wrong type for ${name}`, () => {
-        expect(parseUploadRequest(upload(changeField(command, path, true, 42)))).toBeNull();
+        expect(parseUploadRequest(upload(changeField(command, path, true, 42)))).toEqual(invalidUpload);
       });
       if (path.at(-1) !== 'trajectory' && path.at(-1) !== 'position') {
         it(`rejects null ${name}`, () => {
-          expect(parseUploadRequest(upload(changeField(command, path, true, null)))).toBeNull();
+          expect(parseUploadRequest(upload(changeField(command, path, true, null)))).toEqual(invalidUpload);
         });
       }
     }
   }
 
   it('checks each event field for presence and type', () => {
-    for (const path of fieldPaths(upload()).filter((path) => !path.includes('command'))) {
-      expect(parseUploadRequest(changeField(upload(), path, false)), path.join('.')).toBeNull();
-      expect(parseUploadRequest(changeField(upload(), path, true, null)), path.join('.')).toBeNull();
-      expect(parseUploadRequest(changeField(upload(), path, true, {})), path.join('.')).toBeNull();
+    for (const path of fieldPaths(upload()).filter((path) => path[0] !== 'schemaVersion' && !path.includes('command'))) {
+      expect(parseUploadRequest(changeField(upload(), path, false)), path.join('.')).toEqual(invalidUpload);
+      expect(parseUploadRequest(changeField(upload(), path, true, null)), path.join('.')).toEqual(invalidUpload);
+      expect(parseUploadRequest(changeField(upload(), path, true, {})), path.join('.')).toEqual(invalidUpload);
     }
   });
 
@@ -133,7 +139,7 @@ describe('parseUploadRequest', () => {
       { kind: 'game', control: { kind: 'end_half', reason: 'final' } },
       { kind: 'game', control: { kind: 'end_game', reason: 'manual' } },
     ];
-    for (const command of invalid) expect(parseUploadRequest(upload(command)), JSON.stringify(command)).toBeNull();
+    for (const command of invalid) expect(parseUploadRequest(upload(command)), JSON.stringify(command)).toEqual(invalidUpload);
   });
 
   it('accepts all legal literal values without imposing baseball legality', () => {
@@ -151,14 +157,14 @@ describe('parseUploadRequest', () => {
       { kind: 'game', control: { ...examples.game.control, lineup: [] } },
       { ...examples.correct, replacement: [] },
     ];
-    for (const command of valid) expect(parseUploadRequest(upload(command))).toEqual(upload(command));
+    for (const command of valid) expect(parseUploadRequest(upload(command))).toEqual(parsed(upload(command)));
   });
 
   it('validates corrections recursively, including nested corrections', () => {
     const nested = { ...examples.correct, replacement: [{ ...examples.correct, replacement: commands }] };
-    expect(parseUploadRequest(upload(nested))).toEqual(upload(nested));
+    expect(parseUploadRequest(upload(nested))).toEqual(parsed(upload(nested)));
     for (const invalid of [null, {}, { kind: 'pitch' }, { ...examples.runner, runner: { kind: 'player' } }]) {
-      expect(parseUploadRequest(upload({ ...examples.correct, replacement: [{ ...examples.correct, replacement: [invalid] }] }))).toBeNull();
+      expect(parseUploadRequest(upload({ ...examples.correct, replacement: [{ ...examples.correct, replacement: [invalid] }] }))).toEqual(invalidUpload);
     }
   });
 
@@ -168,73 +174,113 @@ describe('parseUploadRequest', () => {
       ['events', '0', 'command', 'target'],
     ];
     for (const path of paths) {
-      expect(parseUploadRequest(changeField(upload(examples.undo), path, true, ''))).toBeNull();
+      expect(parseUploadRequest(changeField(upload(examples.undo), path, true, ''))).toEqual(invalidUpload);
       if (path.at(-1) === 'at') continue;
-      expect(parseUploadRequest(changeField(upload(examples.undo), path, true, 'x'.repeat(128)))).not.toBeNull();
-      expect(parseUploadRequest(changeField(upload(examples.undo), path, true, 'x'.repeat(129)))).toBeNull();
+      expect(parseUploadRequest(changeField(upload(examples.undo), path, true, 'x'.repeat(128)))).toMatchObject({ ok: true });
+      expect(parseUploadRequest(changeField(upload(examples.undo), path, true, 'x'.repeat(129)))).toEqual(invalidUpload);
     }
     for (const kind of ['player', 'opponent']) {
       for (const id of ['', null, 1]) {
-        expect(parseUploadRequest(upload({ ...examples.runner, runner: { kind, id } }))).toBeNull();
+        expect(parseUploadRequest(upload({ ...examples.runner, runner: { kind, id } }))).toEqual(invalidUpload);
       }
       const command = { ...examples.runner, runner: { kind, id: 'x'.repeat(129) } };
-      expect(parseUploadRequest(upload(command))).toEqual(upload(command));
+      expect(parseUploadRequest(upload(command))).toEqual(parsed(upload(command)));
     }
-    expect(parseUploadRequest(upload({ kind: 'game', control: { kind: 'start', umpireStart: '' } }))).toBeNull();
+    expect(parseUploadRequest(upload({ kind: 'game', control: { kind: 'start', umpireStart: '' } }))).toEqual(invalidUpload);
   });
 
   it('keeps timestamp text verbatim and accepts voice', () => {
     const body = upload({ kind: 'game', control: { kind: 'start', umpireStart: 'provided start text' } });
     body.events[0]!.at = '2026-10-23T11:00:00-07:00';
     body.events[0]!.source = 'voice';
-    expect(parseUploadRequest(body)).toEqual(body);
+    expect(parseUploadRequest(body)).toEqual(parsed(body));
   });
 
   it('requires UUID session/game IDs and a known source', () => {
     for (const path of [['sessionId'], ['events', '0', 'gameId']]) {
       for (const value of ['', 'not-a-uuid', '11111111111111111111111111111111', null, 1]) {
-        expect(parseUploadRequest(changeField(upload(), path, true, value))).toBeNull();
+        expect(parseUploadRequest(changeField(upload(), path, true, value))).toEqual(invalidUpload);
       }
     }
-    expect(parseUploadRequest(changeField(upload(), ['events', '0', 'source'], true, 'ai'))).toBeNull();
+    expect(parseUploadRequest(changeField(upload(), ['events', '0', 'source'], true, 'ai'))).toEqual(invalidUpload);
   });
 
   it('requires positive postgres integers for sequences and epochs', () => {
     for (const field of ['seq', 'lockEpoch']) {
       for (const value of [0, -1, 1.1, 2 ** 31, Infinity, NaN, '1']) {
-        expect(parseUploadRequest(changeField(upload(), ['events', '0', field], true, value))).toBeNull();
+        expect(parseUploadRequest(changeField(upload(), ['events', '0', field], true, value))).toEqual(invalidUpload);
       }
-      expect(parseUploadRequest(changeField(upload(), ['events', '0', field], true, 2 ** 31 - 1))).not.toBeNull();
+      expect(parseUploadRequest(changeField(upload(), ['events', '0', field], true, 2 ** 31 - 1))).toMatchObject({ ok: true });
     }
-    expect(parseUploadRequest(withEvents(2, 2 ** 31 - 1))).toBeNull();
+    expect(parseUploadRequest(withEvents(2, 2 ** 31 - 1))).toEqual(invalidUpload);
   });
 
   it('accepts one to twenty events with consecutive sequences starting above one', () => {
-    expect(parseUploadRequest(withEvents(1))).toEqual(withEvents(1));
-    expect(parseUploadRequest(withEvents(20, 101))).toEqual(withEvents(20, 101));
-    expect(parseUploadRequest(withEvents(0))).toBeNull();
-    expect(parseUploadRequest(withEvents(21))).toBeNull();
+    expect(parseUploadRequest(withEvents(1))).toEqual(parsed(withEvents(1)));
+    expect(parseUploadRequest(withEvents(20, 101))).toEqual(parsed(withEvents(20, 101)));
+    expect(parseUploadRequest(withEvents(0))).toEqual(invalidUpload);
+    expect(parseUploadRequest(withEvents(21))).toEqual(invalidUpload);
   });
 
   it('requires a shared game, play, epoch and timestamp, consecutive sequences and unique IDs', () => {
     const cases = { gameId: '33333333-3333-3333-3333-333333333333', group: 'other', lockEpoch: 2, at: 'other-time', seq: 3, id: 'event-0' };
     for (const [field, value] of Object.entries(cases)) {
-      expect(parseUploadRequest(changeField(withEvents(2), ['events', '1', field], true, value)), field).toBeNull();
+      expect(parseUploadRequest(changeField(withEvents(2), ['events', '1', field], true, value)), field).toEqual(invalidUpload);
     }
-    expect(parseUploadRequest(changeField(withEvents(2), ['events', '1', 'seq'], true, 1))).toBeNull();
+    expect(parseUploadRequest(changeField(withEvents(2), ['events', '1', 'seq'], true, 1))).toEqual(invalidUpload);
+  });
+
+  it('returns unsupported_version when schemaVersion is missing or not the current version', () => {
+    expect(parseUploadRequest(changeField(upload(), ['schemaVersion'], false))).toEqual(unsupportedUpload);
+    for (const value of [EVENT_SCHEMA_VERSION - 1, EVENT_SCHEMA_VERSION + 1, 0, -1, 1.5, String(EVENT_SCHEMA_VERSION), null, true, [EVENT_SCHEMA_VERSION], {}]) {
+      expect(parseUploadRequest(changeField(upload(), ['schemaVersion'], true, value)), JSON.stringify(value)).toEqual(unsupportedUpload);
+    }
+  });
+
+  it('checks schemaVersion before anything a schema version could change', () => {
+    const malformed = [
+      upload({ kind: 'nope' }),
+      upload({ kind: 'pitch' }),
+      upload(null),
+      { ...upload(), sessionId: 'not-a-uuid' },
+      { ...upload(), events: [null] },
+      withEvents(21),
+    ];
+    for (const body of malformed) {
+      const name = JSON.stringify(body);
+      expect(parseUploadRequest(changeField(body, ['schemaVersion'], false)), name).toEqual(unsupportedUpload);
+      expect(parseUploadRequest({ ...body, schemaVersion: EVENT_SCHEMA_VERSION + 1 }), name).toEqual(unsupportedUpload);
+      expect(parseUploadRequest({ ...body, schemaVersion: EVENT_SCHEMA_VERSION }), name).toEqual(invalidUpload);
+    }
+  });
+
+  it('returns invalid, not unsupported_version, for a body that is not an upload envelope', () => {
+    const notUploads = [
+      {},
+      changeField(upload(), ['sessionId'], false),
+      { ...upload(), sessionId: '' },
+      changeField(upload(), ['events'], false),
+      { ...upload(), events: 'events' },
+      { ...upload(), events: [] },
+    ];
+    for (const body of notUploads) {
+      const name = JSON.stringify(body);
+      expect(parseUploadRequest(changeField(body, ['schemaVersion'], false)), name).toEqual(invalidUpload);
+      expect(parseUploadRequest(changeField(body, ['schemaVersion'], true, EVENT_SCHEMA_VERSION + 1)), name).toEqual(invalidUpload);
+    }
   });
 
   it('rejects nonrecords and nonarrays at the boundary', () => {
-    for (const value of [null, false, 1, 'text', [], undefined]) expect(parseUploadRequest(value)).toBeNull();
+    for (const value of [null, false, 1, 'text', [], undefined]) expect(parseUploadRequest(value)).toEqual(invalidUpload);
     for (const value of [null, {}, 'events', [null], [[]], [42]]) {
-      expect(parseUploadRequest({ ...upload(), events: value })).toBeNull();
+      expect(parseUploadRequest({ ...upload(), events: value })).toEqual(invalidUpload);
     }
-    for (const command of [null, false, 1, 'pitch', [], {}]) expect(parseUploadRequest(upload(command))).toBeNull();
+    for (const command of [null, false, 1, 'pitch', [], {}]) expect(parseUploadRequest(upload(command))).toEqual(invalidUpload);
   });
 
   it('preserves unknown command and nested fields used by existing content hashes', () => {
     for (const command of commands.map(withExtras)) {
-      expect(parseUploadRequest(upload(command))).toEqual(upload(command));
+      expect(parseUploadRequest(upload(command))).toEqual(parsed(upload(command)));
     }
   });
 
@@ -244,11 +290,11 @@ describe('parseUploadRequest', () => {
       { ...examples.pitch, extra: { ['bad\0key']: 'value' } },
       { ...examples.runner, runner: { ...player, id: 'bad\0id' } },
       { kind: 'game', control: { kind: 'start', umpireStart: 'bad\0time' } },
-    ]) expect(parseUploadRequest(upload(command))).toBeNull();
+    ]) expect(parseUploadRequest(upload(command))).toEqual(invalidUpload);
     for (const field of ['id', 'group', 'at']) {
-      expect(parseUploadRequest(changeField(upload(), ['events', '0', field], true, 'bad\0text'))).toBeNull();
+      expect(parseUploadRequest(changeField(upload(), ['events', '0', field], true, 'bad\0text'))).toEqual(invalidUpload);
     }
-    expect(parseUploadRequest({ ...upload(), events: [{ ...upload().events[0], extra: { ['bad\0key']: 1 } }] })).toBeNull();
+    expect(parseUploadRequest({ ...upload(), events: [{ ...upload().events[0], extra: { ['bad\0key']: 1 } }] })).toEqual(invalidUpload);
   });
 });
 
@@ -259,7 +305,7 @@ describe('explicit ball-in-play out classification', () => {
     it(`preserves ${outType}, including nested correction replacements`, () => {
       const command = { ...outcome, advances: [{ runner: player, to: 'out', outType }] };
       for (const value of [command, { kind: 'correct', target: 'p', replacement: [command] }]) {
-        expect(parseUploadRequest(upload(value))).toEqual(upload(value));
+        expect(parseUploadRequest(upload(value))).toEqual(parsed(upload(value)));
       }
     });
   }
@@ -270,8 +316,8 @@ describe('explicit ball-in-play out classification', () => {
   ]) {
     it(`rejects malformed classification ${JSON.stringify(advance)}`, () => {
       const command = { ...outcome, advances: [advance] };
-      expect(parseUploadRequest(upload(command))).toBeNull();
-      expect(parseUploadRequest(upload({ kind: 'correct', target: 'p', replacement: [command] }))).toBeNull();
+      expect(parseUploadRequest(upload(command))).toEqual(invalidUpload);
+      expect(parseUploadRequest(upload({ kind: 'correct', target: 'p', replacement: [command] }))).toEqual(invalidUpload);
     });
   }
 });

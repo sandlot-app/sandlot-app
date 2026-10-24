@@ -2,9 +2,16 @@ import type {
   Advance, Command, Event, EventId, GameControl, GameId, GroupId, LineupSlot,
   OpponentId, PlayerId, PlayerRef, SessionId, Substitution, Timestamp,
 } from './types.ts';
+import { EVENT_SCHEMA_VERSION } from './version.ts';
 
 /** One play sent from the scorer's phone to `sync-events`. See docs/contract.md. */
-export type UploadRequest = { sessionId: SessionId; events: Event[] };
+export type UploadRequest = { schemaVersion: typeof EVENT_SCHEMA_VERSION; sessionId: SessionId; events: Event[] };
+
+export type ParsedUpload =
+  | { ok: true; request: UploadRequest }
+  | { ok: false; code: 'invalid' | 'unsupported_version' };
+
+const INVALID = { ok: false, code: 'invalid' } as const;
 
 const MAX_INTEGER = 2 ** 31 - 1;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -164,15 +171,20 @@ function parseEvent(value: unknown): Event | null {
   } : null;
 }
 
-/** Checks wire shape and play consistency. Game legality belongs to the engine. */
-export function parseUploadRequest(body: unknown): UploadRequest | null {
-  if (!isRecord(body) || !isText(body.sessionId) || !UUID.test(body.sessionId) ||
-    !Array.isArray(body.events) || body.events.length < 1 || body.events.length > 20) return null;
+/**
+ * Checks wire shape and play consistency. Game legality belongs to the engine.
+ * Only the envelope every schema version shares is read before the version check,
+ * because a body in another event format cannot be read by the rest of this parser.
+ */
+export function parseUploadRequest(body: unknown): ParsedUpload {
+  if (!isRecord(body) || !isText(body.sessionId) || !Array.isArray(body.events) || body.events.length < 1) return INVALID;
+  if (body.schemaVersion !== EVENT_SCHEMA_VERSION) return { ok: false, code: 'unsupported_version' };
+  if (!UUID.test(body.sessionId) || body.events.length > 20) return INVALID;
   const events = parseArray(body.events, parseEvent);
   const first = events?.[0];
-  if (!events || !first) return null;
+  if (!events || !first) return INVALID;
   if (new Set(events.map((event) => event.id)).size !== events.length || !events.every((event, index) =>
     event.gameId === first.gameId && event.group === first.group && event.lockEpoch === first.lockEpoch &&
-    event.at === first.at && event.seq === first.seq + index)) return null;
-  return { sessionId: body.sessionId as SessionId, events };
+    event.at === first.at && event.seq === first.seq + index)) return INVALID;
+  return { ok: true, request: { schemaVersion: EVENT_SCHEMA_VERSION, sessionId: body.sessionId as SessionId, events } };
 }

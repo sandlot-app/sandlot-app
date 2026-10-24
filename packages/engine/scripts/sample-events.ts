@@ -18,6 +18,7 @@ import type {
   Timestamp,
   UploadRequest,
 } from '../src/index.ts';
+import { EVENT_SCHEMA_VERSION } from '../src/index.ts';
 
 export type SampleOptions = { gameId: GameId; sessionId: SessionId; lockEpoch: number };
 
@@ -81,7 +82,7 @@ export function sampleHalfInning({ gameId, sessionId, lockEpoch }: SampleOptions
         command,
       };
     });
-    return { sessionId, events };
+    return { schemaVersion: EVENT_SCHEMA_VERSION, sessionId, events };
   });
 }
 
