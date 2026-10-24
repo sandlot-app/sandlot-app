@@ -1,18 +1,22 @@
 import { deepStrictEqual, strictEqual } from 'node:assert/strict';
-import { type Base, type Store, type StoredGroup, syncEvents, type UploadRequest } from './handler.ts';
+import { type Base, contentHash, type Store, type StoredGroup, syncEvents, type UploadRequest } from './handler.ts';
+import { parseUploadRequest } from '../../../packages/engine/src/contract.ts';
+import type { PlayerId } from '../../../packages/engine/src/types.ts';
 
 const GAME = '11111111-1111-1111-1111-111111111111';
 const USER = '00000000-0000-0000-0000-00000000000a';
 const OTHER_USER = '00000000-0000-0000-0000-00000000000b';
 
 function request(seq = 1, group = 'g1'): UploadRequest {
-  return {
+  const parsed = parseUploadRequest({
     sessionId: '22222222-2222-2222-2222-222222222222',
     events: [{
       id: `e${seq}`, gameId: GAME, seq, group, lockEpoch: 1, source: 'tap',
       at: '2026-10-23T18:00:00.000Z', command: { kind: 'pitch', result: 'ball' },
     }],
-  };
+  });
+  if (!parsed) throw new Error('Invalid upload test fixture');
+  return parsed;
 }
 
 function memoryStore() {
@@ -87,7 +91,7 @@ Deno.test('concurrent identical uploads return the same acknowledgment and store
 
 Deno.test('a concurrent upload with changed content returns id_conflict', async () => {
   const changed = request();
-  changed.events[0].command.result = 'foul';
+  changed.events[0].command = { kind: 'pitch', result: 'foul' };
   const { outcomes, groups, base } = await race(USER, changed);
   deepStrictEqual(outcomes, [{ ok: true, revision: 1 }, { ok: false, code: 'id_conflict' }]);
   strictEqual(groups.size, 1);
@@ -159,6 +163,45 @@ Deno.test('invalid input saves no group or events', async () => {
   strictEqual(groups.size, 0);
   deepStrictEqual(base.events, []);
   strictEqual(base.revision, 0);
+});
+
+Deno.test('malformed commands are invalid before any store access', async () => {
+  const untouched: Store = {
+    findGroup: () => Promise.reject(new Error('findGroup called')),
+    getBase: () => Promise.reject(new Error('getBase called')),
+    commitGroup: () => Promise.reject(new Error('commitGroup called')),
+  };
+  for (const command of [
+    { kind: 'pitch' },
+    { kind: 'future_command' },
+    { kind: 'runner', event: 'stolen_base', runner: { kind: 'player' }, to: 2 },
+    { kind: 'game', control: { kind: 'lineup_set', side: 'home', lineup: [{ position: null }] } },
+    { kind: 'correct', target: 'g0', replacement: [{ kind: 'pitch', result: 1 }] },
+  ]) {
+    const body = request();
+    const events = [{ ...body.events[0], command }];
+    deepStrictEqual(await syncEvents(USER, { ...body, events }, untouched), { ok: false, code: 'invalid' });
+  }
+});
+
+Deno.test('saved retries retain hashes of unknown command and nested fields', async () => {
+  const { store, groups, base } = memoryStore();
+  const body = request();
+  body.events[0].command = {
+    kind: 'correct', target: body.events[0].group,
+    replacement: [{
+      kind: 'runner', event: 'stolen_base', to: 2,
+      runner: Object.assign({ kind: 'player' as const, id: 'player-1' as PlayerId }, { note: ['retained'] }),
+    }],
+  };
+  Object.assign(body.events[0].command, { future: { retained: true } });
+  const originalHash = await contentHash(body.events);
+  groups.set(body.events[0].group, { userId: USER, contentHash: originalHash, ackRevision: 1 });
+  deepStrictEqual(await syncEvents(USER, body, store), { ok: true, revision: 1 });
+  deepStrictEqual(base.events, []);
+  strictEqual(base.revision, 0);
+  Object.assign(body.events[0].command, { future: { retained: false } });
+  deepStrictEqual(await syncEvents(USER, body, store), { ok: false, code: 'id_conflict' });
 });
 
 Deno.test('input the database cannot store is invalid before it reaches the database', async () => {

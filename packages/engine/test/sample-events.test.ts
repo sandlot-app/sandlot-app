@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { sampleHalfInning } from '../scripts/sample-events.ts';
-import type { GameId, SessionId } from '../src/index.ts';
+import { parseUploadRequest, type GameId, type SessionId } from '../src/index.ts';
 
-const options = { gameId: 'game-1' as GameId, sessionId: 'session-1' as SessionId, lockEpoch: 1 };
+const options = {
+  gameId: '11111111-1111-1111-1111-111111111111' as GameId,
+  sessionId: '22222222-2222-2222-2222-222222222222' as SessionId,
+  lockEpoch: 1,
+};
 
 describe('sample-events', () => {
   it('prints the same requests on every run', () => {
@@ -21,13 +25,7 @@ describe('sample-events', () => {
 
   it('meets the parser rules in docs/contract.md for each request', () => {
     for (const request of sampleHalfInning(options)) {
-      const [first] = request.events;
-      expect(request.events.length).toBeGreaterThan(0);
-      expect(request.events.length).toBeLessThanOrEqual(20);
-      for (const event of request.events) {
-        expect(event).toMatchObject({ gameId: first!.gameId, group: first!.group, lockEpoch: first!.lockEpoch, at: first!.at });
-      }
-      expect(new Set(request.events.map((e) => e.id)).size).toBe(request.events.length);
+      expect(parseUploadRequest(request)).toEqual(request);
     }
   });
 
