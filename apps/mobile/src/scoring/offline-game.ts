@@ -1,5 +1,21 @@
-import { applyGroup, ENGINE_VERSION, EVENT_SCHEMA_VERSION, parseUploadRequest, replay } from '@sandlot/engine';
-import type { Command, Event, EventId, GameId, GameState, GroupId, PitchResult, RejectCode, Timestamp } from '@sandlot/engine';
+import {
+  applyGroup,
+  ENGINE_VERSION,
+  EVENT_SCHEMA_VERSION,
+  parseUploadRequest,
+  replay,
+} from '@sandlot/engine';
+import type {
+  Command,
+  Event,
+  EventId,
+  GameId,
+  GameState,
+  GroupId,
+  PitchResult,
+  RejectCode,
+  Timestamp,
+} from '@sandlot/engine';
 import type { SqlConnection, SqlDatabase } from './database.ts';
 import { demoLineups, demoSetup } from './demo-game.ts';
 
@@ -25,28 +41,62 @@ export type RecordResult =
   | { kind: 'blocked'; reason: BlockReason };
 
 export type OpenResult =
-  | { kind: 'ready'; game: SavedGame | null; record(action: DemoAction): Promise<RecordResult> }
+  | {
+      kind: 'ready';
+      game: SavedGame | null;
+      record(action: DemoAction): Promise<RecordResult>;
+    }
   | { kind: 'blocked'; reason: BlockReason };
 
 type Boundary = { newId(): string; now(): string };
-type GameRow = { id: string; setup_json: string; engine_version: string; schema_version: number; context: string; bootstrap_group: string };
-type EventRow = { game_id: string; seq: number; event_id: string; group_id: string; event_json: string };
-type OutboxRow = { game_id: string; group_id: string; first_seq: number; event_count: number };
-type LoadedGame = { row: GameRow; events: Event[]; groups: Event[][]; game: SavedGame };
+type GameRow = {
+  id: string;
+  setup_json: string;
+  engine_version: string;
+  schema_version: number;
+  context: string;
+  bootstrap_group: string;
+};
+type EventRow = {
+  game_id: string;
+  seq: number;
+  event_id: string;
+  group_id: string;
+  event_json: string;
+};
+type OutboxRow = {
+  game_id: string;
+  group_id: string;
+  first_seq: number;
+  event_count: number;
+};
+type LoadedGame = {
+  row: GameRow;
+  events: Event[];
+  groups: Event[][];
+  game: SavedGame;
+};
 
 class SavedDataError extends Error {
   readonly reason: 'version' | 'corrupt';
-  constructor(reason: 'version' | 'corrupt') { super(reason); this.reason = reason; }
+  constructor(reason: 'version' | 'corrupt') {
+    super(reason);
+    this.reason = reason;
+  }
 }
 
 const formatVersion = 1;
 
 async function initialize(database: SqlDatabase): Promise<void> {
   await database.transaction(async (connection) => {
-    const version = (await connection.all<{ user_version: number }>('PRAGMA user_version'))[0]?.user_version;
+    const version = (
+      await connection.all<{ user_version: number }>('PRAGMA user_version')
+    )[0]?.user_version;
     if (version === formatVersion) return;
     if (version !== 0) throw new SavedDataError('version');
-    const tables = await connection.all<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'");
+    const tables = await connection.all<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+    );
     if (tables.length) throw new SavedDataError('corrupt');
     await connection.exec(`
       CREATE TABLE local_games (
@@ -70,24 +120,41 @@ async function initialize(database: SqlDatabase): Promise<void> {
 }
 
 async function load(connection: SqlConnection): Promise<LoadedGame | null> {
-  const version = (await connection.all<{ user_version: number }>('PRAGMA user_version'))[0]?.user_version;
+  const version = (
+    await connection.all<{ user_version: number }>('PRAGMA user_version')
+  )[0]?.user_version;
   if (version !== formatVersion) throw new SavedDataError('version');
-  const rows = await connection.all<GameRow>('SELECT id, setup_json, engine_version, schema_version, context, bootstrap_group FROM local_games');
-  const eventRows = await connection.all<EventRow>('SELECT * FROM local_events ORDER BY seq');
-  const outbox = await connection.all<OutboxRow>('SELECT * FROM local_outbox ORDER BY first_seq');
+  const rows = await connection.all<GameRow>(
+    'SELECT id, setup_json, engine_version, schema_version, context, bootstrap_group FROM local_games',
+  );
+  const eventRows = await connection.all<EventRow>(
+    'SELECT * FROM local_events ORDER BY seq',
+  );
+  const outbox = await connection.all<OutboxRow>(
+    'SELECT * FROM local_outbox ORDER BY first_seq',
+  );
   if (!rows.length) {
     if (eventRows.length || outbox.length) throw new SavedDataError('corrupt');
     return null;
   }
   const row = rows[0]!;
   if (rows.length !== 1) throw new SavedDataError('corrupt');
-  if (row.engine_version !== ENGINE_VERSION || row.schema_version !== EVENT_SCHEMA_VERSION) throw new SavedDataError('version');
-  if (row.context !== 'local_demo' || row.setup_json !== JSON.stringify(demoSetup)) throw new SavedDataError('corrupt');
+  if (
+    row.engine_version !== ENGINE_VERSION ||
+    row.schema_version !== EVENT_SCHEMA_VERSION
+  )
+    throw new SavedDataError('version');
+  if (
+    row.context !== 'local_demo' ||
+    row.setup_json !== JSON.stringify(demoSetup)
+  )
+    throw new SavedDataError('corrupt');
   const groups: Event[][] = [];
   try {
     for (const entry of eventRows) {
       const event: unknown = JSON.parse(entry.event_json);
-      if (typeof event !== 'object' || event === null || !('group' in event)) throw new SavedDataError('corrupt');
+      if (typeof event !== 'object' || event === null || !('group' in event))
+        throw new SavedDataError('corrupt');
       if (groups.at(-1)?.[0]?.group !== event.group) groups.push([]);
       const group = groups.at(-1)!;
       group.push(event as Event);
@@ -98,34 +165,70 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
   const events: Event[] = [];
   const seenGroups = new Set<string>();
   for (const group of groups) {
-    const parsed = parseUploadRequest({ schemaVersion: row.schema_version, sessionId: row.id, events: group });
+    const parsed = parseUploadRequest({
+      schemaVersion: row.schema_version,
+      sessionId: row.id,
+      events: group,
+    });
     const first = group[0]!;
-    if (!parsed.ok || seenGroups.has(first.group)) throw new SavedDataError('corrupt');
+    if (!parsed.ok || seenGroups.has(first.group))
+      throw new SavedDataError('corrupt');
     seenGroups.add(first.group);
     for (const event of parsed.request.events) {
       const stored = eventRows[events.length]!;
-      if (event.gameId !== row.id || event.lockEpoch !== 1 || event.source !== 'tap' || event.seq !== events.length + 1 ||
-        stored.game_id !== row.id || stored.seq !== event.seq || stored.event_id !== event.id || stored.group_id !== event.group) {
+      if (
+        event.gameId !== row.id ||
+        event.lockEpoch !== 1 ||
+        event.source !== 'tap' ||
+        event.seq !== events.length + 1 ||
+        stored.game_id !== row.id ||
+        stored.seq !== event.seq ||
+        stored.event_id !== event.id ||
+        stored.group_id !== event.group
+      ) {
         throw new SavedDataError('corrupt');
       }
       events.push(event);
     }
   }
-  if (!events.length || outbox.length !== groups.length || groups[0]?.[0]?.group !== row.bootstrap_group) throw new SavedDataError('corrupt');
-  if (groups[0]?.length !== 3 || groups[0].some((event) => event.command.kind !== 'game')) throw new SavedDataError('corrupt');
+  if (
+    !events.length ||
+    outbox.length !== groups.length ||
+    groups[0]?.[0]?.group !== row.bootstrap_group
+  )
+    throw new SavedDataError('corrupt');
+  if (
+    groups[0]?.length !== 3 ||
+    groups[0].some((event) => event.command.kind !== 'game')
+  )
+    throw new SavedDataError('corrupt');
   for (let index = 0; index < groups.length; index += 1) {
     const group = groups[index]!;
     const pending = outbox[index]!;
-    if (pending.game_id !== row.id || pending.group_id !== group[0]!.group || pending.first_seq !== group[0]!.seq || pending.event_count !== group.length) {
+    if (
+      pending.game_id !== row.id ||
+      pending.group_id !== group[0]!.group ||
+      pending.first_seq !== group[0]!.seq ||
+      pending.event_count !== group.length
+    ) {
       throw new SavedDataError('corrupt');
     }
   }
   const result = replay(demoSetup, events);
-  if (!result.ok || result.state.status === 'pregame') throw new SavedDataError('corrupt');
-  return { row, events, groups, game: {
-    id: row.id as GameId, state: result.state, waitingPlays: outbox.length,
-    canUndo: undoTarget(groups, row.bootstrap_group) !== null, context: { kind: 'local_demo' },
-  } };
+  if (!result.ok || result.state.status === 'pregame')
+    throw new SavedDataError('corrupt');
+  return {
+    row,
+    events,
+    groups,
+    game: {
+      id: row.id as GameId,
+      state: result.state,
+      waitingPlays: outbox.length,
+      canUndo: undoTarget(groups, row.bootstrap_group) !== null,
+      context: { kind: 'local_demo' },
+    },
+  };
 }
 
 function undoTarget(groups: Event[][], bootstrap: string): GroupId | null {
@@ -139,23 +242,33 @@ function undoTarget(groups: Event[][], bootstrap: string): GroupId | null {
 }
 
 function blocked(error: unknown): { kind: 'blocked'; reason: BlockReason } {
-  return { kind: 'blocked', reason: error instanceof SavedDataError ? error.reason : 'storage' };
+  return {
+    kind: 'blocked',
+    reason: error instanceof SavedDataError ? error.reason : 'storage',
+  };
 }
 
-export async function openOfflineGame(database: SqlDatabase, boundary: Boundary): Promise<OpenResult> {
+export async function openOfflineGame(
+  database: SqlDatabase,
+  boundary: Boundary,
+): Promise<OpenResult> {
   try {
     await initialize(database);
     const snapshot: { loaded: LoadedGame | null } = { loaded: null };
-    await database.transaction(async (connection) => { snapshot.loaded = await load(connection); });
+    await database.transaction(async (connection) => {
+      snapshot.loaded = await load(connection);
+    });
     let saving = false;
     let stopped: BlockReason | null = null;
     return {
-      kind: 'ready', game: snapshot.loaded?.game ?? null,
+      kind: 'ready',
+      game: snapshot.loaded?.game ?? null,
       async record(action) {
         if (stopped) return { kind: 'blocked', reason: stopped };
         if (saving) return { kind: 'busy' };
         saving = true;
         let group: GroupId | null = null;
+        let attempted = false;
         let result: RecordResult = { kind: 'blocked', reason: 'storage' };
         try {
           const at = boundary.now() as Timestamp;
@@ -163,41 +276,115 @@ export async function openOfflineGame(database: SqlDatabase, boundary: Boundary)
           const savedGroup = group;
           await database.transaction(async (connection) => {
             const current = await load(connection);
-            if (action.kind === 'start' && current) { result = { kind: 'saved', game: current.game }; return; }
-            if (action.kind !== 'start' && !current) { result = { kind: 'rejected', code: 'game_not_started' }; return; }
+            if (action.kind === 'start' && current) {
+              result = { kind: 'saved', game: current.game };
+              return;
+            }
+            if (action.kind !== 'start' && !current) {
+              result = { kind: 'rejected', code: 'game_not_started' };
+              return;
+            }
             let commands: Command[];
-            if (action.kind === 'start') commands = [
-              { kind: 'game', control: { kind: 'lineup_set', side: 'away', lineup: demoLineups.away } },
-              { kind: 'game', control: { kind: 'lineup_set', side: 'home', lineup: demoLineups.home } },
-              { kind: 'game', control: { kind: 'start', umpireStart: at } },
-            ];
-            else if (action.kind === 'pitch') commands = [{ kind: 'pitch', result: action.result }];
+            if (action.kind === 'start')
+              commands = [
+                {
+                  kind: 'game',
+                  control: {
+                    kind: 'lineup_set',
+                    side: 'away',
+                    lineup: demoLineups.away,
+                  },
+                },
+                {
+                  kind: 'game',
+                  control: {
+                    kind: 'lineup_set',
+                    side: 'home',
+                    lineup: demoLineups.home,
+                  },
+                },
+                { kind: 'game', control: { kind: 'start', umpireStart: at } },
+              ];
+            else if (action.kind === 'pitch')
+              commands = [{ kind: 'pitch', result: action.result }];
             else {
-              const target = undoTarget(current!.groups, current!.row.bootstrap_group);
-              if (!target) { result = { kind: 'rejected', code: 'nothing_to_undo' }; return; }
+              const target = undoTarget(
+                current!.groups,
+                current!.row.bootstrap_group,
+              );
+              if (!target) {
+                result = { kind: 'rejected', code: 'nothing_to_undo' };
+                return;
+              }
               commands = [{ kind: 'undo', target }];
             }
-            const accepted = applyGroup(demoSetup, current?.events ?? [], commands);
-            if (!accepted.ok) { result = { kind: 'rejected', code: accepted.code }; return; }
+            const accepted = applyGroup(
+              demoSetup,
+              current?.events ?? [],
+              commands,
+            );
+            if (!accepted.ok) {
+              result = { kind: 'rejected', code: accepted.code };
+              return;
+            }
+            if (current?.events.some((event) => event.group === savedGroup))
+              throw new Error('A new play needs a new identity');
+            attempted = true;
             const gameId = current?.row.id ?? boundary.newId();
-            if (!current) await connection.run('INSERT INTO local_games VALUES (1, ?, ?, ?, ?, ?, ?)', [
-              gameId, JSON.stringify(demoSetup), ENGINE_VERSION, EVENT_SCHEMA_VERSION, 'local_demo', savedGroup,
-            ]);
+            if (!current)
+              await connection.run(
+                'INSERT INTO local_games VALUES (1, ?, ?, ?, ?, ?, ?)',
+                [
+                  gameId,
+                  JSON.stringify(demoSetup),
+                  ENGINE_VERSION,
+                  EVENT_SCHEMA_VERSION,
+                  'local_demo',
+                  savedGroup,
+                ],
+              );
             const events: Event[] = commands.map((command, index) => ({
-              id: boundary.newId() as EventId, gameId: gameId as GameId, seq: (current?.events.length ?? 0) + index + 1,
-              group: savedGroup, lockEpoch: 1, source: 'tap', at, command,
+              id: boundary.newId() as EventId,
+              gameId: gameId as GameId,
+              seq: (current?.events.length ?? 0) + index + 1,
+              group: savedGroup,
+              lockEpoch: 1,
+              source: 'tap',
+              at,
+              command,
             }));
-            for (const event of events) await connection.run('INSERT INTO local_events VALUES (?, ?, ?, ?, ?)', [gameId, event.seq, event.id, savedGroup, JSON.stringify(event)]);
-            await connection.run('INSERT INTO local_outbox VALUES (?, ?, ?, ?)', [gameId, savedGroup, events[0]!.seq, events.length]);
+            for (const event of events)
+              await connection.run(
+                'INSERT INTO local_events VALUES (?, ?, ?, ?, ?)',
+                [
+                  gameId,
+                  event.seq,
+                  event.id,
+                  savedGroup,
+                  JSON.stringify(event),
+                ],
+              );
+            await connection.run(
+              'INSERT INTO local_outbox VALUES (?, ?, ?, ?)',
+              [gameId, savedGroup, events[0]!.seq, events.length],
+            );
             result = { kind: 'saved', game: (await load(connection))!.game };
           });
           return result;
         } catch (error) {
-          if (error instanceof SavedDataError) { stopped = error.reason; return blocked(error); }
+          if (error instanceof SavedDataError) {
+            stopped = error.reason;
+            return blocked(error);
+          }
           try {
             const recovery: { saved: LoadedGame | null } = { saved: null };
-            await database.transaction(async (connection) => { recovery.saved = await load(connection); });
-            if (recovery.saved?.events.some((event) => event.group === group)) {
+            await database.transaction(async (connection) => {
+              recovery.saved = await load(connection);
+            });
+            if (
+              attempted &&
+              recovery.saved?.events.some((event) => event.group === group)
+            ) {
               return { kind: 'saved', game: recovery.saved.game };
             }
             return { kind: 'unsaved' };
@@ -206,8 +393,12 @@ export async function openOfflineGame(database: SqlDatabase, boundary: Boundary)
             stopped = failure.reason;
             return failure;
           }
-        } finally { saving = false; }
+        } finally {
+          saving = false;
+        }
       },
     };
-  } catch (error) { return blocked(error); }
+  } catch (error) {
+    return blocked(error);
+  }
 }

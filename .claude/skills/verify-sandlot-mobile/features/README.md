@@ -7,7 +7,7 @@ This directory is the maintained source for verifying what a scorer sees and doe
 - Run `.claude/skills/verify-sandlot-mobile/scripts/verify.sh launch` from the repo root and wait for the `READY` line.
 - Run `verify.sh doctor` and require every line to read `ok`.
 - The app runs in Expo Go on the `sandlot-verify` simulator, served by Metro on port 8091. Both belong to this run.
-- The app has no saved data yet. Every launch starts from the same screen.
+- The app keeps one local demo game in SQLite. A later launch preserves that game. Never clear app data to make a verification pass.
 - Never drive a simulator or Metro server that `verify.sh launch` did not start.
 
 ## Driving conventions
@@ -38,6 +38,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 
 ## Features
 
-- [Home screen](./home-screen.md) covers opening the app and the starting game state it shows.
+- [Home screen](./home-screen.md) covers the saved-game entry point.
+- [Offline scoring](./offline-scoring.md) covers pitches, undo, saved state, and reopening.
 
-The tap scoring app (lineup, diamond, pitch bar, outcome buttons, undo, the sync badge), voice scoring, and the stat card are planned but not built. Add a feature file for each when it ships, and run `/maintain-verification-skill` to keep this map in line with the app.
+The first tap slice adds a preloaded lineup, diamond, pitch bar, undo, and a local pending-play badge. Outcomes, lineup editing, the play log, hosted sync, voice scoring, and the stat card remain later work. Actual native evidence is pending until a suitable Mac runs these flows against the reviewed revision.

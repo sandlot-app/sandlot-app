@@ -1,16 +1,28 @@
 import { DatabaseSync } from 'node:sqlite';
-import type { SqlDatabase, SqlConnection, SqlValue } from '../src/scoring/database.ts';
+import type {
+  SqlDatabase,
+  SqlConnection,
+  SqlValue,
+} from '../src/scoring/database.ts';
 
 export function connect(path: string, beforeOutbox?: () => void): SqlDatabase {
   const database = new DatabaseSync(path);
   database.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 1');
-  if (beforeOutbox) database.function('before_outbox', () => { beforeOutbox(); return null; });
+  if (beforeOutbox)
+    database.function('before_outbox', () => {
+      beforeOutbox();
+      return null;
+    });
   const connection: SqlConnection = {
-    async exec(sql) { database.exec(sql); },
+    async exec(sql) {
+      database.exec(sql);
+    },
     async all<T>(sql: string, values: SqlValue[] = []): Promise<T[]> {
       return database.prepare(sql).all(...values) as T[];
     },
-    async run(sql, values = []) { database.prepare(sql).run(...values); },
+    async run(sql, values = []) {
+      database.prepare(sql).run(...values);
+    },
   };
   return {
     ...connection,
@@ -24,6 +36,8 @@ export function connect(path: string, beforeOutbox?: () => void): SqlDatabase {
         throw error;
       }
     },
-    async close() { database.close(); },
+    async close() {
+      database.close();
+    },
   };
 }

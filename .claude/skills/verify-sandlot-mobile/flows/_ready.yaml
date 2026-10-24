@@ -1,6 +1,6 @@
-# Used by `verify.sh launch`: passes once the app's home screen is drawn.
 appId: host.exp.Exponent
 ---
 - extendedWaitUntil:
-    visible: "Sandlot"
+    visible:
+      id: "sandlot-brand"
     timeout: 90000
