@@ -22,6 +22,8 @@ supabase test db --local
 
 `db start` applies migrations when it creates the database. For an existing local database, apply pending migrations with `supabase migration up --local` before running the tests. Use the pgTAP runner's exit status to detect failed assertions.
 
+Migration `20261024010000` updates databases that applied the earlier restriction on deleting accounts with empty sessions. It preserves existing data and the constraints protecting accepted groups. No database reset is needed.
+
 After testing, remove the disposable local database and its volumes.
 
 ```sh
