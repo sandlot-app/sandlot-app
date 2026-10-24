@@ -112,6 +112,12 @@ export async function contentHash(events: UploadEvent[]): Promise<string> {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+function savedOutcome(stored: StoredGroup, userId: string, hash: string): Outcome {
+  return stored.contentHash === hash && stored.userId === userId
+    ? { ok: true, revision: stored.ackRevision }
+    : { ok: false, code: 'id_conflict' };
+}
+
 export async function syncEvents(userId: string, body: unknown, store: Store): Promise<Outcome> {
   const request = parseUploadRequest(body);
   if (!request) return { ok: false, code: 'invalid' };
@@ -123,15 +129,14 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
   // Before the engine on purpose: a retry after a lost response is a group the
   // server already saved, and replaying it would reject an accepted play.
   const stored = await store.findGroup(first.gameId, first.group);
-  if (stored) {
-    return stored.contentHash === hash && stored.userId === userId
-      ? { ok: true, revision: stored.ackRevision }
-      : { ok: false, code: 'id_conflict' };
-  }
+  if (stored) return savedOutcome(stored, userId, hash);
 
   const base = await store.getBase(first.gameId);
   if (!base) return { ok: false, code: 'invalid' };
-  if (base.revision !== first.seq - 1) return { ok: false, code: 'stale_revision' };
+  if (base.revision !== first.seq - 1) {
+    const committed = await store.findGroup(first.gameId, first.group);
+    return committed ? savedOutcome(committed, userId, hash) : { ok: false, code: 'stale_revision' };
+  }
 
   // First connection test only: the engine has no game logic yet, so the group is
   // stored without replaying or applying it, and the cached state is unchanged.
