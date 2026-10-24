@@ -1,0 +1,11 @@
+name: Undo cannot target a missing play
+cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - kind: pitch
+      result: ball
+  - - kind: undo
+      target: play-99
+then:
+  rejected: undo_not_latest

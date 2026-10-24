@@ -59,16 +59,12 @@ describe('applyGroup', () => {
     expect(replay(setup, events([[{ kind: 'pitch', result: 'ball' }]]))).toEqual({ ok: false, code: 'game_not_started' });
   });
 
-  // Tickets #13 (balls in play), #14 (runner events, pitching changes) and #15 (undo, game end) replace these.
   const notYet: Command[][] = [
     [{ kind: 'pitch', result: 'in_play' }],
     [{ kind: 'pitch', result: 'in_play' }, { kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] }],
     [{ kind: 'runner', event: 'wild_pitch', runner: away(1), to: 2 }],
     [{ kind: 'batter_out', reason: 'thrown_bat' }],
     [{ kind: 'substitution', side: 'home', change: { kind: 'pitching_change', in: home(2) } }],
-    [{ kind: 'game', control: { kind: 'end_half', reason: 'manual' } }],
-    [{ kind: 'game', control: { kind: 'end_game', reason: 'called' } }],
-    [{ kind: 'undo', target: 'p-2' as GroupId }],
     [{ kind: 'correct', target: 'p-2' as GroupId, replacement: [] }],
   ];
   for (const commands of notYet) {

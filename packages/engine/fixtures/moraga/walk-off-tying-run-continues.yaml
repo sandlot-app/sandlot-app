@@ -1,0 +1,45 @@
+name: A run that only ties bottom six does not end the game
+cite: Moraga Mustang rules revised February 2024 D.16; 2026 Official Baseball Rules 7.01(e); issue 10 Game end and Game
+  status
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: bottom
+  count:
+    balls: 3
+    strikes: 0
+    pitches: 3
+  bases:
+    "1":
+      player:
+        kind: player
+        id: home-2
+      chargedTo:
+        kind: opponent
+        id: away-1
+    "2":
+      player:
+        kind: player
+        id: home-3
+      chargedTo:
+        kind: opponent
+        id: away-1
+    "3":
+      player:
+        kind: player
+        id: home-4
+      chargedTo:
+        kind: opponent
+        id: away-1
+  score:
+    home: 2
+    away: 3
+when:
+  - - kind: pitch
+      result: ball
+then:
+  status: in_progress
+  score:
+    home: 3
+    away: 3

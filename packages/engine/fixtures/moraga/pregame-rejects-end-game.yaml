@@ -1,0 +1,12 @@
+name: A called game cannot be ended before start
+cite: Moraga Mustang rules revised February 2024 D.16; 2026 Official Baseball Rules 7.01(e); issue 10 Game end and Game
+  status
+preset: moraga-mustang-first-half
+started: false
+when:
+  - - kind: game
+      control:
+        kind: end_game
+        reason: called
+then:
+  rejected: game_not_started

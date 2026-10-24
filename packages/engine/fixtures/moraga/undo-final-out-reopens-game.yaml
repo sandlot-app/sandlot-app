@@ -1,0 +1,38 @@
+name: Undoing the final out restores the inning count and batter
+cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: bottom
+  outs: 2
+  count:
+    balls: 1
+    strikes: 2
+    pitches: 3
+  nextBatter:
+    home: 5
+    away: 4
+  score:
+    home: 1
+    away: 2
+when:
+  - - kind: pitch
+      result: called_strike
+  - - kind: undo
+      target: play-1
+then:
+  status: in_progress
+  inning: 6
+  half: bottom
+  outs: 2
+  count:
+    balls: 1
+    strikes: 2
+    pitches: 3
+  nextBatter:
+    home: 5
+    away: 4
+  pitchCounts:
+    home-1: 0
+    away-1: 0

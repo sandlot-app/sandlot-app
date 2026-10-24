@@ -1,0 +1,13 @@
+name: Undo must be the only command in its play
+cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - kind: pitch
+      result: ball
+  - - kind: undo
+      target: play-1
+    - kind: pitch
+      result: called_strike
+then:
+  rejected: undo_not_latest
