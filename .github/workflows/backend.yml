@@ -21,5 +21,7 @@ jobs:
         working-directory: supabase/functions/sync-events
       - run: deno test --frozen handler_test.ts
         working-directory: supabase/functions/sync-events
+      - run: deno check send-samples.ts
+        working-directory: supabase/scripts
       - run: supabase db start
       - run: supabase test db --local
