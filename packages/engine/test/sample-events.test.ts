@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
 import { sampleHalfInning } from '../scripts/sample-events.ts';
-import { parseUploadRequest, type GameId, type SessionId } from '../src/index.ts';
+import { applyGroup, parseUploadRequest, presets, replay, type Event, type GameId, type GameSetup, type SessionId } from '../src/index.ts';
 
 const options = {
   gameId: '11111111-1111-1111-1111-111111111111' as GameId,
@@ -9,6 +10,40 @@ const options = {
 };
 
 describe('sample-events', () => {
+  it('accepts every request printed by the sample CLI and replays the half-inning', () => {
+    const printed: unknown = JSON.parse(execFileSync(process.execPath, [
+      'scripts/sample-events.ts', '--game', options.gameId, '--session', options.sessionId,
+    ], { cwd: new URL('..', import.meta.url), encoding: 'utf8' }));
+    expect(printed).toEqual(sampleHalfInning(options));
+    if (!Array.isArray(printed)) throw new Error('sample-events must print a request array');
+    const requests = printed.map((value) => {
+      const request = parseUploadRequest(value);
+      if (!request) throw new Error('sample-events printed an invalid upload request');
+      return request;
+    });
+    const setup: GameSetup = {
+      rules: presets['moraga-mustang-first-half'],
+      roster: { home: [], away: [] },
+      pitcherOutsEarlierToday: {},
+    };
+    for (const request of requests) {
+      for (const { command } of request.events) {
+        if (command.kind === 'game' && command.control.kind === 'lineup_set') {
+          setup.roster[command.control.side] = command.control.lineup.map(({ player }) => player);
+        }
+      }
+    }
+    const events: Event[] = [];
+    for (const request of requests) {
+      const applied = applyGroup(setup, events, request.events.map(({ command }) => command));
+      expect(applied.ok).toBe(true);
+      events.push(...request.events);
+      expect(replay(setup, events)).toEqual(applied);
+    }
+    expect(replay(setup, events)).toMatchObject({
+      ok: true, state: { inning: 1, half: 'bottom', outs: 0, bases: {}, score: { home: 0, away: 0 }, pitchCounts: { 'home-1': 8, 'away-1': 0 } },
+    });
+  });
   it('prints the same requests on every run', () => {
     expect(sampleHalfInning(options)).toEqual(sampleHalfInning(options));
   });

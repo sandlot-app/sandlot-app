@@ -152,7 +152,8 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 ## Version pins
 
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
-- This change exports `EVENT_SCHEMA_VERSION = 2` and the intermediate `ENGINE_VERSION = '0.1.0-alpha.1'`. Issue #16 supplies the final `0.1.0` release and fixture-result lock. That CI lock is not implemented by #13.
+- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.0'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
+- Local verification compares that artifact with the current engine and fixtures. CI also compares it with the trusted PR base or main-push predecessor and rejects changed results without an engine-version increase. [Engine verification](engine-verification.md) describes the commands and the initial release baseline.
 - Milestone 6 requires the server to return `unsupported_version` for incompatible pins and the phone to refuse scoring under mismatched pins. The current first-connection handler does not enforce that gate.
 - Joint decision #13 uses schema 2 without an old-request decoder. Existing stored games are first-connection test games. The existing reset workflow must clear those test games before the next full scoring and sync rehearsal. Targets and execution are tracked in [#21](https://github.com/sandlot-app/sandlot-app/issues/21). This local change performs no hosted reset or deployment.
 - Do not rewrite historical events, hashes, or immutable pins. An old offline request retains its original content.
