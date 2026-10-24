@@ -9,3 +9,6 @@ coverage/
 .expo/
 ios/
 android/
+
+# Verification runs and evidence (see .claude/skills/verify-sandlot-mobile)
+.verify/

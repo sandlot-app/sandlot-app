@@ -96,7 +96,7 @@ Each step ends in a check. Christian's and Kevin's steps run side by side, and t
 8. **The clip** (Kevin). Done when a clip cut from a test recording, using a play's `at` and a hand-entered offset, shows the whole play, and appears on the live page next to the stat card.
 9. **Mock-ups** (Christian). Done when the feed and scout-view frames are made from the adult footage and labeled as what comes next.
 10. **Put Sandlot in front of real parents.** At least three parents who keep score score an inning or more with the app, live or from video. Done when we have their names, what they scored, and what they said in their own words.
-11. **Film and score the demo game live.** Someone claps on camera at the first pitch for the clip's clock offset. Done when the whole game is scored in the app, the live page matches, and the clip of the double shows the play.
+11. **Film and score the demo game live.** Someone claps on camera at the first pitch for the clip's clock offset. One pitcher throws at least 65 pitches, so the pitch-count warning in scene 4 happens for real. Done when the whole game is scored in the app, the live page matches, and the clip of the double shows the play.
 12. **Rehearse the script twice, then record the demo.** Keep a backup take of every scene. Export at 1080p. About 4 Mbps keeps a 2.5-minute video near 75 MB, under the 100 MB limit. At 5 Mbps it would be about 94 MB, too close. Done when the exported file is under 3 minutes and under 100 MB.
 13. **Record the founder video.** One minute, both founders. Done when the file is under 100 MB and both founders approve it.
 14. **Write the answers.** Claude drafts the answers in the table above, and the founders write the rest. Done when both founders have read every answer.
