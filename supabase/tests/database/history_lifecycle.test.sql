@@ -1,5 +1,5 @@
 begin;
-select plan(12);
+select plan(15);
 
 insert into auth.users (id) values ('00000000-0000-0000-0000-00000000000a');
 insert into public.games (id, engine_version, schema_version, rules, setup)
@@ -43,6 +43,22 @@ select throws_ok(
 );
 select is(pg_temp.history(), (select value from saved_history),
   'refused user deletion preserves exact user, session, group, events, revision and cache');
+
+insert into auth.users (id) values ('00000000-0000-0000-0000-00000000000b');
+insert into public.games (id, engine_version, schema_version, rules, setup)
+values ('22222222-2222-2222-2222-222222222222', '0.0.0', 1, '{}', '{}');
+select isnt(
+  private.take_over('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-00000000000b'),
+  null,
+  'a second user starts a session with no plays'
+);
+
+select lives_ok(
+  $$ delete from auth.users where id = '00000000-0000-0000-0000-00000000000b' $$,
+  'a user whose session has no accepted plays can be deleted'
+);
+select is((select count(*) from public.scoring_sessions where game_id = '22222222-2222-2222-2222-222222222222'),
+  0::bigint, 'deleting that user removes their empty session');
 
 select lives_ok(
   $$ delete from public.games where id = '11111111-1111-1111-1111-111111111111' $$,

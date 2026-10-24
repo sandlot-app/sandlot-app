@@ -1,8 +1,6 @@
-alter table public.scoring_sessions
-  drop constraint scoring_sessions_user_id_fkey,
-  add constraint scoring_sessions_user_id_fkey
-    foreign key (user_id) references auth.users (id) on delete restrict;
-
+-- Accepted groups keep a user and their session from being deleted, so their events
+-- survive. session_id is NO ACTION, not RESTRICT, because deleting a game removes its
+-- sessions and groups in one statement and only a check at the end of it allows that.
 alter table public.groups
   drop constraint groups_user_id_fkey,
   add constraint groups_user_id_fkey
@@ -22,6 +20,3 @@ grant usage on schema private to service_role;
 grant execute on function private.get_base(uuid), private.take_over(uuid, uuid),
   private.commit_group(uuid, uuid, uuid, integer, jsonb, jsonb, text)
   to service_role;
-grant select on public.games, public.events, public.groups, public.scoring_sessions to service_role;
-grant insert on public.events, public.groups, public.scoring_sessions to service_role;
-grant update on public.games to service_role;

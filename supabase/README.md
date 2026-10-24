@@ -1,6 +1,6 @@
 # Verify the first-connection backend
 
-Use Deno 2.9.6, Supabase CLI 2.122.0, and Docker. CI uses these versions and runs the handler tests and pgTAP database suite alongside the existing frontend checks.
+Use Deno 2.9.6, Supabase CLI 2.122.0, and Docker. The Backend workflow uses these versions and runs the handler tests and pgTAP database suite whenever `supabase/` changes.
 
 From the repository root, check the function and run its deterministic concurrency tests.
 
@@ -28,6 +28,6 @@ After testing, remove the disposable local database and its volumes.
 supabase stop --no-backup
 ```
 
-The function requires `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and a trusted PostgreSQL connection in `SUPABASE_DB_URL`. Configure that connection with the database privileges granted to `service_role`. A Supabase API service key is not a PostgreSQL password. The role tests connect as the local database owner and use `SET LOCAL ROLE service_role` to exercise the private functions. A deployed database login must have the required privileges or be provisioned to assume that role. The migration adds the required privileges without removing broader privileges Supabase already grants to `service_role`.
+The function requires `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_DB_URL`. Supabase injects `SUPABASE_DB_URL` into deployed functions. It connects as the database owner, which is the trusted path contract.md describes for calling `private.commit_group`.
 
-The first-connection handler stores groups without engine validation. Retried groups return their original acknowledgment, including concurrent retries. Deleting an account with retained scoring sessions or groups fails with SQLSTATE `23503`. Deleting a session with accepted groups also fails. Explicit whole-game cleanup still removes the game's sessions, groups, and events. Account deletion can succeed after all referencing history is deliberately removed. This is the first-connection lifecycle restriction, not an account-deletion product flow.
+The first-connection handler stores groups without engine validation. Retried groups return their original acknowledgment, including concurrent retries. Deleting an account with accepted groups fails with SQLSTATE `23503`. An account whose sessions have no accepted groups can be deleted, and its sessions go with it. Deleting a session with accepted groups also fails. Explicit whole-game cleanup still removes the game's sessions, groups, and events. Account deletion can succeed after all referencing history is deliberately removed. This is the first-connection lifecycle restriction, not an account-deletion product flow.

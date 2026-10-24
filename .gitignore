@@ -9,5 +9,3 @@ coverage/
 .expo/
 ios/
 android/
-supabase/.temp/
-supabase/.branches/
