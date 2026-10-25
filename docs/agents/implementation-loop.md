@@ -23,11 +23,7 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
    - `pstack-blast-radius` for what else the change could break.
    - `pstack-interrogate` as well when the change touches engine rules, privacy or security.
    - Medium or higher findings block. Fix them, then run both reviews again.
-6. **Hand off.** On a long run, keep a `show-me-your-work` log. Then hand off the branch:
-   - **On Christian's PC:** push the branch and open a **draft** PR whose body says `Closes #<number>`.
-   - **In the VM:** export the branch with `vm_export.py`, and write `pr-body.txt`.
-
-   Either way, the description covers:
+6. **Hand off.** On a long run, keep a `show-me-your-work` log. All work happens on Christian's PC: push the branch and open a **draft** PR whose body says `Closes #<number>`. The description covers:
    - what changed
    - the exact checks run and their results
    - review findings and how each was resolved
@@ -39,7 +35,7 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
 - `pnpm verify` passes. For phone tickets, so do lint, typecheck and `bundle`.
 - Screens match their Figma frames in layout, spacing, size, weight and color. The typeface is the platform's own.
 - Colors, spacing and radii come from `@sandlot/tokens`. No raw values.
-- Phone tickets: the Maestro flow passed on the Mac, with screenshots and video attached to the PR. A Windows or VM run alone doesn't count.
+- Phone tickets: the Maestro flow passed on the Mac, with screenshots and video attached to the PR. A run on the PC alone doesn't count.
 - Reviews show no open medium or higher findings.
 
 ## Stop rules
