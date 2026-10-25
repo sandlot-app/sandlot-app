@@ -34,6 +34,21 @@ pnpm --filter @sandlot/web test
 
 `build` writes a static site to `apps/web/dist`. It uses relative asset paths, so any static host works, at the root or under a path. The host needs no server code and no rewrite rules.
 
+## Deploy on Vercel
+
+The page is hosted on Vercel. Create one project from this repository with these settings:
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | `apps/web`, with "Include files outside the root directory" left on so the engine package is found |
+| Framework Preset | Vite. The build command (`pnpm build`) and output directory (`dist`) are its defaults. |
+| Node.js Version | 22.x |
+| Environment variables | `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` for Production and Preview, plus `ENABLE_EXPERIMENTAL_COREPACK=1` so the build uses the pnpm version in the root `package.json` |
+
+Vercel installs from the workspace root's `pnpm-lock.yaml`. Vite writes the two Supabase values into the built files, so changing either one needs a redeploy.
+
+Every push to `main` deploys to production, and every pull request gets a preview URL. Once the product link is in the YC application, turn off automatic production deploys or pin the production deployment, so the link stays unchanged until YC decides.
+
 ## How it works
 
 The page calls `get_snapshot(game_id, after_seq)` and subscribes to updates on its game's row in `public.games`.
