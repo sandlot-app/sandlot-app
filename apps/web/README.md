@@ -42,6 +42,7 @@ The page calls `get_snapshot(game_id, after_seq)` and subscribes to updates on i
 - It fetches when a message carries a higher revision than the one shown. It ignores a message or snapshot with a lower revision.
 - It also fetches on load and every 30 seconds, even while Realtime is down.
 - It asks only for events after the last one it holds.
+- It sends one request at a time. A request that takes longer than 10 seconds is cancelled, the page shows "Reconnecting", and the next fetch goes ahead.
 
 The page replays the events through `@sandlot/engine` one play at a time, so each play can show the score after it. If the engine version that recorded the game differs from the page's, or the engine rejects a stored play, the page shows the server's cached state and the plays without per-play scores.
 
@@ -53,5 +54,6 @@ If the demo game is reset while a page is open, reload the page. A page ignores 
 
 - `src/plays.ts` turns events into plays and the current state.
 - `src/live.ts` is the reducer that applies snapshots to the page's model.
-- `src/useLiveGame.ts` is the only module that touches supabase-js and timers.
+- `src/useLiveGame.ts` is the only module that touches supabase-js.
+- `src/snapshotFetcher.ts` sends one `get_snapshot` call at a time and gives up on a call after 10 seconds.
 - `src/components` holds the scoreboard, diamond, count and play list.
