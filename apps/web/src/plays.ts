@@ -236,6 +236,12 @@ function batterUp(state: GameState): string | null {
   return state.lineups[side][state.nextBatter[side]]?.player.id ?? null;
 }
 
+/** The count also resets when a runner makes the third out or the half ends, so only a new batter means the at-bat ended. */
+function atBatEnded(before: GameState, after: GameState): boolean {
+  const side = battingSide(before.half);
+  return after.nextBatter[side] !== before.nextBatter[side];
+}
+
 /**
  * Turns the stored events into the play list and the current state. The engine replays each play so the list can
  * show the score after it. When the page cannot replay the game, the server's cached state stands in and plays
@@ -251,7 +257,7 @@ export function buildTimeline(pins: Pins, events: Event[], serverState: GameStat
     const after = replayed?.after[index];
     const context: TextContext = {
       batter: before ? batterUp(before) : null,
-      atBatEnded: before !== undefined && after !== undefined && after.count.pitches === 0,
+      atBatEnded: before !== undefined && after !== undefined && atBatEnded(before, after),
     };
     return [
       {

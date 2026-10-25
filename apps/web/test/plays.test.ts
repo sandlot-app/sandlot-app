@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import type { Command, GroupId } from '@sandlot/engine';
+import type { Command, Event, GroupId, PlayerId, PlayerRef } from '@sandlot/engine';
 import { buildTimeline } from '../src/plays.ts';
 import { awayPlayer, pins, sampleEvents, serverState, withPlay } from './helpers.ts';
 
 const pitch = (result: Extract<Command, { kind: 'pitch' }>['result']): Command => ({ kind: 'pitch', result });
+const homePlayer = (n: number): PlayerRef => ({ kind: 'player', id: `home-${n}` as PlayerId });
+const flyOut: Command[] = [pitch('in_play'), { kind: 'ball_in_play', outcome: 'out', trajectory: 'fly', fielders: ['CF'], advances: [] }];
+const single: Command[] = [pitch('in_play'), { kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [] }];
+
+const plays = (events: Event[], ...groups: Command[][]): Event[] =>
+  groups.reduce((sofar, commands, i) => withPlay(sofar, `play-${i}`, ...commands), events);
+
 const homeRun: Command[] = [
   pitch('in_play'),
   { kind: 'ball_in_play', outcome: 'home_run', trajectory: 'fly', fielders: ['CF'], advances: [] },
@@ -80,6 +87,33 @@ describe('buildTimeline', () => {
     const { plays } = buildTimeline(pins({ schemaVersion: 99 }), events, null);
 
     expect(plays.at(-1)?.text).toBe('Play');
+  });
+
+  it('announces a walk on ball four', () => {
+    const events = plays(sampleEvents(), [pitch('ball')], [pitch('ball')], [pitch('ball')], [pitch('ball')]);
+
+    const { plays: timeline, state } = buildTimeline(pins(), events, null);
+
+    expect(timeline.slice(-4).map((play) => play.text)).toEqual(['Ball', 'Ball', 'Ball', 'Ball four, home-1 walks']);
+    expect(state?.bases[1]?.player).toEqual(homePlayer(1));
+  });
+
+  it('calls a pitch a plain ball when a runner makes the third out on the same play', () => {
+    const events = plays(sampleEvents(), flyOut, flyOut, single, [
+      pitch('ball'),
+      { kind: 'runner', event: 'caught_stealing', runner: homePlayer(3), to: 'out' },
+    ]);
+
+    const { plays: timeline, state } = buildTimeline(pins(), events, null);
+
+    expect(timeline.at(-1)?.text).toBe('Ball. home-3 is caught stealing');
+    expect(state).toMatchObject({ inning: 2, half: 'top', outs: 0 });
+  });
+
+  it('calls a pitch a plain ball when the scorer ends the half on the same play', () => {
+    const events = plays(sampleEvents(), [pitch('ball'), { kind: 'game', control: { kind: 'end_half', reason: 'manual' } }]);
+
+    expect(buildTimeline(pins(), events, null).plays.at(-1)?.text).toBe('Ball. Half-inning ended');
   });
 
   it('is pregame with no plays before the first event', () => {

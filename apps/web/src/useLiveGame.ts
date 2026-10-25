@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import type { SupabaseConfig } from './config.ts';
 import { initialLiveGame, lastSeq, liveReducer, needsFetch, type LiveAction, type LiveGame } from './live.ts';
-import { isSnapshot } from './snapshot.ts';
+import { snapshotFetcher } from './snapshotFetcher.ts';
 
 const REFRESH_MS = 30_000;
 
@@ -17,8 +17,6 @@ export function useLiveGame({ url, anonKey }: SupabaseConfig, gameId: string): L
     let current = initialLiveGame;
     let closed = false;
     let subscribed = false;
-    let fetching = false;
-    let fetchAgain = false;
 
     const send = (action: LiveAction) => {
       const next = liveReducer(current, action);
@@ -27,28 +25,10 @@ export function useLiveGame({ url, anonKey }: SupabaseConfig, gameId: string): L
       setGame(next);
     };
 
-    // One request at a time, so two replies can never arrive out of order and leave a gap in the events.
-    const fetchSnapshot = async () => {
-      if (fetching) {
-        fetchAgain = true;
-        return;
-      }
-      fetching = true;
-      try {
-        do {
-          fetchAgain = false;
-          const { data, error } = await client.rpc('get_snapshot', { p_game_id: gameId, p_after_seq: lastSeq(current) });
-          if (error || (data !== null && !isSnapshot(data))) {
-            send({ type: 'connection', status: 'reconnecting' });
-          } else {
-            send({ type: 'snapshot', snapshot: data });
-            if (subscribed) send({ type: 'connection', status: 'live' });
-          }
-        } while (fetchAgain && !closed);
-      } finally {
-        fetching = false;
-      }
-    };
+    const fetchSnapshot = snapshotFetcher(
+      (afterSeq, signal) => client.rpc('get_snapshot', { p_game_id: gameId, p_after_seq: afterSeq }).abortSignal(signal),
+      { afterSeq: () => lastSeq(current), send, subscribed: () => subscribed, closed: () => closed },
+    );
 
     const channel = client
       .channel(`game:${gameId}`)
