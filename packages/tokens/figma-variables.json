@@ -68,6 +68,19 @@
           }
         },
         {
+          "name": "border/warning",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "description": "Outline of a time-sensitive heads-up.",
+          "values": {
+            "Light": {
+              "alias": "Primitives/yellow/400"
+            }
+          }
+        },
+        {
           "name": "border/well",
           "type": "COLOR",
           "scopes": [
@@ -543,6 +556,20 @@
           }
         },
         {
+          "name": "surface/warning",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "description": "Background of a time-sensitive heads-up, such as the time-limit warning.",
+          "values": {
+            "Light": {
+              "alias": "Primitives/yellow/100"
+            }
+          }
+        },
+        {
           "name": "text/danger",
           "type": "COLOR",
           "scopes": [
@@ -877,6 +904,14 @@
           "scopes": [],
           "values": {
             "Value": "#E3B072"
+          }
+        },
+        {
+          "name": "yellow/100",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#FDF1CC"
           }
         },
         {

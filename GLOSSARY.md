@@ -66,6 +66,10 @@ _Avoid_: Rain-out, forfeit, shortened game
 A game stopped before it could count, to be finished another day from exactly where it stopped. It is the default for a game stopped too early, unless the league replays such games from the start.
 _Avoid_: Postponed game, paused game
 
+**Closed book**:
+A Final game whose scorer has closed the book, which makes its box score and stats official. Its plays can no longer be fixed. The book can be closed only once every play has uploaded.
+_Avoid_: Locked game, finalized game, archived game
+
 **Season half**:
 The part of a division's season whose rules a game uses. In Mustang, the second half allows 9 outs a day per pitcher instead of 6, and leadoffs and full stealing if the coaches agreed before the season. A game takes it from its setup, pre-filled from the date the league switches.
 _Avoid_: Season phase, split, second season

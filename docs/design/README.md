@@ -16,5 +16,6 @@ In the order they were designed:
 8. [Prototype wiring](spec-update-prototype.md)
 9. [Sheet spacing](spec-update-sheet-spacing.md): one spacing rule for every scorer sheet, and the Time limit reached result card
 10. [Milestone 4 screens](spec-update-milestone-4.md): the scorer bar without voice, the milestone 4 More menu, game setup with Season half, and the lineup
+11. [Public game states, Close the book, and the time-limit warning](spec-update-public-states-and-close-the-book.md)
 
 Sample data in the designs follows Mustang rules for one game, Hawks 2 at Marlins 1 in the Bottom 5. The names in it are made up.
