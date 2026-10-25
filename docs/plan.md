@@ -335,6 +335,14 @@ The biggest risk is voice failing the prototype, because voice is the main reaso
 - **Ages.** Players under 13 are never published or scouted. Players 13 and up can be, only by parent opt-in.
 - **Pricing.** Scoring, the live page and stat cards are free for good. Families pay for video, replays, clips and the profile, priced below GameChanger.
 - **Observability.** After the demo, before the beta.
+- **Recap stories.** After each Final game, the server writes a newspaper-style story from the official scorebook (the home team's, under Mustang rules), with a version for each team. Only team members of the two teams can read it. It publishes right away, and rewrites itself when the scorer fixes a play. The official scorer or either team admin can hide it. Kids are never named for errors or strikeouts, and a family can turn off naming their child. A share image names a child only for the family that claimed them. See ADR 0002.
+- **Team admin.** The admin role in Accounts and teams: the person who set a team up in Sandlot. It can hide or unhide stories, and sets the resume date of a suspended game in the team schedule.
+- **Public live page.** Anyone with the public link sees the score, plays and box score with jersey numbers and positions, never names. Names, following, the game list and stories are for team members, who join through the team's invite link.
+- **Sample data follows Mustang.** Designs use 6 innings, at most 9 outs a day per pitcher in the second half, Pitch Smart's 75-pitch daily limit for ages 9 and 10, and no re-entry for a removed pitcher.
+- **Push notifications.** Not in the beta. A Final notification with the story's headline comes after it.
+- **Time limit.** Mustang's 2-hour limit counts delays, as the rule is written. "Delays pause the time limit" is a league setting, off for Moraga. The engine checks the limit from event timestamps: when an inning's last out comes after it, the scorer confirms End as Final, or Not yet if the umpire allows another inning. Families see "Final · time limit".
+- **Called and suspended games.** A game stopped after its division's complete-game length is a called game. It counts as Final, and the reason shows in the game list, the Summary and the recap story. A game stopped before that is suspended and resumes from exactly where it stopped. "Replay from the start" is a league setting. Resuming starts with a "Check who's here" lineup step. Daily pitching limits start fresh on the resume day, and a removed pitcher still can't come back.
+- **Action color.** Blue is for actions. Orange is only for followed players and the logo.
 
 **Open questions.**
 
@@ -345,6 +353,7 @@ The biggest risk is voice failing the prototype, because voice is the main reaso
 - [ ] How do the phone's clock and the recording's clock line up automatically after the demo?
 - [ ] What do NCAA rules allow for college contact with recruits, by age and division? Check before scout access ships.
 - [ ] What does the paid family tier cost? Set after the streaming cost per game is measured.
+- [ ] How does the schedule hold a suspended game's resume date? The design has the team admin set it as a schedule entry linked to the suspended game, which the Games data doesn't have yet. Kevin decides the shape.
 
 ## Sources
 
