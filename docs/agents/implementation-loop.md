@@ -23,7 +23,11 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
    - `pstack-blast-radius` for what else the change could break.
    - `pstack-interrogate` as well when the change touches engine rules, privacy or security.
    - Medium or higher findings block. Fix them, then run both reviews again.
-6. **Hand off.** On a long run, keep a `show-me-your-work` log. Export the branch with `vm_export.py`, and write `pr-body.txt` covering:
+6. **Hand off.** On a long run, keep a `show-me-your-work` log. Then hand off the branch:
+   - **On Christian's PC:** push the branch and open a **draft** PR whose body says `Closes #<number>`.
+   - **In the VM:** export the branch with `vm_export.py`, and write `pr-body.txt`.
+
+   Either way, the description covers:
    - what changed
    - the exact checks run and their results
    - review findings and how each was resolved
@@ -48,7 +52,28 @@ Stop, and write the question into the handoff instead of building, when:
 - You'd show a control for a feature that isn't built yet. Hide it instead; the milestone's Figma frames show what stays.
 - The same check fails after three honest attempts. Write down what you tried.
 
-Never push to `main`, merge, close a ticket, or mark a PR ready. Christian does that.
+Never push to `main`, close a ticket by hand, or edit an issue. Merge only as the next section allows.
+
+## Merging
+
+Christian authorized agents on 2026-10-25 to merge their own ticket PRs into `main`, but only when every gate below holds for the PR's current head commit. If any gate fails, or you're unsure, leave the PR as a draft and report it. Christian merges it.
+
+1. **It's a ticket PR.** It's your branch for one open `ready-for-agent` sub-issue, it targets `main`, and its body says `Closes #<number>`.
+2. **CI passed on this exact commit.** The `verify` check succeeded for the head commit you're about to merge, and the PR merges cleanly.
+3. **An independent review passed on this exact commit.**
+   - A separate agent session that didn't write the code runs `code-review` (Spec and Standards) and `pstack-interrogate`.
+   - It finds no open medium or higher findings.
+   - Its findings and their resolutions are posted as a PR comment that names the head commit.
+   - After any new commit, the review runs again.
+4. **Nothing here needs Christian.** The diff doesn't touch any of these:
+   - engine rules or fixture results (`packages/engine/src`, `packages/engine/fixtures`)
+   - privacy or security (`supabase/`, sign-in, access rules, logging, `docs/contract.md`)
+   - dependencies (`package.json` dependency lists, `pnpm-lock.yaml`)
+   - CI (`.github/`)
+   - agent rules (`AGENTS.md`, `CLAUDE.md`, `docs/agents/`), ADRs or the glossary
+5. **Phone tickets have their Mac proof.** The Maestro flow passed on the Mac, with its screenshots and video on the PR.
+
+To merge, mark the PR ready, then squash-merge it pinned to the reviewed commit (`gh pr merge <n> --squash --match-head-commit <sha>`). Never enable auto-merge, use an admin override, or force-push. After merging, check that `main`'s CI run passes. If it fails, stop merging and report it.
 
 ## Running more than one
 
