@@ -351,8 +351,8 @@ The biggest risk is voice failing the prototype, because voice is the main reaso
 - **Interruptions are events.** Delays, suspensions and resuming are events in the same game's log. See ADR 0003.
 - **Tie at the time limit.** Mustang plays one extra inning when a game is tied at the limit. The scorer sees "Tied at the limit · one extra inning", and a game still tied after it ends as "Final · tie".
 - **Phone app building blocks.** `expo-router` for screens, and one in-app `Sheet` component, rather than native sheets, so sheets look the same on iOS, Android and the web build.
-- **Checking the phone app.** Every ticket keeps #25's rule: proof on a real iPhone simulator from a Mac. Each PR includes the Maestro flow it needs, and a Claude Code session on Christian's Mac runs it. Agents in the VM also attach web-build screenshots to compare with the Figma frames.
-- **How agents work.** One ticket, one branch from `main`, one PR. A ticket that depends on another waits for it to merge. At most two Codex runs at once, never in the same package. Christian's Codex loop owns the engine, the token package, the phone app and the shared UI pieces; the web live page stays Kevin's. See [docs/agents/implementation-loop.md](agents/implementation-loop.md).
+- **Checking the phone app.** Every ticket keeps #25's rule: proof on a real iPhone simulator from a Mac. Each PR includes the Maestro flow it needs, and a Claude Code session on Christian's Mac runs it. Agents also attach web-build screenshots to compare with the Figma frames.
+- **How agents work.** Agents work on Christian's PC, not the VM. One ticket, one branch from `main`, one PR. A ticket that depends on another waits for it to merge. At most two Codex runs at once, never in the same package. Christian's Codex loop owns the engine, the token package, the phone app and the shared UI pieces; the web live page stays Kevin's. See [docs/agents/implementation-loop.md](agents/implementation-loop.md).
 
 **Open questions.**
 

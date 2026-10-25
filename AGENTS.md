@@ -32,7 +32,7 @@ The plan is in [docs/plan.md](docs/plan.md): who owns what, the milestones in or
 - Each agent works in its own git worktree, for example `git worktree add ../sandlot-codex -b <branch>`. Two agents never share a checkout.
 - One task per branch and PR. Small diffs. `pnpm verify` must pass.
 - Take a ticket through [docs/agents/implementation-loop.md](docs/agents/implementation-loop.md): its loop, its definition of done, and when to stop and ask.
-- Agents push branches and open PRs. Agents never push to `main` and never merge. Christian merges every PR.
+- Agents push branches and open PRs. Agents never push to `main`. An agent merges its own ticket PR only when every gate in [the implementation loop's Merging section](docs/agents/implementation-loop.md#merging) holds; Christian merges everything else.
 - Christian reviews anything that changes engine rules, security, or privacy.
 
 ## Agent skills
