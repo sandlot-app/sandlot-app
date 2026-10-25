@@ -31,6 +31,7 @@ The plan is in [docs/plan.md](docs/plan.md): who owns what, the milestones in or
 - Claude Code orchestrates every task and writes most of the code. Codex takes implementation tasks Claude Code hands it. Both read this file.
 - Each agent works in its own git worktree, for example `git worktree add ../sandlot-codex -b <branch>`. Two agents never share a checkout.
 - One task per branch and PR. Small diffs. `pnpm verify` must pass.
+- Take a ticket through [docs/agents/implementation-loop.md](docs/agents/implementation-loop.md): its loop, its definition of done, and when to stop and ask.
 - Agents push branches and open PRs. Agents never push to `main` and never merge. Christian merges every PR.
 - Christian reviews anything that changes engine rules, security, or privacy.
 

@@ -66,6 +66,10 @@ _Avoid_: Rain-out, forfeit, shortened game
 A game stopped before it could count, to be finished another day from exactly where it stopped. It is the default for a game stopped too early, unless the league replays such games from the start.
 _Avoid_: Postponed game, paused game
 
+**Season half**:
+The part of a division's season whose rules a game uses. In Mustang, the second half allows 9 outs a day per pitcher instead of 6, and leadoffs and full stealing if the coaches agreed before the season. A game takes it from its setup, pre-filled from the date the league switches.
+_Avoid_: Season phase, split, second season
+
 **Time limit**:
 A division's rule that no new inning starts once a set time has passed since the game's start. The moment of an inning's last out decides, and delays count toward it unless the league says otherwise.
 _Avoid_: Curfew, game clock, drop-dead time
