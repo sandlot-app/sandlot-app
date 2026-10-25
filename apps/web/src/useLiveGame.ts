@@ -6,7 +6,7 @@ import { isSnapshot } from './snapshot.ts';
 
 const REFRESH_MS = 30_000;
 
-/** Follows one public game: fetches a snapshot on every subscribe, on a newer revision, and every 30 seconds while connected. */
+/** Follows one public game: fetches a snapshot on load, on every subscribe, on a newer revision, and every 30 seconds. */
 export function useLiveGame({ url, anonKey }: SupabaseConfig, gameId: string): LiveGame {
   const [game, setGame] = useState(initialLiveGame);
 
@@ -19,7 +19,6 @@ export function useLiveGame({ url, anonKey }: SupabaseConfig, gameId: string): L
     let subscribed = false;
     let fetching = false;
     let fetchAgain = false;
-    let refresh: ReturnType<typeof setInterval> | undefined;
 
     const send = (action: LiveAction) => {
       const next = liveReducer(current, action);
@@ -62,16 +61,18 @@ export function useLiveGame({ url, anonKey }: SupabaseConfig, gameId: string): L
         },
       )
       .subscribe((status) => {
-        clearInterval(refresh);
         subscribed = status === 'SUBSCRIBED';
         if (subscribed) {
           send({ type: 'connection', status: 'live' });
           void fetchSnapshot();
-          refresh = setInterval(() => void fetchSnapshot(), REFRESH_MS);
         } else {
           send({ type: 'connection', status: 'reconnecting' });
         }
       });
+
+    // Load and poll even while Realtime is down, so the score still shows and catches up.
+    void fetchSnapshot();
+    const refresh = setInterval(() => void fetchSnapshot(), REFRESH_MS);
 
     return () => {
       closed = true;

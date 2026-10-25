@@ -198,7 +198,7 @@ When the queue stops, the phone shows how many plays are waiting, for example "3
 
 - `get_snapshot(game_id, after_seq)` returns `{ gameId, revision, engineVersion, schemaVersion, rules, setup, state, events }`. `events` holds the events after `after_seq` in seq order, in the shape `get_base` builds, or `[]` when there are none. The page asks only for events it does not have yet. The function is security invoker, so row-level security decides access. It returns null when the caller cannot see the game or the game does not exist.
 - The page subscribes to updates on its game's row. When the subscription is active, the page fetches a snapshot. It fetches again after every reconnect.
-- The page fetches when a message or a snapshot has a higher revision than the one shown. It ignores any message or snapshot with a lower revision. While connected, it also fetches every 30 seconds.
+- The page fetches when a message or a snapshot has a higher revision than the one shown. It ignores any message or snapshot with a lower revision. It also fetches on load and every 30 seconds, even while the subscription is down, so the score still catches up.
 - Messages and snapshots carry player IDs, never names.
 
 ## Demo access

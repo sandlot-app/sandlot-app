@@ -40,7 +40,7 @@ The page calls `get_snapshot(game_id, after_seq)` and subscribes to updates on i
 
 - It fetches a snapshot when the subscription becomes active, and again after every reconnect.
 - It fetches when a message carries a higher revision than the one shown. It ignores a message or snapshot with a lower revision.
-- While connected, it fetches every 30 seconds.
+- It also fetches on load and every 30 seconds, even while Realtime is down.
 - It asks only for events after the last one it holds.
 
 The page replays the events through `@sandlot/engine` one play at a time, so each play can show the score after it. If the engine version that recorded the game differs from the page's, or the engine rejects a stored play, the page shows the server's cached state and the plays without per-play scores.
