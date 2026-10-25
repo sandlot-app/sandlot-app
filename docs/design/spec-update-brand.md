@@ -27,7 +27,12 @@ The Sandlot emblem is an open diamond with home plate. It replaces the outlined 
     - The lockup stays 29 px tall.
     - If the wordmark is resized, scale the emblem by the same factor (0.933 × font size) and keep these alignments.
   - Neither variant clips its content.
-- **Smallest size:** 20 px for the emblem. Below that, home plate fills in, so a favicon would need a simplified mark.
+- **Smallest size:** 20 px for the emblem. Below that, home plate fills in, so the favicon uses its own drawing (below).
+- **Logo / Favicon** `159:10756` (added 2026-10-25): the emblem redrawn for 16 px, in `logo/emblem` orange on a `logo/background` green tile with 3.6/16 rounded corners.
+  - Redrawn, not scaled: thicker arms, a bigger home plate and wider gaps between them, so the gaps stay open at 16 px.
+  - Exports: PNG at 16, 32 and 48 px, plus SVG.
+  - Use it only where the icon is 48 px or smaller (browser tabs, bookmarks). Everywhere else, the logo stays today's emblem.
+  - Chosen from five options on the Archive page ("Exploration — Favicon"): today's emblem scaled down, heavier strokes, plate only, solid diamond, and the green tile in two versions.
 - **Logo / App icon** `124:7448`: a brand-green tile with the emblem spanning 49.8% of it, as in the master.
 
 ### Rollout
