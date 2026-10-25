@@ -34,6 +34,8 @@ The function requires `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_DB_URL`
 
 The handler replays the game's accepted events, applies each group with the engine, and rejects the whole group when the engine rejects it. Retried groups return their original acknowledgment, including concurrent retries. Deleting an account with accepted groups fails with SQLSTATE `23503`. An account whose sessions have no accepted groups can be deleted, and its sessions go with it. Deleting a session with accepted groups, or a group with events, also fails. Explicit whole-game cleanup still removes the game's sessions, groups, and events. Account deletion can succeed after all referencing history is deliberately removed. This is the first-connection lifecycle restriction, not an account-deletion product flow.
 
+The family live page reads through `public.get_snapshot`, a security invoker function, so row-level security decides which games a caller sees.
+
 ## Send the sample plays
 
 Step 5 of the first connection test in `docs/contract.md` sends the engine's sample half-inning to `sync-events` twice. Start the database and serve the function first, locally with `supabase start` and `supabase functions serve sync-events`, or against the hosted project. Set `SUPABASE_URL` and `SUPABASE_ANON_KEY`. Locally, `supabase status` prints both, and its DB URL is the `SUPABASE_DB_URL` the seed step uses.
