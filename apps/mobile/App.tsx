@@ -1,4 +1,5 @@
 import { initialState, presets } from '@sandlot/engine';
+import { tokens } from '@sandlot/tokens';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -18,6 +19,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: tokens.modes.Light.sizes['space/2'] },
   title: { fontSize: 24, fontWeight: '600' },
 });
