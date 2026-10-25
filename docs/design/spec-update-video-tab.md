@@ -7,6 +7,9 @@ Figma: Viewer page, section "Video tab" `101:4905`, placed after "Plays & Box sc
 - **Viewer — Video tab (no stream)** `101:5162`: same header stack, Stream Card (State=Empty). No caption, since the card explains itself.
 - Both are 393×852 phone frames with the home indicator, laid out like the other tab screens (Content: 16px sides, 12px gap).
 
+### Tab order (changed 2026-10-25)
+The tabs read **Field · Video · Plays · Box score**. Video sits next to Field because both are ways to watch the game live, while Plays and Box score are for looking back. The change is in the Tabs component (`35:412`), so every tab bar in the file follows it, and its variants are ordered the same way.
+
 ### Rules
 - Live scoring is the source of truth. The video usually lags, so the caption warns that the score can be ahead of the picture.
 - The Stream Card's score panel repeats the scoreboard on purpose: it stays on the video when the player goes full screen.

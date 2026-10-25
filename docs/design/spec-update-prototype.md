@@ -19,7 +19,7 @@ Every transition uses the strong ease-out curve `cubic-bezier(0.23, 1, 0.32, 1)`
 - The filter switches between Following (`107:5105`) and All (`107:5329`).
 
 **Game screen (viewer)**
-- Tabs move between Field (`38:375`), Plays (`69:1895`), Box score (`69:2376`) and Video (`101:4996`), from every tab.
+- Tabs move between Field (`38:375`), Video (`101:4996`), Plays (`69:1895`) and Box score (`69:2376`), from every tab. That's the tab bar's order since the Video tab moved next to Field.
 - The nav bar's back button on each tab returns to the Game list. It navigates there directly rather than stepping back, so tab switches don't pile up in the back history.
 - On the Field tab, the J. Ruiz (SS) chip opens his card (`95:4106`), and the A. Kindle (P) chip opens his pitcher card (`95:4782`).
 
