@@ -1,0 +1,1173 @@
+{
+  "source": {
+    "file": "J8F4zRkkV63ji3AYhcHHwA",
+    "fileName": "Sandlot",
+    "exportedBy": "Claude Code via the Figma plugin API",
+    "note": "Generated input for @sandlot/tokens. Re-export from Figma instead of editing by hand (ADR 0004)."
+  },
+  "collections": [
+    {
+      "name": "Color",
+      "modes": [
+        "Light"
+      ],
+      "defaultMode": "Light",
+      "variables": [
+        {
+          "name": "action/primary",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "TEXT_FILL",
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/blue/600"
+            }
+          }
+        },
+        {
+          "name": "action/soft",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/blue/50"
+            }
+          }
+        },
+        {
+          "name": "border/glass",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white/a10"
+            }
+          }
+        },
+        {
+          "name": "border/subtle",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/ink/200"
+            }
+          }
+        },
+        {
+          "name": "border/well",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white/a24"
+            }
+          }
+        },
+        {
+          "name": "chip/batting/bg",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/blue/600"
+            }
+          }
+        },
+        {
+          "name": "chip/batting/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white"
+            }
+          }
+        },
+        {
+          "name": "chip/fielding/bg",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white"
+            }
+          }
+        },
+        {
+          "name": "chip/fielding/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/ink/900"
+            }
+          }
+        },
+        {
+          "name": "chip/label/halo",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/green/950"
+            }
+          }
+        },
+        {
+          "name": "chip/label/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white"
+            }
+          }
+        },
+        {
+          "name": "chip/outline",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/green/950"
+            }
+          }
+        },
+        {
+          "name": "count/ball",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/green/400"
+            }
+          }
+        },
+        {
+          "name": "count/empty",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/mint/200"
+            }
+          }
+        },
+        {
+          "name": "count/out",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/red/500"
+            }
+          }
+        },
+        {
+          "name": "count/strike",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/yellow/400"
+            }
+          }
+        },
+        {
+          "name": "count/well",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/green/950"
+            }
+          }
+        },
+        {
+          "name": "diamond/empty",
+          "type": "COLOR",
+          "scopes": [
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/mint/200"
+            }
+          }
+        },
+        {
+          "name": "diamond/occupied",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/yellow/400"
+            }
+          }
+        },
+        {
+          "name": "field/base",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white"
+            }
+          }
+        },
+        {
+          "name": "field/dirt",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/dirt/500"
+            }
+          }
+        },
+        {
+          "name": "field/grass",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/grass/600"
+            }
+          }
+        },
+        {
+          "name": "field/grass-stripe",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/grass/500"
+            }
+          }
+        },
+        {
+          "name": "field/line",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white"
+            }
+          }
+        },
+        {
+          "name": "field/mound",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/dirt/400"
+            }
+          }
+        },
+        {
+          "name": "icon/bat",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/wood/300"
+            }
+          }
+        },
+        {
+          "name": "logo/background",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/brand/green"
+            }
+          }
+        },
+        {
+          "name": "logo/emblem",
+          "type": "COLOR",
+          "scopes": [
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/brand/orange"
+            }
+          }
+        },
+        {
+          "name": "ring/followed",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/orange/500"
+            }
+          }
+        },
+        {
+          "name": "scoreboard/bg",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/green/900"
+            }
+          }
+        },
+        {
+          "name": "scoreboard/divider",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/green/800"
+            }
+          }
+        },
+        {
+          "name": "scoreboard/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white"
+            }
+          }
+        },
+        {
+          "name": "scoreboard/text-muted",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/mint/200"
+            }
+          }
+        },
+        {
+          "name": "status/delayed",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/slate/300"
+            }
+          }
+        },
+        {
+          "name": "status/live",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/red/500"
+            }
+          }
+        },
+        {
+          "name": "status/offline",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/amber/400"
+            }
+          }
+        },
+        {
+          "name": "status/reconnecting",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/gray/400"
+            }
+          }
+        },
+        {
+          "name": "surface/card",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white"
+            }
+          }
+        },
+        {
+          "name": "surface/glass",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white/a12"
+            }
+          }
+        },
+        {
+          "name": "surface/page",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/cream/50"
+            }
+          }
+        },
+        {
+          "name": "surface/voice",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/green/100"
+            }
+          }
+        },
+        {
+          "name": "text/danger",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/red/700"
+            }
+          }
+        },
+        {
+          "name": "text/on-accent",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white"
+            }
+          }
+        },
+        {
+          "name": "text/primary",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/ink/900"
+            }
+          }
+        },
+        {
+          "name": "text/secondary",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/ink/600"
+            }
+          }
+        },
+        {
+          "name": "text/tertiary",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/ink/400"
+            }
+          }
+        },
+        {
+          "name": "text/warning",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/amber/700"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Primitives",
+      "modes": [
+        "Value"
+      ],
+      "defaultMode": "Value",
+      "variables": [
+        {
+          "name": "amber/400",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#F2A73B"
+          }
+        },
+        {
+          "name": "amber/700",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#B45309"
+          }
+        },
+        {
+          "name": "blue/50",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#E7EEFB"
+          }
+        },
+        {
+          "name": "blue/600",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#1D5FD6"
+          }
+        },
+        {
+          "name": "brand/green",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#0C4C39"
+          }
+        },
+        {
+          "name": "brand/orange",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#FF7519"
+          }
+        },
+        {
+          "name": "cream/50",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#F7F5EF"
+          }
+        },
+        {
+          "name": "dirt/400",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#D49A70"
+          }
+        },
+        {
+          "name": "dirt/500",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#C4855A"
+          }
+        },
+        {
+          "name": "grass/500",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#458842"
+          }
+        },
+        {
+          "name": "grass/600",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#3B7A3A"
+          }
+        },
+        {
+          "name": "gray/400",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#9AA19D"
+          }
+        },
+        {
+          "name": "green/100",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#E3EEE9"
+          }
+        },
+        {
+          "name": "green/400",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#5CCB76"
+          }
+        },
+        {
+          "name": "green/800",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#1F6149"
+          }
+        },
+        {
+          "name": "green/900",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#174D3C"
+          }
+        },
+        {
+          "name": "green/950",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#0E3328"
+          }
+        },
+        {
+          "name": "ink/200",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#D9DDD9"
+          }
+        },
+        {
+          "name": "ink/400",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#7D8883"
+          }
+        },
+        {
+          "name": "ink/600",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#4A5751"
+          }
+        },
+        {
+          "name": "ink/900",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#14201B"
+          }
+        },
+        {
+          "name": "mint/200",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#B9D3C8"
+          }
+        },
+        {
+          "name": "orange/500",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#F07A1A"
+          }
+        },
+        {
+          "name": "orange/600",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#C85A0C"
+          }
+        },
+        {
+          "name": "red/500",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#EF5A4C"
+          }
+        },
+        {
+          "name": "red/700",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#B42318"
+          }
+        },
+        {
+          "name": "slate/300",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#A9B8C6"
+          }
+        },
+        {
+          "name": "white",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#FFFFFF"
+          }
+        },
+        {
+          "name": "white/a10",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#FFFFFF1A"
+          }
+        },
+        {
+          "name": "white/a12",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#FFFFFF1F"
+          }
+        },
+        {
+          "name": "white/a24",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#FFFFFF3D"
+          }
+        },
+        {
+          "name": "wood/300",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#E3B072"
+          }
+        },
+        {
+          "name": "yellow/400",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#F5C04A"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Size",
+      "modes": [
+        "Value"
+      ],
+      "defaultMode": "Value",
+      "variables": [
+        {
+          "name": "chip/batter-size",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "values": {
+            "Value": 40
+          }
+        },
+        {
+          "name": "chip/outline-width",
+          "type": "FLOAT",
+          "scopes": [
+            "STROKE_FLOAT"
+          ],
+          "values": {
+            "Value": 1.5
+          }
+        },
+        {
+          "name": "chip/size",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "values": {
+            "Value": 34
+          }
+        },
+        {
+          "name": "dot/size",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "values": {
+            "Value": 12
+          }
+        },
+        {
+          "name": "radius/full",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "values": {
+            "Value": 999
+          }
+        },
+        {
+          "name": "radius/lg",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "values": {
+            "Value": 20
+          }
+        },
+        {
+          "name": "radius/md",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "values": {
+            "Value": 12
+          }
+        },
+        {
+          "name": "radius/sm",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "values": {
+            "Value": 6
+          }
+        },
+        {
+          "name": "radius/xl",
+          "type": "FLOAT",
+          "scopes": [
+            "CORNER_RADIUS"
+          ],
+          "values": {
+            "Value": 28
+          }
+        },
+        {
+          "name": "ring/width",
+          "type": "FLOAT",
+          "scopes": [
+            "STROKE_FLOAT"
+          ],
+          "values": {
+            "Value": 3
+          }
+        },
+        {
+          "name": "space/1",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT",
+            "GAP"
+          ],
+          "values": {
+            "Value": 4
+          }
+        },
+        {
+          "name": "space/2",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "values": {
+            "Value": 8
+          }
+        },
+        {
+          "name": "space/3",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "values": {
+            "Value": 12
+          }
+        },
+        {
+          "name": "space/4",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "values": {
+            "Value": 16
+          }
+        },
+        {
+          "name": "space/6",
+          "type": "FLOAT",
+          "scopes": [
+            "GAP"
+          ],
+          "values": {
+            "Value": 24
+          }
+        },
+        {
+          "name": "tap/min",
+          "type": "FLOAT",
+          "scopes": [
+            "WIDTH_HEIGHT"
+          ],
+          "values": {
+            "Value": 44
+          }
+        }
+      ]
+    }
+  ],
+  "textStyles": [
+    {
+      "name": "Body/Regular",
+      "fontSize": 15,
+      "fontWeight": 400,
+      "lineHeight": 20,
+      "letterSpacing": "0%",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Body/Strong",
+      "fontSize": 15,
+      "fontWeight": 600,
+      "lineHeight": 20,
+      "letterSpacing": "0%",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Caption",
+      "fontSize": 13,
+      "fontWeight": 400,
+      "lineHeight": 18,
+      "letterSpacing": "0%",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Chip/Name",
+      "fontSize": 11,
+      "fontWeight": 600,
+      "lineHeight": 13,
+      "letterSpacing": "1%",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Chip/Number",
+      "fontSize": 15,
+      "fontWeight": 700,
+      "lineHeight": 18,
+      "letterSpacing": "0%",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Label/Caps",
+      "fontSize": 11,
+      "fontWeight": 600,
+      "lineHeight": 14,
+      "letterSpacing": "6%",
+      "textCase": "UPPER",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Player/Name",
+      "fontSize": 22,
+      "fontWeight": 700,
+      "lineHeight": 26,
+      "letterSpacing": "-1%",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Score/Compact",
+      "fontSize": 24,
+      "fontWeight": 600,
+      "lineHeight": 28,
+      "letterSpacing": "-2%",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Score/Inning",
+      "fontSize": 13,
+      "fontWeight": 600,
+      "lineHeight": 16,
+      "letterSpacing": "6%",
+      "textCase": "UPPER",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Score/Numeral",
+      "fontSize": 48,
+      "fontWeight": 600,
+      "lineHeight": 52,
+      "letterSpacing": "-3%",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Score/Team",
+      "fontSize": 15,
+      "fontWeight": 600,
+      "lineHeight": 20,
+      "letterSpacing": "4%",
+      "textCase": "UPPER",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Status/Label",
+      "fontSize": 12,
+      "fontWeight": 700,
+      "lineHeight": 16,
+      "letterSpacing": "4%",
+      "textCase": "UPPER",
+      "figmaFamily": "Inter"
+    },
+    {
+      "name": "Tab",
+      "fontSize": 14,
+      "fontWeight": 600,
+      "lineHeight": 20,
+      "letterSpacing": "-1%",
+      "figmaFamily": "Inter"
+    }
+  ]
+}
