@@ -58,7 +58,10 @@ export type RuleSet = {
     extraInningsIfTiedAtLimit: number;
     extraInningsIfTiedBeforeLimit: number;
   } | null;
-  /** One pitcher's daily pitches: an alert at `warnAt`, another at `limit`. Alerts never reject a pitch. */
+  /**
+   * Pitches one pitcher has thrown in this game: an alert at `warnAt`, another at `limit`. Alerts never reject a pitch.
+   * The rule books set a daily limit, but pitches from earlier games that day are not counted yet.
+   */
   pitchCountLimits: { warnAt: number; limit: number } | null;
   /** Outs a pitcher may record in one calendar day, across every game that day. */
   pitcherOutsPerDay: number | null;
