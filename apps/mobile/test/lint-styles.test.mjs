@@ -40,6 +40,24 @@ test('casts to token types outside the token package name the token source', () 
   }
 });
 
+test('casts through imported and local token type aliases are rejected', () => {
+  for (const source of [
+    "import type { SpacingToken as Space } from '@sandlot/tokens'; const bad = 8 as Space;",
+    "import type { SpacingToken } from '@sandlot/tokens'; type Space = SpacingToken; const bad = 8 as Space;",
+    "import type { SpacingToken } from '@sandlot/tokens'; type Space = SpacingToken; type Other = Space; const bad = 8 as Other;",
+  ]) {
+    const result = lint(source);
+    assert.equal(result.status, 1, source);
+    assert.match(result.stdout, /@sandlot\/tokens/);
+  }
+});
+
+test('objects passed to a function used in a style prop are not inline styles', () => {
+  assert.equal(lint("<View style={selectStyle({ theme: 'Light' })} />;").status, 0);
+  assert.equal(lint('<View style={[styles.card, { padding: 0 }]} />;').status, 1);
+  assert.equal(lint('<View style={active ? { padding: 0 } : styles.card} />;').status, 1);
+});
+
 test('ordinary values and token use are lint-clean', () => {
   const source = "const raw = 8; const c = '#FF7519'; const card = createStyles({ card: { padding: tokens.modes.Light.sizes['space/2'] } }); <View style={card.card} />;";
   assert.equal(lint(source).status, 0);

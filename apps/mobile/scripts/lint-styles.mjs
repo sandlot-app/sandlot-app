@@ -8,9 +8,22 @@ const mobile = join(repo, 'apps', 'mobile');
 const helper = join(mobile, 'style.ts');
 const tokenNames = new Set(['ColorToken', 'SpacingToken', 'RadiusToken']);
 
-function tokenType(type) {
-  if (ts.isTypeReferenceNode(type) && tokenNames.has(type.typeName.getText().split('.').at(-1))) return true;
-  return Boolean(ts.forEachChild(type, tokenType));
+function tokenType(type, names) {
+  if (ts.isTypeReferenceNode(type) && names.has(type.typeName.getText().split('.').at(-1))) return true;
+  return Boolean(ts.forEachChild(type, (child) => tokenType(child, names)));
+}
+
+function inlineStyle(expression) {
+  if (ts.isObjectLiteralExpression(expression)) return true;
+  if (ts.isParenthesizedExpression(expression) || ts.isAsExpression(expression) || ts.isSatisfiesExpression(expression)) {
+    return inlineStyle(expression.expression);
+  }
+  if (ts.isArrayLiteralExpression(expression)) return expression.elements.some(inlineStyle);
+  if (ts.isConditionalExpression(expression)) return inlineStyle(expression.whenTrue) || inlineStyle(expression.whenFalse);
+  if (ts.isBinaryExpression(expression) && [ts.SyntaxKind.AmpersandAmpersandToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(expression.operatorToken.kind)) {
+    return inlineStyle(expression.left) || inlineStyle(expression.right);
+  }
+  return false;
 }
 
 function check(source, name) {
@@ -20,12 +33,33 @@ function check(source, name) {
   const inTokens = normalized.includes('/packages/tokens/') || normalized.startsWith('packages/tokens/');
   const inMobile = normalized.includes('/apps/mobile/') || normalized.startsWith('apps/mobile/') || name === 'example.tsx' || name === 'stdin.tsx';
   const isHelper = resolve(name) === helper || normalized.endsWith('/apps/mobile/style.ts') || name === 'style.ts';
+  const names = new Set(tokenNames);
+  const aliases = [];
+  function collectTypes(node) {
+    if (ts.isImportDeclaration(node) && node.moduleSpecifier.text === '@sandlot/tokens' && node.importClause?.namedBindings && ts.isNamedImports(node.importClause.namedBindings)) {
+      for (const item of node.importClause.namedBindings.elements) {
+        if (tokenNames.has((item.propertyName ?? item.name).text)) names.add(item.name.text);
+      }
+    }
+    if (ts.isTypeAliasDeclaration(node)) aliases.push(node);
+    ts.forEachChild(node, collectTypes);
+  }
+  collectTypes(file);
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const alias of aliases) {
+      if (!names.has(alias.name.text) && tokenType(alias.type, names)) {
+        names.add(alias.name.text);
+        changed = true;
+      }
+    }
+  }
   function report(node, message) {
     const line = file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1;
     errors.push(`${name}:${line}: ${message}`);
   }
   function visit(node) {
-    if (!inTokens && (ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)) && tokenType(node.type)) {
+    if (!inTokens && (ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)) && tokenType(node.type, names)) {
       report(node, 'Use a value from @sandlot/tokens instead of casting to a token type.');
     }
     if (inMobile && !isHelper) {
@@ -42,8 +76,7 @@ function check(source, name) {
     }
     if (inMobile && ts.isJsxAttribute(node) && node.name.text.toLowerCase().endsWith('style') &&
       node.initializer && ts.isJsxExpression(node.initializer) && node.initializer.expression) {
-      const inline = (expression) => ts.isObjectLiteralExpression(expression) || Boolean(ts.forEachChild(expression, inline));
-      if (inline(node.initializer.expression)) report(node, 'Use createStyles from the mobile style helper instead of an inline style object.');
+      if (inlineStyle(node.initializer.expression)) report(node, 'Use createStyles from the mobile style helper instead of an inline style object.');
     }
     ts.forEachChild(node, visit);
   }
