@@ -118,7 +118,10 @@ const RUNNER_TEXT: Record<RunnerEvent, (runner: string, to: Destination) => stri
   missed_base: (runner) => `${runner} missed a base`,
 };
 
-type TextContext = { batter: string | null; atBatEnded: boolean };
+/** What one command's wording depends on: who was up when it happened, and whether it ended that at-bat. */
+type CommandContext = { batter: string | null; endsAtBat: boolean };
+
+const NO_CONTEXT: CommandContext = { batter: null, endsAtBat: false };
 
 function fielderText(fielders: Position[]): string {
   const [first, ...rest] = fielders;
@@ -156,11 +159,11 @@ function controlText(control: GameControl): string {
   }
 }
 
-function commandText(command: Command, { batter, atBatEnded }: TextContext): string {
+function commandText(command: Command, { batter, endsAtBat }: CommandContext): string {
   const who = batter ?? 'Batter';
   switch (command.kind) {
     case 'pitch': {
-      const endingText = atBatEnded ? AT_BAT_ENDING_PITCH_TEXT[command.result] : undefined;
+      const endingText = endsAtBat ? AT_BAT_ENDING_PITCH_TEXT[command.result] : undefined;
       return endingText ? endingText(who) : PITCH_TEXT[command.result];
     }
     case 'ball_in_play':
@@ -181,17 +184,18 @@ function commandText(command: Command, { batter, atBatEnded }: TextContext): str
 }
 
 /** The pitch that precedes a ball in play adds nothing to what the ball in play says. */
-function groupText(commands: Command[], context: TextContext): string {
+function groupText(commands: Command[], contexts: CommandContext[]): string {
   const hasBallInPlay = commands.some((command) => command.kind === 'ball_in_play');
   return commands
-    .filter((command) => !(hasBallInPlay && command.kind === 'pitch' && command.result === 'in_play'))
-    .map((command) => commandText(command, context))
+    .flatMap((command, i) =>
+      hasBallInPlay && command.kind === 'pitch' && command.result === 'in_play' ? [] : [commandText(command, contexts[i] ?? NO_CONTEXT)],
+    )
     .join('. ');
 }
 
-function safeGroupText(commands: Command[], context: TextContext): string {
+function safeGroupText(commands: Command[], contexts: CommandContext[]): string {
   try {
-    return groupText(commands, context) || 'Play';
+    return groupText(commands, contexts) || 'Play';
   } catch {
     // A game recorded by a newer version can hold commands this page has no wording for.
     return 'Play';
@@ -210,7 +214,7 @@ function splitGroups(events: Event[]): Group[] {
   return groups;
 }
 
-type Replayed = { initial: GameState; after: GameState[] };
+type Replayed = { setup: GameSetup; initial: GameState; after: GameState[] };
 
 function replayEachGroup(pins: Pins, events: Event[], groups: Group[]): Replayed | null {
   if (pins.engineVersion !== ENGINE_VERSION || pins.schemaVersion !== EVENT_SCHEMA_VERSION) return null;
@@ -221,7 +225,7 @@ function replayEachGroup(pins: Pins, events: Event[], groups: Group[]): Replayed
     if (!result.ok) return null;
     after.push(result.state);
   }
-  return { initial: initialState(setup), after };
+  return { setup, initial: initialState(setup), after };
 }
 
 function undoTarget(group: Group): GroupId | null {
@@ -243,6 +247,37 @@ function atBatEnded(before: GameState, after: GameState): boolean {
 }
 
 /**
+ * A play can hold several pitches, even more than one at-bat, so each command is judged against the state just before
+ * it, found by replaying the play up to that command.
+ */
+function commandContexts(
+  { setup }: Replayed,
+  events: Event[],
+  group: Group,
+  before: GameState,
+  after: GameState,
+): CommandContext[] {
+  const history = events.slice(0, group.start);
+  const stateThrough = (i: number): GameState | null => {
+    if (i === group.commands.length - 1) return after;
+    const command = group.commands[i]!;
+    // A pitch put in play has no state of its own until its outcome, which is judged against the state before it.
+    if (command.kind === 'pitch' && command.result === 'in_play') return null;
+    const result = applyGroup(setup, history, group.commands.slice(0, i + 1));
+    return result.ok ? result.state : null;
+  };
+  let state = before;
+  return group.commands.map((_, i) => {
+    const batter = batterUp(state);
+    const next = stateThrough(i);
+    if (!next) return { batter, endsAtBat: false };
+    const endsAtBat = atBatEnded(state, next);
+    state = next;
+    return { batter, endsAtBat };
+  });
+}
+
+/**
  * Turns the stored events into the play list and the current state. The engine replays each play so the list can
  * show the score after it. When the page cannot replay the game, the server's cached state stands in and plays
  * carry text only.
@@ -255,15 +290,12 @@ export function buildTimeline(pins: Pins, events: Event[], serverState: GameStat
     if (undone.has(group.id)) return [];
     const before = replayed ? (index === 0 ? replayed.initial : replayed.after[index - 1]) : undefined;
     const after = replayed?.after[index];
-    const context: TextContext = {
-      batter: before ? batterUp(before) : null,
-      atBatEnded: before !== undefined && after !== undefined && atBatEnded(before, after),
-    };
+    const contexts = replayed && before && after ? commandContexts(replayed, events, group, before, after) : [];
     return [
       {
         group: group.id,
         at: group.at,
-        text: safeGroupText(group.commands, context),
+        text: safeGroupText(group.commands, contexts),
         scoreAfter: after ? after.score : null,
         inning: before ? before.inning : null,
         half: before ? before.half : null,

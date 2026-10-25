@@ -98,6 +98,34 @@ describe('buildTimeline', () => {
     expect(state?.bases[1]?.player).toEqual(homePlayer(1));
   });
 
+  it('announces the walk once when all four balls are saved as one play', () => {
+    const events = plays(sampleEvents(), [pitch('ball'), pitch('ball'), pitch('ball'), pitch('ball')]);
+
+    expect(buildTimeline(pins(), events, null).plays.at(-1)?.text).toBe('Ball. Ball. Ball. Ball four, home-1 walks');
+  });
+
+  it('names each batter in a play that spans two at-bats', () => {
+    const events = plays(sampleEvents(), [
+      pitch('ball'),
+      pitch('ball'),
+      pitch('ball'),
+      pitch('ball'),
+      pitch('in_play'),
+      { kind: 'ball_in_play', outcome: 'single', trajectory: 'line', fielders: ['LF'], advances: [{ runner: homePlayer(1), to: 2 }] },
+    ]);
+
+    const { plays: timeline, state } = buildTimeline(pins(), events, null);
+
+    expect(timeline.at(-1)?.text).toBe('Ball. Ball. Ball. Ball four, home-1 walks. home-2 singles to left (LF)');
+    expect(state?.bases).toMatchObject({ 1: { player: homePlayer(2) }, 2: { player: homePlayer(1) } });
+  });
+
+  it('announces a strikeout once when all three strikes are saved as one play', () => {
+    const events = plays(sampleEvents(), [pitch('called_strike'), pitch('swinging_strike'), pitch('called_strike')]);
+
+    expect(buildTimeline(pins(), events, null).plays.at(-1)?.text).toBe('Strike looking. Strike swinging. home-1 strikes out looking');
+  });
+
   it('calls a pitch a plain ball when a runner makes the third out on the same play', () => {
     const events = plays(sampleEvents(), flyOut, flyOut, single, [
       pitch('ball'),
