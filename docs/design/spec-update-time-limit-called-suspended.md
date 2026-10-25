@@ -33,7 +33,7 @@ Follows "Fix a play and Delay". It answers that note's three open questions and 
 5. **Time limit · 3 Tied at the limit** `165:11758` (section "Scorer · Game interruptions", added 2026-10-25): Bottom 5 ends tied 2–2 after 8:30. No sheet; the heads-up line reads "Tied at the limit · one extra inning" (Mustang `extraInningsIfTiedAtLimit: 1`).
 6. **Time limit · 4 Final · tie** `165:11994`: the extra inning ends still tied. The Time limit reached sheet reads "The extra inning ended at 9:02 PM with the score still tied", with Result "Final: Hawks 2, Marlins 2", Innings 6 and Families see "Final · tie".
 
-**Fix before building:** the heads-up line floats over the bottom of the field and covers the catcher's chip, on both the original heads-up screen and the tie screen. Resolve its placement in the Game interruptions spec.
+**Heads-up placement (fixed 2026-10-25):** the line now sits at the top of the scrolling page in pale yellow, instead of floating over the catcher. See `spec-update-public-states-and-close-the-book.md`.
 
 
 The Rays–Cubs game is used for the suspended examples because the sample game (Hawks–Marlins, Bottom 5) reached Mustang's complete-game length, so stopping it would make it a called game, not a suspended one.
