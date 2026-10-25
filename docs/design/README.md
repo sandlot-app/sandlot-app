@@ -14,5 +14,6 @@ In the order they were designed:
 6. [Fix a play and Delay](spec-update-fix-and-delay.md)
 7. [Time limit, called and suspended games](spec-update-time-limit-called-suspended.md)
 8. [Prototype wiring](spec-update-prototype.md)
+9. [Sheet spacing](spec-update-sheet-spacing.md): one spacing rule for every scorer sheet, and the Time limit reached result card
 
 Sample data in the designs follows Mustang rules for one game, Hawks 2 at Marlins 1 in the Bottom 5. The names in it are made up.

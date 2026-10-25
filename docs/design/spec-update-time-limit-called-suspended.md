@@ -22,7 +22,7 @@ Follows "Fix a play and Delay". It answers that note's three open questions and 
 3. **Time limit · 2 Reached** `139:9728`:
    - Behind the sheet: the end of Bottom 5, with 3 outs, empty bases and no batter.
    - Sheet: "The last out of Bottom 5 came at 8:34 PM, after the 8:30 PM limit. No new inning can start."
-   - Result card: "Final: Hawks 2, Marlins 1 · 5 innings · families see 'Final · time limit'".
+   - Result card, as label and value rows: Result "Final: Hawks 2, Marlins 1", Innings "5", Families see "Final · time limit". See the sheet spacing note.
    - Buttons: **End as Final**, and **Not yet · the umpire allowed another inning**.
 4. **Resume · Check who's here** `139:9973`, with Rays at Cubs suspended in the Top 3:
    - "Picks up in Top 3, 2 outs, 0–0 count, runner on 2nd."
