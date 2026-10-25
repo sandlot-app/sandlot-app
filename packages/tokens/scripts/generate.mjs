@@ -51,9 +51,21 @@ const textStyles = Object.fromEntries(source.textStyles.map((style) => {
   return [name, { fontSize, fontWeight, lineHeight, letterSpacing: fontSize * Number(percent[1]) / 100 }];
 }).sort(([a], [b]) => a.localeCompare(b)));
 
-const tokens = { modes: { Light: { colors, sizes, textStyles } } };
-const ts = `// DO NOT EDIT. Generated from figma-variables.json.\nexport const tokens = ${JSON.stringify(tokens, null, 2)} as const;\n`;
-const js = `// DO NOT EDIT. Generated from figma-variables.json.\nexport const tokens = ${JSON.stringify(tokens, null, 2)};\n`;
+const colorProperties = Object.entries(colors).map(([name, value]) => `        ${JSON.stringify(name)}: ${JSON.stringify(value)} as ColorToken`);
+const sizeProperties = Object.entries(sizes).map(([name, value]) => {
+  const type = name.startsWith('space/') ? 'SpacingToken' : name.startsWith('radius/') ? 'RadiusToken' : null;
+  return `        ${JSON.stringify(name)}: ${value}${type ? ` as ${type}` : ''}`;
+});
+const ts = `// DO NOT EDIT. Generated from figma-variables.json.\n` +
+  `declare const tokenBrand: unique symbol;\n` +
+  `export type ColorToken = string & { readonly [tokenBrand]: 'color' };\n` +
+  `export type SpacingToken = number & { readonly [tokenBrand]: 'spacing' };\n` +
+  `export type RadiusToken = number & { readonly [tokenBrand]: 'radius' };\n` +
+  `export const tokens = {\n  "modes": {\n    "Light": {\n` +
+  `      colors: {\n${colorProperties.join(',\n')}\n      },\n` +
+  `      sizes: {\n${sizeProperties.join(',\n')}\n      },\n` +
+  `      textStyles: ${JSON.stringify(textStyles, null, 2)}\n` +
+  `    }\n  }\n} as const;\n`;
 const cssName = (name) => name.replaceAll('/', '-').replaceAll(' ', '-').toLowerCase();
 const declarations = [
   ...Object.entries(colors).map(([name, value]) => `  --color-${cssName(name)}: ${value};`),
@@ -68,12 +80,12 @@ const declarations = [
 const css = `/* DO NOT EDIT. Generated from figma-variables.json. */\n:root, :root[data-theme="Light"] {\n${declarations.join('\n')}\n}\n`;
 
 if (!process.argv.includes('--check')) mkdirSync(new URL('../generated/', import.meta.url), { recursive: true });
-for (const [name, content] of [['tokens.ts', ts], ['tokens.css', css], ['tokens.mjs', js]]) {
+for (const [name, content] of [['tokens.ts', ts], ['tokens.css', css]]) {
   const output = new URL(`../generated/${name}`, import.meta.url);
   if (process.argv.includes('--check')) {
     let actual;
     try { actual = readFileSync(output, 'utf8'); } catch { actual = undefined; }
-    if (actual !== content) {
+    if (actual?.replaceAll(/\r\n/g, '\n') !== content) {
       console.error(`${name} differs from figma-variables.json. Run pnpm --filter @sandlot/tokens generate.`);
       process.exitCode = 1;
     }

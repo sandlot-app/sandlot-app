@@ -20,7 +20,7 @@
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
     "lint": "node scripts/lint-styles.mjs",
-    "test": "pnpm lint",
+    "test": "pnpm lint && node --test test/*.test.mjs",
     "bundle": "expo export --platform ios --platform android --output-dir dist"
   },
   "private": true
