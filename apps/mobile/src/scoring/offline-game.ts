@@ -41,6 +41,8 @@ export type SavedGame = {
   state: GameState;
   waitingPlays: number;
   canUndo: boolean;
+  /** The commands of the play Undo would take back, or null when there is none. */
+  lastPlay: Command[] | null;
   context: { kind: 'local_demo' };
 };
 
@@ -240,19 +242,24 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
       state: result.state,
       waitingPlays: outbox.length,
       canUndo: undoTarget(groups, row.bootstrap_group) !== null,
+      lastPlay: activePlays(groups, row.bootstrap_group).at(-1)?.map((event) => event.command) ?? null,
       context: { kind: 'local_demo' },
     },
   };
 }
 
-function undoTarget(groups: Event[][], bootstrap: string): GroupId | null {
-  const active: GroupId[] = [];
+function activePlays(groups: Event[][], bootstrap: string): Event[][] {
+  const active: Event[][] = [];
   for (const group of groups) {
     const first = group[0]!;
     if (first.command.kind === 'undo') active.pop();
-    else if (first.group !== bootstrap) active.push(first.group);
+    else if (first.group !== bootstrap) active.push(group);
   }
-  return active.at(-1) ?? null;
+  return active;
+}
+
+function undoTarget(groups: Event[][], bootstrap: string): GroupId | null {
+  return activePlays(groups, bootstrap).at(-1)?.[0]!.group ?? null;
 }
 
 function blocked(error: unknown): { kind: 'blocked'; reason: BlockReason } {
