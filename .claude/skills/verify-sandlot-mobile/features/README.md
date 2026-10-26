@@ -41,4 +41,4 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Home screen](./home-screen.md) covers the saved-game entry point.
 - [Offline scoring](./offline-scoring.md) covers pitches, undo, saved state, and reopening.
 
-The first tap slice adds a preloaded lineup, diamond, pitch bar, undo, and a local pending-play badge. Outcomes, lineup editing, the play log, hosted sync, voice scoring, and the stat card remain later work. Actual native evidence is pending until a suitable Mac runs these flows against the reviewed revision.
+The first tap slice adds a preloaded lineup, diamond, pitch bar, undo, and a local pending-play badge. Outcomes, lineup editing, the play log, hosted sync, voice scoring, and the stat card remain later work. The local Mac acceptance flow passed with evidence in docs/verification/26. It covers saved-game reopening, every pitch control, the normal-text dock and the development gallery. Standalone airplane-mode launch and spoken screen-reader delivery remain separate checks.

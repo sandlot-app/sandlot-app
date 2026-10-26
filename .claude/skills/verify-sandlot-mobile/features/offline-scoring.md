@@ -25,6 +25,7 @@ Preconditions:
 - The existing demo is in progress. The flow reads its actual count and pending total and does not assume inning 1 or an empty count.
 - The relaunch step uses the default Metro port 8091. A run on another port needs an external copy of the flow with only that link changed.
 
+- **Complete Mac acceptance.** Run `verify.sh drive offline-acceptance.yaml` after launch and doctor. It combines the layout, all pitch controls and gallery paths in one Maestro session. Its passing Mac proof is in `docs/verification/26`.
 - **Pitch and undo.** Run `verify.sh drive offline-scoring.yaml`. It captures the existing count, records a ball, confirms the count changes and waiting total increases by one, then undoes it. The exact prior count returns and waiting increases by another play.
 - **Reopen.** The same flow returns to Games, taps Continue scoring, and compares the exact prior count and pending total. It then stops Expo Go without clearing data, reopens the project link, and compares them again.
 - **Other pitch buttons.** Capture the count before and after tapping `pitch-called_strike`, `pitch-swinging_strike`, `pitch-foul`, and `pitch-hit_by_pitch`. Undo each accepted pitch before trying the next. Use three strikes and four balls to show an out and a runner on first. Save before and after screenshots and the resulting accessibility tree.
@@ -42,4 +43,4 @@ Preconditions:
 - Undo adds pending work. The pending count does not fall when a pitch is undone.
 - Do not clear data, add a reset shortcut, or use a test hook to establish the desired state. A final saved demo needs a separately authorized fresh test installation for more scoring.
 - `scoring-layout.yaml` requires normal text size. Its fixed-dock assertions do not apply to the approved large-text whole-page scrolling layout. Check that layout separately.
-- Native touch, SVG rendering, font scaling, VoiceOver and TalkBack speech, cold reopen, and airplane-mode proof remain pending. Windows tests and both bundles do not satisfy these checks.
+- Mac proof covers native touch, SVG rendering, saved-game and Expo Go relaunch, every pitch control and the normal-text dock on iPhone 17 Pro with iOS 26.5. Small-screen font scaling, VoiceOver and TalkBack speech, physical-phone use and standalone airplane-mode cold launch remain unverified. Bundles and accessibility trees do not prove spoken delivery or offline cold launch.
