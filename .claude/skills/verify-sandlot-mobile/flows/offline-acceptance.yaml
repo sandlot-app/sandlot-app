@@ -1,0 +1,5 @@
+appId: host.exp.Exponent
+---
+- runFlow: scoring-layout.yaml
+- runFlow: pitch-controls.yaml
+- runFlow: scorer-gallery.yaml

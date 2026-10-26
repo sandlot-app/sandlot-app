@@ -86,7 +86,7 @@ function check(source, name) {
 
 function files(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (['.git', 'node_modules', 'dist', '.expo'].includes(entry.name)) return [];
+    if (['.git', 'node_modules', 'dist', 'dist-web', 'dist-web-production', '.expo'].includes(entry.name)) return [];
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return files(path);
     return /\.[jt]sx?$/.test(entry.name) ? [path] : [];

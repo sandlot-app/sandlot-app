@@ -1,0 +1,61 @@
+appId: host.exp.Exponent
+---
+- runFlow: offline-scoring.yaml
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- takeScreenshot: scoring-dock-before-scroll
+- repeat:
+    times: 3
+    commands:
+      - swipe:
+          from:
+            id: "game-content"
+          direction: UP
+      - assertVisible:
+          id: "pitch-ball"
+      - assertVisible:
+          id: "pitch-called_strike"
+      - assertVisible:
+          id: "pitch-swinging_strike"
+      - assertVisible:
+          id: "pitch-foul"
+      - assertVisible:
+          id: "pitch-hit_by_pitch"
+      - assertVisible:
+          id: "undo-play"
+- takeScreenshot: scoring-dock-after-scroll
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 1} waiting to sync · Local demo"
+    timeout: 15000
+- takeScreenshot: scoring-dock-saved-pitch
+- tapOn:
+    id: "undo-play"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 2} waiting to sync · Local demo"
+    timeout: 15000
+- takeScreenshot: scoring-dock-undone-pitch
+- repeat:
+    times: 3
+    commands:
+      - swipe:
+          from:
+            id: "game-content"
+          direction: DOWN
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText === output.before}
+- assertVisible:
+    id: "pitch-ball"
+- assertVisible:
+    id: "undo-play"
+- takeScreenshot: scoring-dock-restored-count

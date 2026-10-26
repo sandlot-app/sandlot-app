@@ -53,7 +53,7 @@ function connect(url) {
   });
 }
 
-test('gallery opens and closes sheets and ignores a disabled button', { timeout: 120_000 }, async () => {
+test('gallery controls work and a saved pitch survives browser reload', { timeout: 120_000 }, async () => {
   assert.ok(chrome, 'Chrome or Chromium is required for the gallery behavior test. Set CHROME_BIN if needed.');
   assert.ok(existsSync('dist-web/index.html'), 'Build the development web gallery before running the behavior test.');
   const profile = mkdtempSync(join(tmpdir(), 'sandlot-gallery-'));
@@ -61,9 +61,17 @@ test('gallery opens and closes sheets and ignores a disabled button', { timeout:
     const pathname = new URL(request.url, 'http://localhost').pathname;
     const file = join(process.cwd(), 'dist-web', pathname === '/' ? 'index.html' : pathname);
     try {
-      response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.html') ? 'text/html' : 'application/octet-stream');
+      response.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+      response.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+      response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.html') ? 'text/html' : file.endsWith('.wasm') ? 'application/wasm' : 'application/octet-stream');
       response.end(readFileSync(file));
-    } catch { response.writeHead(404).end(); }
+    } catch {
+      if (!pathname.split('/').at(-1).includes('.')) {
+        response.setHeader('Content-Type', 'text/html');
+        response.end(readFileSync(join(process.cwd(), 'dist-web/index.html')));
+      }
+      else response.writeHead(404).end();
+    }
   });
   await new Promise((resolve) => server.listen(0, resolve));
   const port = server.address().port;
@@ -90,7 +98,8 @@ test('gallery opens and closes sheets and ignores a disabled button', { timeout:
       const evaluate = async (expression) => (await cdp.send('Runtime.evaluate', { expression, returnByValue: true })).result.value;
       const visible = async (id) => retry(async () => {
         const found = await evaluate(`Boolean(document.querySelector('[data-testid="${id}"]'))`);
-        assert.equal(found, true, `${id} should be visible`);
+        const storageError = await evaluate(`document.querySelector('[data-testid="game-error"]')?.textContent`);
+        assert.equal(found, true, `${id} should be visible. Storage status is ${storageError ?? 'available'}`);
       }, 10_000);
       const click = async (id, atTop = false) => {
         const rect = await evaluate(`(() => { const element = document.querySelector('[data-testid="${id}"]'); if (!element) return null; const r = element.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+${atTop ? 20 : 'r.height/2'}}; })()`);
@@ -142,6 +151,18 @@ test('gallery opens and closes sheets and ignores a disabled button', { timeout:
           assert.deepEqual(bounds, { width: diameter + (followed ? 6 : 0), height: diameter + (followed ? 6 : 0) }, `${id} preserves the inner chip and adds the Figma ring outside it`);
         }
       }
+      await cdp.send('Page.navigate', { url: `http://localhost:${port}/` });
+      await visible('start-game');
+      await click('start-game');
+      await visible('pitch-ball');
+      await click('pitch-ball');
+      await retry(async () => assert.equal(await evaluate(`document.querySelector('[data-testid="score-summary"]').textContent`), 'Away 0, home 0. Inning 1, top. 0 outs. Count 1 ball and 0 strikes. Bases empty.'));
+      assert.equal(await evaluate(`document.querySelector('svg')?.getAttribute('aria-hidden')`), 'true', 'the decorative diamond is hidden from browser accessibility');
+      const previousDocument = await evaluate('performance.timeOrigin');
+      await cdp.send('Page.reload');
+      await retry(async () => assert.notEqual(await evaluate('performance.timeOrigin'), previousDocument, 'reload creates a fresh document'));
+      await visible('pitch-ball');
+      await retry(async () => assert.equal(await evaluate(`document.querySelector('[data-testid="score-summary"]').textContent`), 'Away 0, home 0. Inning 1, top. 0 outs. Count 1 ball and 0 strikes. Bases empty.'));
     } finally { cdp.close(); }
   } finally {
     browser.kill();

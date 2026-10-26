@@ -1,0 +1,114 @@
+appId: host.exp.Exponent
+---
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible:
+    id: "score-summary"
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- takeScreenshot: called_strike-before
+- tapOn:
+    id: "pitch-called_strike"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 1} waiting to sync · Local demo"
+    timeout: 15000
+- takeScreenshot: called_strike-saved
+- tapOn:
+    id: "undo-play"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 2} waiting to sync · Local demo"
+    timeout: 15000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText === output.before}
+- takeScreenshot: called_strike-undone
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- takeScreenshot: swinging_strike-before
+- tapOn:
+    id: "pitch-swinging_strike"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 1} waiting to sync · Local demo"
+    timeout: 15000
+- takeScreenshot: swinging_strike-saved
+- tapOn:
+    id: "undo-play"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 2} waiting to sync · Local demo"
+    timeout: 15000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText === output.before}
+- takeScreenshot: swinging_strike-undone
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- takeScreenshot: foul-before
+- tapOn:
+    id: "pitch-foul"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 1} waiting to sync · Local demo"
+    timeout: 15000
+- takeScreenshot: foul-saved
+- tapOn:
+    id: "undo-play"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 2} waiting to sync · Local demo"
+    timeout: 15000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText === output.before}
+- takeScreenshot: foul-undone
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- takeScreenshot: hit_by_pitch-before
+- tapOn:
+    id: "pitch-hit_by_pitch"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 1} waiting to sync · Local demo"
+    timeout: 15000
+- takeScreenshot: hit_by_pitch-saved
+- tapOn:
+    id: "undo-play"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "${output.waiting + 2} waiting to sync · Local demo"
+    timeout: 15000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText === output.before}
+- takeScreenshot: hit_by_pitch-undone

@@ -1,0 +1,4 @@
+flow: offline-acceptance
+result: PASS
+commit: 4b8f76a750f7df80d6cf7765a2525cba9e621ca3
+simulator: sandlot-verify (FA09EA82-EAA7-4F77-89DC-CC6048730BE7)
