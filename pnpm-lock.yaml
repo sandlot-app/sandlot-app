@@ -139,6 +139,22 @@ importers:
 
   packages/tokens: {}
 
+  packages/voice:
+    dependencies:
+      '@sandlot/engine':
+        specifier: workspace:*
+        version: link:../engine
+    devDependencies:
+      '@types/node':
+        specifier: 22.20.5
+        version: 22.20.5
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 5.0.5
+        version: 5.0.5(@types/node@22.20.5)(vite@8.3.5(@types/node@22.20.5)(terser@5.51.2)(yaml@2.9.1))
+
 packages:
 
   2g@1.0.1:
