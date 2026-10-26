@@ -5,6 +5,7 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
 ## Before you start
 
 1. Read the ticket, its parent spec, and everything they link: the design note in `docs/design/`, the Figma frame images on the ticket, and the ADRs in `docs/adr/` that touch the area.
+   - **Screen tickets:** open every Figma frame the ticket names through the Figma connection (file `J8F4zRkkV63ji3AYhcHHwA`) and read its design context: the layout, sizes, spacing, colors, components and exact wording. Build from that, not from the PNG alone. The PNGs in `docs/design/frames/` are only a quick reference.
 2. Use the words in `GLOSSARY.md`. If you need a concept it doesn't have, stop and ask (see Stop rules).
 3. Check the ticket's blockers are merged. Work only on a ticket whose blockers are all closed.
 4. Make a worktree on a new branch from the current `origin/main`. One ticket, one branch.
@@ -16,7 +17,7 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
 3. **Build** the smallest change that makes it pass.
 4. **Check.**
    - Run `pnpm verify`. For the phone app, also run its lint, typecheck and `bundle`.
-   - **UI tickets:** take web-build screenshots of each screen you touched at 393 px wide, next to the ticket's Figma frames.
+   - **Screen tickets:** for every screen you touched, put the app screenshot (the Mac simulator for phone tickets, otherwise the web build at 393 px wide) next to the Figma frame at the same size, and commit the pairs to `docs/verification/<number>/figma/`. Check them element by element before review.
    - **Phone tickets:** add the Maestro flow for the ticket's user path under `.claude/skills/verify-sandlot-mobile`. On the Mac, run it yourself with that skill:
      - Run `launch`, `doctor`, `drive` and `cleanup` inside **one** shell command, so the simulator's dev server stays alive for the whole run, and record the screen with `xcrun simctl io sandlot-verify recordVideo` while the flow drives.
      - Only one Mac check runs at a time, because every run shares the `sandlot-verify` simulator and port 8091.
@@ -37,7 +38,7 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
 
 - Every acceptance check in the ticket passes, and the ticket's "Not in this ticket" list is untouched.
 - `pnpm verify` passes. For phone tickets, so do lint, typecheck and `bundle`.
-- Screens match their Figma frames in layout, spacing, size, weight and color. The typeface is the platform's own.
+- Screens match their Figma frames in layout, spacing, size, weight, color, components and wording. The only allowed differences are the platform's own typeface and controls the milestone hides on purpose.
 - Colors, spacing and radii come from `@sandlot/tokens`. No raw values.
 - Phone tickets: the Maestro flow passed on the Mac for the app code being merged, with its evidence in `docs/verification/<number>/` and on the PR. A run on the PC alone doesn't count.
 - Reviews show no open medium or higher findings.
@@ -72,7 +73,12 @@ Christian authorized agents on 2026-10-25 to review, fix and merge their own tic
    - privacy or security (`supabase/`, sign-in, access rules, logging of personal data, `docs/contract.md`)
    - CI (`.github/`)
    - agent rules (`AGENTS.md`, `CLAUDE.md`, `docs/agents/`)
-5. **Phone tickets have their Mac proof.** The Maestro flow passed on the Mac for the app code being merged, whether you ran it or Christian did, with its evidence in `docs/verification/<number>/` and on the PR. The independent review looks at that evidence.
+5. **Screen tickets match Figma.** The independent review opens each Figma frame the ticket names, compares it with the committed screenshot pair, and lists every difference. It rates:
+   - **High:** an element that's missing, extra or built differently (layout, component, order, color token, wording). Hidden controls for unbuilt features don't count.
+   - **Medium:** a visible size or spacing difference.
+   - **Low:** anything smaller.
+   High and medium block the merge like any other finding. A screen ticket with no screenshot pairs doesn't pass.
+6. **Phone tickets have their Mac proof.** The Maestro flow passed on the Mac for the app code being merged, whether you ran it or Christian did, with its evidence in `docs/verification/<number>/` and on the PR. The independent review looks at that evidence.
 
 To merge, mark the PR ready, then squash-merge it pinned to the reviewed commit (`gh pr merge <n> --squash --match-head-commit <sha>`). Never enable auto-merge, use an admin override, or force-push. After merging, check that `main`'s CI run passes. If it fails, stop merging and report it.
 
