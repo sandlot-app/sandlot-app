@@ -30,5 +30,5 @@ appId: host.exp.Exponent
 - scrollUntilVisible:
     element:
       id: "gallery-scorer-bar-saved"
-- assertVisible: "All plays saved"
+- assertVisible: "Last: Ball · All plays saved"
 - takeScreenshot: scorer-gallery-bar

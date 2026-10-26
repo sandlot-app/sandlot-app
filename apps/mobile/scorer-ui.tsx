@@ -1,6 +1,6 @@
 import { tokens } from '@sandlot/tokens';
 import { useMemo, useState, type ReactNode } from 'react';
-import { PanResponder, Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, PanResponder, Pressable, ScrollView, Text, View } from 'react-native';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -157,7 +157,10 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, testID }: {
       <PitchButton label="In play" kind="in-play" onPress={() => recordPitch('in-play')} testID="pitch-in-play" />
     </View>
     <View style={styles.barActions}>
-      <Pressable accessibilityRole="button" onPress={onUndo} style={styles.undoButton} testID="scorer-undo"><Text style={styles.undoText}>↶ Undo · {sync.lastPlay}</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Undo · ${sync.lastPlay}`} onPress={onUndo} style={styles.undoButton} testID="scorer-undo">
+        <Image source={require('./assets/scorer/undo.png')} accessible={false} style={styles.undoIcon} />
+        <Text style={styles.undoText}>Undo · {sync.lastPlay}</Text>
+      </Pressable>
       <Pressable accessibilityRole="button" accessibilityLabel="More" onPress={onMore} style={styles.moreButton} testID="scorer-more"><Text style={styles.moreGlyph}>•••</Text></Pressable>
     </View>
     <SyncStatus state={sync} />
@@ -214,7 +217,8 @@ const styles = createStyles({
   strikeHeading: { ...textStyles['Body/Strong'], color: colors['text/secondary'] },
   strikeOption: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors['count/strike'], borderRadius: sizes['radius/full'] },
   barActions: { flexDirection: 'row', gap: sizes['space/3'] },
-  undoButton: { flex: 1, minHeight: sizes['tap/min'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], alignItems: 'center', justifyContent: 'center' },
+  undoButton: { flex: 1, minHeight: sizes['tap/min'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/1'] },
+  undoIcon: { width: textStyles['Body/Strong'].lineHeight, height: textStyles['Body/Strong'].lineHeight, tintColor: colors['text/primary'] },
   undoText: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
   moreButton: { width: sizes['tap/min'], height: sizes['tap/min'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], alignItems: 'center', justifyContent: 'center' },
   moreGlyph: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
