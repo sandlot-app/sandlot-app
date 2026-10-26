@@ -57,7 +57,7 @@ export function Matchup({ state, limits }: { state: GameState; limits: RuleSet['
 }
 
 /** Figma Last Pitch (34:364), Result only or Before first pitch. */
-export function LastPitch({ label, pitch }: { label: string | null; pitch: number }) {
+export function LastPitch({ label, pitch }: { label: string | null; pitch: number | null }) {
   return (
     <View style={styles.lastPitch} testID="last-pitch">
       <View style={styles.ballSlot}>
@@ -66,7 +66,7 @@ export function LastPitch({ label, pitch }: { label: string | null; pitch: numbe
       <Text style={styles.lastText} numberOfLines={1}>
         {label ? <Text style={styles.lastResult}>{label}</Text> : 'First pitch coming up'}
       </Text>
-      {pitch > 0 ? <Text style={styles.pitchNumber}>Pitch {pitch}</Text> : null}
+      {pitch ? <Text style={styles.pitchNumber}>Pitch {pitch}</Text> : null}
     </View>
   );
 }

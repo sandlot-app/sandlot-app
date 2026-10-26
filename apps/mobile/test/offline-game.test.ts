@@ -645,3 +645,27 @@ test('a draft from another committed revision returns the fresh game without sco
   if(reopened.kind === 'ready') assert.deepEqual(reopened.game,scorer.game);
   await scorer.database.close();
 });
+
+test('the last pitch number comes from the pitcher who threw the last play, not the current pitcher', async () => {
+  const session = await openOfflineGame(connect(':memory:'), boundary);
+  if (session.kind !== 'ready') throw new Error('Session must open');
+  let result = await session.record({ kind: 'start' });
+  if (result.kind !== 'saved') throw new Error('Game must start');
+  assert.equal(result.game.lastPitchNumber, null, 'no pitch before the first one');
+  for (let pitch = 0; pitch < 9; pitch++) result = await session.record({ kind: 'pitch', result: 'called_strike' });
+  if (result.kind !== 'saved') throw new Error('Strikeouts must save');
+  assert.equal(result.game.state.half, 'bottom', 'three strikeouts end the top half');
+  assert.equal(result.game.state.pitchCounts['away-1'], 0, 'the new pitcher has thrown nothing');
+  assert.equal(result.game.lastPitchNumber, 9, 'the third out was the home pitcher\'s ninth pitch');
+  result = await session.record({ kind: 'undo' });
+  if (result.kind !== 'saved') throw new Error('Undo must save');
+  assert.equal(result.game.lastPitchNumber, 8);
+  result = await session.record({ kind: 'pitch', result: 'hit_by_pitch' });
+  if (result.kind !== 'saved') throw new Error('Hit by pitch must save');
+  assert.equal(result.game.lastPitchNumber, 9);
+  const runner = result.game.state.bases[1]!.player;
+  result = await session.record({ kind: 'runner_play', at: '2026-10-24T17:05:00.000Z', expectedRevision: result.game.revision,
+    event: 'wild_pitch', moves: [{ runner, to: 2 }] });
+  if (result.kind !== 'saved') throw new Error('Wild pitch must save');
+  assert.equal(result.game.lastPitchNumber, null, 'a runner-only play has no pitch number');
+});

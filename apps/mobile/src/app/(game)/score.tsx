@@ -3,7 +3,7 @@ import { tokens } from '@sandlot/tokens';
 import type { PitchResult } from '@sandlot/engine';
 import { router } from 'expo-router';
 import { Image, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createStyles } from '../../../style';
 import { ScorerBar, type Pitch, type SyncState } from '../../../scorer-ui';
 import { Field } from '../../components/field.tsx';
@@ -51,6 +51,7 @@ export default function ScoreScreen() {
   const [draft, setDraft] = useState<PlayDraft | null>(null);
   const [dockHeight, setDockHeight] = useState(0);
   const { fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const game = view.kind === 'ready' || view.kind === 'saving' || view.kind === 'blocked' ? view.game : null;
 
   if (!game)
@@ -69,7 +70,6 @@ export default function ScoreScreen() {
   const enabled = view.kind === 'ready' && state.status !== 'final';
   const largeText = fontScale > 1.35;
   const lastPlay = game.lastPlay ? playLabel(game.lastPlay) : '';
-  const pitcher = state.pitchers[state.half === 'top' ? 'home' : 'away'];
   const sync: SyncState = saving
     ? { status: 'saving', lastPlay }
     : { status: 'offline', lastPlay, waiting: game.waitingPlays };
@@ -82,7 +82,7 @@ export default function ScoreScreen() {
     <>
       <Field state={state} />
       <Matchup state={state} limits={demoSetup.rules.pitchCountLimits} />
-      <LastPitch label={lastPlay || null} pitch={pitcher ? (state.pitchCounts[pitcher.id] ?? 0) : 0} />
+      <LastPitch label={lastPlay || null} pitch={game.lastPitchNumber} />
     </>
   );
   const dock = (
@@ -92,6 +92,8 @@ export default function ScoreScreen() {
       <ScorerBar sync={sync} onPitch={onPitch} onUndo={() => { void record({ kind: 'undo' }); }}
         onMore={() => setDraft({ kind: 'more', game })} disabled={!enabled}
         undoDisabled={view.kind !== 'ready' || !game.canUndo} testID="scorer-bar" syncTestID="waiting-plays" />
+      {/* The bar's own bottom padding covers the iPhone home indicator; a taller inset, like Android's buttons, adds the rest. */}
+      <View style={[styles.belowBar, spacerHeight(Math.max(0, insets.bottom - sizes['space/6']))]} />
     </View>
   );
 
@@ -133,6 +135,7 @@ const styles = createStyles({
   scrolling: { flex: 1 },
   content: { gap: sizes['space/3'], paddingHorizontal: sizes['space/4'] },
   dock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  belowBar: { backgroundColor: colors['surface/card'] },
   message: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/2'], padding: sizes['space/3'], borderRadius: sizes['radius/md'], backgroundColor: colors['surface/warning'], color: colors['text/primary'] },
   pressed: { opacity: 0.55 },
   homeButton: { minHeight: 48, padding: sizes['space/4'] },

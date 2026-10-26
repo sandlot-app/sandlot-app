@@ -125,7 +125,7 @@ export function PlaySheets({draft, onChange, onClose, record, saving, available,
     <SheetSection label="Runners">
       <View style={styles.moreCard}>
       {runnerModes.map(({mode, title, subtitle, path}, index) => <Pressable key={mode} accessibilityRole="button" testID={`more-${mode}`}
-        onPress={() => onChange({kind: 'runner', at: new Date().toISOString(), mode, game: draft.game, rows: runnerRows(draft.game, null)})} style={[styles.moreRow, index > 0 && styles.moreDivider]}>
+        onPress={() => { setAttempted(false); onChange({kind: 'runner', at: new Date().toISOString(), mode, game: draft.game, rows: runnerRows(draft.game, null)}); }} style={[styles.moreRow, index > 0 && styles.moreDivider]}>
         <View style={styles.moreIcon}>
           <Svg width={24} height={28} viewBox="0 0 26 28" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}><Path d={path} fill="none" stroke={colors['text/primary']} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" /></Svg>
         </View>
