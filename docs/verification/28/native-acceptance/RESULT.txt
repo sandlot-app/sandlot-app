@@ -1,0 +1,4 @@
+flow: lineups-play-log
+result: FAIL
+commit: b0e74e12942efb66d4332186742cd67e237a45a8
+simulator: sandlot-verify-28-f1 (66993FE0-D2EA-4DB6-BE56-613CAB31DFED)
