@@ -5,7 +5,7 @@ The scorer's Field tab, built to the Figma frame "Scorer — Field tab (mileston
 ## Sub-features
 
 - `screen-scoreboard` shows team abbreviations, score, runners on the mini diamond, inning, count and outs. Screen readers hear the whole game summary (`score-summary`).
-- `screen-field` places each fielder, runner and the batter at the Figma spots (`field`, `field-runner-1` to `field-runner-3`).
+- `screen-field` places each fielder, runner and the batter at the Figma spots. The field is hidden from screen readers (the scoreboard summary carries the runners), so Maestro can't see it; check runners through `score-summary`.
 - `screen-matchup` shows the batter, on deck, the pitcher and their pitch count against the Mustang limit, with league alerts (`matchup`, `pitch-total`).
 - `screen-last-pitch` names the last play and the pitcher's pitch number (`last-pitch`).
 - `screen-undo-pill` reads "Undo · <play>" and is dimmed when nothing can be undone (`scorer-undo`).
@@ -22,7 +22,7 @@ Preconditions:
 - `verify.sh launch` printed READY and `verify.sh doctor` reports every line ok.
 - Any saved demo state works. The flow reads the current summary and waiting total and returns to them.
 
-- **Screen, Undo pill and Hit by pitch.** Run `verify.sh drive scoring-screen.yaml`. It captures the screen, records a Ball and sees "Undo · Ball", opens More (screenshot `more`), records Hit by pitch and sees "Undo · Hit by pitch" with a runner on first, undoes both, and checks the summary matches the start. It then scrolls to the Matchup card and Last pitch row.
+- **Screen, Undo pill and Hit by pitch.** Run `verify.sh drive scoring-screen.yaml`. It captures the screen, records a Ball and sees "Undo · Ball", opens More (screenshot `more`), records Hit by pitch and sees "Undo · Hit by pitch" with a runner on first in the summary, undoes both, and checks the summary matches the start. It then scrolls to the Matchup card and Last pitch row.
 - **Figma pairs.** The `field` and `more` screenshots are the app halves of the Figma comparison in `docs/verification/38/figma/`.
 
 ## Gotchas

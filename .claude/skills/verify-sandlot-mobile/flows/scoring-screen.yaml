@@ -29,7 +29,7 @@ appId: host.exp.Exponent
       id: "score-summary"
     timeout: 15000
 - assertVisible:
-    id: "field"
+    id: "matchup"
 - assertVisible:
     id: "scorer-bar"
 - assertNotVisible:
@@ -65,8 +65,9 @@ appId: host.exp.Exponent
       text: "Last: Hit by pitch · Offline · ${output.waiting + 2} plays? saved on this phone"
     timeout: 15000
 - assertVisible: "Undo · Hit by pitch"
-- assertVisible:
-    id: "field-runner-1"
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${/Runners on first/.test(maestro.copiedText)}
 - takeScreenshot: hit-by-pitch-saved
 - tapOn:
     id: "scorer-undo"
@@ -88,8 +89,6 @@ appId: host.exp.Exponent
     from:
       id: "game-content"
     direction: UP
-- assertVisible:
-    id: "matchup"
 - assertVisible:
     id: "last-pitch"
 - takeScreenshot: matchup
