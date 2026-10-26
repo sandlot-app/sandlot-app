@@ -8,6 +8,8 @@ import { blockedMessages, gameSummary } from './game-summary.ts';
 import { openNativeDatabase } from './native-database';
 import { openOfflineGame } from './offline-game.ts';
 import type { DemoAction, OpenResult, SavedGame } from './offline-game.ts';
+import { newSetupDraft } from './game-setup.ts';
+import type { SetupDraft } from './game-setup.ts';
 
 type Session = Extract<OpenResult, { kind: 'ready' }>;
 type ViewState =
@@ -21,6 +23,8 @@ type ViewState =
 
 type ScoringContext = {
   view: ViewState;
+  setupDraft: SetupDraft;
+  setSetupDraft(draft: SetupDraft): void;
   record(action: DemoAction): Promise<boolean>;
   reopen(): void;
 };
@@ -28,6 +32,7 @@ const Context = createContext<ScoringContext | null>(null);
 
 export function OfflineGameProvider({ children }: PropsWithChildren) {
   const [view, setView] = useState<ViewState>({ kind: 'loading' });
+  const [setupDraft, setSetupDraft] = useState(newSetupDraft);
   const [generation, setGeneration] = useState(0);
   const session = useRef<Session | null>(null);
   const operation = useRef<Promise<unknown> | null>(null);
@@ -164,7 +169,7 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
     setGeneration((current) => current + 1);
   }
 
-  return <Context value={{ view, record, reopen }}>{children}</Context>;
+  return <Context value={{ view, record, reopen, setupDraft, setSetupDraft }}>{children}</Context>;
 }
 
 export function useOfflineGame(): ScoringContext {
@@ -175,6 +180,8 @@ export function useOfflineGame(): ScoringContext {
 
 function rejectionMessage(code: RejectCode): string {
   switch (code) {
+    case 'unknown_player': return 'A selected player is not on this game’s roster. Check both lineups.';
+    case 'no_pitcher': return 'Choose a starting pitcher for both teams before starting.';
     case 'nothing_to_undo': return 'There are no plays left to undo.';
     case 'base_occupied': return 'Two runners cannot finish on the same base. Check their destinations.';
     case 'bunting_not_allowed': return 'Bunting is not allowed by this game’s Mustang rules. No play was saved.';

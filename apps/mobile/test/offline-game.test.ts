@@ -10,9 +10,117 @@ import { openOfflineGame } from '../src/scoring/offline-game.ts';
 import type { RecordResult } from '../src/scoring/offline-game.ts';
 import type { SqlDatabase } from '../src/scoring/database.ts';
 import { connect } from './database.ts';
+import { demoLineups, legacyDemoSetup } from '../src/scoring/demo-game.ts';
+import { initialLineup, newSetupDraft } from '../src/scoring/game-setup.ts';
+import type { PlayerId } from '@sandlot/engine';
 import { beginInPlay, completePlay, outcomeChoices, runnerRows } from '../src/scoring/tap-play.ts';
 
 const boundary = { newId: randomUUID, now: () => '2026-10-24T17:00:00.000Z' };
+
+test('a chosen second-half lineup starts once and reopens with its original order and pitchers', async () => {
+  const database = connect(':memory:');
+  const opened = await openOfflineGame(database, boundary);
+  assert.equal(opened.kind, 'ready');
+  if (opened.kind !== 'ready') return;
+  const home = [...demoLineups.home.slice(1), demoLineups.home[0]!];
+  const away = [...demoLineups.away.slice(2), ...demoLineups.away.slice(0, 2)];
+  const started = await opened.record({kind: 'start', selection: {seasonHalf: 'second', lineups: {home, away}}});
+  assert.equal(started.kind, 'saved');
+  if (started.kind !== 'saved') return;
+  assert.deepEqual(started.game.state.lineups, {home, away});
+  assert.equal(started.game.setup.rules.pitcherOutsPerDay, 9);
+  assert.equal(started.game.waitingPlays, 1);
+  const original = await database.all('SELECT * FROM local_events ORDER BY seq');
+  assert.equal(original.length, 3);
+  const repeated = await opened.record({kind: 'start', selection: {seasonHalf: 'first', lineups: demoLineups}});
+  assert.deepEqual(repeated, started);
+  assert.deepEqual(await database.all('SELECT * FROM local_events ORDER BY seq'), original);
+  const reopened = await openOfflineGame(database, boundary);
+  assert.equal(reopened.kind, 'ready');
+  if (reopened.kind === 'ready') assert.deepEqual(reopened.game, started.game);
+  await database.close();
+});
+
+test('the saved ordered log keeps a play and its undo without changing historical events', async () => {
+  const database = connect(':memory:');
+  const opened = await openOfflineGame(database, boundary);
+  assert.equal(opened.kind, 'ready');
+  if (opened.kind !== 'ready') return;
+  await opened.record({kind: 'start'});
+  const pitched = await opened.record({kind: 'pitch', result: 'ball'});
+  assert.equal(pitched.kind, 'saved');
+  if (pitched.kind !== 'saved') return;
+  const previous = await database.all('SELECT * FROM local_events ORDER BY seq');
+  const undone = await opened.record({kind: 'undo'});
+  assert.equal(undone.kind, 'saved');
+  if (undone.kind !== 'saved') return;
+  assert.equal(undone.game.plays.length, 3);
+  assert.deepEqual(undone.game.plays.map((play) => [play.firstSeq, play.undone]), [[1, false], [4, true], [5, false]]);
+  assert.equal(undone.game.plays[1]!.before.count.balls, 0);
+  assert.equal(undone.game.plays[1]!.after.count.balls, 1);
+  assert.equal(undone.game.plays[2]!.after.count.balls, 0);
+  assert.equal(undone.game.canUndo, false);
+  assert.deepEqual((await database.all('SELECT * FROM local_events ORDER BY seq')).slice(0, previous.length), previous);
+  const reopened = await openOfflineGame(database, boundary);
+  if (reopened.kind === 'ready') assert.deepEqual(reopened.game, undone.game);
+  await database.close();
+});
+
+test('setup refuses actual engine rejections before saving a book', async () => {
+  const database = connect(':memory:');
+  const opened = await openOfflineGame(database, boundary);
+  if (opened.kind !== 'ready') throw new Error('Expected ready store');
+  const home = initialLineup('home');
+  const away = initialLineup('away');
+  assert.deepEqual(await opened.record({kind:'start', selection:{seasonHalf:'first',lineups:{home:home.map((slot)=>({...slot,position:null})),away}}}), {kind:'rejected',code:'no_pitcher'});
+  assert.deepEqual(await opened.record({kind:'start', selection:{seasonHalf:'first',lineups:{home:[{player:{kind:'player',id:'not-on-roster' as PlayerId},position:'P'}],away}}}), {kind:'rejected',code:'unknown_player'});
+  assert.deepEqual(await database.all('SELECT * FROM local_games'), []);
+  assert.deepEqual(await database.all('SELECT * FROM local_events'), []);
+  assert.deepEqual(await database.all('SELECT * FROM local_outbox'), []);
+  await database.close();
+});
+
+test('an original first-half saved book keeps its pins and event identities after the new default changes', async () => {
+  const database = connect(':memory:');
+  const opened = await openOfflineGame(database, boundary);
+  if (opened.kind !== 'ready') throw new Error('Expected ready store');
+  await opened.record({kind:'start'});
+  await opened.record({kind:'pitch',result:'ball'});
+  await database.run('UPDATE local_games SET setup_json = ?', [JSON.stringify(legacyDemoSetup)]);
+  const originalEvents = await database.all('SELECT * FROM local_events ORDER BY seq');
+  const reopened = await openOfflineGame(database, boundary);
+  if (reopened.kind !== 'ready' || !reopened.game) throw new Error('Expected readable legacy book');
+  assert.equal(reopened.game.setup.rules.pitcherOutsPerDay, 6);
+  assert.equal(reopened.game.setup.rules.leadoffs, false);
+  assert.equal(reopened.game.state.count.balls, 1);
+  await reopened.record({kind:'pitch',result:'foul'});
+  assert.deepEqual((await database.all('SELECT * FROM local_events ORDER BY seq')).slice(0,originalEvents.length), originalEvents);
+  const again = await openOfflineGame(database, boundary);
+  if (again.kind === 'ready') assert.equal(again.game?.setup.rules.pitcherOutsPerDay, 6);
+  await database.close();
+});
+
+test('the setup date crosses into the second half on the configured October 1 switch', () => {
+  assert.equal(newSetupDraft(new Date(2026, 8, 30)).seasonHalf, 'first');
+  assert.equal(newSetupDraft(new Date(2026, 9, 1)).seasonHalf, 'second');
+});
+
+test('both selected season halves pin their resolved rules and keep names out of stored events', async () => {
+  for (const seasonHalf of ['first','second'] as const) {
+    const database = connect(':memory:');
+    const opened = await openOfflineGame(database, boundary);
+    if (opened.kind !== 'ready') throw new Error('Expected ready store');
+    const away = initialLineup('away').map((slot) => ({...slot, player:{...slot.player,name:'Private display label'}}));
+    const started = await opened.record({kind:'start',selection:{seasonHalf,lineups:{home:initialLineup('home'),away}}});
+    if (started.kind !== 'saved') throw new Error('Expected saved setup');
+    assert.equal(started.game.setup.rules.pitcherOutsPerDay, seasonHalf === 'first' ? 6 : 9);
+    assert.equal(started.game.state.lineups.away.length, 10);
+    assert.equal(started.game.state.lineups.away[9]!.position, null);
+    const json = JSON.stringify(await database.all('SELECT * FROM local_events'));
+    assert.doesNotMatch(json, /Moss|Nguyen|Darcy|Private|name|jersey/);
+    await database.close();
+  }
+});
 
 test('delayed tap plays and save retries preserve the original action time in saved events', async () => {
   const database = connect(':memory:');

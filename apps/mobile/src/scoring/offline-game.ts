@@ -14,6 +14,8 @@ import type {
   EventId,
   GameId,
   GameState,
+  GameSetup,
+  LineupSlot,
   GroupId,
   PitchResult,
   PlayerRef,
@@ -24,9 +26,13 @@ import type {
 } from '@sandlot/engine';
 import type { SqlConnection, SqlDatabase } from './database.ts';
 import { demoLineups, demoSetup } from './demo-game.ts';
+import { readSavedSetup, setupFor } from './game-setup.ts';
+import type { SetupSelection } from './game-setup.ts';
+import { savedPlays } from './play-log.ts';
+import type { SavedPlay } from './play-log.ts';
 
 export type DemoAction =
-  | { kind: 'start' }
+  | { kind: 'start'; selection?: SetupSelection }
   | { kind: 'pitch'; result: Exclude<PitchResult, 'in_play'> }
   | { kind: 'undo' }
   | { kind: 'ball_in_play'; at: string; expectedRevision: number; outcome: BallInPlayOutcome;
@@ -39,6 +45,8 @@ export type SavedGame = {
   id: GameId;
   revision: number;
   state: GameState;
+  setup: GameSetup;
+  plays: readonly SavedPlay[];
   waitingPlays: number;
   canUndo: boolean;
   context: { kind: 'local_demo' };
@@ -85,6 +93,7 @@ type OutboxRow = {
 };
 type LoadedGame = {
   row: GameRow;
+  setup: GameSetup;
   events: Event[];
   groups: Event[][];
   game: SavedGame;
@@ -157,10 +166,8 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
     row.schema_version !== EVENT_SCHEMA_VERSION
   )
     throw new SavedDataError('version');
-  if (
-    row.context !== 'local_demo' ||
-    row.setup_json !== JSON.stringify(demoSetup)
-  )
+  const setup = readSavedSetup(row.setup_json);
+  if (row.context !== 'local_demo' || !setup)
     throw new SavedDataError('corrupt');
   const groups: Event[][] = [];
   try {
@@ -227,32 +234,30 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
       throw new SavedDataError('corrupt');
     }
   }
-  const result = replay(demoSetup, events);
+  const result = replay(setup, events);
   if (!result.ok || result.state.status === 'pregame')
     throw new SavedDataError('corrupt');
+  const plays = savedPlays(setup, groups);
   return {
     row,
+    setup,
     events,
     groups,
     game: {
       id: row.id as GameId,
       revision: events.length,
       state: result.state,
+      setup,
+      plays,
       waitingPlays: outbox.length,
-      canUndo: undoTarget(groups, row.bootstrap_group) !== null,
+      canUndo: undoTarget(plays, row.bootstrap_group) !== null,
       context: { kind: 'local_demo' },
     },
   };
 }
 
-function undoTarget(groups: Event[][], bootstrap: string): GroupId | null {
-  const active: GroupId[] = [];
-  for (const group of groups) {
-    const first = group[0]!;
-    if (first.command.kind === 'undo') active.pop();
-    else if (first.group !== bootstrap) active.push(first.group);
-  }
-  return active.at(-1) ?? null;
+function undoTarget(plays: readonly SavedPlay[], bootstrap: string): GroupId | null {
+  return plays.findLast((play) => !play.undone && play.id !== bootstrap && play.commands[0]?.kind !== 'undo')?.id ?? null;
 }
 
 function blocked(error: unknown): { kind: 'blocked'; reason: BlockReason } {
@@ -260,6 +265,11 @@ function blocked(error: unknown): { kind: 'blocked'; reason: BlockReason } {
     kind: 'blocked',
     reason: error instanceof SavedDataError ? error.reason : 'storage',
   };
+}
+
+function idOnlyLineup(lineup: LineupSlot[]): LineupSlot[] {
+  return lineup.map(({player, position}) => ({position, player: player.kind === 'player'
+    ? {kind: 'player', id: player.id} : {kind: 'opponent', id: player.id}}));
 }
 
 export async function openOfflineGame(
@@ -303,6 +313,7 @@ export async function openOfflineGame(
               return;
             }
             let commands: Command[];
+            const setup = current?.setup ?? (action.kind === 'start' && action.selection ? setupFor(action.selection.seasonHalf) : demoSetup);
             if (action.kind === 'start')
               commands = [
                 {
@@ -310,7 +321,7 @@ export async function openOfflineGame(
                   control: {
                     kind: 'lineup_set',
                     side: 'away',
-                    lineup: demoLineups.away,
+                    lineup: idOnlyLineup(action.selection?.lineups.away ?? demoLineups.away),
                   },
                 },
                 {
@@ -318,7 +329,7 @@ export async function openOfflineGame(
                   control: {
                     kind: 'lineup_set',
                     side: 'home',
-                    lineup: demoLineups.home,
+                    lineup: idOnlyLineup(action.selection?.lineups.home ?? demoLineups.home),
                   },
                 },
                 { kind: 'game', control: { kind: 'start', umpireStart: at } },
@@ -357,7 +368,7 @@ export async function openOfflineGame(
             }
             else {
               const target = undoTarget(
-                current!.groups,
+                current!.game.plays,
                 current!.row.bootstrap_group,
               );
               if (!target) {
@@ -367,7 +378,7 @@ export async function openOfflineGame(
               commands = [{ kind: 'undo', target }];
             }
             const accepted = applyGroup(
-              demoSetup,
+              setup,
               current?.events ?? [],
               commands,
             );
@@ -384,7 +395,7 @@ export async function openOfflineGame(
                 'INSERT INTO local_games VALUES (1, ?, ?, ?, ?, ?, ?)',
                 [
                   gameId,
-                  JSON.stringify(demoSetup),
+                  JSON.stringify(setup),
                   ENGINE_VERSION,
                   EVENT_SCHEMA_VERSION,
                   'local_demo',

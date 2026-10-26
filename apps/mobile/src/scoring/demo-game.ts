@@ -29,10 +29,12 @@ const away: PlayerRef[] = positions.map((_, index) => ({
 }));
 
 export const demoSetup: GameSetup = {
-  rules: presets['moraga-mustang-first-half'],
+  rules: presets['moraga-mustang-second-half'],
   roster: { home, away },
   pitcherOutsEarlierToday: {},
 };
+
+export const legacyDemoSetup: GameSetup = {...demoSetup, rules: presets['moraga-mustang-first-half']};
 
 export const demoLineups: Record<'home' | 'away', LineupSlot[]> = {
   home: home.map((player, index) => ({ player, position: positions[index]! })),
