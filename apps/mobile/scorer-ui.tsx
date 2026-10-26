@@ -127,7 +127,7 @@ function SyncStatus({ state }: { state: SyncState }) {
       ? 'Saving...'
       : `Last: ${state.lastPlay} · Offline · ${state.waiting} plays saved on this phone`;
   return <View style={styles.syncLine}>
-    <Text style={state.status === 'offline' ? styles.syncOffline : styles.syncSaved}>{state.status === 'saved' ? '✓' : state.status === 'offline' ? '●' : '◌'}</Text>
+    <Text style={state.status === 'offline' ? styles.syncOffline : state.status === 'saving' ? styles.syncMuted : styles.syncSaved}>{state.status === 'saved' ? '✓' : state.status === 'offline' ? '●' : '⟳'}</Text>
     <Text style={state.status === 'offline' ? styles.syncOffline : styles.syncMuted}>{label}</Text>
   </View>;
 }
@@ -140,21 +140,21 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, testID }: {
   testID?: string;
 }) {
   const [choosingStrike, setChoosingStrike] = useState(false);
-  const strike = (pitch: Pitch) => { setChoosingStrike(false); onPitch(pitch); };
+  const recordPitch = (pitch: Pitch) => { setChoosingStrike(false); onPitch(pitch); };
   return <View style={styles.scorerBar} testID={testID}>
     {choosingStrike ? <View style={styles.strikeControls}>
       <View style={styles.strikeChooser}>
         <Text style={styles.strikeHeading}>Strike —</Text>
-        <Pressable accessibilityRole="button" onPress={() => strike('strike-looking')} style={styles.strikeOption} testID="strike-looking"><Text style={styles.pitchLabel}>Looking</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => strike('strike-swinging')} style={styles.strikeOption} testID="strike-swinging"><Text style={styles.pitchLabel}>Swinging</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-looking')} style={styles.strikeOption} testID="strike-looking"><Text style={styles.pitchLabel}>Looking</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-swinging')} style={styles.strikeOption} testID="strike-swinging"><Text style={styles.pitchLabel}>Swinging</Text></Pressable>
       </View>
       <View style={styles.strikeProgress}><View style={styles.strikeProgressFill} /></View>
     </View> : null}
     <View style={styles.pitchRow}>
-      <PitchButton label="Ball" kind="ball" onPress={() => onPitch('ball')} testID="pitch-ball" />
+      <PitchButton label="Ball" kind="ball" onPress={() => recordPitch('ball')} testID="pitch-ball" />
       <PitchButton label="Strike" kind="strike" selected={choosingStrike} onPress={() => setChoosingStrike(true)} testID="pitch-strike" />
-      <PitchButton label="Foul" kind="foul" onPress={() => onPitch('foul')} testID="pitch-foul" />
-      <PitchButton label="In play" kind="in-play" onPress={() => onPitch('in-play')} testID="pitch-in-play" />
+      <PitchButton label="Foul" kind="foul" onPress={() => recordPitch('foul')} testID="pitch-foul" />
+      <PitchButton label="In play" kind="in-play" onPress={() => recordPitch('in-play')} testID="pitch-in-play" />
     </View>
     <View style={styles.barActions}>
       <Pressable accessibilityRole="button" onPress={onUndo} style={styles.undoButton} testID="scorer-undo"><Text style={styles.undoText}>↶ Undo · {sync.lastPlay}</Text></Pressable>

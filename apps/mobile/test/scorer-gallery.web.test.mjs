@@ -126,6 +126,11 @@ test('gallery opens and closes sheets and ignores a disabled button', { timeout:
       await visible('gallery-scorer-bar-saved');
       await click('pitch-strike');
       await visible('strike-looking');
+      await click('pitch-ball');
+      assert.equal(await evaluate(`Boolean(document.querySelector('[data-testid="strike-looking"]'))`), false);
+      assert.equal(await evaluate(`document.body.innerText.includes('Pitch: ball')`), true);
+      await click('pitch-strike');
+      await visible('strike-looking');
       await click('strike-looking');
       assert.equal(await evaluate(`document.body.innerText.includes('Pitch: strike-looking')`), true);
     } finally { cdp.close(); }
