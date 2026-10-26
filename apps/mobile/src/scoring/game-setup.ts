@@ -11,6 +11,7 @@ export const roster: Record<TeamSide, PlayerRef[]> = {
   away: Array.from({length: 12}, (_, index) => ({kind: 'opponent', id: `sample-away-${index + 1}` as OpponentId})),
 };
 const positions: (Position | null)[] = ['CF', 'SS', '2B', '1B', 'LF', '3B', 'P', 'C', 'RF', null];
+export const sampleGameDate = '2026-10-24T18:30:00-07:00';
 
 export function initialLineup(side: TeamSide): LineupSlot[] {
   return roster[side].slice(0, positions.length).map((player, index) => ({player, position: positions[index]!}));
@@ -20,7 +21,7 @@ export function seasonHalfFor(date: Date): SeasonHalf {
   return date.getMonth() >= 9 ? 'second' : 'first';
 }
 
-export function newSetupDraft(date = new Date()): SetupDraft {
+export function newSetupDraft(date = new Date(sampleGameDate)): SetupDraft {
   return {seasonHalf: seasonHalfFor(date), lineups: {home: null, away: null}};
 }
 

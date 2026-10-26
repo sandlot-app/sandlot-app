@@ -105,6 +105,7 @@ test('an original first-half saved book keeps its pins and event identities afte
 test('the setup date crosses into the second half on the configured October 1 switch', () => {
   assert.equal(newSetupDraft(new Date(2026, 8, 30)).seasonHalf, 'first');
   assert.equal(newSetupDraft(new Date(2026, 9, 1)).seasonHalf, 'second');
+  assert.equal(newSetupDraft().seasonHalf, 'second');
 });
 
 test('both selected season halves pin their resolved rules and keep names out of stored events', async () => {
