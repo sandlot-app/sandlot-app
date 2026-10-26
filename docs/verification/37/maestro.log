@@ -18,6 +18,8 @@ Assert that "Pressed 0 times" is visible... COMPLETED
 Tap on id: gallery-enabled-button... COMPLETED
 Assert that "Pressed 1 time" is visible... COMPLETED
 Take screenshot scorer-gallery-buttons... COMPLETED
+Scrolling DOWN until id: gallery-chip-batter-followed is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Take screenshot scorer-gallery-chips... COMPLETED
 Scrolling DOWN until id: gallery-scorer-bar-saved is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
 Assert that "Last: Ball · All plays saved" is visible... COMPLETED
 Take screenshot scorer-gallery-bar... COMPLETED
