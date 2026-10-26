@@ -1,5 +1,6 @@
 import { randomUUID } from 'expo-crypto';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import type { RejectCode } from '@sandlot/engine';
 import type { PropsWithChildren } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 import type { SqlDatabase } from './database.ts';
@@ -110,10 +111,13 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
               action.kind === 'start'
                 ? null
                 : action.kind === 'undo'
-                  ? 'Last pitch undone. Saved on this phone.'
-                  : 'Pitch saved on this phone.',
+                  ? 'Last play undone. Saved on this phone.'
+                  : action.kind === 'pitch' ? 'Pitch saved on this phone.' : 'Play saved on this phone.',
           });
           return true;
+        case 'stale':
+          setView({kind: 'ready', game: result.game, message: 'The game changed while this play was open. Cancel and open it again before saving.'});
+          return false;
         case 'busy':
           setView({
             kind: 'ready',
@@ -134,9 +138,7 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
             kind: 'ready',
             game: previous,
             message:
-              result.code === 'nothing_to_undo'
-                ? 'There are no pitches left to undo.'
-                : 'That pitch cannot be recorded in this game.',
+              rejectionMessage(result.code),
           });
           return false;
         case 'blocked':
@@ -169,4 +171,21 @@ export function useOfflineGame(): ScoringContext {
   const context = useContext(Context);
   if (!context) throw new Error('OfflineGameProvider is required');
   return context;
+}
+
+function rejectionMessage(code: RejectCode): string {
+  switch (code) {
+    case 'nothing_to_undo': return 'There are no plays left to undo.';
+    case 'base_occupied': return 'Two runners cannot finish on the same base. Check their destinations.';
+    case 'bunting_not_allowed': return 'Bunting is not allowed by this game’s Mustang rules. No play was saved.';
+    case 'stealing_home_not_allowed': return 'Stealing home is not allowed by this game’s rules. No play was saved.';
+    case 'invalid_out_type': return 'That out type does not fit this play. Check who was forced and the order of outs.';
+    case 'invalid_runner_destination': return 'That runner destination is not allowed. Pickoff requires Out; safe advances must move forward.';
+    case 'runner_not_on_base': return 'That runner is no longer on base. Cancel and open the play again.';
+    case 'duplicate_runner': return 'Choose one destination for each runner.';
+    case 'outs_dont_match_outcome': return 'The selected outs do not match the outcome. Check the runner destinations.';
+    case 'batter_destination_missing': return 'Choose where the batter finished before saving.';
+    case 'game_over': return 'This game is over. Undo the last play to correct it.';
+    default: return 'That play cannot be recorded in this game. Check the outcome and runner destinations.';
+  }
 }

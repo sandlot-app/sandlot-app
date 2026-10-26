@@ -1,0 +1,20 @@
+appId: host.exp.Exponent
+---
+- tapOn:
+    id: "pitch-in-play"
+- extendedWaitUntil:
+    visible:
+      id: "play-outcomes"
+    timeout: 15000
+- tapOn:
+    id: "outcome-${OUTCOME}"
+- extendedWaitUntil:
+    visible:
+      id: "play-fielders"
+    timeout: 15000
+- tapOn:
+    id: "skip-fielder"
+- extendedWaitUntil:
+    visible:
+      id: "play-runners"
+    timeout: 15000

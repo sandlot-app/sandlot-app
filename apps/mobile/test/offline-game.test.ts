@@ -394,3 +394,201 @@ test('a scorer saves a pitch and reopens the same game from a fresh SQLite conne
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+async function scoringSession() {
+  const database = connect(':memory:');
+  const opened = await openOfflineGame(database, boundary);
+  assert.equal(opened.kind, 'ready');
+  if (opened.kind !== 'ready') throw new Error('Session must open');
+  const started = await opened.record({ kind: 'start' });
+  assert.equal(started.kind, 'saved');
+  if (started.kind !== 'saved') throw new Error('Game must start');
+  let game = started.game;
+  return {
+    database,
+    session: opened,
+    get game() { return game; },
+    async save(action: Parameters<typeof opened.record>[0]) {
+      const result = await opened.record(action);
+      assert.equal(result.kind, 'saved', JSON.stringify(result));
+      if (result.kind !== 'saved') throw new Error('Expected saved play');
+      game = result.game;
+      return game;
+    },
+  };
+}
+
+test('a selected double is one atomic play and whole-play undo survives reopening', async () => {
+  const scorer = await scoringSession();
+  await scorer.save({ kind: 'ball_in_play', expectedRevision: scorer.game.revision,
+    outcome: 'single', trajectory: null, fielders: ['CF'], advances: [] });
+  const before = scorer.game;
+  const runner = before.state.bases[1]!.player;
+  await scorer.save({ kind: 'ball_in_play', expectedRevision: before.revision,
+    outcome: 'double', trajectory: null, fielders: ['RF'], advances: [{ runner, to: 'home' }] });
+  assert.equal(scorer.game.state.score.away, 1);
+  assert.equal(scorer.game.state.bases[2]?.player.id, 'away-2');
+  assert.equal(scorer.game.state.pitchCounts['home-1'], 2);
+  assert.equal(scorer.game.waitingPlays, before.waitingPlays + 1);
+  const groups = await scorer.database.all<{event_count:number}>('SELECT event_count FROM local_outbox ORDER BY first_seq');
+  assert.deepEqual(groups.map((group) => group.event_count), [3, 2, 2]);
+  const reopened = await openOfflineGame(scorer.database, boundary);
+  assert.equal(reopened.kind, 'ready');
+  if (reopened.kind !== 'ready') return;
+  assert.deepEqual(reopened.game, scorer.game);
+  const undone = await reopened.record({ kind: 'undo' });
+  assert.equal(undone.kind, 'saved');
+  if (undone.kind === 'saved') assert.deepEqual(undone.game.state, before.state);
+  const final = await openOfflineGame(scorer.database, boundary);
+  assert.equal(final.kind, 'ready');
+  if (final.kind === 'ready' && undone.kind === 'saved') assert.deepEqual(final.game, undone.game);
+  await scorer.database.close();
+});
+
+test('an invalid second in-play command, collision, bunt and stale draft append nothing', async () => {
+  const scorer = await scoringSession();
+  await scorer.save({ kind: 'ball_in_play', expectedRevision: scorer.game.revision,
+    outcome: 'single', trajectory: null, fielders: [], advances: [] });
+  const before = scorer.game;
+  const action = { kind: 'ball_in_play' as const, expectedRevision: before.revision,
+    outcome: 'single' as const, trajectory: null, fielders: [], advances: [] };
+  assert.deepEqual(await scorer.session.record(action), {kind:'rejected',code:'base_occupied'});
+  assert.deepEqual(await scorer.session.record({...action, outcome:'sacrifice_bunt',trajectory:'bunt'}),
+    {kind:'rejected',code:'bunting_not_allowed'});
+  assert.deepEqual(await scorer.session.record({...action, outcome:'double_play'}),
+    {kind:'rejected',code:'batter_destination_missing'});
+  assert.deepEqual(await scorer.session.record({...action, expectedRevision: before.revision - 1}), {kind:'stale',game:before});
+  const reopened = await openOfflineGame(scorer.database, boundary);
+  assert.equal(reopened.kind, 'ready');
+  if (reopened.kind === 'ready') assert.deepEqual(reopened.game, before);
+  await scorer.database.close();
+});
+
+test('two aboard lets the scorer choose the runner and multiple runner moves remain one play', async () => {
+  const scorer = await scoringSession();
+  await scorer.save({kind:'ball_in_play',expectedRevision:scorer.game.revision,
+    outcome:'double',trajectory:null,fielders:[],advances:[]});
+  await scorer.save({kind:'ball_in_play',expectedRevision:scorer.game.revision,
+    outcome:'single',trajectory:null,fielders:[],advances:[]});
+  const before = scorer.game;
+  const lead = before.state.bases[2]!.player;
+  const trail = before.state.bases[1]!.player;
+  await scorer.save({kind:'runner_play',expectedRevision:before.revision,event:'passed_ball',
+    moves:[{runner:trail,to:2},{runner:lead,to:'home'}]});
+  assert.equal(scorer.game.state.score.away, 1);
+  assert.equal(scorer.game.state.bases[2]?.player.id, trail.id);
+  assert.equal(scorer.game.state.pitchCounts['home-1'], 2);
+  assert.equal(scorer.game.waitingPlays, before.waitingPlays + 1);
+  await scorer.save({kind:'undo'});
+  assert.deepEqual(scorer.game.state, before.state);
+  await scorer.save({kind:'runner_play',expectedRevision:scorer.game.revision,event:'steal',moves:[{runner:trail,to:'out'}]});
+  assert.equal(scorer.game.state.outs, 1);
+  assert.equal(scorer.game.state.bases[2]?.player.id, lead.id);
+  assert.equal(scorer.game.state.bases[1], undefined);
+  await scorer.database.close();
+});
+
+for (const outType of ['force', 'non_force'] as const) {
+  test(`an explicit ${outType} third out adjudicates the selected crossing from real saved history`, async () => {
+    const scorer = await scoringSession();
+    for (let count = 0; count < 6; count++) await scorer.save({kind:'pitch',result:'called_strike'});
+    await scorer.save({kind:'ball_in_play',expectedRevision:scorer.game.revision,
+      outcome:'triple',trajectory:null,fielders:[],advances:[]});
+    await scorer.save({kind:'ball_in_play',expectedRevision:scorer.game.revision,
+      outcome:'single',trajectory:null,fielders:[],advances:[]});
+    const before = scorer.game;
+    await scorer.save({kind:'ball_in_play',expectedRevision:before.revision,
+      outcome:'fielders_choice',trajectory:'ground',fielders:['SS'],advances:[
+        {runner:before.state.bases[3]!.player,to:'home'},
+        {runner:before.state.bases[1]!.player,to:'out',outType},
+      ]});
+    assert.equal(scorer.game.state.score.away, outType === 'force' ? 0 : 1);
+    assert.equal(scorer.game.state.half, 'bottom');
+    await scorer.save({kind:'undo'});
+    assert.deepEqual(scorer.game.state, before.state);
+    await scorer.database.close();
+  });
+}
+
+test('real pitcher threshold alerts persist and whole-play undo restores the previous alerts', async () => {
+  const scorer = await scoringSession();
+  for (let count = 0; count < 64; count++) await scorer.save({kind:'pitch',result:'foul'});
+  const before = scorer.game;
+  await scorer.save({kind:'ball_in_play',expectedRevision:before.revision,
+    outcome:'single',trajectory:null,fielders:[],advances:[]});
+  assert.ok(scorer.game.state.alerts.some((alert) => alert.kind === 'pitch_count_near_limit'));
+  const reopened = await openOfflineGame(scorer.database,boundary);
+  assert.equal(reopened.kind,'ready');
+  if(reopened.kind === 'ready') assert.deepEqual(reopened.game,scorer.game);
+  await scorer.save({kind:'undo'});
+  assert.deepEqual(scorer.game.state,before.state);
+  await scorer.database.close();
+});
+
+test('a runner play with a failing later move and an in-play outbox failure each roll back the whole play', async () => {
+  const scorer = await scoringSession();
+  await scorer.save({kind:'ball_in_play',expectedRevision:scorer.game.revision,
+    outcome:'double',trajectory:null,fielders:[],advances:[]});
+  await scorer.save({kind:'ball_in_play',expectedRevision:scorer.game.revision,
+    outcome:'single',trajectory:null,fielders:[],advances:[]});
+  const before = scorer.game;
+  assert.deepEqual(await scorer.session.record({kind:'runner_play',expectedRevision:before.revision,
+    event:'wild_pitch',moves:[{runner:before.state.bases[2]!.player,to:3},{runner:before.state.bases[1]!.player,to:3}]}),
+    {kind:'rejected',code:'base_occupied'});
+  await scorer.database.exec("CREATE TRIGGER reject_play_outbox BEFORE INSERT ON local_outbox BEGIN SELECT RAISE(ABORT, 'disk refused play'); END");
+  assert.deepEqual(await scorer.session.record({kind:'ball_in_play',expectedRevision:before.revision,
+    outcome:'home_run',trajectory:null,fielders:[],advances:[
+      {runner:before.state.bases[1]!.player,to:'home'}, {runner:before.state.bases[2]!.player,to:'home'},
+    ]}), {kind:'unsaved'});
+  const reopened = await openOfflineGame(scorer.database,boundary);
+  assert.equal(reopened.kind,'ready');
+  if(reopened.kind === 'ready') assert.deepEqual(reopened.game,before);
+  await scorer.database.close();
+});
+
+test('an earlier force followed by a non-force third out retains the eligible crossing', async () => {
+  const scorer = await scoringSession();
+  for(let count = 0;count < 3;count++) await scorer.save({kind:'pitch',result:'called_strike'});
+  for(let count = 0;count < 12;count++) await scorer.save({kind:'pitch',result:'ball'});
+  const before = scorer.game;
+  await scorer.save({kind:'ball_in_play',expectedRevision:before.revision,
+    outcome:'fielders_choice',trajectory:'ground',fielders:['SS'],advances:[
+      {runner:before.state.bases[3]!.player,to:'home'},
+      {runner:before.state.bases[1]!.player,to:'out',outType:'force'},
+      {runner:before.state.bases[2]!.player,to:'out',outType:'non_force'},
+    ]});
+  assert.equal(scorer.game.state.score.away,1);
+  await scorer.save({kind:'undo'});
+  assert.deepEqual(scorer.game.state,before.state);
+  await scorer.database.close();
+});
+
+test('safe steals, pickoffs and the exact pitch limit use the existing engine commands', async () => {
+  const scorer = await scoringSession();
+  await scorer.save({kind:'ball_in_play',expectedRevision:scorer.game.revision,
+    outcome:'single',trajectory:null,fielders:[],advances:[]});
+  const runner = scorer.game.state.bases[1]!.player;
+  await scorer.save({kind:'runner_play',expectedRevision:scorer.game.revision,event:'steal',moves:[{runner,to:2}]});
+  assert.equal(scorer.game.state.bases[2]?.player.id,runner.id);
+  await scorer.save({kind:'runner_play',expectedRevision:scorer.game.revision,event:'pickoff',moves:[{runner,to:'out'}]});
+  assert.equal(scorer.game.state.outs,1);
+  assert.deepEqual(scorer.game.state.bases,{});
+  for(let count = 1;count < 75;count++) await scorer.save({kind:'pitch',result:'foul'});
+  assert.ok(scorer.game.state.alerts.some((alert) => alert.kind === 'pitch_count_at_limit'));
+  await scorer.save({kind:'undo'});
+  assert.ok(!scorer.game.state.alerts.some((alert) => alert.kind === 'pitch_count_at_limit'));
+  await scorer.database.close();
+});
+
+test('a draft from another committed revision returns the fresh game without scoring a different batter', async () => {
+  const scorer = await scoringSession();
+  const revision = scorer.game.revision;
+  await scorer.save({kind:'ball_in_play',expectedRevision:revision,
+    outcome:'single',trajectory:null,fielders:[],advances:[]});
+  assert.deepEqual(await scorer.session.record({kind:'ball_in_play',expectedRevision:revision,
+    outcome:'double',trajectory:null,fielders:[],advances:[]}), {kind:'stale',game:scorer.game});
+  const reopened = await openOfflineGame(scorer.database,boundary);
+  assert.equal(reopened.kind,'ready');
+  if(reopened.kind === 'ready') assert.deepEqual(reopened.game,scorer.game);
+  await scorer.database.close();
+});

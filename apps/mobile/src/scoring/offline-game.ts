@@ -6,13 +6,19 @@ import {
   replay,
 } from '@sandlot/engine';
 import type {
+  Advance,
+  BallInPlayOutcome,
   Command,
+  Destination,
   Event,
   EventId,
   GameId,
   GameState,
   GroupId,
   PitchResult,
+  PlayerRef,
+  Position,
+  Trajectory,
   RejectCode,
   Timestamp,
 } from '@sandlot/engine';
@@ -22,10 +28,16 @@ import { demoLineups, demoSetup } from './demo-game.ts';
 export type DemoAction =
   | { kind: 'start' }
   | { kind: 'pitch'; result: Exclude<PitchResult, 'in_play'> }
-  | { kind: 'undo' };
+  | { kind: 'undo' }
+  | { kind: 'ball_in_play'; expectedRevision: number; outcome: BallInPlayOutcome;
+      trajectory: Trajectory | null; fielders: Position[]; advances: Advance[] }
+  | { kind: 'runner_play'; expectedRevision: number;
+      event: 'steal' | 'wild_pitch' | 'passed_ball' | 'pickoff';
+      moves: { runner: PlayerRef; to: Destination }[] };
 
 export type SavedGame = {
   id: GameId;
+  revision: number;
   state: GameState;
   waitingPlays: number;
   canUndo: boolean;
@@ -36,6 +48,7 @@ type BlockReason = 'storage' | 'version' | 'corrupt';
 export type RecordResult =
   | { kind: 'saved'; game: SavedGame }
   | { kind: 'rejected'; code: RejectCode }
+  | { kind: 'stale'; game: SavedGame }
   | { kind: 'busy' }
   | { kind: 'unsaved' }
   | { kind: 'blocked'; reason: BlockReason };
@@ -223,6 +236,7 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
     groups,
     game: {
       id: row.id as GameId,
+      revision: events.length,
       state: result.state,
       waitingPlays: outbox.length,
       canUndo: undoTarget(groups, row.bootstrap_group) !== null,
@@ -284,6 +298,10 @@ export async function openOfflineGame(
               result = { kind: 'rejected', code: 'game_not_started' };
               return;
             }
+            if ('expectedRevision' in action && action.expectedRevision !== current!.game.revision) {
+              result = { kind: 'stale', game: current!.game };
+              return;
+            }
             let commands: Command[];
             if (action.kind === 'start')
               commands = [
@@ -307,6 +325,36 @@ export async function openOfflineGame(
               ];
             else if (action.kind === 'pitch')
               commands = [{ kind: 'pitch', result: action.result }];
+            else if (action.kind === 'ball_in_play')
+              commands = [
+                { kind: 'pitch', result: 'in_play' },
+                { kind: 'ball_in_play', outcome: action.outcome, trajectory: action.trajectory,
+                  fielders: action.fielders, advances: action.advances },
+              ];
+            else if (action.kind === 'runner_play') {
+              if (!action.moves.length) {
+                result = { kind: 'rejected', code: 'invalid_runner_destination' };
+                return;
+              }
+              if (new Set(action.moves.map((move) => `${move.runner.kind}:${move.runner.id}`)).size !== action.moves.length) {
+                result = { kind: 'rejected', code: 'duplicate_runner' };
+                return;
+              }
+              const startingBase = (runner: PlayerRef) =>
+                ([1, 2, 3] as const).find((base) => {
+                  const player = current!.game.state.bases[base]?.player;
+                  return player?.kind === runner.kind && player.id === runner.id;
+                }) ?? 0;
+              const moves = [...action.moves].sort((left, right) => {
+                if (left.to === 'out' || right.to === 'out')
+                  return Number(left.to === 'out') - Number(right.to === 'out');
+                return startingBase(right.runner) - startingBase(left.runner);
+              });
+              commands = moves.map((move) => ({ kind: 'runner', runner: move.runner, to: move.to,
+                event: action.event === 'steal'
+                  ? move.to === 'out' ? 'caught_stealing' : 'stolen_base'
+                  : action.event }));
+            }
             else {
               const target = undoTarget(
                 current!.groups,
