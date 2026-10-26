@@ -17,13 +17,17 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
 4. **Check.**
    - Run `pnpm verify`. For the phone app, also run its lint, typecheck and `bundle`.
    - **UI tickets:** take web-build screenshots of each screen you touched at 393 px wide, next to the ticket's Figma frames.
-   - **Phone tickets:** add the Maestro flow for the ticket's user path under `.claude/skills/verify-sandlot-mobile`. It's run on the Mac before the PR is ready.
+   - **Phone tickets:** add the Maestro flow for the ticket's user path under `.claude/skills/verify-sandlot-mobile`. On the Mac, run it yourself with that skill:
+     - Run `launch`, `doctor`, `drive` and `cleanup` inside **one** shell command, so the simulator's dev server stays alive for the whole run, and record the screen with `xcrun simctl io sandlot-verify recordVideo` while the flow drives.
+     - Only one Mac check runs at a time, because every run shares the `sandlot-verify` simulator and port 8091.
+     - Copy the passing run's `RESULT.txt`, `maestro.log`, `final.png`, screenshots and video into `docs/verification/<number>/`, commit them, and comment on the PR with `RESULT.txt`, the commit, and the simulator and iOS version.
+     - If app code changes after a passing run, run the check again.
 5. **Review.**
    - `code-review` against the ticket (Spec) and this repo's rules (Standards).
    - `pstack-blast-radius` for what else the change could break.
    - `pstack-interrogate` as well when the change touches engine rules, privacy or security.
    - Rate every finding **high**, **medium** or **low**. Fix every high and medium finding, then run the reviews again. List low findings in the PR; they don't block.
-6. **Hand off.** On a long run, keep a `show-me-your-work` log. All work happens on Christian's PC: push the branch and open a **draft** PR whose body says `Closes #<number>`. The description covers:
+6. **Hand off.** On a long run, keep a `show-me-your-work` log. Work happens on Christian's PC or Mac, never the VM: push the branch and open a **draft** PR whose body says `Closes #<number>`. The description covers:
    - what changed
    - the exact checks run and their results
    - review findings and how each was resolved
@@ -35,7 +39,7 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
 - `pnpm verify` passes. For phone tickets, so do lint, typecheck and `bundle`.
 - Screens match their Figma frames in layout, spacing, size, weight and color. The typeface is the platform's own.
 - Colors, spacing and radii come from `@sandlot/tokens`. No raw values.
-- Phone tickets: the Maestro flow passed on the Mac, with screenshots and video attached to the PR. A run on the PC alone doesn't count.
+- Phone tickets: the Maestro flow passed on the Mac for the app code being merged, with its evidence in `docs/verification/<number>/` and on the PR. A run on the PC alone doesn't count.
 - Reviews show no open medium or higher findings.
 
 ## Stop rules
@@ -68,7 +72,7 @@ Christian authorized agents on 2026-10-25 to review, fix and merge their own tic
    - privacy or security (`supabase/`, sign-in, access rules, logging of personal data, `docs/contract.md`)
    - CI (`.github/`)
    - agent rules (`AGENTS.md`, `CLAUDE.md`, `docs/agents/`)
-5. **Phone tickets have their Mac proof.** The Maestro flow passed on the Mac, with its screenshots and video on the PR.
+5. **Phone tickets have their Mac proof.** The Maestro flow passed on the Mac for the app code being merged, whether you ran it or Christian did, with its evidence in `docs/verification/<number>/` and on the PR. The independent review looks at that evidence.
 
 To merge, mark the PR ready, then squash-merge it pinned to the reviewed commit (`gh pr merge <n> --squash --match-head-commit <sha>`). Never enable auto-merge, use an admin override, or force-push. After merging, check that `main`'s CI run passes. If it fails, stop merging and report it.
 
