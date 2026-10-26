@@ -1,0 +1,65 @@
+{"id":"pitch-ball","said":[],"transcript":"Ball.","expect":{"kind":"save","readBack":"Ball → count 1–0"}}
+{"id":"pitch-ball-one","said":[],"transcript":"ball one","expect":{"kind":"save","readBack":"Ball → count 1–0"}}
+{"id":"pitch-called","said":[],"transcript":"Called strike","expect":{"kind":"save","readBack":"Strike looking → count 0–1"}}
+{"id":"pitch-looking","said":[],"transcript":"strike looking","expect":{"kind":"save","readBack":"Strike looking → count 0–1"}}
+{"id":"pitch-swinging","said":[],"transcript":"Swing and a miss","expect":{"kind":"save","readBack":"Strike swinging → count 0–1"}}
+{"id":"pitch-swinging-2","said":[],"transcript":"swinging strike","expect":{"kind":"save","readBack":"Strike swinging → count 0–1"}}
+{"id":"pitch-strike-asks","said":[],"transcript":"Strike!","expect":{"kind":"ask","prompt":"Looking or swinging?"}}
+{"id":"pitch-foul","said":[],"transcript":"Foul ball","expect":{"kind":"save","readBack":"Foul → count 0–1"}}
+{"id":"pitch-fouled-off","said":[],"transcript":"fouled off","expect":{"kind":"save","readBack":"Foul → count 0–1"}}
+{"id":"pitch-foul-tip","said":["strike looking"],"transcript":"foul tip","expect":{"kind":"save","readBack":"Foul tip → count 0–2"}}
+{"id":"pitch-hbp","said":[],"transcript":"Hit by pitch","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"pitch-hbp-2","said":[],"transcript":"he got hit by the pitch","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"pitches-three","said":[],"transcript":"Ball, ball, strike swinging","expect":{"kind":"save","readBack":"Ball → count 1–0 · Ball → count 2–0 · Strike swinging → count 2–1"}}
+{"id":"pitches-then","said":[],"transcript":"ball then foul","expect":{"kind":"save","readBack":"Ball → count 1–0 · Foul → count 1–1"}}
+{"id":"walk","said":["ball","ball","ball"],"transcript":"Ball four","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"walk-2","said":["ball","ball","ball"],"transcript":"Soto walks","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"walk-early","said":[],"transcript":"walk","expect":{"kind":"reject","message":"That would be ball 1, not ball four."}}
+{"id":"k-swinging","said":["strike looking","strike looking"],"transcript":"Strikes out swinging","expect":{"kind":"save","readBack":"J. Soto strikes out swinging"}}
+{"id":"k-looking","said":["strike looking","strike looking"],"transcript":"struck out looking","expect":{"kind":"save","readBack":"J. Soto strikes out looking"}}
+{"id":"k-punched","said":["strike looking","strike looking"],"transcript":"punched out","expect":{"kind":"ask","prompt":"Looking or swinging?"}}
+{"id":"k-called-third","said":["strike looking","strike looking"],"transcript":"called third strike","expect":{"kind":"save","readBack":"J. Soto strikes out looking"}}
+{"id":"hit-single-left","said":[],"transcript":"Soto singles to left","expect":{"kind":"save","readBack":"J. Soto singles to left"}}
+{"id":"hit-base-hit","said":[],"transcript":"base hit to right","expect":{"kind":"save","readBack":"J. Soto singles to right"}}
+{"id":"hit-double","said":[],"transcript":"Soto doubles down the line in left","expect":{"kind":"save","readBack":"J. Soto doubles to left"}}
+{"id":"hit-triple","said":[],"transcript":"a triple to center","expect":{"kind":"save","readBack":"J. Soto triples to center"}}
+{"id":"hit-homer","said":[],"transcript":"Home run!","expect":{"kind":"save","readBack":"J. Soto homers"}}
+{"id":"hit-homer-two","said":["Soto singles"],"transcript":"Darcy homers to left","expect":{"kind":"confirm","readBack":"L. Darcy homers to left, J. Soto scores"}}
+{"id":"hit-full-name","said":[],"transcript":"J Soto singles","expect":{"kind":"save","readBack":"J. Soto singles"}}
+{"id":"hit-number","said":[],"transcript":"number seventeen singles to left","expect":{"kind":"save","readBack":"J. Soto singles to left"}}
+{"id":"out-fly","said":[],"transcript":"Fly out to center","expect":{"kind":"save","readBack":"J. Soto flies out to center"}}
+{"id":"out-ground","said":[],"transcript":"Soto grounds out to short","expect":{"kind":"save","readBack":"J. Soto grounds out to short"}}
+{"id":"count-not-an-out","said":[],"transcript":"6-3","expect":{"kind":"unknown_phrase"}}
+{"id":"out-pop","said":[],"transcript":"popped out to the catcher","expect":{"kind":"save","readBack":"J. Soto pops out to the catcher"}}
+{"id":"out-line","said":[],"transcript":"lined out to second","expect":{"kind":"save","readBack":"J. Soto lines out to second"}}
+{"id":"error-short","said":[],"transcript":"Safe on an error by the shortstop","expect":{"kind":"confirm","readBack":"J. Soto reaches on an error by the shortstop"}}
+{"id":"error-e6","said":[],"transcript":"E6","expect":{"kind":"confirm","readBack":"J. Soto reaches on an error by the shortstop"}}
+{"id":"reached-judgment","said":[],"transcript":"safe at first","expect":{"kind":"ask","prompt":"Hit or error?"}}
+{"id":"steal","said":["Soto singles"],"transcript":"Soto steals second","expect":{"kind":"save","readBack":"J. Soto steals 2nd"}}
+{"id":"steal-bare","said":["Soto singles"],"transcript":"stole","expect":{"kind":"save","readBack":"J. Soto steals 2nd"}}
+{"id":"steal-runner","said":["Soto singles"],"transcript":"the runner steals second","expect":{"kind":"save","readBack":"J. Soto steals 2nd"}}
+{"id":"steal-no-runner","said":["Soto singles"],"transcript":"steals third","expect":{"kind":"reject","message":"No runner on second."}}
+{"id":"steal-home-mustang","said":["Soto triples"],"transcript":"steals home","expect":{"kind":"reject","message":"Stealing home isn't allowed in this division."}}
+{"id":"caught-stealing","said":["Soto singles"],"transcript":"caught stealing second","expect":{"kind":"save","readBack":"J. Soto caught stealing 2nd"}}
+{"id":"pickoff","said":["Soto singles"],"transcript":"picked off at first","expect":{"kind":"save","readBack":"J. Soto picked off at 1st"}}
+{"id":"wild-pitch","said":["Soto singles"],"transcript":"wild pitch","expect":{"kind":"save","readBack":"Wild pitch: J. Soto to 2nd"}}
+{"id":"wild-pitch-scores","said":["Soto triples"],"transcript":"wild pitch, runner scores","expect":{"kind":"save","readBack":"Wild pitch: J. Soto scores"}}
+{"id":"passed-ball-to","said":["Soto singles"],"transcript":"passed ball, Soto to second","expect":{"kind":"save","readBack":"Passed ball: J. Soto to 2nd"}}
+{"id":"scores-which","said":["Soto triples","Darcy doubles"],"transcript":"Vance singles, runner scores","expect":{"kind":"ask","prompt":"Which runner?"}}
+{"id":"scores-named","said":["Soto triples","Darcy doubles"],"transcript":"Vance singles, Soto scores","expect":{"kind":"confirm","readBack":"C. Vance singles, J. Soto scores, L. Darcy holds 2nd"}}
+{"id":"moves-named","said":["Soto singles"],"transcript":"Darcy singles, Soto to third","expect":{"kind":"confirm","readBack":"L. Darcy singles, J. Soto to 3rd"}}
+{"id":"correction","said":[],"transcript":"Single to left, no, a double","expect":{"kind":"save","readBack":"J. Soto doubles"}}
+{"id":"correction-actually","said":[],"transcript":"ball, actually strike looking","expect":{"kind":"save","readBack":"Strike looking → count 0–1"}}
+{"id":"undo","said":[],"transcript":"scratch that","expect":{"kind":"undo"}}
+{"id":"undo-2","said":[],"transcript":"take that back","expect":{"kind":"undo"}}
+{"id":"empty","said":[],"transcript":"   ","expect":{"kind":"didnt_catch"}}
+{"id":"filler","said":[],"transcript":"um, uh","expect":{"kind":"didnt_catch"}}
+{"id":"question","said":[],"transcript":"who's up next","expect":{"kind":"no_play"}}
+{"id":"crowd","said":[],"transcript":"Go go go!","expect":{"kind":"no_play"}}
+{"id":"unknown","said":[],"transcript":"he tagged and took two","expect":{"kind":"unknown_phrase"}}
+{"id":"wrong-batter","said":[],"transcript":"Darcy singles","expect":{"kind":"ask","prompt":"J. Soto is up, not L. Darcy."}}
+{"id":"who-is","said":[],"transcript":"Ramirez singles","expect":{"kind":"ask","prompt":"Who is Ramirez?"}}
+{"id":"wrong-side","said":["Soto singles"],"transcript":"Moss steals second","expect":{"kind":"reject","message":"K. Moss is in the field this half."}}
+{"id":"lead-in-walk","said":["ball","ball","ball"],"transcript":"That's ball four","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"lead-in-strikeout","said":["strike looking","strike looking"],"transcript":"that's strike three","expect":{"kind":"ask","prompt":"Looking or swinging?"}}
+{"id":"who-is-walk","said":["ball","ball","ball"],"transcript":"Ramirez walks","expect":{"kind":"ask","prompt":"Who is Ramirez?"}}
