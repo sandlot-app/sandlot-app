@@ -1,0 +1,4 @@
+flow: acceptance-38
+result: PASS
+commit: 2d7da92ff6cd80d4e870533abd46c822c8c20a95
+simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)

@@ -101,7 +101,11 @@ export function PlayerChip({ number, name, role, followed = false, layout = 'fie
     <View style={followed && styles.followedCircle}>
       <View style={[role === 'fielding' ? styles.fieldingCircle : role === 'batter' ? styles.batterCircle : styles.battingCircle, layout === 'inline' && styles.inlineCircle, followed && styles.followedInner]}>
         <Text style={role === 'fielding' ? styles.fieldingNumber : styles.battingNumber}>{number}</Text>
-        {role === 'batter' && layout === 'field' ? <View style={styles.batMark} /> : null}
+        {role === 'batter' && layout === 'field' ? <View style={styles.batSlot} pointerEvents="none">
+          <View style={styles.batTurn}>
+            <Image source={require('./assets/scorer/bat.png')} accessible={false} style={styles.batImage} />
+          </View>
+        </View> : null}
       </View>
     </View>
     <Text style={layout === 'inline' ? styles.inlineName : styles.chipName} numberOfLines={1}>{name}</Text>
@@ -118,29 +122,36 @@ export function PitchButton({ label, kind, onPress, selected, disabled = false, 
   testID?: string;
 }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[styles.pitchButton, (selected || disabled) && styles.pitchSelected]} testID={testID}>
-    {kind === 'in-play' ? <Text style={styles.pitchIcon}>⚾</Text> : <View style={kind === 'ball' ? styles.ballDot : kind === 'strike' ? styles.strikeDot : styles.foulDot} />}
+    <View style={styles.pitchMark}>
+      {kind === 'in-play' ? <Image source={require('./assets/scorer/baseball.png')} accessible={false} style={styles.pitchBaseball} />
+        : <View style={kind === 'ball' ? styles.ballDot : kind === 'strike' ? styles.strikeDot : styles.foulDot} />}
+    </View>
     <Text style={styles.pitchLabel}>{label}</Text>
   </Pressable>;
 }
 
-function SyncStatus({ state }: { state: SyncState }) {
+function SyncStatus({ state, syncTestID }: { state: SyncState; syncTestID?: string }) {
+  const last = state.lastPlay ? `Last: ${state.lastPlay} · ` : '';
   const label = state.status === 'saved'
-    ? `Last: ${state.lastPlay} · All plays saved`
+    ? `${last}All plays saved`
     : state.status === 'saving'
       ? 'Saving...'
-      : `Last: ${state.lastPlay} · Offline · ${state.waiting} plays saved on this phone`;
+      : `${last}Offline · ${state.waiting} ${state.waiting === 1 ? 'play' : 'plays'} saved on this phone`;
   return <View style={styles.syncLine}>
     <Text style={state.status === 'offline' ? styles.syncOffline : state.status === 'saving' ? styles.syncMuted : styles.syncSaved}>{state.status === 'saved' ? '✓' : state.status === 'offline' ? '●' : '⟳'}</Text>
-    <Text style={state.status === 'offline' ? styles.syncOffline : styles.syncMuted}>{label}</Text>
+    <Text style={state.status === 'offline' ? styles.syncOffline : styles.syncMuted} testID={syncTestID}>{label}</Text>
   </View>;
 }
 
-export function ScorerBar({ onPitch, onUndo, onMore, sync, testID }: {
+export function ScorerBar({ onPitch, onUndo, onMore, sync, disabled = false, undoDisabled = disabled, testID, syncTestID }: {
   onPitch: (pitch: Pitch) => void;
   onUndo: () => void;
   onMore: () => void;
   sync: SyncState;
+  disabled?: boolean;
+  undoDisabled?: boolean;
   testID?: string;
+  syncTestID?: string;
 }) {
   const [choosingStrike, setChoosingStrike] = useState(false);
   const recordPitch = (pitch: Pitch) => { setChoosingStrike(false); onPitch(pitch); };
@@ -154,19 +165,21 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, testID }: {
       <View style={styles.strikeProgress}><View style={styles.strikeProgressFill} /></View>
     </View> : null}
     <View style={styles.pitchRow}>
-      <PitchButton label="Ball" kind="ball" onPress={() => recordPitch('ball')} testID="pitch-ball" />
-      <PitchButton label="Strike" kind="strike" selected={choosingStrike} onPress={() => setChoosingStrike(true)} testID="pitch-strike" />
-      <PitchButton label="Foul" kind="foul" onPress={() => recordPitch('foul')} testID="pitch-foul" />
-      <PitchButton label="In play" kind="in-play" onPress={() => recordPitch('in-play')} testID="pitch-in-play" />
+      <PitchButton label="Ball" kind="ball" disabled={disabled} onPress={() => recordPitch('ball')} testID="pitch-ball" />
+      <PitchButton label="Strike" kind="strike" disabled={disabled} selected={choosingStrike} onPress={() => setChoosingStrike(true)} testID="pitch-strike" />
+      <PitchButton label="Foul" kind="foul" disabled={disabled} onPress={() => recordPitch('foul')} testID="pitch-foul" />
+      <PitchButton label="In play" kind="in-play" disabled={disabled} onPress={() => recordPitch('in-play')} testID="pitch-in-play" />
     </View>
     <View style={styles.barActions}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Undo · ${sync.lastPlay}`} onPress={onUndo} style={styles.undoButton} testID="scorer-undo">
+      <Pressable accessibilityRole="button" accessibilityLabel={sync.lastPlay ? `Undo · ${sync.lastPlay}` : 'Undo'} accessibilityState={{ disabled: undoDisabled }}
+        disabled={undoDisabled} onPress={onUndo} style={[styles.undoButton, undoDisabled && styles.dimmed]} testID="scorer-undo">
         <Image source={require('./assets/scorer/undo.png')} accessible={false} style={styles.undoIcon} />
-        <Text style={styles.undoText}>Undo · {sync.lastPlay}</Text>
+        <Text style={styles.undoText}>{sync.lastPlay ? `Undo · ${sync.lastPlay}` : 'Undo'}</Text>
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel="More" onPress={onMore} style={styles.moreButton} testID="scorer-more"><Text style={styles.moreGlyph}>•••</Text></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="More" accessibilityState={{ disabled }} disabled={disabled}
+        onPress={onMore} style={[styles.moreButton, disabled && styles.dimmed]} testID="scorer-more"><Text style={styles.moreGlyph}>•••</Text></Pressable>
     </View>
-    <SyncStatus state={sync} />
+    <SyncStatus state={sync} syncTestID={syncTestID} />
   </View>;
 }
 
@@ -206,13 +219,16 @@ const styles = createStyles({
   followedInner: { borderWidth: 0 },
   fieldingNumber: { ...textStyles['Chip/Number'], color: colors['chip/fielding/text'] },
   battingNumber: { ...textStyles['Chip/Number'], color: colors['chip/batting/text'] },
-  batMark: { position: 'absolute', right: -7, top: -8, width: 5, height: 28, backgroundColor: colors['icon/bat'], borderRadius: sizes['radius/full'], transform: [{ rotate: '36deg' }] },
+  batSlot: { position: 'absolute', left: 27.5, top: -1.5, width: 23.027, height: 25.578, alignItems: 'center', justifyContent: 'center' },
+  batTurn: { width: 27.6, height: 6.9, transform: [{ rotate: '-50deg' }] },
+  batImage: { position: 'absolute', left: -1.81, top: 0, width: 30.4462, height: 8.53875 },
   chipName: { ...textStyles['Chip/Name'], color: colors['chip/label/text'], textShadowColor: colors['chip/label/halo'], textShadowRadius: sizes['radius/sm'], textShadowOffset: { width: 0, height: 1 } },
-  scorerBar: { width: '100%', backgroundColor: colors['surface/card'], borderTopLeftRadius: sizes['radius/xl'], borderTopRightRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/4'], paddingBottom: sizes['space/4'], gap: sizes['space/4'], borderWidth: 1, borderColor: colors['border/subtle'] },
+  scorerBar: { width: '100%', backgroundColor: colors['surface/card'], borderTopLeftRadius: sizes['radius/xl'], borderTopRightRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/3'], paddingBottom: sizes['space/6'], gap: sizes['space/4'], borderTopWidth: 1, borderColor: colors['border/subtle'] },
   pitchRow: { flexDirection: 'row', gap: sizes['space/2'] },
   pitchButton: { flex: 1, minWidth: 0, minHeight: 64, borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/lg'], alignItems: 'center', justifyContent: 'center', gap: sizes['space/1'], backgroundColor: colors['surface/card'] },
   pitchSelected: { backgroundColor: colors['surface/page'] },
-  pitchIcon: { fontSize: 20, lineHeight: 24 },
+  pitchMark: { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
+  pitchBaseball: { position: 'absolute', left: -1.41, top: -0.56, width: 20.8125, height: 20.8125 },
   pitchLabel: { ...textStyles['Body/Strong'], color: colors['text/primary'], textAlign: 'center' },
   ballDot: { width: sizes['dot/size'], height: sizes['dot/size'], borderRadius: sizes['radius/full'], backgroundColor: colors['count/ball'] },
   strikeDot: { width: sizes['dot/size'], height: sizes['dot/size'], borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
@@ -227,7 +243,8 @@ const styles = createStyles({
   undoButton: { flex: 1, minHeight: sizes['tap/min'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/1'] },
   undoIcon: { width: textStyles['Body/Strong'].lineHeight, height: textStyles['Body/Strong'].lineHeight, tintColor: colors['text/primary'] },
   undoText: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
-  moreButton: { width: sizes['tap/min'], height: sizes['tap/min'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], alignItems: 'center', justifyContent: 'center' },
+  moreButton: { width: 46, height: 46, borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], alignItems: 'center', justifyContent: 'center' },
+  dimmed: { opacity: 0.4 },
   moreGlyph: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
   syncLine: { minHeight: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/2'] },
   syncSaved: { ...textStyles.Caption, color: colors['count/ball'] },

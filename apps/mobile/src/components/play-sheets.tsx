@@ -1,10 +1,12 @@
-import type { Destination, OutType, Position } from '@sandlot/engine';
+import type { Destination, GameState, OutType, Position } from '@sandlot/engine';
 import { tokens } from '@sandlot/tokens';
 import { useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { PlayerChip, PrimaryButton, Sheet, SheetHeader, SheetSection } from '../../scorer-ui';
 import { createStyles } from '../../style';
+import { UserIcon } from './icons.tsx';
+import { playerDisplay } from '../scoring/demo-roster.ts';
 import { basesSummary } from '../scoring/game-summary.ts';
 import type { DemoAction } from '../scoring/offline-game.ts';
 import {
@@ -31,6 +33,7 @@ const positionNames: Record<Position, string> = {
 
 function Fielders({draft, onChange}: {draft: InPlayDraft; onChange: (draft: PlayDraft) => void}) {
   const side = draft.game.state.half === 'top' ? 'home' : 'away';
+  const batting = side === 'home' ? 'away' : 'home';
   return <View style={styles.field}>
     <Svg width="100%" height="100%" viewBox="0 0 310 335" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
       <Rect width={310} height={335} fill={colors['field/grass']} />
@@ -46,20 +49,21 @@ function Fielders({draft, onChange}: {draft: InPlayDraft; onChange: (draft: Play
       if (index < 0) return null;
       return <View key={position} style={[styles.fielder, fieldStyles[position]]}>
         {draft.fielder === position ? <View style={styles.selectedFielder} pointerEvents="none" /> : null}
-        <PlayerChip number={String(index + 1)} name={position} role="fielding" testID={`fielder-${position}`}
+        <PlayerChip {...playerDisplay(draft.game.state, side, draft.game.state.lineups[side][index]!.player)} role="fielding" testID={`fielder-${position}`}
           onPress={() => onChange({...draft, fielder: position})} />
       </View>;
     })}
     {runnerRows(draft.game, draft.choice).map((row) => <View key={row.runner.id} style={[styles.contextPlayer, baseStyles[row.from]]} pointerEvents="none">
-      <PlayerChip number={row.number} name={row.from === 0 ? 'Batter' : 'Runner'} role={row.from === 0 ? 'batter' : 'batting'} />
+      <PlayerChip {...playerDisplay(draft.game.state, batting, row.runner)} role={row.from === 0 ? 'batter' : 'batting'} />
     </View>)}
   </View>;
 }
 
-function RunnerRow({row, rows, inPlay, choice, first, onRows}: {
-  row: RunnerChoice; rows: RunnerChoice[]; inPlay: boolean;
+function RunnerRow({state, row, rows, inPlay, choice, first, onRows}: {
+  state: GameState; row: RunnerChoice; rows: RunnerChoice[]; inPlay: boolean;
   choice: InPlayDraft['choice']; first: boolean; onRows: (rows: RunnerChoice[]) => void;
 }) {
+  const shown = playerDisplay(state, state.half === 'top' ? 'away' : 'home', row.runner);
   const outs = rows.filter((other) => other.to === 'out').sort((a, b) => a.outOrder - b.outOrder);
   const outNumber = outs.findIndex((other) => other.runner.id === row.runner.id) + 1;
   const caught = row.from === 0 && (choice?.trajectory === 'fly' || choice?.trajectory === 'line' || choice?.trajectory === 'popup');
@@ -72,12 +76,12 @@ function RunnerRow({row, rows, inPlay, choice, first, onRows}: {
   const updateType = (outType: OutType) => onRows(rows.map((other) => other.runner.id === row.runner.id ? {...other, outType} : other));
   return <View style={[styles.runnerRow, !first && styles.runnerDivider]} testID={`runner-${row.runner.id}`}>
     <View style={styles.runnerHeading}>
-      <PlayerChip number={row.number} name={`${row.from === 0 ? 'Batter' : 'Runner'} #${row.number}`} role="batting" layout="inline" testID={`runner-chip-${row.runner.id}`} />
+      <PlayerChip number={shown.number} name={shown.name} role="batting" layout="inline" testID={`runner-chip-${row.runner.id}`} />
       <Text style={styles.caption}>{row.from === 0 ? 'batter' : `from ${destinations.find((item) => item.to === row.from)!.label}`}{row.to === 'home' ? ' · scores' : ''}</Text>
     </View>
     <View style={styles.destinationRow}>
       {destinations.map(({to, label}) => <Pressable key={to} accessibilityRole="button"
-        accessibilityLabel={`${row.from === 0 ? 'Batter' : 'Runner'} ${row.number} to ${label}`}
+        accessibilityLabel={`${shown.name} to ${label}`}
         accessibilityState={{selected: row.to === to}}
         onPress={() => onRows(chooseDestination(rows, row.runner.id, to))}
         testID={`destination-${row.runner.id}-${to}`}
@@ -99,6 +103,12 @@ function RunnerRow({row, rows, inPlay, choice, first, onRows}: {
   </View>;
 }
 
+function batterName(state: GameState): string {
+  const side = state.half === 'top' ? 'away' : 'home';
+  const batter = state.lineups[side][state.nextBatter[side]]?.player;
+  return batter ? playerDisplay(state, side, batter).name : 'Batter';
+}
+
 export function PlaySheets({draft, onChange, onClose, record, saving, available, message}: {
   draft: PlayDraft | null; onChange: (draft: PlayDraft) => void; onClose: () => void;
   record: (action: DemoAction) => Promise<boolean>; saving: boolean; available: boolean; message: string | null;
@@ -106,12 +116,16 @@ export function PlaySheets({draft, onChange, onClose, record, saving, available,
   const [attempted, setAttempted] = useState(false);
   if (!draft) return null;
   const close = () => { if (!saving) { setAttempted(false); onClose(); } };
+  const hitByPitch = async () => {
+    setAttempted(true);
+    if (await record({kind: 'pitch', result: 'hit_by_pitch'})) { setAttempted(false); onClose(); }
+  };
   if (draft.kind === 'more') return <Sheet open onRequestClose={close} testID="play-more"
     header={<SheetHeader title="More" onCancel={close} cancelLabel="Done" />}>
     <SheetSection label="Runners">
       <View style={styles.moreCard}>
       {runnerModes.map(({mode, title, subtitle, path}, index) => <Pressable key={mode} accessibilityRole="button" testID={`more-${mode}`}
-        onPress={() => onChange({kind: 'runner', at: new Date().toISOString(), mode, game: draft.game, rows: runnerRows(draft.game, null)})} style={[styles.moreRow, index > 0 && styles.moreDivider]}>
+        onPress={() => { setAttempted(false); onChange({kind: 'runner', at: new Date().toISOString(), mode, game: draft.game, rows: runnerRows(draft.game, null)}); }} style={[styles.moreRow, index > 0 && styles.moreDivider]}>
         <View style={styles.moreIcon}>
           <Svg width={24} height={28} viewBox="0 0 26 28" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}><Path d={path} fill="none" stroke={colors['text/primary']} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" /></Svg>
         </View>
@@ -120,6 +134,18 @@ export function PlaySheets({draft, onChange, onClose, record, saving, available,
       </Pressable>)}
       </View>
     </SheetSection>
+    <SheetSection label="Pitch">
+      <View style={styles.moreCard}>
+        <Pressable accessibilityRole="button" testID="more-hit_by_pitch" disabled={saving || !available}
+          accessibilityState={{disabled: saving || !available}} onPress={() => {void hitByPitch();}} style={styles.moreRow}>
+          <View style={styles.moreIcon}>
+            <UserIcon color={colors['text/primary']} />
+          </View>
+          <View style={styles.moreDescription}><Text style={styles.strong}>Hit by pitch</Text><Text style={styles.caption}>Batter takes first base</Text></View>
+        </Pressable>
+      </View>
+    </SheetSection>
+    {attempted && message ? <Text style={styles.error} accessibilityLiveRegion="polite" testID="play-message">{message}</Text> : null}
   </Sheet>;
   const inPlay = draft.kind === 'in_play';
   const step = inPlay ? draft.step === 'outcome' ? 1 : draft.step === 'fielder' ? 2 : 3 : undefined;
@@ -130,8 +156,8 @@ export function PlaySheets({draft, onChange, onClose, record, saving, available,
     if (inPlay && draft.choice) onChange({...draft, fielder, step: 'runners', rows: draft.rows.length ? draft.rows : runnerRows(draft.game, draft.choice)});
   };
   const fielderSide = draft.game.state.half === 'top' ? 'home' : 'away';
-  const fielderNumber = inPlay && draft.fielder
-    ? draft.game.state.lineups[fielderSide].findIndex((slot) => slot.position === draft.fielder) + 1 : null;
+  const fielder = inPlay && draft.fielder ? draft.game.state.lineups[fielderSide].find((slot) => slot.position === draft.fielder)?.player : undefined;
+  const fielderName = fielder ? playerDisplay(draft.game.state, fielderSide, fielder).name : null;
   const action = completePlay(draft);
   const problem = draftProblem(draft);
   const save = async () => {
@@ -140,14 +166,14 @@ export function PlaySheets({draft, onChange, onClose, record, saving, available,
     if (await record(action)) { setAttempted(false); onClose(); }
   };
   const actions = inPlay && step === 1 ? undefined : inPlay && step === 2 ? <>
-    <PrimaryButton label={draft.fielder ? `Next · #${fielderNumber}, ${positionNames[draft.fielder]}` : 'Next'} onPress={() => toRunners(draft.fielder)} disabled={!draft.fielder} testID="play-next" />
+    <PrimaryButton label={draft.fielder ? `Next · ${fielderName}, ${positionNames[draft.fielder]}` : 'Next'} onPress={() => toRunners(draft.fielder)} disabled={!draft.fielder} testID="play-next" />
     <Pressable accessibilityRole="button" onPress={() => toRunners(null)} style={styles.skip} testID="skip-fielder"><Text style={styles.link}>Skip</Text></Pressable>
   </> : <PrimaryButton label={saving ? 'Saving…' : available ? 'Save play' : 'Scoring paused'} onPress={() => {void save();}} disabled={!action || !available} testID="save-play" />;
   return <View style={styles.modal} accessibilityViewIsModal>
     <Sheet open onRequestClose={close} testID={inPlay ? step === 1 ? 'play-outcomes' : step === 2 ? 'play-fielders' : 'play-runners' : 'play-runner-action'}
       header={<SheetHeader title={title} step={step} steps={inPlay ? 3 : undefined} onBack={saving ? undefined : onBack} onCancel={close} />} actions={actions}>
       {inPlay && step === 1 ? <>
-        <Text style={styles.caption}>Batter #{draft.game.state.nextBatter[draft.game.state.half === 'top' ? 'away' : 'home'] + 1} · {draft.game.state.count.balls}–{draft.game.state.count.strikes} count · {basesSummary(draft.game.state.bases)}</Text>
+        <Text style={styles.caption}>{batterName(draft.game.state)} · {draft.game.state.count.balls}–{draft.game.state.count.strikes} count · {basesSummary(draft.game.state.bases)}</Text>
         {(['Hit', 'Out', 'Other'] as const).map((section) => <SheetSection key={section} label={section}>
           <View style={styles.outcomeGrid}>{outcomeChoices.filter((choice) => choice.section === section).map((choice) => <Pressable key={choice.id}
             accessibilityRole="button" testID={`outcome-${choice.id}`} onPress={() => onChange({...draft, step: 'fielder', choice, rows: []})}
@@ -164,7 +190,7 @@ export function PlaySheets({draft, onChange, onClose, record, saving, available,
           : draft.mode === 'pickoff' ? 'Who was picked off? Pick Out for that runner.'
           : 'Who advanced, and where did they end up? Leave other runners on their current base.'}</Text>
         {!draft.rows.length ? <Text style={styles.caption}>No runners on base.</Text> : null}
-        <View>{draft.rows.map((row, index) => <RunnerRow key={row.runner.id} row={row} rows={draft.rows} inPlay={inPlay} first={index === 0}
+        <View>{draft.rows.map((row, index) => <RunnerRow key={row.runner.id} state={draft.game.state} row={row} rows={draft.rows} inPlay={inPlay} first={index === 0}
           choice={inPlay ? draft.choice : null} onRows={(rows) => onChange({...draft, rows})} />)}</View>
         {draft.rows.some((row) => row.to === 'home') && draft.game.state.outs + draft.rows.filter((row) => row.to === 'out').length >= 3
           ? <Text style={styles.caption} testID="third-out-evidence">{inPlay

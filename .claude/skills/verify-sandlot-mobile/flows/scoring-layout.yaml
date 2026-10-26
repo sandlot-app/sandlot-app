@@ -6,7 +6,7 @@ appId: host.exp.Exponent
 - evalScript: ${output.before = maestro.copiedText}
 - copyTextFrom:
     id: "waiting-plays"
-- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 - takeScreenshot: scoring-dock-before-scroll
 - repeat:
     times: 3
@@ -18,30 +18,30 @@ appId: host.exp.Exponent
       - assertVisible:
           id: "pitch-ball"
       - assertVisible:
-          id: "pitch-called_strike"
-      - assertVisible:
-          id: "pitch-swinging_strike"
+          id: "pitch-strike"
       - assertVisible:
           id: "pitch-foul"
       - assertVisible:
-          id: "pitch-hit_by_pitch"
+          id: "pitch-in-play"
       - assertVisible:
-          id: "undo-play"
+          id: "scorer-more"
+      - assertVisible:
+          id: "scorer-undo"
 - takeScreenshot: scoring-dock-after-scroll
 - tapOn:
     id: "pitch-ball"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 1} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
     timeout: 15000
 - takeScreenshot: scoring-dock-saved-pitch
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 2} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
     timeout: 15000
 - takeScreenshot: scoring-dock-undone-pitch
 - repeat:
@@ -57,5 +57,5 @@ appId: host.exp.Exponent
 - assertVisible:
     id: "pitch-ball"
 - assertVisible:
-    id: "undo-play"
+    id: "scorer-undo"
 - takeScreenshot: scoring-dock-restored-count

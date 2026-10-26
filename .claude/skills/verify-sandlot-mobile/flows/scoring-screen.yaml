@@ -1,0 +1,94 @@
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+- assertVisible:
+    id: "matchup"
+- assertVisible:
+    id: "scorer-bar"
+- assertNotVisible:
+    id: "pitch-hit_by_pitch"
+- takeScreenshot: field
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "Last: Ball · Offline · ${output.waiting + 1} plays? saved on this phone"
+    timeout: 15000
+- assertVisible: "Undo · Ball"
+- takeScreenshot: ball-saved
+- tapOn:
+    id: "scorer-more"
+- extendedWaitUntil:
+    visible:
+      id: "more-hit_by_pitch"
+    timeout: 15000
+- takeScreenshot: more
+- tapOn:
+    id: "more-hit_by_pitch"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "Last: Hit by pitch · Offline · ${output.waiting + 2} plays? saved on this phone"
+    timeout: 15000
+- assertVisible: "Undo · Hit by pitch"
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${/Runners on first/.test(maestro.copiedText)}
+- takeScreenshot: hit-by-pitch-saved
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible: "Undo · Ball"
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 4} plays? saved on this phone"
+    timeout: 15000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText === output.before}
+- takeScreenshot: both-undone
+- swipe:
+    from:
+      id: "game-content"
+    direction: UP
+- assertVisible:
+    id: "last-pitch"
+- takeScreenshot: matchup

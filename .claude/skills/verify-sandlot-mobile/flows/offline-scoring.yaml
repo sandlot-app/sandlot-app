@@ -36,35 +36,35 @@ appId: host.exp.Exponent
 - evalScript: ${output.before = maestro.copiedText}
 - copyTextFrom:
     id: "waiting-plays"
-- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 - takeScreenshot: offline-before-pitch
 - tapOn:
     id: "pitch-ball"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 1} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
     timeout: 15000
 - copyTextFrom:
     id: "score-summary"
 - assertTrue: ${maestro.copiedText !== output.before}
 - copyTextFrom:
     id: "waiting-plays"
-- assertTrue: ${parseInt(maestro.copiedText, 10) === output.waiting + 1}
+- assertTrue: ${parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10) === output.waiting + 1}
 - takeScreenshot: offline-saved-pitch
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 2} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
     timeout: 15000
 - copyTextFrom:
     id: "score-summary"
 - assertTrue: ${maestro.copiedText === output.before}
 - copyTextFrom:
     id: "waiting-plays"
-- assertTrue: ${parseInt(maestro.copiedText, 10) === output.waiting + 2}
+- assertTrue: ${parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10) === output.waiting + 2}
 - evalScript: ${output.afterWaiting = maestro.copiedText}
 - takeScreenshot: offline-undone-pitch
 - tapOn:

@@ -12,7 +12,13 @@ import type { DemoAction, OpenResult, SavedGame } from './offline-game.ts';
 type Session = Extract<OpenResult, { kind: 'ready' }>;
 type ViewState =
   | { kind: 'loading' }
-  | { kind: 'ready' | 'saving'; game: SavedGame | null; message: string | null }
+  | {
+      kind: 'ready' | 'saving';
+      game: SavedGame | null;
+      message: string | null;
+      /** True when the message says a play was not saved, so the screen shows it, not only screen readers. */
+      problem?: boolean;
+    }
   | {
       kind: 'blocked';
       reason: 'storage' | 'version' | 'corrupt';
@@ -116,13 +122,14 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
           });
           return true;
         case 'stale':
-          setView({kind: 'ready', game: result.game, message: 'The game changed while this play was open. Cancel and open it again before saving.'});
+          setView({kind: 'ready', game: result.game, message: 'The game changed while this play was open. Cancel and open it again before saving.', problem: true});
           return false;
         case 'busy':
           setView({
             kind: 'ready',
             game: previous,
             message: 'A play is still saving. Try again when it finishes.',
+            problem: true,
           });
           return false;
         case 'unsaved':
@@ -131,6 +138,7 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
             game: previous,
             message:
               'That play could not be saved. Your previous score is unchanged. Try again.',
+            problem: true,
           });
           return false;
         case 'rejected':
@@ -139,6 +147,7 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
             game: previous,
             message:
               rejectionMessage(result.code),
+            problem: true,
           });
           return false;
         case 'blocked':

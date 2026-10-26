@@ -41,6 +41,10 @@ export type SavedGame = {
   state: GameState;
   waitingPlays: number;
   canUndo: boolean;
+  /** The commands of the play Undo would take back, or null when there is none. */
+  lastPlay: Command[] | null;
+  /** That play's pitch, counted for the pitcher who threw it, or null when it had no pitch. */
+  lastPitchNumber: number | null;
   context: { kind: 'local_demo' };
 };
 
@@ -230,6 +234,7 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
   const result = replay(demoSetup, events);
   if (!result.ok || result.state.status === 'pregame')
     throw new SavedDataError('corrupt');
+  const last = activePlays(groups, row.bootstrap_group).at(-1);
   return {
     row,
     events,
@@ -240,19 +245,34 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
       state: result.state,
       waitingPlays: outbox.length,
       canUndo: undoTarget(groups, row.bootstrap_group) !== null,
+      lastPlay: last?.map((event) => event.command) ?? null,
+      lastPitchNumber: last ? pitchNumber(events, last, result.state) : null,
       context: { kind: 'local_demo' },
     },
   };
 }
 
-function undoTarget(groups: Event[][], bootstrap: string): GroupId | null {
-  const active: GroupId[] = [];
+function activePlays(groups: Event[][], bootstrap: string): Event[][] {
+  const active: Event[][] = [];
   for (const group of groups) {
     const first = group[0]!;
     if (first.command.kind === 'undo') active.pop();
-    else if (first.group !== bootstrap) active.push(first.group);
+    else if (first.group !== bootstrap) active.push(group);
   }
-  return active.at(-1) ?? null;
+  return active;
+}
+
+/** The pitcher's count after `play`'s pitch. The pitcher is read from the state before the play, since a third out changes sides. */
+function pitchNumber(events: Event[], play: Event[], after: GameState): number | null {
+  if (!play.some((event) => event.command.kind === 'pitch')) return null;
+  const before = applyGroup(demoSetup, events, [{ kind: 'undo', target: play[0]!.group }]);
+  if (!before.ok) return null;
+  const pitcher = before.state.pitchers[before.state.half === 'top' ? 'home' : 'away'];
+  return pitcher ? (after.pitchCounts[pitcher.id] ?? null) : null;
+}
+
+function undoTarget(groups: Event[][], bootstrap: string): GroupId | null {
+  return activePlays(groups, bootstrap).at(-1)?.[0]!.group ?? null;
 }
 
 function blocked(error: unknown): { kind: 'blocked'; reason: BlockReason } {
