@@ -1,0 +1,67 @@
+Running on sandlot-verify-28-f2 - iOS 26.5 - 4E588C86-8C7E-42D8-8F36-391286336175
+ > Flow lineups-play-log
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: new-game is visible... COMPLETED
+Take screenshot games-before-setup... COMPLETED
+Tap on id: new-game... COMPLETED
+Assert that id: game-setup is visible... COMPLETED
+Assert that id: start-configured-game, disabled is visible... COMPLETED
+Take screenshot setup-before-lineups... COMPLETED
+Tap on id: season-half-first... COMPLETED
+Assert that ".*6 outs.*", id: season-half-note is visible... COMPLETED
+Take screenshot setup-first-half... COMPLETED
+Tap on id: season-half-second... COMPLETED
+Assert that ".*9 outs.*", id: season-half-note is visible... COMPLETED
+Tap on id: setup-lineup-away... COMPLETED
+Assert that id: lineup-screen is visible... COMPLETED
+Take screenshot lineup-before-reorder... COMPLETED
+Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Take screenshot lineup-reference-bottom... COMPLETED
+Tap on id: save-lineup... COMPLETED
+Assert that id: game-setup is visible... COMPLETED
+Take screenshot setup-reference-state... COMPLETED
+Tap on id: setup-lineup-away... COMPLETED
+Assert that id: lineup-screen is visible... COMPLETED
+Scrolling DOWN until id: lineup-position-sample-away-7 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: lineup-position-sample-away-7... COMPLETED
+Scrolling DOWN until id: position-bats-only is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: position-bats-only... COMPLETED
+Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: save-lineup... COMPLETED
+Assert that ".*starting pitcher.*", id: lineup-message is visible... COMPLETED
+Take screenshot lineup-missing-pitcher-rejected... COMPLETED
+Scrolling UP until id: lineup-position-sample-away-7 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: lineup-position-sample-away-7... COMPLETED
+Scrolling DOWN until id: position-P is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: position-P... COMPLETED
+Scrolling UP until id: lineup-drag-sample-away-1 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering enabled... COMPLETED
+Take screenshot lineup-drag-target-before... COMPLETED
+Copy text from element with id: lineup-order-sample-away-1... COMPLETED
+Run ${output.originalOrder = maestro.copiedText}... COMPLETED
+Swiping in DOWN direction on id: lineup-drag-sample-away-1... COMPLETED
+Copy text from element with id: lineup-order-sample-away-1... COMPLETED
+Assert that ${maestro.copiedText !== output.originalOrder} is true... COMPLETED
+Take screenshot lineup-after-real-drag... COMPLETED
+Scrolling DOWN until id: lineup-position-sample-away-1 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: lineup-position-sample-away-1... COMPLETED
+Scrolling DOWN until id: position-P is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: position-P... COMPLETED
+Scrolling DOWN until id: lineup-starting-pitcher is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Assert that ".*K. Moss.*", id: lineup-starting-pitcher is visible... COMPLETED
+Take screenshot lineup-position-swap... COMPLETED
+Tap on id: change-starting-pitcher... FAILED
+
+Element not found: Id matching regex: change-starting-pitcher
+
+Element with Id matching regex: change-starting-pitcher not found. Check the UI hierarchy in debug artifacts to verify if the element exists.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state.
+- This could be a real regression that needs to be addressed.
+
+==== Debug output (logs & screenshots) ====
+
+/Users/christianalcala/.codex/worktrees/sandlot-28-mac-proof/sandlot-app/.verify/evidence/20261026T045911Z-lineups-play-log/maestro/2026-10-25_215917
