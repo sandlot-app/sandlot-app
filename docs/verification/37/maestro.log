@@ -1,0 +1,25 @@
+Running on sandlot-verify - iOS 26.5 - FA09EA82-EAA7-4F77-89DC-CC6048730BE7
+ > Flow scorer-gallery
+Assert that "Sandlot" is visible... COMPLETED
+Tap on id: open-scorer-gallery... COMPLETED
+Assert that "Scorer UI gallery" is visible... COMPLETED
+Take screenshot scorer-gallery-before-sheet... COMPLETED
+Tap on id: gallery-open-sheet... COMPLETED
+Assert that "More" is visible... COMPLETED
+Assert that "First option" is visible... COMPLETED
+Take screenshot scorer-gallery-sheet-open... COMPLETED
+Swiping in DOWN direction on id: sheet-grabber... COMPLETED
+Assert that "Sheet closed" is visible... COMPLETED
+Take screenshot scorer-gallery-sheet-closed... COMPLETED
+Scrolling DOWN until id: gallery-disabled-button is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Assert that "Pressed 0 times" is visible... COMPLETED
+Tap on id: gallery-disabled-button... COMPLETED
+Assert that "Pressed 0 times" is visible... COMPLETED
+Tap on id: gallery-enabled-button... COMPLETED
+Assert that "Pressed 1 time" is visible... COMPLETED
+Take screenshot scorer-gallery-buttons... COMPLETED
+Scrolling DOWN until id: gallery-chip-batter-followed is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Take screenshot scorer-gallery-chips... COMPLETED
+Scrolling DOWN until id: gallery-scorer-bar-saved is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Assert that "Last: Ball · All plays saved" is visible... COMPLETED
+Take screenshot scorer-gallery-bar... COMPLETED

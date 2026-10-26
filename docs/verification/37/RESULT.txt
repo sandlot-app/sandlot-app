@@ -1,0 +1,4 @@
+flow: scorer-gallery
+result: PASS
+commit: 6ed23d868e2d13260ecf1a7941eb5235a598f7ae
+simulator: sandlot-verify (FA09EA82-EAA7-4F77-89DC-CC6048730BE7)
