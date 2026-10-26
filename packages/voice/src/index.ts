@@ -5,3 +5,4 @@ export { readBack } from './explain.ts';
 export { classify } from './classify.ts';
 export { echoMismatch } from './echo.ts';
 export type { PressGame } from './resolve.ts';
+export { fromModel, parserInstructions, parserSchema, type ParserContext } from './model.ts';
