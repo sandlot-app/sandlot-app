@@ -1,0 +1,25 @@
+name: The pitch-count warning and limit come from the rule set, not fixed numbers
+cite: AGENTS.md rule 4 (league rules are data in a RuleSet); Moraga Mustang E.2
+preset: moraga-mustang-first-half
+started: true
+rules:
+  pitchCountLimits:
+    warnAt: 10
+    limit: 12
+given:
+  pitchCounts:
+    home-1: 9
+    away-1: 0
+when:
+  - - kind: pitch
+      result: ball
+then:
+  pitchCounts:
+    home-1: 10
+    away-1: 0
+  alerts:
+    - kind: pitch_count_near_limit
+      pitcher:
+        kind: player
+        id: home-1
+      remaining: 2

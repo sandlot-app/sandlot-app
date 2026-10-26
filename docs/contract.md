@@ -131,6 +131,7 @@ The scorer records what happened. Starting bases alone cannot prove that a force
 - Single, double, ground-rule double, triple, and home run keep their batter destinations. Error and fielder's choice put the batter on first unless listed.
 - Out, sacrifice fly, and sacrifice bunt put an omitted batter out with `batter_before_first`. That implied out occurs before explicit outs. To record another classification or order, list the batter explicitly. Mustang still rejects bunts.
 - Double and triple plays require an explicit batter destination and exactly two or three outs.
+- A play whose outs would take the half-inning past three is rejected with `too_many_outs`, such as a double play with two outs or a triple play with one.
 - Explicit outs occur in `advances` array order. Safe destinations describe final bases, not intermediate touches or timing.
 - A home entry asserts an eligible crossing before the third out, if any. Omit crossings after the third out. `Event.at` does not establish timing within a play.
 - Under [OBR 5.08(a) and 5.09(b)(6)](https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf), a third out classified as `force` or `batter_before_first` suppresses every run on that play. Otherwise eligible home entries count. An earlier force out alone does not suppress a run on a later non-force third out.
@@ -160,7 +161,7 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 ## Version pins
 
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
-- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.0'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
+- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.1'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
 - Local verification compares that artifact with the current engine and fixtures. CI also compares it with the trusted PR base or main-push predecessor and rejects changed results without an engine-version increase. [Engine verification](engine-verification.md) describes the commands and the initial release baseline.
 - Each upload carries `schemaVersion`. The server returns `unsupported_version` when it differs from the server's `EVENT_SCHEMA_VERSION` or from the game's pinned `schema_version`. The parser checks it before any command, so an old-format request returns `unsupported_version`, not `invalid`.
 - The server also returns `unsupported_version` for a game pinned to a different engine version. Milestone 6 still requires the phone to refuse scoring under mismatched pins.
@@ -170,6 +171,8 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 ## Undo
 
 - Undo is an ordinary group with one `undo` command. It targets the latest group that is not already undone, whether that group is accepted or still on the phone.
+- An undo group holds only the `undo` command. A group that mixes it with other commands is rejected with `undo_must_be_alone`.
+- Undo works before the game starts too, so it can take back the start or a lineup. When no group is left to undo, it is rejected with `nothing_to_undo`.
 - An undo group cannot itself be undone. The demo has no redo.
 
 ## Errors
@@ -187,6 +190,37 @@ The phone takes one action for each error:
 | `stale_revision` | 409 | Stop the queue. Another writer moved the game, or an earlier group is missing. |
 | `stale_session` | 403 | Stop the queue. Someone else now holds scoring. |
 | `unsupported_version` | 409 | Stop the queue and ask the scorer to update the app |
+
+### Reject reasons
+
+A `rejected` response's `reason` is one of the engine's reject codes, `REJECT_CODES` in `packages/engine/src/engine.ts`. A test fails if a code is missing here.
+
+| `reason` | The group is rejected because |
+| --- | --- |
+| `not_implemented` | it uses a command or runner event the engine doesn't support yet |
+| `unknown_player` | it names a player who isn't on that team's roster |
+| `game_not_started` | it's a play other than a lineup or the start, before the game starts |
+| `game_already_started` | it sets a lineup or starts the game after the start |
+| `no_pitcher` | the start has a lineup with no pitcher, or a pitch comes with no pitcher in |
+| `ball_in_play_needs_pitch` | a ball in play doesn't follow an `in_play` pitch in the same group |
+| `in_play_needs_outcome` | an `in_play` pitch isn't followed by its ball in play |
+| `base_occupied` | a runner moves to a base another runner still holds |
+| `runner_not_on_base` | a runner it moves isn't on base |
+| `duplicate_runner` | a ball in play moves the same runner twice |
+| `batter_destination_missing` | a double or triple play doesn't say where the batter went |
+| `outs_dont_match_outcome` | a double play doesn't record two outs, or a triple play three |
+| `too_many_outs` | its outs would take the half-inning past three |
+| `invalid_out_type` | an out's `outType` doesn't fit the runner or the hit |
+| `undo_not_latest` | an undo targets a group that isn't the latest active one |
+| `undo_must_be_alone` | it mixes an undo with other commands |
+| `cannot_undo_undo` | an undo targets another undo |
+| `nothing_to_undo` | an undo comes when no group is left to undo |
+| `game_over` | the game has already ended |
+| `invalid_runner_destination` | a runner goes backward or stays, a caught stealing or pickoff isn't an out, or a stolen base is |
+| `stealing_home_not_allowed` | a runner steals home where the rules allow scoring only on a passed ball |
+| `balks_not_allowed` | it records a balk where the rules have none |
+| `pitcher_reentry_not_allowed` | a removed pitcher comes back where the rules don't allow it |
+| `bunting_not_allowed` | it records a bunt where the rules don't allow bunting |
 
 When the queue stops, the phone shows how many plays are waiting, for example "3 plays waiting. Tap to fix." The fix is **Discard from here**. It deletes the stuck group and every group after it on the phone, and it runs only when the scorer taps it. The phone never deletes pending plays on its own.
 

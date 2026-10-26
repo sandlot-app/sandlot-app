@@ -1,0 +1,33 @@
+name: A run scores on the same wild pitch where another runner is put out for the
+  third out, and the half ends after the whole play
+cite: Official Baseball Rules 5.08(a) (a run counts unless the third out is a force
+  out or the batter-runner before first), 5.09(b)(6), 9.13
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 2
+  nextBatter: { home: 0, away: 3 }
+  bases:
+    "1":
+      player: { kind: opponent, id: away-2 }
+      chargedTo: { kind: player, id: home-1 }
+    "3":
+      player: { kind: opponent, id: away-1 }
+      chargedTo: { kind: player, id: home-1 }
+when:
+  - - kind: runner
+      event: wild_pitch
+      runner: { kind: opponent, id: away-2 }
+      to: out
+    - kind: runner
+      event: wild_pitch
+      runner: { kind: opponent, id: away-1 }
+      to: home
+then:
+  inning: 1
+  half: bottom
+  outs: 0
+  bases: {}
+  score: { home: 0, away: 1 }
+  nextBatter: { home: 0, away: 3 }

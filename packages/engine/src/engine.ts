@@ -16,29 +16,35 @@ import type {
   TeamSide,
 } from './types.ts';
 
-export type RejectCode =
-  | 'not_implemented'
-  | 'unknown_player'
-  | 'game_not_started'
-  | 'game_already_started'
-  | 'no_pitcher'
-  | 'ball_in_play_needs_pitch'
-  | 'in_play_needs_outcome'
-  | 'base_occupied'
-  | 'runner_not_on_base'
-  | 'duplicate_runner'
-  | 'batter_destination_missing'
-  | 'outs_dont_match_outcome'
-  | 'invalid_out_type'
-  | 'undo_not_latest'
-  | 'cannot_undo_undo'
-  | 'nothing_to_undo'
-  | 'game_over'
-  | 'invalid_runner_destination'
-  | 'stealing_home_not_allowed'
-  | 'balks_not_allowed'
-  | 'pitcher_reentry_not_allowed'
-  | 'bunting_not_allowed';
+/** Every reason the engine rejects a play. `docs/contract.md` lists each one, because the server returns it as `reason`. */
+export const REJECT_CODES = [
+  'not_implemented',
+  'unknown_player',
+  'game_not_started',
+  'game_already_started',
+  'no_pitcher',
+  'ball_in_play_needs_pitch',
+  'in_play_needs_outcome',
+  'base_occupied',
+  'runner_not_on_base',
+  'duplicate_runner',
+  'batter_destination_missing',
+  'outs_dont_match_outcome',
+  'too_many_outs',
+  'invalid_out_type',
+  'undo_not_latest',
+  'undo_must_be_alone',
+  'cannot_undo_undo',
+  'nothing_to_undo',
+  'game_over',
+  'invalid_runner_destination',
+  'stealing_home_not_allowed',
+  'balks_not_allowed',
+  'pitcher_reentry_not_allowed',
+  'bunting_not_allowed',
+] as const;
+
+export type RejectCode = (typeof REJECT_CODES)[number];
 
 export type ApplyResult =
   | { ok: true; state: GameState }
@@ -106,8 +112,7 @@ function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending
   function next(commands: Command[]): ApplyResult {
     const undo = commands.find((command) => command.kind === 'undo');
     if (!undo) return applyPlay(setup, state, commands);
-    if (commands.length !== 1) return { ok: false, code: 'undo_not_latest' };
-    if (state.status === 'pregame') return { ok: false, code: 'game_not_started' };
+    if (commands.length !== 1) return { ok: false, code: 'undo_must_be_alone' };
     if (undoGroups.has(undo.target)) return { ok: false, code: 'cannot_undo_undo' };
     const latest = active.at(-1);
     if (!latest) return { ok: false, code: 'nothing_to_undo' };
@@ -137,14 +142,15 @@ function applyPlay(setup: GameSetup, state: GameState, commands: Command[]): App
   const game = copy(state);
   game.alerts = [];
   let needsOutcome = false;
-  for (const command of commands) {
-    if (needsOutcome && command.kind !== 'ball_in_play') return { ok: false, code: 'in_play_needs_outcome' };
-    if (game.status === 'in_progress' && command.kind === 'ball_in_play' && !needsOutcome) {
+  for (const step of steps(commands)) {
+    const kind = Array.isArray(step) ? 'runner' : step.kind;
+    if (needsOutcome && kind !== 'ball_in_play') return { ok: false, code: 'in_play_needs_outcome' };
+    if (game.status === 'in_progress' && kind === 'ball_in_play' && !needsOutcome) {
       return { ok: false, code: 'ball_in_play_needs_pitch' };
     }
-    const code = applyCommand(setup, game, command);
+    const code = applyCommand(setup, game, step);
     if (code) return { ok: false, code };
-    needsOutcome = command.kind === 'pitch' && command.result === 'in_play';
+    needsOutcome = !Array.isArray(step) && step.kind === 'pitch' && step.result === 'in_play';
     if (game.status === 'in_progress' && game.half === 'bottom' && game.inning >= setup.rules.innings && game.score.home > game.score.away) {
       game.status = 'final';
     }
@@ -168,18 +174,34 @@ function copy(state: GameState): GameState {
   };
 }
 
-function applyCommand(setup: GameSetup, game: GameState, command: Command): RejectCode | null {
+type RunnerCommand = Extract<Command, { kind: 'runner' }>;
+
+/** One command, or the runner commands next to each other in a play, which all happen on the same play. */
+type Step = Command | RunnerCommand[];
+
+function steps(commands: Command[]): Step[] {
+  const result: Step[] = [];
+  for (const command of commands) {
+    const last = result.at(-1);
+    if (command.kind === 'runner' && Array.isArray(last)) last.push(command);
+    else result.push(command.kind === 'runner' ? [command] : command);
+  }
+  return result;
+}
+
+function applyCommand(setup: GameSetup, game: GameState, step: Step): RejectCode | null {
   if (game.status === 'final') return 'game_over';
-  if (!namedPlayers(command).every(({ player, side }) => onRoster(setup, player, side))) return 'unknown_player';
-  if (command.kind === 'game') return applyControl(setup, game, command.control);
+  const commands = Array.isArray(step) ? step : [step];
+  if (!commands.flatMap(namedPlayers).every(({ player, side }) => onRoster(setup, player, side))) return 'unknown_player';
+  if (!Array.isArray(step) && step.kind === 'game') return applyControl(setup, game, step.control);
   if (game.status === 'pregame') return 'game_not_started';
+  if (Array.isArray(step)) return moveRunners(setup, game, step);
+  const command = step;
   switch (command.kind) {
     case 'pitch':
       return pitch(setup, game, command.result);
     case 'ball_in_play':
       return ballInPlay(setup, game, command);
-    case 'runner':
-      return moveRunner(setup, game, command);
     case 'substitution':
       return command.change.kind === 'pitching_change'
         ? changePitcher(setup, game, command.side, command.change.in)
@@ -201,7 +223,29 @@ function changePitcher(setup: GameSetup, game: GameState, side: TeamSide, incomi
   return null;
 }
 
-function moveRunner(setup: GameSetup, game: GameState, command: Extract<Command, { kind: 'runner' }>): RejectCode | null {
+/**
+ * Moves every runner on one play before the play's outs and runs count, so the third out or a winning run
+ * ends the half only after all of them.
+ */
+function moveRunners(setup: GameSetup, game: GameState, commands: RunnerCommand[]): RejectCode | null {
+  const outs = game.outs + commands.filter(({ to }) => to === 'out').length;
+  if (outs > 3) return 'too_many_outs';
+  for (const command of commands) {
+    const code = moveRunner(setup, game, command);
+    if (code) return code;
+  }
+  // A runner event never makes a force out, so its runs count even when the play makes the third out (OBR 5.08(a)).
+  const scored = commands.filter(({ to }) => to === 'home').length;
+  const runs = game.half === 'bottom' && game.inning >= setup.rules.innings
+    ? Math.min(scored, game.score.away - game.score.home + 1)
+    : scored;
+  for (let run = 0; run < runs; run++) scoreRun(game);
+  if (outs === 3) endHalf(setup, game);
+  else game.outs = outs as GameState['outs'];
+  return null;
+}
+
+function moveRunner(setup: GameSetup, game: GameState, command: RunnerCommand): RejectCode | null {
   if (command.event === 'balk' && !setup.rules.balks) return 'balks_not_allowed';
   if (!['stolen_base', 'caught_stealing', 'pickoff', 'wild_pitch', 'passed_ball', 'advance_on_error'].includes(command.event)) {
     return 'not_implemented';
@@ -221,11 +265,7 @@ function moveRunner(setup: GameSetup, game: GameState, command: Extract<Command,
   if (typeof to === 'number' && game.bases[to]) return 'base_occupied';
   const runner = game.bases[from]!;
   delete game.bases[from];
-  if (to === 'out') {
-    if (game.outs === 2) endHalf(setup, game);
-    else game.outs += 1;
-  } else if (to === 'home') scoreRun(game);
-  else game.bases[to] = runner;
+  if (typeof to === 'number') game.bases[to] = runner;
   return null;
 }
 
@@ -263,12 +303,12 @@ function pitch(setup: GameSetup, game: GameState, result: PitchResult): RejectCo
   if (!pitcher) return 'no_pitcher';
   game.pitchCounts[pitcher.id] = (game.pitchCounts[pitcher.id] ?? 0) + 1;
   game.count.pitches += 1;
-  if (setup.rules.pitchCountTable === 'pitch_smart_9_10' && game.pitchCounts[pitcher.id] === 65) {
-    game.alerts.push({ kind: 'pitch_count_near_limit', pitcher, remaining: 10 });
+  const limits = setup.rules.pitchCountLimits;
+  const thrown = game.pitchCounts[pitcher.id];
+  if (limits && thrown === limits.warnAt) {
+    game.alerts.push({ kind: 'pitch_count_near_limit', pitcher, remaining: limits.limit - limits.warnAt });
   }
-  if (setup.rules.pitchCountTable === 'pitch_smart_9_10' && game.pitchCounts[pitcher.id] === 75) {
-    game.alerts.push({ kind: 'pitch_count_at_limit', pitcher });
-  }
+  if (limits && thrown === limits.limit) game.alerts.push({ kind: 'pitch_count_at_limit', pitcher });
   switch (result) {
     case 'ball':
       game.count.balls += 1;
@@ -358,6 +398,7 @@ function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball
   const recordedOuts = destinations.filter(({ to }) => to === 'out').length;
   const expectedOuts = command.outcome === 'double_play' ? 2 : command.outcome === 'triple_play' ? 3 : null;
   if (expectedOuts !== null && recordedOuts !== expectedOuts) return 'outs_dont_match_outcome';
+  if (game.outs + recordedOuts > 3) return 'too_many_outs';
   const bases = { ...game.bases };
   for (const { from } of destinations) {
     if (from !== 0) delete bases[from];

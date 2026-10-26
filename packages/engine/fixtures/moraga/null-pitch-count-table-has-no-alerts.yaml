@@ -3,7 +3,7 @@ cite: Issue 10 rule-set data and alert decisions
 preset: moraga-mustang-first-half
 started: true
 rules:
-  pitchCountTable: null
+  pitchCountLimits: null
 given:
   pitchCounts:
     home-1: 64

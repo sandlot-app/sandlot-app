@@ -271,12 +271,15 @@ describe('undo and game end through the event log', () => {
     expect(book.state).toEqual(before);
   });
 
-  it('restores pregame when start is undone and then enforces the parent pregame restriction', () => {
+  it('restores pregame when start is undone, then undoes the lineups until nothing is left', () => {
     const book = game();
     book.record({ kind: 'undo', target: 'play-3' as GroupId });
     expect(book.state).toMatchObject({ status: 'pregame', pitchers: {}, removedPitchers: { home: [], away: [] }, pitchCounts: {} });
-    expect(applyGroup(book.pins, book.events, [{ kind: 'undo', target: 'play-2' as GroupId }]))
-      .toEqual({ ok: false, code: 'game_not_started' });
+    book.record({ kind: 'undo', target: 'play-2' as GroupId });
+    book.record({ kind: 'undo', target: 'play-1' as GroupId });
+    expect(book.state.lineups).toEqual({ home: [], away: [] });
+    expect(applyGroup(book.pins, book.events, [{ kind: 'undo', target: 'play-1' as GroupId }]))
+      .toEqual({ ok: false, code: 'nothing_to_undo' });
   });
 });
 

@@ -1,9 +1,0 @@
-name: Before start even undo is rejected by the game-status rule
-cite: Sandlot docs/contract.md Undo; issue 10 Undo and Game status implementation decisions
-preset: moraga-mustang-first-half
-started: false
-when:
-  - - kind: undo
-      target: play-1
-then:
-  rejected: game_not_started
