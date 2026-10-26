@@ -1,0 +1,264 @@
+import { applyGroup, replay } from '@sandlot/engine';
+import type {
+  Advance, Base, BallInPlayOutcome, Command, Destination, Event, GameSetup, GameState, PlayerRef, Position, TeamSide, Trajectory,
+} from '@sandlot/engine';
+import { closest, entryFor, matches, samePlayer } from './players.ts';
+import type { Mention, RosterEntry, Spoken, Target } from './types.ts';
+
+export type PressGame = { setup: GameSetup; events: Event[]; roster: RosterEntry[] };
+
+/** Why a press can't become a reading, before the engine even checks it. */
+export type Issue =
+  | { kind: 'who_is'; heard: string; choices: RosterEntry[]; clause: number; role: 'batter' | 'runner' }
+  | { kind: 'wrong_batter'; due: PlayerRef; named: PlayerRef; clause: number }
+  | { kind: 'wrong_side'; player: PlayerRef }
+  | { kind: 'not_on_base'; player: PlayerRef }
+  | { kind: 'no_runner'; base: Base | null }
+  | { kind: 'not_strike_three'; strike: number }
+  | { kind: 'not_ball_four'; ball: number }
+  | { kind: 'needs_how' };
+
+/** One way to record the press so far. `starts` marks where each clause's commands begin. */
+export type Draft = { commands: Command[]; starts: number[] };
+
+export type Resolution =
+  | { kind: 'drafts'; drafts: Draft[]; question: string | null; judgment: boolean }
+  /** `clause` is where the issue was found, and `before` holds the commands for the clauses ahead of it. */
+  | { kind: 'issue'; issue: Issue; clause: number; before: Command[] };
+
+const batting = (state: GameState): TeamSide => state.half === 'top' ? 'away' : 'home';
+const fielding = (state: GameState): TeamSide => state.half === 'top' ? 'home' : 'away';
+
+export function stateAfter(game: PressGame, commands: Command[]): GameState | null {
+  const result = commands.length ? applyGroup(game.setup, game.events, commands) : replay(game.setup, game.events);
+  return result.ok ? result.state : null;
+}
+
+function baseOf(state: GameState, player: PlayerRef): Base | null {
+  return ([1, 2, 3] as const).find((base) => {
+    const runner = state.bases[base]?.player;
+    return runner !== undefined && samePlayer(runner, player);
+  }) ?? null;
+}
+
+const runnersOn = (state: GameState): { base: Base; player: PlayerRef }[] =>
+  ([1, 2, 3] as const).flatMap((base) => {
+    const player = state.bases[base]?.player;
+    return player ? [{ base, player }] : [];
+  });
+
+const next = (base: Base): Target => base === 3 ? 'home' : (base + 1) as Base;
+const before = (target: Target): Base => target === 'home' ? 3 : (target - 1) as Base;
+
+/** Destinations after the batter reaches `batterTo`: each runner the batter displaces moves one base past the player behind, the rest stay. */
+function pushed(state: GameState, batterTo: 1 | 2 | 3): Advance[] {
+  const advances: Advance[] = [];
+  let behind: number = batterTo;
+  for (const { base, player } of runnersOn(state)) {
+    if (base > behind) break;
+    const to = Math.min(behind + 1, 4);
+    advances.push({ runner: player, to: to === 4 ? 'home' : to as Base });
+    behind = to;
+  }
+  return advances;
+}
+
+type Expanded =
+  | { kind: 'options'; options: Command[][]; replaceFrom?: number; question?: string; judgment?: boolean }
+  | { kind: 'issue'; issue: Issue };
+
+const options = (list: Command[][], question?: string): Expanded =>
+  question && list.length > 1 ? { kind: 'options', options: list, question } : { kind: 'options', options: list };
+
+/** Finds who a batter clause means, or the issue with it. The batter is always the one due up. */
+function batterFor(game: PressGame, state: GameState, who: Mention | undefined, clause: number): PlayerRef | Issue {
+  const lineup = state.lineups[batting(state)];
+  const due = lineup[state.nextBatter[batting(state)]]?.player;
+  if (!due) return { kind: 'no_runner', base: null };
+  if (!who) return due;
+  const named = who.player ? entryFor(game.roster, who.player) : matches(game.roster, who, batting(state))[0];
+  if (!named) {
+    if (who.name && matches(game.roster, who, fielding(state)).length) return { kind: 'wrong_side', player: matches(game.roster, who, fielding(state))[0]!.player };
+    const lineupEntries = lineup.flatMap(({ player }) => entryFor(game.roster, player) ?? []);
+    const dueEntry = entryFor(game.roster, due);
+    const choices = [...new Set([...(dueEntry ? [dueEntry] : []), ...closest(lineupEntries, who.name ?? `#${who.number}`)])].slice(0, 2);
+    return { kind: 'who_is', heard: who.name ?? `number ${who.number}`, choices, clause, role: 'batter' };
+  }
+  if (named.side !== batting(state)) return { kind: 'wrong_side', player: named.player };
+  return samePlayer(named.player, due) ? due : { kind: 'wrong_batter', due, named: named.player, clause };
+}
+
+/** Finds which runner a clause means, among the runners on base, or the issue with it. */
+function runnerFor(game: PressGame, state: GameState, who: Mention, clause: number): PlayerRef | Issue {
+  if (who.base) return state.bases[who.base]?.player ?? { kind: 'no_runner', base: who.base };
+  const named = who.player ? entryFor(game.roster, who.player) : matches(game.roster, who, batting(state))[0];
+  if (!named) {
+    if (who.name && matches(game.roster, who, fielding(state)).length) return { kind: 'wrong_side', player: matches(game.roster, who, fielding(state))[0]!.player };
+    const onBase = runnersOn(state).flatMap(({ player }) => entryFor(game.roster, player) ?? []);
+    return { kind: 'who_is', heard: who.name ?? `number ${who.number}`, choices: closest(onBase, who.name ?? `#${who.number}`), clause, role: 'runner' };
+  }
+  if (named.side !== batting(state)) return { kind: 'wrong_side', player: named.player };
+  return baseOf(state, named.player) ? named.player : { kind: 'not_on_base', player: named.player };
+}
+
+const isIssue = (value: PlayerRef | Issue): value is Issue => !('id' in value);
+
+function battedBall(outcome: BallInPlayOutcome, trajectory: Trajectory | null, fielder: Position | undefined, advances: Advance[]): Command[] {
+  return [
+    { kind: 'pitch', result: 'in_play' },
+    { kind: 'ball_in_play', outcome, trajectory, fielders: fielder ? [fielder] : [], advances },
+  ];
+}
+
+const hitOutcome: Record<1 | 2 | 3 | 4, BallInPlayOutcome> = { 1: 'single', 2: 'double', 3: 'triple', 4: 'home_run' };
+
+/** Runner moves for steals, wild pitches and the like, when the clause names a runner or a base, or neither. */
+function runnerMoves(game: PressGame, state: GameState, event: 'stolen_base' | 'caught_stealing' | 'wild_pitch' | 'passed_ball',
+  who: Mention | undefined, to: Target | undefined, clause: number): Expanded {
+  const out = event === 'caught_stealing';
+  const command = (runner: PlayerRef, from: Base, target: Target | undefined): Command =>
+    ({ kind: 'runner', event, runner, to: out ? 'out' : (target ?? next(from)) as Destination });
+  if (who) {
+    const runner = runnerFor(game, state, who, clause);
+    if (isIssue(runner)) return { kind: 'issue', issue: runner };
+    return options([[command(runner, baseOf(state, runner)!, to)]]);
+  }
+  if (to) {
+    const from = before(to);
+    const runner = state.bases[from]?.player;
+    return runner ? options([[command(runner, from, to)]]) : { kind: 'issue', issue: { kind: 'no_runner', base: from } };
+  }
+  const runners = [...runnersOn(state)].reverse();
+  if (!runners.length) return { kind: 'issue', issue: { kind: 'no_runner', base: null } };
+  const single = runners.map(({ base, player }) => [command(player, base, undefined)]);
+  const everyone = runners.map(({ base, player }) => command(player, base, undefined));
+  return options(runners.length > 1 && !out && event !== 'stolen_base' ? [...single, everyone] : single, 'Which runner?');
+}
+
+/** A runner's destination on the play just named: it edits that play rather than adding a new one. */
+function destination(game: PressGame, draft: Draft, who: Mention | undefined, to: Target, clause: number): Expanded {
+  const start = draft.starts.at(-1);
+  if (start === undefined) return { kind: 'issue', issue: { kind: 'needs_how' } };
+  const context = draft.commands.slice(start);
+  const prior = stateAfter(game, draft.commands.slice(0, start));
+  if (!prior) return { kind: 'issue', issue: { kind: 'needs_how' } };
+  const play = context.find((command) => command.kind === 'ball_in_play');
+  const runnerEvent = context.find((command) => command.kind === 'runner');
+  if (!play && !runnerEvent) return { kind: 'issue', issue: { kind: 'needs_how' } };
+  const already = (player: PlayerRef) => play?.kind === 'ball_in_play'
+    ? play.advances.some((advance) => samePlayer(advance.runner, player) && advance.to === to)
+    : context.some((command) => command.kind === 'runner' && samePlayer(command.runner, player) && command.to === to);
+  let runners: PlayerRef[];
+  if (who) {
+    const runner = runnerFor(game, prior, who, clause);
+    if (isIssue(runner)) return { kind: 'issue', issue: runner };
+    runners = [runner];
+  } else {
+    const onBase = [...runnersOn(prior)].reverse().map(({ player }) => player);
+    runners = onBase.filter((player) => !already(player));
+    if (!runners.length) runners = onBase;
+    if (!runners.length) return { kind: 'issue', issue: { kind: 'no_runner', base: null } };
+  }
+  const edit = (moved: PlayerRef[]): Command[] => {
+    if (play?.kind === 'ball_in_play') {
+      const kept = play.advances.filter((advance) => !moved.some((player) => samePlayer(player, advance.runner)));
+      const added = moved.map((runner): Advance => ({ runner, to: to as Exclude<Destination, 'out'> }));
+      return context.map((command) => command === play ? { ...play, advances: [...kept, ...added] } : command);
+    }
+    const event = runnerEvent!.kind === 'runner' ? runnerEvent!.event : 'wild_pitch';
+    const kept = context.filter((command) => !(command.kind === 'runner' && moved.some((player) => samePlayer(player, command.runner))));
+    const added = moved.map((runner): Command => ({ kind: 'runner', event, runner, to }));
+    return [...kept, ...added].sort((a, b) => leadFirst(prior, a, b));
+  };
+  const choices = runners.length > 1 && !who ? [...runners.map((runner) => edit([runner])), edit(runners)] : [edit(runners)];
+  return { kind: 'options', options: choices, replaceFrom: start, ...(choices.length > 1 ? { question: 'Which runner?' } : {}) };
+}
+
+/** Lead runner first, because the engine checks each runner's base as it moves them. */
+function leadFirst(state: GameState, a: Command, b: Command): number {
+  const base = (command: Command) => command.kind === 'runner' ? baseOf(state, command.runner) ?? 0 : 0;
+  return base(b) - base(a);
+}
+
+function expand(game: PressGame, state: GameState, draft: Draft, play: Spoken, clause: number): Expanded {
+  switch (play.kind) {
+    case 'pitch':
+      if (play.result === 'strike') {
+        return options([[{ kind: 'pitch', result: 'called_strike' }], [{ kind: 'pitch', result: 'swinging_strike' }]], 'Looking or swinging?');
+      }
+      return options([[{ kind: 'pitch', result: play.result }]]);
+    case 'strikeout': {
+      if (state.count.strikes !== 2) return { kind: 'issue', issue: { kind: 'not_strike_three', strike: state.count.strikes + 1 } };
+      if (play.looking !== undefined) return options([[{ kind: 'pitch', result: play.looking ? 'called_strike' : 'swinging_strike' }]]);
+      return options([[{ kind: 'pitch', result: 'called_strike' }], [{ kind: 'pitch', result: 'swinging_strike' }]], 'Looking or swinging?');
+    }
+    case 'walk':
+      if (state.count.balls !== 3) return { kind: 'issue', issue: { kind: 'not_ball_four', ball: state.count.balls + 1 } };
+      return options([[{ kind: 'pitch', result: 'ball' }]]);
+    case 'hit':
+    case 'out':
+    case 'error':
+    case 'reached': {
+      const batter = batterFor(game, state, play.batter, clause);
+      if (isIssue(batter)) return { kind: 'issue', issue: batter };
+      if (play.kind === 'hit') {
+        const runners = play.bases === 4
+          ? runnersOn(state).map(({ player }): Advance => ({ runner: player, to: 'home' }))
+          : pushed(state, play.bases);
+        return options([battedBall(hitOutcome[play.bases], null, play.fielder, runners)]);
+      }
+      if (play.kind === 'out') return options([battedBall('out', play.trajectory, play.fielder, [])]);
+      const asError = battedBall('error', null, play.fielder, pushed(state, 1));
+      if (play.kind === 'error') return options([asError]);
+      return { kind: 'options', options: [battedBall('single', null, play.fielder, pushed(state, 1)), asError], question: 'Hit or error?', judgment: true };
+    }
+    case 'steal':
+      return runnerMoves(game, state, 'stolen_base', play.runner, play.to, clause);
+    case 'caught_stealing':
+      return runnerMoves(game, state, 'caught_stealing', play.runner, play.at, clause);
+    case 'advance':
+      return runnerMoves(game, state, play.event, play.runner, play.to, clause);
+    case 'pickoff': {
+      const runner = play.runner ? runnerFor(game, state, play.runner, clause)
+        : play.at ? state.bases[play.at]?.player ?? { kind: 'no_runner' as const, base: play.at } : runnersOn(state).length === 1 ? runnersOn(state)[0]!.player
+          : { kind: 'no_runner' as const, base: null };
+      if (isIssue(runner)) return { kind: 'issue', issue: runner };
+      return options([[{ kind: 'runner', event: 'pickoff', runner, to: 'out' }]]);
+    }
+    case 'moves':
+      return destination(game, draft, play.runner, play.to, clause);
+    case 'scores':
+      return destination(game, draft, play.runner, 'home', clause);
+    case 'undo':
+      return options([[]]);
+  }
+}
+
+/** Turns the clauses of a press into every way to record it. The engine still decides which of them are legal. */
+export function resolve(game: PressGame, plays: Spoken[]): Resolution {
+  let drafts: Draft[] = [{ commands: [], starts: [] }];
+  let question: string | null = null;
+  let judgment = false;
+  for (const [clause, play] of plays.entries()) {
+    const nextDrafts: Draft[] = [];
+    for (const draft of drafts) {
+      const state = stateAfter(game, draft.commands);
+      if (!state) { nextDrafts.push(draft); continue; }
+      const expanded = expand(game, state, draft, play, clause);
+      if (expanded.kind === 'issue') return { kind: 'issue', issue: expanded.issue, clause, before: draft.commands };
+      question ??= expanded.question ?? null;
+      judgment ||= expanded.judgment ?? false;
+      for (const option of expanded.options) {
+        if (expanded.replaceFrom !== undefined) {
+          nextDrafts.push({ commands: [...draft.commands.slice(0, expanded.replaceFrom), ...option], starts: [...draft.starts] });
+        } else {
+          nextDrafts.push({ commands: [...draft.commands, ...option], starts: [...draft.starts, draft.commands.length] });
+        }
+      }
+    }
+    drafts = nextDrafts;
+  }
+  return { kind: 'drafts', drafts, question, judgment };
+}
+
+export { batting, fielding };
