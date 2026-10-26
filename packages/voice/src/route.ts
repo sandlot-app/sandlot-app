@@ -119,7 +119,7 @@ export function route(press: Press, parsed: ParseResult = parsePhrase(press.tran
   const reasons: ConfirmReason[] = [];
   if (classify(before, after, commands) === 'complex') reasons.push('complex');
   if (heldRunners(press, commands).length) reasons.push('runner_held');
-  if (echoMismatch(parsed.parts.join(', '), commands)) reasons.push('echo');
+  if (echoMismatch(parsed.model ? press.transcript : parsed.parts.join(', '), commands)) reasons.push('echo');
   if (press.previous && press.at - press.previous.at <= 3000 && JSON.stringify(press.previous.commands) === JSON.stringify(commands)) reasons.push('duplicate');
   if (press.confirmEverything) reasons.push('confirm_everything');
   const result = reading(press, commands);

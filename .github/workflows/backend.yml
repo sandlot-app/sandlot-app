@@ -2,9 +2,9 @@ name: Backend
 
 on:
   pull_request:
-    paths: ['supabase/**', 'packages/engine/**', '.github/workflows/backend.yml']
+    paths: ['supabase/**', 'packages/engine/**', 'packages/voice/**', '.github/workflows/backend.yml']
   push:
-    paths: ['supabase/**', 'packages/engine/**', '.github/workflows/backend.yml']
+    paths: ['supabase/**', 'packages/engine/**', 'packages/voice/**', '.github/workflows/backend.yml']
 
 jobs:
   backend:
@@ -21,6 +21,10 @@ jobs:
         working-directory: supabase/functions/sync-events
       - run: deno test --frozen handler_test.ts
         working-directory: supabase/functions/sync-events
+      - run: deno check --frozen index.ts handler.ts handler_test.ts && deno test --frozen handler_test.ts
+        working-directory: supabase/functions/voice-session
+      - run: deno check --frozen index.ts handler.ts handler_test.ts && deno test --frozen handler_test.ts
+        working-directory: supabase/functions/voice-parse
       - run: deno check send-samples.ts
         working-directory: supabase/scripts
       - run: supabase db start

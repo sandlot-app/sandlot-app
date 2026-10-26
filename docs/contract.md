@@ -224,6 +224,23 @@ A `rejected` response's `reason` is one of the engine's reject codes, `REJECT_CO
 
 When the queue stops, the phone shows how many plays are waiting, for example "3 plays waiting. Tap to fix." The fix is **Discard from here**. It deletes the stuck group and every group after it on the phone, and it runs only when the scorer taps it. The phone never deletes pending plays on its own.
 
+## Voice
+
+Two functions serve voice scoring. Both need a signed-in phone (an anonymous sign-in is enough for the demo), allow 30 requests a minute per user, and return `502 voice_unavailable` when OpenAI fails, which the phone treats as "Voice is unavailable right now. Tap to score." (A10). Neither writes to the database or logs a request body, a transcript or a name: bodies carry the lineup's display names and what was said (rule 5). The scorer-lock check (A8) and the monthly limit (A9) wait until the phone uploads games (#29).
+
+**`voice-session`** starts one press's live transcription. The phone sends `{ names: string[] }`, the lineup's display names (at most 40). The server asks OpenAI for a client secret that lasts 60 seconds and opens only a `gpt-live-transcribe` transcription session, with the names and scoring words as keywords. It returns `{ url, secret, expiresAt, sampleRate }`. The phone streams 16-bit mono PCM at `sampleRate` to `url` with that secret. The server's key never leaves the server.
+
+**`voice-parse`** finishes a press the phone couldn't read alone. The phone sends `{ transcript, context }` or, when live streaming didn't connect (A4, A5), `{ audio, context }` with the press's 16-bit mono PCM at 24 kHz in base64, at most 15 seconds (A2). `context` is `{ batting, fielding, runners }`, lists of display names. The server transcribes a clip with `gpt-transcribe`, reads the words with the phone's own grammar, and asks a parser model (`gpt-6-luna`, with Structured Outputs) only for what the grammar can't read. It returns `{ transcript, parsed }`, where `parsed` is the same `ParseResult` `packages/voice` returns, or `null` for an empty transcript. The model only proposes: the phone routes `parsed` with `route()`, and the engine decides. A model answer that breaks the schema becomes `unclear`.
+
+| Error | HTTP status | Phone action |
+| --- | --- | --- |
+| `unauthenticated` | 401 | Sign in again, then retry |
+| `slow_down` | 429 | Tap to score for now |
+| `too_long` | 413 | Tap to score |
+| `invalid` | 400 | The phone has a bug. Tap to score |
+| `voice_unavailable` | 502 | "Voice is unavailable right now. Tap to score." |
+| `auth_unavailable` | 503 | Tap to score for now |
+
 ## Scoring handoff
 
 `take_over(game_id, user_id)` locks the same game row, raises the epoch, and starts a new session. Only the service role can call it. No screen uses it before the beta. It exists so that the race and stale-epoch tests can run.

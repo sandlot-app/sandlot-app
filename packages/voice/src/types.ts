@@ -29,8 +29,11 @@ export type Spoken =
   | { kind: 'undo' };
 
 export type ParseResult =
-  /** `parts` holds the words each play came from, for messages like `Couldn't record "steals third"`. */
-  | { kind: 'plays'; plays: Spoken[]; parts: string[] }
+  /**
+   * `parts` holds the words each play came from, for messages like `Couldn't record "steals third"`. `model` marks a
+   * parse from the parser model, whose echo check uses the whole transcript rather than the words it picked.
+   */
+  | { kind: 'plays'; plays: Spoken[]; parts: string[]; model?: true }
   | { kind: 'not_a_command'; question: boolean }
   | { kind: 'unclear' };
 
