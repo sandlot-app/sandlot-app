@@ -12,7 +12,6 @@ EVIDENCE_ROOT="$ROOT/.verify/evidence"
 DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro"
 EXPO_GO_ID="host.exp.Exponent"
 APP_URL="exp://localhost:$PORT?__expo_disable_fab=1&__expo_disable_auto_launch=1&__expo_disable_onboarding=1"
-export MAESTRO_SANDLOT_APP_URL="$APP_URL"
 MAESTRO="${MAESTRO:-$HOME/.maestro/bin/maestro}"
 
 export EXPO_NO_TELEMETRY=1 MAESTRO_CLI_NO_ANALYTICS=1 MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED=true

@@ -1,14 +1,5 @@
 appId: host.exp.Exponent
 ---
-- runFlow:
-    when:
-      notVisible:
-        id: "sandlot-brand"
-    commands:
-      - openLink: ${MAESTRO_SANDLOT_APP_URL}
-      - tapOn:
-          text: "Open"
-          optional: true
 - extendedWaitUntil:
     visible:
       id: "sandlot-brand"
