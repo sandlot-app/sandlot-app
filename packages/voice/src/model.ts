@@ -114,7 +114,11 @@ function play(raw: unknown): Spoken | null {
   const person = (key: 'batter' | 'runner') => who ? { [key]: who } : {};
   switch (value.kind) {
     case 'pitch': return isOneOf(pitchResults, value.pitch) ? { kind: 'pitch', result: value.pitch, ...person('batter') } : null;
-    case 'strikeout': return typeof value.looking === 'boolean' ? { kind: 'strikeout', looking: value.looking, ...person('batter') } : { kind: 'strikeout', ...person('batter') };
+    case 'strikeout': {
+      const looking = optional(value.looking, (flag) => typeof flag === 'boolean' ? flag : undefined);
+      if (looking === bad) return null;
+      return { kind: 'strikeout', ...(looking === undefined ? {} : { looking }), ...person('batter') };
+    }
     case 'walk': return { kind: 'walk', ...person('batter') };
     case 'hit': return value.bases === 1 || value.bases === 2 || value.bases === 3 || value.bases === 4 ? { kind: 'hit', bases: value.bases, ...at, ...person('batter') } : null;
     case 'out': return isOneOf(trajectories, value.trajectory) ? { kind: 'out', trajectory: value.trajectory, ...at, ...person('batter') } : null;

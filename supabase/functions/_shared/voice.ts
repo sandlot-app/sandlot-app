@@ -10,11 +10,10 @@ export const reply = (status: number, body: unknown): Reply => ({ status, body }
 export const unavailable = reply(502, { error: 'voice_unavailable' });
 
 /**
- * At most `max` requests per user in any `windowMs`. It lives in the function instance, so a burst across instances can
- * get a little more; that's enough to keep one phone from running up the bill until the monthly cap (A9) arrives with #29.
+ * At most `max` requests per user in any `windowMs`. It lives in the function instance, so each instance counts on its
+ * own. It slows down one busy phone; it is not a spending cap. The OpenAI project budget is that (contract, Cost).
  */
-export function rateLimit(max: number, windowMs: number) {
-  const recent = new Map<string, number[]>();
+export function rateLimit(max: number, windowMs: number, recent = new Map<string, number[]>()) {
   return (userId: string, now: number): boolean => {
     for (const [id, times] of recent) if (times.every((at) => now - at >= windowMs)) recent.delete(id);
     const kept = (recent.get(userId) ?? []).filter((at) => now - at < windowMs);
@@ -28,16 +27,24 @@ export function rateLimit(max: number, windowMs: number) {
   };
 }
 
-/** Short display names from the phone, skipping any that are empty or have characters a name doesn't, or null if it isn't a list. */
+/**
+ * Short display names from the phone, skipping any that are empty or have characters a name doesn't, or null if it
+ * isn't a short list of text (the phone has a bug).
+ */
 export function names(value: unknown, max = 40): string[] | null {
   if (value === undefined) return [];
-  if (!Array.isArray(value) || value.length > max) return null;
-  return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '' && item.length <= 40
-    && /^[\p{L}\p{N} .'’-]+$/u.test(item));
+  if (!Array.isArray(value) || value.length > max || value.some((item) => typeof item !== 'string')) return null;
+  return (value as string[]).filter((item) => item.trim() !== '' && item.length <= 40 && /^[\p{L}\p{N} .'’-]+$/u.test(item));
 }
 
-/** Last names only: what the transcriber needs to spell a player's name, and no more (data minimization). */
-export const lastNames = (list: string[]) => [...new Set(list.map((name) => name.trim().split(/\s+/).at(-1)!.replace(/^[.'’-]+|[.'’-]+$/g, '')).filter(Boolean))];
+const SUFFIX = /^(jr|sr|ii|iii|iv)\.?$/i;
+
+/** Last names only, past any Jr or III: what the transcriber needs to spell a player's name, and no more (data minimization). */
+export const lastNames = (list: string[]) => [...new Set(list.map((name) => {
+  const words = name.trim().split(/\s+/);
+  while (words.length > 1 && SUFFIX.test(words.at(-1)!)) words.pop();
+  return words.at(-1)!.replace(/^[.'’-]+|[.'’-]+$/g, '');
+}).filter(Boolean))];
 
 /**
  * Supabase's answer to "who sent this token". A 4xx means the token is no good (401), except 429, which, like a 5xx

@@ -14,7 +14,8 @@ export const SCORING_WORDS = [
 
 /**
  * Starts one press's live transcription (spec A4/A5 fall back to voice-parse). The phone gets a client secret that
- * lasts a minute and works only for a transcription session, so the server's OpenAI key never leaves the server.
+ * must be used within a minute and opens only a transcription session, so the server's OpenAI key never leaves the
+ * server. Once connected, the session runs until the phone closes it (contract, Cost).
  */
 export async function startSession(body: unknown, openai: OpenAi, model: string): Promise<Reply> {
   const lineup = names(body && typeof body === 'object' ? (body as Record<string, unknown>).names : undefined);

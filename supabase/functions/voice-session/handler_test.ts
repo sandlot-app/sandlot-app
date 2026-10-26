@@ -33,13 +33,16 @@ Deno.test('voice-session asks OpenAI for a one-minute transcription-only secret 
   });
 });
 
-Deno.test('voice-session refuses a lineup that is not a short list, and skips names it cannot use', async () => {
+Deno.test('voice-session refuses a lineup that is not a short list of text, and skips names it cannot use', async () => {
   const { openai, calls } = fakeOpenAi(200, {});
   strictEqual((await startSession({ names: 'J. Soto' }, openai, 'm')).status, 400);
   strictEqual((await startSession({ names: Array(41).fill('A') }, openai, 'm')).status, 400);
+  strictEqual((await startSession({ names: ['J. Soto', 7] }, openai, 'm')).status, 400);
   strictEqual(calls.length, 0);
   deepStrictEqual(names(['J. Soto', '<script>', '', 'A & B', "D. O'Neil-Ruiz"]), ['J. Soto', "D. O'Neil-Ruiz"]);
+  strictEqual(names([1, 2]), null);
   deepStrictEqual(lastNames(['J. Soto', 'R. Soto', "D. O'Neil-Ruiz", 'Lin']), ['Soto', "O'Neil-Ruiz", 'Lin']);
+  deepStrictEqual(lastNames(['J. Soto Jr.', 'K. Moss III', 'L. Darcy sr', 'Jr']), ['Soto', 'Moss', 'Darcy', 'Jr']);
 });
 
 Deno.test('sign-in answers: a rejected token is 401, but a busy or down sign-in service is 503', () => {
@@ -83,6 +86,14 @@ Deno.test('the rate limit lets each phone make 30 requests a minute', async () =
   strictEqual(allow('user-1', 100), false);
   strictEqual(allow('user-2', 100), true);
   strictEqual(allow('user-1', 60_000), true);
-  strictEqual(allow('user-2', 200_000), true, 'users with no recent requests are forgotten');
   strictEqual((await endpoint('user-1', false, () => false)(post())).status, 429);
+});
+
+Deno.test('the rate limit forgets users with no recent requests', () => {
+  const recent = new Map<string, number[]>();
+  const allow = rateLimit(30, 60_000, recent);
+  allow('user-1', 0);
+  allow('user-2', 30_000);
+  allow('user-2', 70_000);
+  deepStrictEqual([...recent.keys()], ['user-2']);
 });

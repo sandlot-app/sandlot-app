@@ -32,6 +32,8 @@ describe("the parser model's answer", () => {
     expect(fromModel({ result: 'plays', plays: [play({ kind: 'pickoff', to: 'home' })] })).toEqual({ kind: 'unclear' });
     expect(fromModel({ result: 'plays', plays: [play({ kind: 'steal', who: { name: null, number: null, base: '5' } })] })).toEqual({ kind: 'unclear' });
     expect(fromModel({ result: 'plays', plays: [play({ kind: 'steal', who: { name: null, number: 'twelve', base: null } })] })).toEqual({ kind: 'unclear' });
+    expect(fromModel({ result: 'plays', plays: [play({ kind: 'strikeout', looking: 'yes' })] })).toEqual({ kind: 'unclear' });
+    expect(fromModel({ result: 'plays', plays: [play({ kind: 'strikeout', looking: false })] })).toMatchObject({ kind: 'plays', plays: [{ kind: 'strikeout', looking: false }] });
   });
 
   it("B4: the echo check compares the model's play with the whole transcript", () => {
