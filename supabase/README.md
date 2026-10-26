@@ -51,3 +51,17 @@ deno run -A supabase/scripts/send-samples.ts < supabase/.temp/samples.json
 `whoami` signs in as an anonymous scorer and prints its user ID. The seed script prints the new game's ID and session ID. The game's pins come from `sample-events --pins`, so the engine can play the sample plays. Regenerate `samples.json` if it is older than the seeded game or the engine's sample plays. Each send prints one line per request with its status and response, and stops at the first error. The second send prints the same acknowledgments as the first and adds no rows.
 
 The scorer's refresh token is kept in `supabase/.temp/send-samples.json`, so both sends sign in as the seeded scorer. After a local database reset, delete that file, then run `whoami` and the seed script again.
+
+## Reset the first-connection test games
+
+Schema 2 has no decoder for old uploads, so games pinned to an older engine or schema can't take new plays. Before the schema-2 rehearsal, #21 clears them. `reset-test-games.sql` lists every game whose pins differ from the engine's current pins, then deletes only the IDs you name.
+
+```sh
+pins="$(pnpm -s --filter @sandlot/engine sample-events --pins)"
+psql "$SUPABASE_DB_URL" -q -v pins="$pins" -f supabase/scripts/reset-test-games.sql
+psql "$SUPABASE_DB_URL" -q -v pins="$pins" -v ids=<game id>,<game id> -f supabase/scripts/reset-test-games.sql
+```
+
+Generate `pins` from an up-to-date `main` that matches the deployed `sync-events`. The script compares games only against the pins it's given, so pins from an older or newer checkout would list current games as stale. It prints the pins it uses first. Connect directly or through the session pooler on port 5432, not the transaction pooler on 6543.
+
+The first command changes nothing. Check its pins and list before running the second. Deletion runs in one transaction and refuses the whole list if any ID is unknown or names a game on the current pins. It removes each game's sessions, groups and events, and prints what it deleted and the games still on older pins. Record both lists on #21. The anonymous scorer accounts stay, and the seed script makes a new game for the rehearsal.
