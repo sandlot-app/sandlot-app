@@ -192,6 +192,7 @@ function rejectionMessage(code: RejectCode): string {
     case 'invalid_runner_destination': return 'That runner destination is not allowed. Pickoff requires Out; safe advances must move forward.';
     case 'runner_not_on_base': return 'That runner is no longer on base. Cancel and open the play again.';
     case 'duplicate_runner': return 'Choose one destination for each runner.';
+    case 'runner_passed': return 'A runner cannot pass the runner ahead of them. Check where each runner finished.';
     case 'outs_dont_match_outcome': return 'The selected outs do not match the outcome. Check the runner destinations.';
     case 'batter_destination_missing': return 'Choose where the batter finished before saving.';
     case 'game_over': return 'This game is over. Undo the last play to correct it.';
