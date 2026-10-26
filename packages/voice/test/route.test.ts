@@ -107,9 +107,9 @@ describe('routing a press (spec section 3)', () => {
     const game = said(['Soto triples', 'Darcy doubles']);
     const decision = press(game, 'Vance singles, runner scores');
     expect(decision).toMatchObject({ kind: 'ask', prompt: 'Which runner?' });
+    // "L. Darcy scores" alone would pass J. Soto, who stays on 3rd, so it isn't offered.
     expect(decision.kind === 'ask' && decision.options.map((option) => option.readBack)).toEqual([
-      'C. Vance singles, J. Soto scores',
-      'C. Vance singles, L. Darcy scores',
+      'C. Vance singles, J. Soto scores, L. Darcy holds 2nd',
       'C. Vance singles, J. Soto scores, L. Darcy scores',
     ]);
   });

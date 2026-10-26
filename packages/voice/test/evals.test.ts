@@ -27,6 +27,7 @@ describe('voice eval set', () => {
 
   it('parses at least 95% of the set exactly right (plan target 1)', () => {
     const right = cases.filter((c) => matches(press(said(c.said), c.transcript), c.expect)).length;
+    console.info(`Voice eval set: ${right} of ${cases.length} routed exactly right (${Math.round((right / cases.length) * 1000) / 10}%, target 95%).`);
     expect(right / cases.length).toBeGreaterThanOrEqual(0.95);
   });
 });

@@ -34,7 +34,7 @@ export function stateAfter(game: PressGame, commands: Command[]): GameState | nu
   return result.ok ? result.state : null;
 }
 
-function baseOf(state: GameState, player: PlayerRef): Base | null {
+export function baseOf(state: GameState, player: PlayerRef): Base | null {
   return ([1, 2, 3] as const).find((base) => {
     const runner = state.bases[base]?.player;
     return runner !== undefined && samePlayer(runner, player);
@@ -76,7 +76,13 @@ function batterFor(game: PressGame, state: GameState, who: Mention | undefined, 
   const due = lineup[state.nextBatter[batting(state)]]?.player;
   if (!due) return { kind: 'no_runner', base: null };
   if (!who) return due;
-  const named = who.player ? entryFor(game.roster, who.player) : matches(game.roster, who, batting(state))[0];
+  const found = who.player ? [entryFor(game.roster, who.player)!] : matches(game.roster, who, batting(state));
+  if (found.length > 1) {
+    const dueMatch = found.find((entry) => samePlayer(entry.player, due));
+    if (dueMatch) return due;
+    return { kind: 'who_is', heard: who.name ?? `number ${who.number}`, choices: found, clause, role: 'batter' };
+  }
+  const named = found[0];
   if (!named) {
     if (who.name && matches(game.roster, who, fielding(state)).length) return { kind: 'wrong_side', player: matches(game.roster, who, fielding(state))[0]!.player };
     const lineupEntries = lineup.flatMap(({ player }) => entryFor(game.roster, player) ?? []);
@@ -91,7 +97,11 @@ function batterFor(game: PressGame, state: GameState, who: Mention | undefined, 
 /** Finds which runner a clause means, among the runners on base, or the issue with it. */
 function runnerFor(game: PressGame, state: GameState, who: Mention, clause: number): PlayerRef | Issue {
   if (who.base) return state.bases[who.base]?.player ?? { kind: 'no_runner', base: who.base };
-  const named = who.player ? entryFor(game.roster, who.player) : matches(game.roster, who, batting(state))[0];
+  if (!runnersOn(state).length) return { kind: 'no_runner', base: null };
+  const found = who.player ? [entryFor(game.roster, who.player)!] : matches(game.roster, who, batting(state));
+  const onBase = found.filter((entry) => baseOf(state, entry.player));
+  if (onBase.length > 1) return { kind: 'who_is', heard: who.name ?? `number ${who.number}`, choices: onBase, clause, role: 'runner' };
+  const named = onBase[0] ?? found[0];
   if (!named) {
     if (who.name && matches(game.roster, who, fielding(state)).length) return { kind: 'wrong_side', player: matches(game.roster, who, fielding(state))[0]!.player };
     const onBase = runnersOn(state).flatMap(({ player }) => entryFor(game.roster, player) ?? []);
@@ -181,6 +191,10 @@ function leadFirst(state: GameState, a: Command, b: Command): number {
 }
 
 function expand(game: PressGame, state: GameState, draft: Draft, play: Spoken, clause: number): Expanded {
+  if ((play.kind === 'pitch' || play.kind === 'walk' || play.kind === 'strikeout') && play.batter) {
+    const batter = batterFor(game, state, play.batter, clause);
+    if (isIssue(batter)) return { kind: 'issue', issue: batter };
+  }
   switch (play.kind) {
     case 'pitch':
       if (play.result === 'strike') {
@@ -219,11 +233,16 @@ function expand(game: PressGame, state: GameState, draft: Draft, play: Spoken, c
     case 'advance':
       return runnerMoves(game, state, play.event, play.runner, play.to, clause);
     case 'pickoff': {
+      const pickoff = (runner: PlayerRef): Command[] => [{ kind: 'runner', event: 'pickoff', runner, to: 'out' }];
+      if (!play.runner && !play.at) {
+        const runners = [...runnersOn(state)].reverse();
+        if (!runners.length) return { kind: 'issue', issue: { kind: 'no_runner', base: null } };
+        return options(runners.map(({ player }) => pickoff(player)), 'Which runner?');
+      }
       const runner = play.runner ? runnerFor(game, state, play.runner, clause)
-        : play.at ? state.bases[play.at]?.player ?? { kind: 'no_runner' as const, base: play.at } : runnersOn(state).length === 1 ? runnersOn(state)[0]!.player
-          : { kind: 'no_runner' as const, base: null };
+        : state.bases[play.at!]?.player ?? { kind: 'no_runner' as const, base: play.at! };
       if (isIssue(runner)) return { kind: 'issue', issue: runner };
-      return options([[{ kind: 'runner', event: 'pickoff', runner, to: 'out' }]]);
+      return options([pickoff(runner)]);
     }
     case 'moves':
       return destination(game, draft, play.runner, play.to, clause);
@@ -232,6 +251,40 @@ function expand(game: PressGame, state: GameState, draft: Draft, play: Spoken, c
     case 'undo':
       return options([[]]);
   }
+}
+
+/** Splits commands into units the engine applies on their own: an in-play pitch with its ball in play, a run of runner moves, or one command. */
+export function units(commands: Command[]): [number, number][] {
+  const result: [number, number][] = [];
+  let index = 0;
+  while (index < commands.length) {
+    const command = commands[index]!;
+    let end = index + 1;
+    if (command.kind === 'pitch' && command.result === 'in_play' && commands[end]?.kind === 'ball_in_play') end += 1;
+    else if (command.kind === 'runner') {
+      while (commands[end]?.kind === 'runner' && (commands[end] as typeof command).event === command.event) end += 1;
+    }
+    result.push([index, end]);
+    index = end;
+  }
+  return result;
+}
+
+const rank = (to: Destination): number | null => to === 'out' ? null : to === 'home' ? 4 : to;
+
+/** True when a runner ends up ahead of a runner who started in front of them, which can't happen on one play (the engine doesn't check it). */
+export function passesRunner(game: PressGame, commands: Command[]): boolean {
+  return units(commands).some(([start, end]) => {
+    const state = stateAfter(game, commands.slice(0, start));
+    if (!state) return false;
+    const moves = commands.slice(start, end).flatMap((command): { runner: PlayerRef; to: Destination }[] =>
+      command.kind === 'runner' ? [command] : command.kind === 'ball_in_play' ? command.advances : []);
+    const ends = runnersOn(state).map(({ base, player }) => {
+      const moved = moves.find((move) => samePlayer(move.runner, player));
+      return moved ? rank(moved.to) : base;
+    });
+    return ends.some((behind, index) => ends.slice(index + 1).some((ahead) => behind !== null && ahead !== null && behind > ahead));
+  });
 }
 
 /** Turns the clauses of a press into every way to record it. The engine still decides which of them are legal. */

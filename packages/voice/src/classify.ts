@@ -1,4 +1,5 @@
 import type { Command, GameState } from '@sandlot/engine';
+import { samePlayer } from './players.ts';
 import { batting } from './resolve.ts';
 
 /**
@@ -17,7 +18,7 @@ export function classify(before: GameState, after: GameState, commands: Command[
     const runner = before.bases[base]?.player;
     if (!runner) return false;
     const still = after.bases[base]?.player;
-    return !still || still.kind !== runner.kind || still.id !== runner.id;
+    return !still || !samePlayer(still, runner);
   }).length;
   return batterDone + runnersMoved <= 1 ? 'simple' : 'complex';
 }

@@ -10,9 +10,10 @@ export type Target = Base | 'home';
 
 /** What one clause of a press says, before it's tied to the players on the field. */
 export type Spoken =
-  | { kind: 'pitch'; result: 'ball' | 'strike' | 'called_strike' | 'swinging_strike' | 'foul' | 'foul_tip' | 'hit_by_pitch' }
-  | { kind: 'strikeout'; looking?: boolean }
-  | { kind: 'walk' }
+  /** `batter` is set only when a name came with it, like "Moss hit by pitch". */
+  | { kind: 'pitch'; result: 'ball' | 'strike' | 'called_strike' | 'swinging_strike' | 'foul' | 'foul_tip' | 'hit_by_pitch'; batter?: Mention }
+  | { kind: 'strikeout'; looking?: boolean; batter?: Mention }
+  | { kind: 'walk'; batter?: Mention }
   | { kind: 'hit'; bases: 1 | 2 | 3 | 4; batter?: Mention; fielder?: Position }
   | { kind: 'out'; trajectory: 'ground' | 'fly' | 'line' | 'popup'; batter?: Mention; fielder?: Position }
   | { kind: 'error'; batter?: Mention; fielder?: Position }
@@ -36,7 +37,8 @@ export type ParseResult =
 /** One way to record a press: the commands to save, and what the banner reads back. */
 export type Reading = { commands: Command[]; readBack: string };
 
-export type ConfirmReason = 'complex' | 'echo' | 'duplicate' | 'confirm_everything';
+/** `runner_held`: a hit left a runner where they were, which the scorer confirms rather than the app assuming it. */
+export type ConfirmReason = 'complex' | 'runner_held' | 'echo' | 'duplicate' | 'confirm_everything';
 
 /** What the app does with a press, in the spec's section 3 order. */
 export type Decision =

@@ -2,10 +2,10 @@ import { applyGroup } from '@sandlot/engine';
 import type { Command, PlayerRef, RejectCode } from '@sandlot/engine';
 import { classify } from './classify.ts';
 import { echoMismatch } from './echo.ts';
-import { readBack } from './explain.ts';
+import { heldRunners, readBack } from './explain.ts';
 import { isEmptyTranscript, parsePhrase } from './parse.ts';
 import { nameOf } from './players.ts';
-import { resolve, stateAfter, type Draft, type Issue, type PressGame } from './resolve.ts';
+import { passesRunner, resolve, stateAfter, type Draft, type Issue, type PressGame } from './resolve.ts';
 import type { ConfirmReason, Decision, ParseResult, Reading, Spoken } from './types.ts';
 
 export type Press = PressGame & {
@@ -50,7 +50,12 @@ function issueMessage(game: PressGame, issue: Issue): string {
 }
 
 const reading = (game: PressGame, commands: Command[]): Reading => ({ commands, readBack: readBack(game, commands) });
-const legal = (game: PressGame, commands: Command[]) => commands.length > 0 && applyGroup(game.setup, game.events, commands).ok;
+const legal = (game: PressGame, commands: Command[]) =>
+  commands.length > 0 && applyGroup(game.setup, game.events, commands).ok && !passesRunner(game, commands);
+
+/** Drops readings that record the same commands as an earlier one, so no two buttons do the same thing. */
+const distinct = (drafts: Draft[]) => drafts.filter((draft, index) =>
+  drafts.findIndex((other) => JSON.stringify(other.commands) === JSON.stringify(draft.commands)) === index);
 const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1).replace(/\.$/, '');
 
 /** "Couldn't record 'steals third': no runner on second. Nothing was saved." with the earlier clauses offered on their own (B6). */
@@ -65,7 +70,7 @@ function partial(game: PressGame, parts: string[], clause: number, before: Comma
 function choose(plays: Spoken[], clause: number, player: PlayerRef): Spoken[] {
   return plays.map((play, index) => {
     if (index !== clause) return play;
-    if ('batter' in play || play.kind === 'hit' || play.kind === 'out' || play.kind === 'error' || play.kind === 'reached') return { ...play, batter: { player } } as Spoken;
+    if (['pitch', 'walk', 'strikeout', 'hit', 'out', 'error', 'reached'].includes(play.kind)) return { ...play, batter: { player } } as Spoken;
     return { ...play, runner: { player } } as Spoken;
   });
 }
@@ -73,7 +78,7 @@ function choose(plays: Spoken[], clause: number, player: PlayerRef): Spoken[] {
 function readingsFor(game: PressGame, plays: Spoken[]): Reading[] {
   const resolved = resolve(game, plays);
   if (resolved.kind !== 'drafts') return [];
-  return resolved.drafts.filter((draft) => legal(game, draft.commands)).map((draft) => reading(game, draft.commands));
+  return distinct(resolved.drafts.filter((draft) => legal(game, draft.commands))).map((draft) => reading(game, draft.commands));
 }
 
 function failure(game: PressGame, parts: string[], draft: Draft): Decision {
@@ -103,7 +108,7 @@ export function route(press: Press, parsed: ParseResult = parsePhrase(press.tran
     }
     return partial(press, parsed.parts, resolved.clause, resolved.before, issueMessage(press, issue));
   }
-  const drafts = resolved.drafts.filter((draft) => legal(press, draft.commands));
+  const drafts = distinct(resolved.drafts.filter((draft) => legal(press, draft.commands)));
   if (!drafts.length) return failure(press, parsed.parts, resolved.drafts[0]!);
   if (drafts.length > 1) {
     return { kind: 'ask', prompt: resolved.question ?? 'Which one?', options: drafts.map((draft) => reading(press, draft.commands)) };
@@ -113,6 +118,7 @@ export function route(press: Press, parsed: ParseResult = parsePhrase(press.tran
   const after = stateAfter(press, commands)!;
   const reasons: ConfirmReason[] = [];
   if (classify(before, after, commands) === 'complex') reasons.push('complex');
+  if (heldRunners(press, commands).length) reasons.push('runner_held');
   if (echoMismatch(parsed.parts.join(', '), commands)) reasons.push('echo');
   if (press.previous && press.at - press.previous.at <= 3000 && JSON.stringify(press.previous.commands) === JSON.stringify(commands)) reasons.push('duplicate');
   if (press.confirmEverything) reasons.push('confirm_everything');

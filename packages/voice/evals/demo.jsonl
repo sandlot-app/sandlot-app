@@ -29,7 +29,7 @@
 {"id":"hit-number","said":[],"transcript":"number seventeen singles to left","expect":{"kind":"save","readBack":"J. Soto singles to left"}}
 {"id":"out-fly","said":[],"transcript":"Fly out to center","expect":{"kind":"save","readBack":"J. Soto flies out to center"}}
 {"id":"out-ground","said":[],"transcript":"Soto grounds out to short","expect":{"kind":"save","readBack":"J. Soto grounds out to short"}}
-{"id":"out-6-3","said":[],"transcript":"6-3","expect":{"kind":"save","readBack":"J. Soto grounds out to short"}}
+{"id":"count-not-an-out","said":[],"transcript":"6-3","expect":{"kind":"unknown_phrase"}}
 {"id":"out-pop","said":[],"transcript":"popped out to the catcher","expect":{"kind":"save","readBack":"J. Soto pops out to the catcher"}}
 {"id":"out-line","said":[],"transcript":"lined out to second","expect":{"kind":"save","readBack":"J. Soto lines out to second"}}
 {"id":"error-short","said":[],"transcript":"Safe on an error by the shortstop","expect":{"kind":"confirm","readBack":"J. Soto reaches on an error by the shortstop"}}
@@ -46,7 +46,7 @@
 {"id":"wild-pitch-scores","said":["Soto triples"],"transcript":"wild pitch, runner scores","expect":{"kind":"save","readBack":"Wild pitch: J. Soto scores"}}
 {"id":"passed-ball-to","said":["Soto singles"],"transcript":"passed ball, Soto to second","expect":{"kind":"save","readBack":"Passed ball: J. Soto to 2nd"}}
 {"id":"scores-which","said":["Soto triples","Darcy doubles"],"transcript":"Vance singles, runner scores","expect":{"kind":"ask","prompt":"Which runner?"}}
-{"id":"scores-named","said":["Soto triples","Darcy doubles"],"transcript":"Vance singles, Soto scores","expect":{"kind":"confirm","readBack":"C. Vance singles, J. Soto scores"}}
+{"id":"scores-named","said":["Soto triples","Darcy doubles"],"transcript":"Vance singles, Soto scores","expect":{"kind":"confirm","readBack":"C. Vance singles, J. Soto scores, L. Darcy holds 2nd"}}
 {"id":"moves-named","said":["Soto singles"],"transcript":"Darcy singles, Soto to third","expect":{"kind":"confirm","readBack":"L. Darcy singles, J. Soto to 3rd"}}
 {"id":"correction","said":[],"transcript":"Single to left, no, a double","expect":{"kind":"save","readBack":"J. Soto doubles"}}
 {"id":"correction-actually","said":[],"transcript":"ball, actually strike looking","expect":{"kind":"save","readBack":"Strike looking → count 0–1"}}

@@ -13,7 +13,7 @@ const synonyms: [Outcome, RegExp][] = [
   ['double', /\b(?:double|doubles|doubled)\b/],
   ['triple', /\b(?:triple|triples|tripled)\b/],
   ['homer', /\b(?:homer|homers|homered|home run|went yard|goes yard)\b/],
-  ['ground', /\b(?:ground|grounds|grounded|grounder|groundout)\b|\b[1-9][ -][1-9]\b/],
+  ['ground', /\b(?:ground|grounds|grounded|grounder|groundout)\b/],
   ['fly', /\b(?:fly|flies|flied|flyout)\b/],
   ['line', /\b(?:line out|lines out|lined|liner|lineout|line drive)\b/],
   ['popup', /\b(?:pop|pops|popped|popup)\b/],

@@ -1,6 +1,6 @@
 import type { Base, Command, GameState, PlayerRef, Position } from '@sandlot/engine';
 import { nameOf, samePlayer } from './players.ts';
-import { batting, stateAfter, type PressGame } from './resolve.ts';
+import { baseOf, batting, stateAfter, units, type PressGame } from './resolve.ts';
 
 export const baseWord: Record<Base | 'home', string> = { 1: '1st', 2: '2nd', 3: '3rd', home: 'home' };
 const direction: Record<Position, string> = {
@@ -13,15 +13,25 @@ export const fielderName: Record<Position, string> = {
 const outVerb = { ground: 'grounds out', fly: 'flies out', line: 'lines out', popup: 'pops out', bunt: 'is out on a bunt' } as const;
 const hitVerb = { single: 'singles', double: 'doubles', ground_rule_double: 'hits a ground-rule double', triple: 'triples', home_run: 'homers' } as const;
 
-function baseOf(state: GameState, player: PlayerRef): Base | null {
-  return ([1, 2, 3] as const).find((base) => {
-    const runner = state.bases[base]?.player;
-    return runner !== undefined && samePlayer(runner, player);
-  }) ?? null;
+const heldOutcomes = new Set(['single', 'double', 'ground_rule_double', 'triple', 'error']);
+
+/** Runners a hit or error left where they were, because the press didn't say they moved (H1). */
+export function heldRunners(game: PressGame, commands: Command[]): PlayerRef[] {
+  return units(commands).flatMap(([start]) => {
+    const play = commands[start + 1];
+    if (play?.kind !== 'ball_in_play' || !heldOutcomes.has(play.outcome)) return [];
+    const before = stateAfter(game, commands.slice(0, start));
+    const after = stateAfter(game, commands.slice(0, start + 2));
+    if (!before || !after || after.half !== before.half || after.inning !== before.inning) return [];
+    return ([1, 2, 3] as const).flatMap((base) => {
+      const runner = before.bases[base]?.player;
+      return runner && !play.advances.some((advance) => samePlayer(advance.runner, runner)) && baseOf(after, runner) === base ? [runner] : [];
+    });
+  });
 }
 
-/** Where each runner on base before a play ended up, in plain words. */
-function runnerMoves(game: PressGame, before: GameState, after: GameState, outs: PlayerRef[]): string[] {
+/** Where each runner on base before a play ended up, in plain words. A runner a hit left in place "holds". */
+function runnerMoves(game: PressGame, before: GameState, after: GameState, outs: PlayerRef[], held: PlayerRef[] = []): string[] {
   let runs = after.score[batting(before)] - before.score[batting(before)];
   return ([3, 2, 1] as const).flatMap((from) => {
     const player = before.bases[from]?.player;
@@ -29,7 +39,7 @@ function runnerMoves(game: PressGame, before: GameState, after: GameState, outs:
     const name = nameOf(game.roster, player);
     if (outs.some((out) => samePlayer(out, player))) return [`${name} out`];
     const now = baseOf(after, player);
-    if (now === from) return [];
+    if (now === from) return held.some((runner) => samePlayer(runner, player)) ? [`${name} holds ${baseWord[from]}`] : [];
     if (now) return [`${name} to ${baseWord[now]}`];
     if (runs <= 0) return [];
     runs -= 1;
@@ -67,7 +77,11 @@ function battedText(game: PressGame, before: GameState, after: GameState, play: 
   else if (play.outcome in hitVerb) text = `${name} ${hitVerb[play.outcome as keyof typeof hitVerb]}${at ? ` to ${direction[at]}` : ''}`;
   else text = `${name} puts it in play`;
   const outs = play.advances.flatMap((advance) => advance.to === 'out' ? [advance.runner] : []);
-  return [text, ...runnerMoves(game, before, after, outs)].join(', ');
+  const held = heldOutcomes.has(play.outcome) ? ([1, 2, 3] as const).flatMap((base) => {
+    const runner = before.bases[base]?.player;
+    return runner && !play.advances.some((advance) => samePlayer(advance.runner, runner)) ? [runner] : [];
+  }) : [];
+  return [text, ...runnerMoves(game, before, after, outs, held)].join(', ');
 }
 
 function runnerText(game: PressGame, before: GameState, commands: Extract<Command, { kind: 'runner' }>[]): string {
@@ -92,27 +106,14 @@ function runnerText(game: PressGame, before: GameState, commands: Extract<Comman
 /** The plain-words read-back for a press (spec principle 7), taken from what the engine records, not from what was heard. */
 export function readBack(game: PressGame, commands: Command[]): string {
   const parts: string[] = [];
-  let index = 0;
-  while (index < commands.length) {
-    const before = stateAfter(game, commands.slice(0, index));
-    const command = commands[index]!;
-    if (!before) break;
-    if (command.kind === 'pitch' && command.result === 'in_play' && commands[index + 1]?.kind === 'ball_in_play') {
-      const after = stateAfter(game, commands.slice(0, index + 2));
-      if (after) parts.push(battedText(game, before, after, commands[index + 1] as Extract<Command, { kind: 'ball_in_play' }>));
-      index += 2;
-    } else if (command.kind === 'runner') {
-      let end = index;
-      while (commands[end + 1]?.kind === 'runner' && (commands[end + 1] as typeof command).event === command.event) end++;
-      parts.push(runnerText(game, before, commands.slice(index, end + 1) as Extract<Command, { kind: 'runner' }>[]));
-      index = end + 1;
-    } else if (command.kind === 'pitch') {
-      const after = stateAfter(game, commands.slice(0, index + 1));
-      if (after) parts.push(pitchText(game, before, after, command.result));
-      index += 1;
-    } else {
-      index += 1;
-    }
+  for (const [start, end] of units(commands)) {
+    const before = stateAfter(game, commands.slice(0, start));
+    const after = stateAfter(game, commands.slice(0, end));
+    const command = commands[start]!;
+    if (!before || !after) break;
+    if (command.kind === 'runner') parts.push(runnerText(game, before, commands.slice(start, end) as Extract<Command, { kind: 'runner' }>[]));
+    else if (command.kind === 'pitch' && end - start === 2) parts.push(battedText(game, before, after, commands[start + 1] as Extract<Command, { kind: 'ball_in_play' }>));
+    else if (command.kind === 'pitch') parts.push(pitchText(game, before, after, command.result));
   }
   return parts.join(' · ');
 }

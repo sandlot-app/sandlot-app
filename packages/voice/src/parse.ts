@@ -52,7 +52,7 @@ function fielder(words: string | undefined): Position | undefined {
 
 /** Who a clause names, from the words before its verb. */
 function mention(words: string | undefined): Mention | undefined {
-  const text = words?.replace(/^(?:and|then|so) /, '').trim();
+  const text = words?.replace(/^(?:and|then|so) /, '').replace(/ (?:got|gets|was|is|has been)$/, '').trim();
   if (!text || /^(?:the )?(?:runner|batter|hitter|he|she|they|it)$/.test(text)) return undefined;
   const onBase = text.match(new RegExp(`^(?:the )?runner (?:on|at|from) ${base}$`));
   if (onBase) return { base: baseWords[onBase[1]!]! };
@@ -73,7 +73,6 @@ const pitchPhrases: [RegExp, Extract<Spoken, { kind: 'pitch' }>['result']][] = [
   [/^(?:swinging strike|strike swinging|swinging|swing and a miss|swing and miss|swings and misses)(?: (?:one|two|1|2))?$/, 'swinging_strike'],
   [/^(?:foul|foul ball|fouled off|fouls it off|foul back)$/, 'foul'],
   [/^foul tip$/, 'foul_tip'],
-  [/^(?:.+ )?(?:hit by (?:a |the )?pitch|hbp|hit batter|plunked|gets hit)$/, 'hit_by_pitch'],
 ];
 
 const hitBases: [RegExp, 1 | 2 | 3 | 4][] = [
@@ -99,12 +98,15 @@ function clause(text: string): Spoken | 'crowd' | null {
   if (/^(?:undo|undo that|scratch that|take that back|cancel that)$/.test(text)) return { kind: 'undo' };
   if (crowd.test(text)) return 'crowd';
   for (const [pattern, result] of pitchPhrases) if (pattern.test(text)) return { kind: 'pitch', result };
-  if (/^(?:.+ )?(?:walks|walked|walk|ball four|ball 4|base on balls|takes first on balls)$/.test(text)) return { kind: 'walk' };
+  let match = text.match(/^(?:(.+?) )?(?:hit by (?:a |the )?pitch|hbp|hit batter|plunked|gets hit)$/);
+  if (match) return withMention({ kind: 'pitch', result: 'hit_by_pitch' }, 'batter', match[1]);
+  match = text.match(/^(?:(.+?) )?(?:walks|walked|walk|ball four|ball 4|base on balls|takes first on balls)$/);
+  if (match) return withMention({ kind: 'walk' }, 'batter', match[1]);
 
-  let match = text.match(/^(?:(.+?) )?(?:strikes out|struck out|strikeout|strike out|k|punched out|rung up|strike three|strike 3|called third strike)(?: (looking|swinging))?$/);
+  match = text.match(/^(?:(.+?) )?(?:strikes out|struck out|strikeout|strike out|k|punched out|rung up|strike three|strike 3|called third strike)(?: (looking|swinging))?$/);
   if (match) {
     const looking = /called third strike/.test(text) ? true : match[2] ? match[2] === 'looking' : undefined;
-    return looking === undefined ? { kind: 'strikeout' } : { kind: 'strikeout', looking };
+    return withMention(looking === undefined ? { kind: 'strikeout' } : { kind: 'strikeout', looking }, 'batter', match[1]);
   }
   match = text.match(new RegExp(`^(?:(.+?) )?(${hitVerb})(?: (?:to|into|through|down the line in|in) (.+)| (up the middle))?$`));
   if (match) {
@@ -119,8 +121,6 @@ function clause(text: string): Spoken | 'crowd' | null {
     if (match[3] && !at) return null;
     return withMention(at ? { kind: 'out', trajectory, fielder: at } : { kind: 'out', trajectory }, 'batter', match[1]);
   }
-  match = text.match(/^(?:(.+?) )?([1-9])[ -]([1-9])$/);
-  if (match) return withMention({ kind: 'out', trajectory: 'ground', fielder: notation[Number(match[2]) - 1]! }, 'batter', match[1]);
   match = text.match(/^(?:((?!(?:is |safe |reaches |reached ))(?:.+?)) )?(?:(?:is )?safe on an error|reaches on an error|reached on an error|on an error|error)(?: (?:by|on) (.+))?$/);
   if (match) {
     const at = fielder(match[2]);
@@ -158,6 +158,18 @@ function clause(text: string): Spoken | 'crowd' | null {
   return null;
 }
 
+/** "Wild pitch, runner scores" is one runner move: the second clause says who moved, so the first isn't asked about on its own. */
+function merged(plays: Spoken[], parts: string[]): void {
+  for (let index = plays.length - 2; index >= 0; index--) {
+    const event = plays[index]!;
+    const move = plays[index + 1]!;
+    if (event.kind !== 'advance' || event.runner || event.to || (move.kind !== 'moves' && move.kind !== 'scores')) continue;
+    const to: Target = move.kind === 'moves' ? move.to : 'home';
+    plays.splice(index, 2, move.runner ? { ...event, runner: move.runner, to } : { ...event, to });
+    parts.splice(index, 2, `${parts[index]}, ${parts[index + 1]}`);
+  }
+}
+
 const correction = /^(?:no|nope|wait|no wait|sorry|actually|i mean|make that|scratch that)(?: (.+))?$/;
 
 /** The local grammar: common phrases become plays with no AI. Anything it doesn't know is `unclear`, for the parser model. */
@@ -193,5 +205,7 @@ export function parsePhrase(transcript: string): ParseResult {
     parts.push(part);
     heard = true;
   }
-  return heard ? { kind: 'plays', plays, parts } : { kind: 'not_a_command', question: false };
+  if (replace) { plays.pop(); parts.pop(); }
+  merged(plays, parts);
+  return heard && plays.length ? { kind: 'plays', plays, parts } : { kind: 'not_a_command', question: false };
 }
