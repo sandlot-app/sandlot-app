@@ -22,8 +22,10 @@ test('a chosen second-half lineup starts once and reopens with its original orde
   const opened = await openOfflineGame(database, boundary);
   assert.equal(opened.kind, 'ready');
   if (opened.kind !== 'ready') return;
-  const home = [...demoLineups.home.slice(1), demoLineups.home[0]!];
-  const away = [...demoLineups.away.slice(2), ...demoLineups.away.slice(0, 2)];
+  const homeLineup = initialLineup('home');
+  const awayLineup = initialLineup('away');
+  const home = [...homeLineup.slice(1), homeLineup[0]!];
+  const away = [...awayLineup.slice(2), ...awayLineup.slice(0, 2)];
   const started = await opened.record({kind: 'start', selection: {seasonHalf: 'second', lineups: {home, away}}});
   assert.equal(started.kind, 'saved');
   if (started.kind !== 'saved') return;

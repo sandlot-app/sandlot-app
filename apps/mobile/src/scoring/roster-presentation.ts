@@ -13,5 +13,7 @@ export function displayPlayer(player: PlayerRef): {number: string; name: string}
   const side = player.kind === 'player' ? 'home' : 'away';
   const index = roster[side].findIndex((entry) => entry.id === player.id);
   const label = labels[side][index];
-  return label ? {number: String(label[0]), name: label[1]} : {number: '?', name: 'Player'};
+  const oldNumber = /^(?:home|away)-(\d+)$/.exec(player.id)?.[1];
+  return label ? {number: String(label[0]), name: label[1]}
+    : {number: oldNumber ?? '?', name: oldNumber ? `Player #${oldNumber}` : 'Player'};
 }

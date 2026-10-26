@@ -7,8 +7,8 @@ export type SetupSelection = {seasonHalf: SeasonHalf; lineups: Record<TeamSide, 
 export type SetupDraft = {seasonHalf: SeasonHalf; lineups: Record<TeamSide, LineupSlot[] | null>};
 
 export const roster: Record<TeamSide, PlayerRef[]> = {
-  home: Array.from({length: 12}, (_, index) => ({kind: 'player', id: `home-${index + 1}` as PlayerId})),
-  away: Array.from({length: 12}, (_, index) => ({kind: 'opponent', id: `away-${index + 1}` as OpponentId})),
+  home: Array.from({length: 12}, (_, index) => ({kind: 'player', id: `sample-home-${index + 1}` as PlayerId})),
+  away: Array.from({length: 12}, (_, index) => ({kind: 'opponent', id: `sample-away-${index + 1}` as OpponentId})),
 };
 const positions: (Position | null)[] = ['CF', 'SS', '2B', '1B', 'LF', '3B', 'P', 'C', 'RF', null];
 
