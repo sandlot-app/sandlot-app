@@ -1,0 +1,14 @@
+{
+  "name": "@sandlot/tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./generated/tokens.ts",
+    "./css": "./generated/tokens.css"
+  },
+  "scripts": {
+    "generate": "node scripts/generate.mjs",
+    "test": "node scripts/generate.mjs --check && node --test test/*.test.mjs"
+  }
+}
