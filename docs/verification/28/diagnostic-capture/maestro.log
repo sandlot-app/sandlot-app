@@ -1,0 +1,88 @@
+Running on sandlot-verify-28-f1 - iOS 26.5 - 66993FE0-D2EA-4DB6-BE56-613CAB31DFED
+ > Flow lineups-figma-capture
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: new-game is visible... COMPLETED
+Take screenshot games-before-setup... COMPLETED
+Tap on id: new-game... COMPLETED
+Assert that id: game-setup is visible... COMPLETED
+Tap on id: setup-lineup-away... COMPLETED
+Assert that id: lineup-screen is visible... COMPLETED
+Take screenshot lineup-before-reorder... COMPLETED
+Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Take screenshot lineup-reference-bottom... COMPLETED
+Tap on id: save-lineup... COMPLETED
+Assert that id: game-setup is visible... COMPLETED
+Take screenshot setup-reference-state... COMPLETED
+Tap on id: setup-lineup-home... COMPLETED
+Assert that id: lineup-screen is visible... COMPLETED
+Scrolling DOWN until id: change-starting-pitcher is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: change-starting-pitcher... COMPLETED
+Scrolling DOWN until id: choose-pitcher-sample-home-3 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: choose-pitcher-sample-home-3... COMPLETED
+Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: save-lineup... COMPLETED
+Assert that id: start-configured-game, enabled is visible... COMPLETED
+Tap on id: start-configured-game... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that "1 waiting to sync · Local demo", id: waiting-plays is visible... COMPLETED
+Take screenshot field-before-play-draft... COMPLETED
+Tap on id: pitch-in-play... COMPLETED
+Assert that id: play-outcomes is visible... COMPLETED
+Take screenshot inplay-step-1-outcome... COMPLETED
+Tap on id: outcome-single... COMPLETED
+Assert that id: play-fielders is visible... COMPLETED
+Tap on id: fielder-CF... COMPLETED
+Take screenshot inplay-step-2-fielder... COMPLETED
+Tap on id: play-next... COMPLETED
+Assert that id: play-runners is visible... COMPLETED
+Take screenshot inplay-step-3-runners... COMPLETED
+Tap on "Cancel"... COMPLETED
+Copy text from element with id: current-batter-identity... COMPLETED
+Run ${output.startingBatter = maestro.copiedText}... COMPLETED
+Copy text from element with id: current-pitcher-identity... COMPLETED
+Run ${output.startingPitcher = maestro.copiedText}... COMPLETED
+Assert that ${output.startingPitcher.includes('N. Cole')} is true... COMPLETED
+Tap on id: pitch-ball... COMPLETED
+Assert that "2 waiting to sync · Local demo", id: waiting-plays is visible... COMPLETED
+Run _tap-outcome.yaml...
+  Tap on id: pitch-in-play... COMPLETED
+  Assert that id: play-outcomes is visible... COMPLETED
+  Tap on id: outcome-${OUTCOME}... COMPLETED
+  Assert that id: play-fielders is visible... COMPLETED
+  Tap on id: skip-fielder... COMPLETED
+  Assert that id: play-runners is visible... COMPLETED
+Run _tap-outcome.yaml... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that "3 waiting to sync · Local demo", id: waiting-plays is visible... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Take screenshot more-before-runner-sheet... COMPLETED
+Tap on id: more-steal... COMPLETED
+Assert that id: play-runner-action is visible... COMPLETED
+Take screenshot runner-sheet-selected-game... COMPLETED
+Tap on "Cancel"... COMPLETED
+Tap on id: tab-plays... COMPLETED
+Assert that id: plays-screen is visible... COMPLETED
+Take screenshot ordered-saved-play-log... COMPLETED
+Tap on id: tab-field... COMPLETED
+Tap on id: undo-play... COMPLETED
+Assert that "4 waiting to sync · Local demo", id: waiting-plays is visible... COMPLETED
+Assert that ".*Count 1 ball and 0 strikes. Bases empty.*", id: score-summary is visible... COMPLETED
+Copy text from element with id: current-batter-identity... COMPLETED
+Assert that ${maestro.copiedText === output.startingBatter} is true... COMPLETED
+Copy text from element with id: current-pitcher-identity... COMPLETED
+Assert that ${maestro.copiedText === output.startingPitcher} is true... COMPLETED
+Stop host.exp.Exponent... COMPLETED
+Open exp://localhost:8091?__expo_disable_fab=1&__expo_disable_auto_launch=1&__expo_disable_onboarding=1... COMPLETED
+Assert that id: resume-game is visible... COMPLETED
+Tap on id: resume-game... COMPLETED
+Assert that ".*Count 1 ball and 0 strikes. Bases empty.*", id: score-summary is visible... COMPLETED
+Copy text from element with id: current-batter-identity... COMPLETED
+Assert that ${maestro.copiedText === output.startingBatter} is true... COMPLETED
+Copy text from element with id: current-pitcher-identity... COMPLETED
+Assert that ${maestro.copiedText === output.startingPitcher} is true... COMPLETED
+Take screenshot chosen-lineups-game-after-reopening... COMPLETED
+Tap on id: tab-plays... COMPLETED
+Assert that id: plays-screen is visible... COMPLETED
+Take screenshot saved-undo-history-after-reopening... COMPLETED

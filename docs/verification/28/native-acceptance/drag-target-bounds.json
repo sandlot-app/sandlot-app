@@ -1,0 +1,48 @@
+{
+  "recordedSwipeStart": {
+    "x": 348,
+    "y": 88
+  },
+  "nodes": [
+    {
+      "accessibilityText": "Back",
+      "title": "",
+      "value": "",
+      "text": "",
+      "hintText": "",
+      "resource-id": "cancel-lineup",
+      "bounds": "[0,65][56,109]",
+      "enabled": "true",
+      "focused": "false",
+      "selected": "false",
+      "checked": "false"
+    },
+    {
+      "accessibilityText": "Move K. Moss in the batting order",
+      "title": "",
+      "value": "",
+      "text": "",
+      "hintText": "",
+      "resource-id": "lineup-drag-sample-away-1",
+      "bounds": "[336,66][360,110]",
+      "enabled": "true",
+      "focused": "false",
+      "selected": "false",
+      "checked": "false"
+    },
+    {
+      "accessibilityText": "1",
+      "title": "",
+      "value": "",
+      "text": "",
+      "hintText": "",
+      "resource-id": "lineup-order-sample-away-1",
+      "bounds": "[33,78][55,96]",
+      "enabled": "true",
+      "focused": "false",
+      "selected": "false",
+      "checked": "false"
+    }
+  ],
+  "interpretation": "The swipe began within the fixed navigation row. Centering the handle is a verifier correction; native drag must be tested again."
+}

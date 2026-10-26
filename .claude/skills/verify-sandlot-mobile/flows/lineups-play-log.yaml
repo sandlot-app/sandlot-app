@@ -88,6 +88,8 @@ appId: host.exp.Exponent
     element:
       id: "lineup-drag-sample-away-1"
     direction: UP
+    centerElement: true
+- takeScreenshot: lineup-drag-target-before
 - copyTextFrom:
     id: "lineup-order-sample-away-1"
 - evalScript: ${output.originalOrder = maestro.copiedText}

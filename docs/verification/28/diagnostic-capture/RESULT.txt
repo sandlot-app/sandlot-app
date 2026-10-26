@@ -1,0 +1,4 @@
+flow: lineups-figma-capture
+result: PASS
+commit: d984eb951f0cdcd5548075f0355a4315bca75041
+simulator: sandlot-verify-28-f1 (66993FE0-D2EA-4DB6-BE56-613CAB31DFED)

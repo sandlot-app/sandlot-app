@@ -1,0 +1,232 @@
+[
+  {
+    "screen": "setup",
+    "node": "167:11241",
+    "capture": "setup-reference-state",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      852
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "94ad6f7441a8d561e4be9771cba928ba6109df97899965a386c651c75b6b01f3",
+    "figma_sha256": "3df5dd97346dde8d89661c0986c126a8af64cdeff538121b7ea3b9da7018c34b",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  },
+  {
+    "screen": "lineup",
+    "node": "168:11244",
+    "capture": "lineup-before-reorder",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      1027
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "478b9745ce707c3bb22d2b11d8bb6c771ea19c0f22bea0bf29111c8f87278d50",
+    "figma_sha256": "4ad00122433a7a14405d2f4a5b07a38a787b1ef072a98ea807b2048816c5ea4f",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  },
+  {
+    "screen": "plays",
+    "node": "69:1895",
+    "capture": "ordered-saved-play-log",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      1098
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "5086c1eae71dbd824c9602358df44942d7f8ad0ba90d9e6eee0fda441504e236",
+    "figma_sha256": "f03388b73406b510e1522c9c16a8ef3f3c888ff8c24a33068736a52f8e3f9ae3",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  },
+  {
+    "screen": "games",
+    "node": "107:5105",
+    "capture": "games-before-setup",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      852
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "a67f65927b5cd54245d01430fac8eeaf9530be86349860a2f69e8eac9767daf8",
+    "figma_sha256": "1c5ed7f6d9ad1514277058032bb796d0b9b120d71a4706648cfda2091305decd",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  },
+  {
+    "screen": "field",
+    "node": "165:11107",
+    "capture": "field-before-play-draft",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      852
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "888b9c4ce95f171a1d9def630d199dbb468623b3cca8794030ff3cc4065909bc",
+    "figma_sha256": "774d528b3d352634693479e28a01b0e96e2d0e50821df1b633349fddca4604fd",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  },
+  {
+    "screen": "in-play-1-outcome",
+    "node": "75:2900",
+    "capture": "inplay-step-1-outcome",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      852
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "22204c40e29d31b24b280cbf2fd9d2a3ed6022bdf9825cc7f613ec5604f92df0",
+    "figma_sha256": "0d6085ff4626616a0867c940cd8f2ad05b1b477e039124277ca1e6a38df9aaaf",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  },
+  {
+    "screen": "in-play-2-fielder",
+    "node": "75:3162",
+    "capture": "inplay-step-2-fielder",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      852
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "6fd1bda0b7d1aa3cdc0af14181ab6ed98058af37765854de923302ae70f29b0a",
+    "figma_sha256": "8ddc1be6e4f4554b4c632904968b935313ded6b2ee70a0315111559b4318a908",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  },
+  {
+    "screen": "in-play-3-runners",
+    "node": "75:3487",
+    "capture": "inplay-step-3-runners",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      852
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "8c00225cbc4e7f35c899c5d95b50f8ffb7e42c12bdb767eee05969d115dc5822",
+    "figma_sha256": "bbc606dee7de89613a049524f8451cc70434594b0aa3bdab08c3a0e3def22366",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  },
+  {
+    "screen": "steal-attempt",
+    "node": "87:2869",
+    "capture": "runner-sheet-selected-game",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      852
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "65d7094c87bc9b832e9d77c6104632f114d95b908d87e9ba8ee3cc8ba0ecb016",
+    "figma_sha256": "cbe8ba933283d86952af95fa7ad52d3236557bac3c5f2b89305c2579817f972f",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  },
+  {
+    "screen": "more",
+    "node": "165:11367",
+    "capture": "more-before-runner-sheet",
+    "app_source": "b0e74e12942efb66d4332186742cd67e237a45a8",
+    "figma_original_size": [
+      393,
+      852
+    ],
+    "native_original_size": [
+      1178,
+      2556
+    ],
+    "native_sha256": "00ca4264d54c5e963689dc3e21956c10060144efeadc67010b949d7dd95a59aa",
+    "figma_sha256": "b638e965d56b1dfc3272e098dcf3904faf212c31ccf95db9de368eae51a48675",
+    "reference_crop": [
+      0,
+      0,
+      393,
+      852
+    ],
+    "result": "Comparison evidence only; Figma gate is blocked"
+  }
+]
