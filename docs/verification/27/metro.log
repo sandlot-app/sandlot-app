@@ -6,22 +6,20 @@ Starting Metro Bundler
 
 Waiting on http://localhost:8091
 
-An update for expo is available: 58.0.17 → ~58.0.19
-0 other packages may need updating. Run npx expo install --check for details.
 Logs for your project will appear below.
-| (node:95938) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (node:31863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 | (Use `node --trace-warnings ...` to show where the warning was created)
-| (node:95938) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (node:31863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 | (Use `node --trace-warnings ...` to show where the warning was created)
-| (node:95938) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (node:31863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 | (Use `node --trace-warnings ...` to show where the warning was created)
-| (node:95938) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (node:31863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 | (Use `node --trace-warnings ...` to show where the warning was created)
-| (node:95938) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (node:31863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 | (Use `node --trace-warnings ...` to show where the warning was created)
-| (node:95938) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (node:31863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 | (Use `node --trace-warnings ...` to show where the warning was created)
-| (node:95938) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (node:31863) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
 | (Use `node --trace-warnings ...` to show where the warning was created)
-iOS Bundled 1824ms node_modules/.pnpm/expo-router@58.0.26_40e05d81a2e64d4516e868faed96db9b/node_modules/expo-router/entry.js (1453 modules)
-iOS Bundled 62ms node_modules/.pnpm/expo-router@58.0.26_40e05d81a2e64d4516e868faed96db9b/node_modules/expo-router/entry.js (1 module)
+iOS Bundled 597ms node_modules/.pnpm/expo-router@58.0.26_40e05d81a2e64d4516e868faed96db9b/node_modules/expo-router/entry.js (1288 modules)
+iOS Bundled 44ms node_modules/.pnpm/expo-router@58.0.26_40e05d81a2e64d4516e868faed96db9b/node_modules/expo-router/entry.js (1 module)

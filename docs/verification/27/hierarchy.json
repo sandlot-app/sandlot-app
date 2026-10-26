@@ -1632,7 +1632,7 @@
                                                         "selected" : false
                                                       }, {
                                                         "attributes" : {
-                                                          "accessibilityText" : "55 plays saved on this phone",
+                                                          "accessibilityText" : "89 plays saved on this phone",
                                                           "title" : "",
                                                           "value" : "",
                                                           "text" : "",
@@ -1646,7 +1646,7 @@
                                                         },
                                                         "children" : [ {
                                                           "attributes" : {
-                                                            "accessibilityText" : "55 plays saved on this phone",
+                                                            "accessibilityText" : "89 plays saved on this phone",
                                                             "title" : "",
                                                             "value" : "",
                                                             "text" : "",
@@ -1689,7 +1689,7 @@
                                                         "selected" : false
                                                       }, {
                                                         "attributes" : {
-                                                          "accessibilityText" : "55 waiting to sync · Local demo",
+                                                          "accessibilityText" : "89 waiting to sync · Local demo",
                                                           "title" : "",
                                                           "value" : "",
                                                           "text" : "",
@@ -1703,7 +1703,7 @@
                                                         },
                                                         "children" : [ {
                                                           "attributes" : {
-                                                            "accessibilityText" : "55 waiting to sync · Local demo",
+                                                            "accessibilityText" : "89 waiting to sync · Local demo",
                                                             "title" : "",
                                                             "value" : "",
                                                             "text" : "",
@@ -2160,13 +2160,13 @@
           },
           "children" : [ {
             "attributes" : {
-              "accessibilityText" : "8:03 PM",
+              "accessibilityText" : "8:15 PM",
               "title" : "",
               "value" : "",
               "text" : "",
               "hintText" : "",
               "resource-id" : "",
-              "bounds" : "[55,22][93,42]",
+              "bounds" : "[56,22][91,42]",
               "enabled" : "true",
               "focused" : "false",
               "selected" : "false",
