@@ -1,0 +1,34 @@
+appId: host.exp.Exponent
+---
+- assertVisible: "Sandlot"
+- tapOn:
+    id: "open-scorer-gallery"
+- assertVisible: "Scorer UI gallery"
+- takeScreenshot: scorer-gallery-before-sheet
+- tapOn:
+    id: "gallery-open-sheet"
+- assertVisible: "More"
+- assertVisible: "First option"
+- takeScreenshot: scorer-gallery-sheet-open
+- swipe:
+    from:
+      id: "sheet-grabber"
+    direction: DOWN
+- assertVisible: "Sheet closed"
+- takeScreenshot: scorer-gallery-sheet-closed
+- scrollUntilVisible:
+    element:
+      id: "gallery-disabled-button"
+- assertVisible: "Pressed 0 times"
+- tapOn:
+    id: "gallery-disabled-button"
+- assertVisible: "Pressed 0 times"
+- tapOn:
+    id: "gallery-enabled-button"
+- assertVisible: "Pressed 1 time"
+- takeScreenshot: scorer-gallery-buttons
+- scrollUntilVisible:
+    element:
+      id: "gallery-scorer-bar-saved"
+- assertVisible: "All plays saved"
+- takeScreenshot: scorer-gallery-bar
