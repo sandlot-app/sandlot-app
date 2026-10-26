@@ -17,11 +17,13 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
 3. **Build** the smallest change that makes it pass.
 4. **Check.**
    - Run `pnpm verify`. For the phone app, also run its lint, typecheck and `bundle`.
-   - **Screen tickets:** for every screen you touched, put the app screenshot (the Mac simulator for phone tickets, otherwise the web build at 393 px wide) next to the Figma frame at the same size, and commit the pairs to `docs/verification/<number>/figma/`. Check them element by element before review.
+   - **Screen tickets:** for every screen you touched, put the app screenshot (the Mac simulator for phone tickets, otherwise the web build at 393 px wide) next to the Figma frame at the same size, and upload the pairs to the ticket's [proof release](#proof-release). Check them element by element before review.
    - **Phone tickets:** add the Maestro flow for the ticket's user path under `.claude/skills/verify-sandlot-mobile`. On the Mac, run it yourself with that skill:
      - Run `launch`, `doctor`, `drive` and `cleanup` inside **one** shell command, so the simulator's dev server stays alive for the whole run, and record the screen with `xcrun simctl io sandlot-verify recordVideo` while the flow drives.
      - Only one Mac check runs at a time, because every run shares the `sandlot-verify` simulator and port 8091.
-     - Copy the passing run's `RESULT.txt`, `maestro.log`, `final.png`, screenshots and video into `docs/verification/<number>/`, commit them, and comment on the PR with `RESULT.txt`, the commit, and the simulator and iOS version.
+     - Commit only the passing run's `RESULT.txt` and `maestro.log` to `docs/verification/<number>/`. Git ignores everything else in that folder.
+     - Upload `final.png`, the screenshots, the video and any other evidence to the ticket's [proof release](#proof-release).
+     - Comment on the PR with `RESULT.txt`, the commit, the simulator and iOS version, and the release link.
      - If app code changes after a passing run, run the check again.
 5. **Review.**
    - `code-review` against the ticket (Spec) and this repo's rules (Standards).
@@ -32,7 +34,20 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
    - what changed
    - the exact checks run and their results
    - review findings and how each was resolved
-   - the screenshots, and what's left
+   - a link to the proof release, and what's left
+
+## Proof release
+
+Screenshots, Figma pairs and videos never go in git. Once committed, they stay in every clone's history for good, even after they're deleted. Each ticket gets one GitHub prerelease named `proof-<number>` instead:
+
+```sh
+gh release create proof-<number> --prerelease --latest=false --title "Proof for #<number>" --notes "<what ran, and what it doesn't cover>"
+gh release upload proof-<number> <files> --clobber
+```
+
+- Release files sit in one flat list, so prefix files from a subfolder: `figma-score.png`, `web-more.png`.
+- After a new passing run, upload its files with `--clobber` and delete any left over from the old run.
+- The release's tag is only a name. `RESULT.txt` in `docs/verification/<number>/` says which commit passed.
 
 ## Done means all of these
 
@@ -40,7 +55,7 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
 - `pnpm verify` passes. For phone tickets, so do lint, typecheck and `bundle`.
 - Screens match their Figma frames in layout, spacing, size, weight, color, components and wording. The only allowed differences are the platform's own typeface and controls the milestone hides on purpose.
 - Colors, spacing and radii come from `@sandlot/tokens`. No raw values.
-- Phone tickets: the Maestro flow passed on the Mac for the app code being merged, with its evidence in `docs/verification/<number>/` and on the PR. A run on the PC alone doesn't count.
+- Phone tickets: the Maestro flow passed on the Mac for the app code being merged, with `RESULT.txt` and `maestro.log` in `docs/verification/<number>/`, the screenshots and video in the `proof-<number>` release, and both linked on the PR. A run on the PC alone doesn't count.
 - Reviews show no open medium or higher findings.
 
 ## Stop rules
@@ -73,12 +88,12 @@ Christian authorized agents on 2026-10-25 to review, fix and merge their own tic
    - privacy or security (`supabase/`, sign-in, access rules, logging of personal data, `docs/contract.md`)
    - CI (`.github/`)
    - agent rules (`AGENTS.md`, `CLAUDE.md`, `docs/agents/`)
-5. **Screen tickets match Figma.** The independent review opens each Figma frame the ticket names, compares it with the committed screenshot pair, and lists every difference. It rates:
+5. **Screen tickets match Figma.** The independent review opens each Figma frame the ticket names, compares it with the screenshot pair in the proof release, and lists every difference. It rates:
    - **High:** an element that's missing, extra or built differently (layout, component, order, color token, wording). Hidden controls for unbuilt features don't count.
    - **Medium:** a visible size or spacing difference.
    - **Low:** anything smaller.
    High and medium block the merge like any other finding. A screen ticket with no screenshot pairs doesn't pass.
-6. **Phone tickets have their Mac proof.** The Maestro flow passed on the Mac for the app code being merged, whether you ran it or Christian did, with its evidence in `docs/verification/<number>/` and on the PR. The independent review looks at that evidence.
+6. **Phone tickets have their Mac proof.** The Maestro flow passed on the Mac for the app code being merged, whether you ran it or Christian did, with `RESULT.txt` and `maestro.log` in `docs/verification/<number>/`, the screenshots and video in the `proof-<number>` release, and both linked on the PR. The independent review looks at that evidence.
 
 To merge, mark the PR ready, then squash-merge it pinned to the reviewed commit (`gh pr merge <n> --squash --match-head-commit <sha>`). Never enable auto-merge, use an admin override, or force-push. After merging, check that `main`'s CI run passes. If it fails, stop merging and report it.
 
