@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { tokens } from '@sandlot/tokens';
 import { createStyles } from '../../../style';
 import type { PitchResult } from '@sandlot/engine';
@@ -14,8 +15,11 @@ import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 import { BaseDiamond, Field } from '../../components/field.tsx';
+import { PlaySheets } from '../../components/play-sheets.tsx';
+import { beginInPlay } from '../../scoring/tap-play.ts';
+import type { PlayDraft } from '../../scoring/tap-play.ts';
 import { GameStatus } from '../../components/game-status.tsx';
-import { basesSummary, gameSummary } from '../../scoring/game-summary.ts';
+import { basesSummary, blockedMessages, gameSummary } from '../../scoring/game-summary.ts';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
 
 const { colors, sizes } = tokens.modes.Light;
@@ -65,6 +69,7 @@ function CountDots({
 
 export default function ScoreScreen() {
   const { view, record } = useOfflineGame();
+  const [draft, setDraft] = useState<PlayDraft | null>(null);
   const { height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const game =
@@ -274,6 +279,23 @@ export default function ScoreScreen() {
             </Pressable>
           ))}
       </View>
+      <View style={styles.mainButtons}>
+        <Pressable testID="pitch-in-play" accessibilityRole="button" disabled={!enabled}
+          accessibilityState={{disabled: !enabled}} onPress={() => setDraft(beginInPlay(game, new Date().toISOString()))} style={styles.secondary}>
+          <Text style={styles.secondaryLabel}>In play</Text>
+        </Pressable>
+        <Pressable testID="scorer-more" accessibilityRole="button" disabled={!enabled}
+          accessibilityState={{disabled: !enabled}} onPress={() => setDraft({kind: 'more', game})} style={styles.secondary}>
+          <Text style={styles.secondaryLabel}>More</Text>
+        </Pressable>
+      </View>
+      {state.alerts.map((alert, index) => <Text key={index} style={styles.feedback} testID={`league-alert-${alert.kind}`}>
+        {alert.kind === 'pitch_count_near_limit' ? `Pitcher is ${alert.remaining} pitches from the limit.`
+          : alert.kind === 'pitch_count_at_limit' ? 'Pitcher has reached the pitch limit.'
+          : alert.kind === 'pitcher_outs_today_at_limit' ? 'Pitcher has reached the daily outs limit.'
+          : alert.kind === 'run_limit_reached' ? 'Half-inning run limit reached.'
+          : alert.kind === 'time_limit_reached' ? 'Game time limit reached.' : 'Defensive innings requirement is not met.'}
+      </Text>)}
       <View style={[styles.statusRow, largeText && styles.column]}>
         <View style={styles.saveStatus} accessibilityLiveRegion="polite">
           <Text style={styles.saved} testID="save-status">
@@ -289,7 +311,7 @@ export default function ScoreScreen() {
           testID="undo-play"
           disabled={view.kind !== 'ready' || !game.canUndo}
           accessibilityRole="button"
-          accessibilityLabel="Undo last pitch"
+          accessibilityLabel="Undo last play"
           accessibilityState={{
             disabled: view.kind !== 'ready' || !game.canUndo,
           }}
@@ -319,6 +341,7 @@ export default function ScoreScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <View style={styles.screen} accessibilityElementsHidden={draft !== null} importantForAccessibility={draft ? 'no-hide-descendants' : 'auto'}>
       {largeText ? (
         <ScrollView contentContainerStyle={styles.page}>
           {gameContent}
@@ -336,6 +359,9 @@ export default function ScoreScreen() {
           {dock}
         </>
       )}
+      </View>
+      <PlaySheets draft={draft} onChange={setDraft} onClose={() => setDraft(null)} record={record} saving={saving} available={view.kind === 'ready'}
+        message={view.kind === 'blocked' ? blockedMessages[view.reason] : view.kind === 'ready' ? view.message : null} />
     </SafeAreaView>
   );
 }

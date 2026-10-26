@@ -88,22 +88,23 @@ export function PrimaryButton({ label, onPress, disabled = false, testID }: {
   </Pressable>;
 }
 
-export function PlayerChip({ number, name, role, followed = false, onPress, testID }: {
+export function PlayerChip({ number, name, role, followed = false, layout = 'field', onPress, testID }: {
   number: string;
   name: string;
   role: 'fielding' | 'batting' | 'batter';
+  layout?: 'field' | 'inline';
   followed?: boolean;
   onPress?: () => void;
   testID?: string;
 }) {
-  const chip = <View style={styles.playerChip}>
+  const chip = <View style={layout === 'inline' ? styles.inlineChip : styles.playerChip}>
     <View style={followed && styles.followedCircle}>
-      <View style={[role === 'fielding' ? styles.fieldingCircle : role === 'batter' ? styles.batterCircle : styles.battingCircle, followed && styles.followedInner]}>
+      <View style={[role === 'fielding' ? styles.fieldingCircle : role === 'batter' ? styles.batterCircle : styles.battingCircle, layout === 'inline' && styles.inlineCircle, followed && styles.followedInner]}>
         <Text style={role === 'fielding' ? styles.fieldingNumber : styles.battingNumber}>{number}</Text>
-        {role === 'batter' ? <View style={styles.batMark} /> : null}
+        {role === 'batter' && layout === 'field' ? <View style={styles.batMark} /> : null}
       </View>
     </View>
-    <Text style={styles.chipName} numberOfLines={1}>{name}</Text>
+    <Text style={layout === 'inline' ? styles.inlineName : styles.chipName} numberOfLines={1}>{name}</Text>
   </View>;
   return onPress ? <Pressable accessibilityRole="button" accessibilityLabel={`${name}, number ${number}`} onPress={onPress} testID={testID}>{chip}</Pressable> : <View testID={testID}>{chip}</View>;
 }
@@ -194,6 +195,9 @@ const styles = createStyles({
   primaryDisabled: { minHeight: 52, borderRadius: sizes['radius/full'], backgroundColor: colors['border/subtle'], alignItems: 'center', justifyContent: 'center', paddingHorizontal: sizes['space/4'] },
   primaryText: { ...textStyles['Body/Strong'], color: colors['text/on-accent'] },
   primaryDisabledText: { ...textStyles['Body/Strong'], color: colors['text/tertiary'] },
+  inlineChip: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
+  inlineCircle: { width: 28, height: 28, borderWidth: 0 },
+  inlineName: { ...textStyles['Body/Strong'], color: colors['text/primary'], flexShrink: 1 },
   playerChip: { width: 74, alignItems: 'center', gap: sizes['space/1'] },
   fieldingCircle: { width: sizes['chip/size'], height: sizes['chip/size'], borderRadius: sizes['radius/full'], backgroundColor: colors['chip/fielding/bg'], borderWidth: sizes['chip/outline-width'], borderColor: colors['chip/outline'], alignItems: 'center', justifyContent: 'center' },
   battingCircle: { width: sizes['chip/size'], height: sizes['chip/size'], borderRadius: sizes['radius/full'], backgroundColor: colors['chip/batting/bg'], borderWidth: sizes['chip/outline-width'], borderColor: colors['chip/outline'], alignItems: 'center', justifyContent: 'center' },
