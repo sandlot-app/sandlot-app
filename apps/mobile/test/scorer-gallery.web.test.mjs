@@ -242,6 +242,15 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       await screenshot('in-play-3-runners');
       await clickLabel('Cancel');
       await click('scorer-more'); await visible('play-more'); await screenshot('more');
+      assert.deepEqual(await evaluate(`(() => {
+        const row=document.querySelector('[data-testid="more-steal"]');
+        const card=row.parentElement;
+        const tile=row.firstElementChild;
+        const box=element=>{const r=element.getBoundingClientRect();return {width:r.width,height:r.height};};
+        const style=getComputedStyle(card);
+        return {rows:card.children.length,rowHeight:box(row).height,cardBorder:style.borderTopWidth,
+          cardRadius:style.borderTopLeftRadius,tile:box(tile)};
+      })()`), {rows:4,rowHeight:60,cardBorder:'1px',cardRadius:'20px',tile:{width:36,height:36}}, 'the More actions match the Figma Runners card and icon tiles');
       assert.equal(await evaluate(`document.querySelector('[data-testid="play-more"]').textContent.includes('Pitching change')`),false);
       assert.equal(await evaluate(`document.querySelector('[data-testid="play-more"]').textContent.includes('Balk')`),false);
       await click('more-steal'); await visible('play-runner-action'); await screenshot('steal-attempt');

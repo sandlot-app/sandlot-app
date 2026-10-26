@@ -39,17 +39,18 @@ export type RunnerChoice = {
 };
 export type InPlayDraft = {
   kind: 'in_play';
+  at: string;
   step: 'outcome' | 'fielder' | 'runners';
   game: SavedGame;
   choice: OutcomeChoice | null;
   fielder: Position | null;
   rows: RunnerChoice[];
 };
-export type RunnerDraft = { kind: 'runner'; mode: RunnerMode; game: SavedGame; rows: RunnerChoice[] };
+export type RunnerDraft = { kind: 'runner'; at: string; mode: RunnerMode; game: SavedGame; rows: RunnerChoice[] };
 export type PlayDraft = {kind: 'more'; game: SavedGame} | InPlayDraft | RunnerDraft;
 
-export function beginInPlay(game: SavedGame): InPlayDraft {
-  return {kind: 'in_play', step: 'outcome', game, choice: null, fielder: null, rows: []};
+export function beginInPlay(game: SavedGame, at: string): InPlayDraft {
+  return {kind: 'in_play', at, step: 'outcome', game, choice: null, fielder: null, rows: []};
 }
 
 export function runnerRows(game: SavedGame, choice: OutcomeChoice | null): RunnerChoice[] {
@@ -118,7 +119,7 @@ export function completePlay(draft: InPlayDraft | RunnerDraft): DemoAction | nul
   if (draftProblem(draft)) return null;
   if (draft.kind === 'runner') {
     const moves = draft.rows.filter((row) => row.to !== row.from).map(({runner, to}) => ({runner, to}));
-    return moves.length ? {kind: 'runner_play', expectedRevision: draft.game.revision, event: draft.mode, moves} : null;
+    return moves.length ? {kind: 'runner_play', at: draft.at, expectedRevision: draft.game.revision, event: draft.mode, moves} : null;
   }
   if (!draft.choice) return null;
   const safe = draft.rows.filter((row) => row.to !== 'out');
@@ -126,6 +127,6 @@ export function completePlay(draft: InPlayDraft | RunnerDraft): DemoAction | nul
   const advances: Advance[] = [...safe, ...outs].map((row) => row.to === 'out'
     ? {runner: row.runner, to: 'out', outType: row.outType}
     : {runner: row.runner, to: row.to});
-  return {kind: 'ball_in_play', expectedRevision: draft.game.revision, outcome: draft.choice.outcome,
+  return {kind: 'ball_in_play', at: draft.at, expectedRevision: draft.game.revision, outcome: draft.choice.outcome,
     trajectory: draft.choice.trajectory, fielders: draft.fielder ? [draft.fielder] : [], advances};
 }

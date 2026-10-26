@@ -281,7 +281,7 @@ export default function ScoreScreen() {
       </View>
       <View style={styles.mainButtons}>
         <Pressable testID="pitch-in-play" accessibilityRole="button" disabled={!enabled}
-          accessibilityState={{disabled: !enabled}} onPress={() => setDraft(beginInPlay(game))} style={styles.secondary}>
+          accessibilityState={{disabled: !enabled}} onPress={() => setDraft(beginInPlay(game, new Date().toISOString()))} style={styles.secondary}>
           <Text style={styles.secondaryLabel}>In play</Text>
         </Pressable>
         <Pressable testID="scorer-more" accessibilityRole="button" disabled={!enabled}

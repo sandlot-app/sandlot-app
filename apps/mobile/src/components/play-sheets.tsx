@@ -18,9 +18,9 @@ const destinations: {to: Destination; label: string}[] = [
   {to: 'home', label: 'Home'}, {to: 'out', label: 'Out'},
 ];
 const runnerModes: {mode: RunnerMode; title: string; subtitle: string; path: string}[] = [
-  {mode: 'steal', title: 'Steal attempt', subtitle: 'Safe or caught stealing', path: 'M4 8h15m-5-5 5 5-5 5M20 18H5m5-5-5 5 5 5'},
-  {mode: 'wild_pitch', title: 'Wild pitch', subtitle: 'Runners advance on the pitch', path: 'm3 18 5-5m-5 0 5 5m4-8 8-6m-8 1v5h5'},
-  {mode: 'passed_ball', title: 'Passed ball', subtitle: 'Runners advance, catcher charged', path: 'M7 3v9m5-11v10m5-8v10m4-6v10c0 5-4 7-8 7-5 0-8-5-10-10l4-2 4 5'},
+  {mode: 'steal', title: 'Steal attempt', subtitle: 'Safe or caught stealing', path: 'M11 5a2 2 0 1 0 4 0 2 2 0 1 0-4 0M8 10l-3 2c-3 2-1 6 2 5l11-5c4-2 6 2 3 5l-3 2M11 23a2 2 0 1 0 4 0 2 2 0 1 0-4 0'},
+  {mode: 'wild_pitch', title: 'Wild pitch', subtitle: 'Runners advance on the pitch', path: 'M3 8h5c5 0 5 12 10 12h5m-4-4 4 4-4 4M3 20h5c5 0 5-12 10-12h5m-4-4 4 4-4 4'},
+  {mode: 'passed_ball', title: 'Passed ball', subtitle: 'Runners advance, catcher charged', path: 'm16 6 7 7-7 7M23 13H12c-6 0-9 3-9 8'},
   {mode: 'pickoff', title: 'Pickoff', subtitle: 'Throw to a base', path: 'm10 3-7 7 7 7M3 10h12c5 0 7 3 7 8'},
 ];
 const fieldPositions = ['LF', 'CF', 'RF', 'SS', '2B', '3B', '1B', 'P', 'C'] as const satisfies readonly Position[];
@@ -109,12 +109,16 @@ export function PlaySheets({draft, onChange, onClose, record, saving, available,
   if (draft.kind === 'more') return <Sheet open onRequestClose={close} testID="play-more"
     header={<SheetHeader title="More" onCancel={close} cancelLabel="Done" />}>
     <SheetSection label="Runners">
-      {runnerModes.map(({mode, title, subtitle, path}) => <Pressable key={mode} accessibilityRole="button" testID={`more-${mode}`}
-        onPress={() => onChange({kind: 'runner', mode, game: draft.game, rows: runnerRows(draft.game, null)})} style={styles.moreRow}>
-        <Svg width={24} height={28} viewBox="0 0 26 28" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}><Path d={path} fill="none" stroke={colors['text/primary']} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+      <View style={styles.moreCard}>
+      {runnerModes.map(({mode, title, subtitle, path}, index) => <Pressable key={mode} accessibilityRole="button" testID={`more-${mode}`}
+        onPress={() => onChange({kind: 'runner', at: new Date().toISOString(), mode, game: draft.game, rows: runnerRows(draft.game, null)})} style={[styles.moreRow, index > 0 && styles.moreDivider]}>
+        <View style={styles.moreIcon}>
+          <Svg width={24} height={28} viewBox="0 0 26 28" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}><Path d={path} fill="none" stroke={colors['text/primary']} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" /></Svg>
+        </View>
         <View style={styles.moreDescription}><Text style={styles.strong}>{title}</Text><Text style={styles.caption}>{subtitle}</Text></View>
-        <Text style={styles.chevron}>›</Text>
+        <Svg width={16} height={16} viewBox="0 0 24 24" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}><Path d="m9 6 6 6-6 6" fill="none" stroke={colors['text/tertiary']} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" /></Svg>
       </Pressable>)}
+      </View>
     </SheetSection>
   </Sheet>;
   const inPlay = draft.kind === 'in_play';
@@ -198,9 +202,11 @@ const styles = createStyles({
   detailChoice: {minHeight: sizes['tap/min'], justifyContent: 'center', paddingHorizontal: sizes['space/2'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/md']},
   detailSelected: {borderColor: colors['scoreboard/bg'], backgroundColor: colors['surface/page']},
   orderButton: {minHeight: sizes['tap/min'], justifyContent: 'center'},
-  moreRow: {minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: sizes['space/3'], borderBottomWidth: 1, borderBottomColor: colors['border/subtle']},
+  moreCard: {borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/lg'], overflow: 'hidden'},
+  moreRow: {minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: sizes['space/3'], paddingHorizontal: sizes['space/3']},
+  moreDivider: {borderTopWidth: 1, borderTopColor: colors['border/subtle']},
+  moreIcon: {width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors['surface/page'], borderRadius: sizes['radius/md']},
   moreDescription: {flex: 1, gap: sizes['space/1']},
-  chevron: {fontSize: 28, color: colors['text/tertiary']},
   error: {...textStyles.Caption, color: colors['text/warning']},
 });
 const fieldStyles = createStyles({

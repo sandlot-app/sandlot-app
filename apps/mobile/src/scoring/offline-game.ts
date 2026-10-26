@@ -29,9 +29,9 @@ export type DemoAction =
   | { kind: 'start' }
   | { kind: 'pitch'; result: Exclude<PitchResult, 'in_play'> }
   | { kind: 'undo' }
-  | { kind: 'ball_in_play'; expectedRevision: number; outcome: BallInPlayOutcome;
+  | { kind: 'ball_in_play'; at: string; expectedRevision: number; outcome: BallInPlayOutcome;
       trajectory: Trajectory | null; fielders: Position[]; advances: Advance[] }
-  | { kind: 'runner_play'; expectedRevision: number;
+  | { kind: 'runner_play'; at: string; expectedRevision: number;
       event: 'steal' | 'wild_pitch' | 'passed_ball' | 'pickoff';
       moves: { runner: PlayerRef; to: Destination }[] };
 
@@ -285,7 +285,7 @@ export async function openOfflineGame(
         let attempted = false;
         let result: RecordResult = { kind: 'blocked', reason: 'storage' };
         try {
-          const at = boundary.now() as Timestamp;
+          const at = ('at' in action ? action.at : boundary.now()) as Timestamp;
           group = boundary.newId() as GroupId;
           const savedGroup = group;
           await database.transaction(async (connection) => {
