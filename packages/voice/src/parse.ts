@@ -50,9 +50,12 @@ function fielder(words: string | undefined): Position | undefined {
   return fielderWords.find(([pattern]) => pattern.test(words))?.[1];
 }
 
+/** Words people say before a call that aren't a name: "that's ball four", "big strikeout", "and it's a single". */
+const leadIn = /^(?:(?:and|then|so|oh|ouch|wow|whoa|okay|big|nice|great|huge|that's|thats|that is|it's|its|it is|there's|theres|there is|what a|a|an)(?: |$))+/;
+
 /** Who a clause names, from the words before its verb. */
 function mention(words: string | undefined): Mention | undefined {
-  const text = words?.replace(/^(?:and|then|so) /, '').replace(/ (?:got|gets|was|is|has been)$/, '').trim();
+  const text = words?.replace(leadIn, '').replace(/ (?:got|gets|was|is|has been)$/, '').trim();
   if (!text || /^(?:the )?(?:runner|batter|hitter|he|she|they|it)$/.test(text)) return undefined;
   const onBase = text.match(new RegExp(`^(?:the )?runner (?:on|at|from) ${base}$`));
   if (onBase) return { base: baseWords[onBase[1]!]! };
@@ -170,7 +173,7 @@ function merged(plays: Spoken[], parts: string[]): void {
   }
 }
 
-const correction = /^(?:no|nope|wait|no wait|sorry|actually|i mean|make that|scratch that)(?: (.+))?$/;
+const correction = /^(?:no wait|no|nope|wait|sorry|actually|i mean|make that|scratch that)(?: (.+))?$/;
 
 /** The local grammar: common phrases become plays with no AI. Anything it doesn't know is `unclear`, for the parser model. */
 export function parsePhrase(transcript: string): ParseResult {

@@ -15,18 +15,24 @@ const hitVerb = { single: 'singles', double: 'doubles', ground_rule_double: 'hit
 
 const heldOutcomes = new Set(['single', 'double', 'ground_rule_double', 'triple', 'error']);
 
+/** Runners on base before a hit or error that its advances don't move. */
+function unmoved(before: GameState, play: Extract<Command, { kind: 'ball_in_play' }>): PlayerRef[] {
+  if (!heldOutcomes.has(play.outcome)) return [];
+  return ([1, 2, 3] as const).flatMap((base) => {
+    const runner = before.bases[base]?.player;
+    return runner && !play.advances.some((advance) => samePlayer(advance.runner, runner)) ? [runner] : [];
+  });
+}
+
 /** Runners a hit or error left where they were, because the press didn't say they moved (H1). */
 export function heldRunners(game: PressGame, commands: Command[]): PlayerRef[] {
   return units(commands).flatMap(([start]) => {
     const play = commands[start + 1];
-    if (play?.kind !== 'ball_in_play' || !heldOutcomes.has(play.outcome)) return [];
+    if (play?.kind !== 'ball_in_play') return [];
     const before = stateAfter(game, commands.slice(0, start));
     const after = stateAfter(game, commands.slice(0, start + 2));
     if (!before || !after || after.half !== before.half || after.inning !== before.inning) return [];
-    return ([1, 2, 3] as const).flatMap((base) => {
-      const runner = before.bases[base]?.player;
-      return runner && !play.advances.some((advance) => samePlayer(advance.runner, runner)) && baseOf(after, runner) === base ? [runner] : [];
-    });
+    return unmoved(before, play).filter((runner) => baseOf(after, runner) === baseOf(before, runner));
   });
 }
 
@@ -77,11 +83,7 @@ function battedText(game: PressGame, before: GameState, after: GameState, play: 
   else if (play.outcome in hitVerb) text = `${name} ${hitVerb[play.outcome as keyof typeof hitVerb]}${at ? ` to ${direction[at]}` : ''}`;
   else text = `${name} puts it in play`;
   const outs = play.advances.flatMap((advance) => advance.to === 'out' ? [advance.runner] : []);
-  const held = heldOutcomes.has(play.outcome) ? ([1, 2, 3] as const).flatMap((base) => {
-    const runner = before.bases[base]?.player;
-    return runner && !play.advances.some((advance) => samePlayer(advance.runner, runner)) ? [runner] : [];
-  }) : [];
-  return [text, ...runnerMoves(game, before, after, outs, held)].join(', ');
+  return [text, ...runnerMoves(game, before, after, outs, unmoved(before, play))].join(', ');
 }
 
 function runnerText(game: PressGame, before: GameState, commands: Extract<Command, { kind: 'runner' }>[]): string {

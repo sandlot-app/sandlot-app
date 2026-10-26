@@ -22,7 +22,7 @@ describe('review round 1', () => {
 
   it('M1/C5/B1/B12: names on walks, hit by pitches and strikeouts are checked too', () => {
     expect(press(said(['ball', 'ball', 'ball']), 'Darcy walks')).toMatchObject({ kind: 'ask', prompt: 'J. Soto is up, not L. Darcy.' });
-    expect(press(gameWith([]), 'Ramirez hit by pitch')).toMatchObject({ kind: 'ask', prompt: 'Who is Ramirez?' });
+    expect(press(gameWith([]), 'Ramirez hit by pitch')).toMatchObject({ kind: 'save', reading: { readBack: 'Hit by pitch → J. Soto to 1st' } });
     expect(press(said(['strike looking', 'strike looking']), 'Moss strikes out looking')).toEqual({ kind: 'reject', message: 'K. Moss is in the field this half.' });
     expect(press(gameWith([]), 'he got hit by the pitch')).toMatchObject({ kind: 'save', reading: { readBack: 'Hit by pitch → J. Soto to 1st' } });
     expect(press(said(['ball', 'ball', 'ball']), 'Soto walks')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto walks' } });
@@ -59,5 +59,30 @@ describe('review round 1', () => {
 
   it('a runner named when nobody is on base says so, rather than asking with no buttons', () => {
     expect(press(gameWith([]), 'Ramirez steals second')).toEqual({ kind: 'reject', message: 'No runners on base.' });
+  });
+});
+
+// Findings from Grokbot's re-review of PR #58 at 2ecab4b.
+describe('review round 2', () => {
+  it('M6/B1: lead-in words before a walk, strikeout or hit by pitch are not a name', () => {
+    const full = said(['ball', 'ball', 'ball']);
+    expect(press(full, "that's ball four")).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto walks' } });
+    expect(press(full, "that's a walk")).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto walks' } });
+    expect(press(full, 'and that is ball four')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto walks' } });
+    const two = said(['strike looking', 'strike looking']);
+    expect(press(two, "that's strike three")).toMatchObject({ kind: 'ask', prompt: 'Looking or swinging?' });
+    expect(press(two, 'big strikeout')).toMatchObject({ kind: 'ask', prompt: 'Looking or swinging?' });
+    expect(press(gameWith([]), 'ouch hit by pitch')).toMatchObject({ kind: 'save', reading: { readBack: 'Hit by pitch → J. Soto to 1st' } });
+    expect(press(gameWith([]), "that's a single to left")).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto singles to left' } });
+  });
+
+  it('M6: a roster name on a walk, strikeout or hit by pitch is still checked', () => {
+    expect(press(said(['ball', 'ball', 'ball']), "that's ball four for Darcy")).toMatchObject({ kind: 'unknown_phrase' });
+    expect(press(said(['ball', 'ball', 'ball']), 'Darcy walks')).toMatchObject({ kind: 'ask', prompt: 'J. Soto is up, not L. Darcy.' });
+    expect(press(gameWith([]), 'number 3 hit by pitch')).toMatchObject({ kind: 'ask', prompt: 'J. Soto is up, not L. Darcy.' });
+  });
+
+  it('B5: "no wait" at the end cancels the play before it', () => {
+    expect(press(gameWith([]), 'Soto singles, no wait')).toEqual({ kind: 'no_play', question: false });
   });
 });
