@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { tokens } from '@sandlot/tokens';
 import type { PitchResult } from '@sandlot/engine';
 import { router } from 'expo-router';
-import { Image, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { Image, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createStyles } from '../../../style';
 import { ScorerBar, type Pitch, type SyncState } from '../../../scorer-ui';
+import { belowBarSpace } from '../../components/bottom-space.ts';
 import { Field } from '../../components/field.tsx';
 import { GameStatus } from '../../components/game-status.tsx';
 import { CaretLeftIcon } from '../../components/icons.tsx';
@@ -92,8 +93,7 @@ export default function ScoreScreen() {
       <ScorerBar sync={sync} onPitch={onPitch} onUndo={() => { void record({ kind: 'undo' }); }}
         onMore={() => setDraft({ kind: 'more', game })} disabled={!enabled}
         undoDisabled={view.kind !== 'ready' || !game.canUndo} testID="scorer-bar" syncTestID="waiting-plays" />
-      {/* The bar's own bottom padding covers the iPhone home indicator; a taller inset, like Android's buttons, adds the rest. */}
-      <View style={[styles.belowBar, spacerHeight(Math.max(0, insets.bottom - sizes['space/6']))]} />
+      <View style={[styles.belowBar, spacerHeight(belowBarSpace(Platform.OS, insets.bottom))]} />
     </View>
   );
 
