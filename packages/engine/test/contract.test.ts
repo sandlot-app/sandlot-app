@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseUploadRequest } from '../src/contract.ts';
+import { REJECT_CODES } from '../src/engine.ts';
 import type { Command } from '../src/types.ts';
 import { EVENT_SCHEMA_VERSION } from '../src/version.ts';
 
@@ -320,4 +322,14 @@ describe('explicit ball-in-play out classification', () => {
       expect(parseUploadRequest(upload({ kind: 'correct', target: 'p', replacement: [command] }))).toEqual(invalidUpload);
     });
   }
+});
+
+describe('reject reasons', () => {
+  it('lists every engine reject code in the contract, because the server returns it as reason', () => {
+    const contract = readFileSync(new URL('../../../docs/contract.md', import.meta.url), 'utf8');
+    const heading = contract.indexOf('### Reject reasons');
+    const section = contract.slice(contract.indexOf('| --- |', heading), contract.indexOf('\n## ', heading));
+    const listed = [...section.matchAll(/^\| `([a-z_]+)` \|/gm)].map((match) => match[1]);
+    expect(listed).toEqual([...REJECT_CODES]);
+  });
 });

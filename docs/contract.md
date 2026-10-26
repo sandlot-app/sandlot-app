@@ -191,6 +191,37 @@ The phone takes one action for each error:
 | `stale_session` | 403 | Stop the queue. Someone else now holds scoring. |
 | `unsupported_version` | 409 | Stop the queue and ask the scorer to update the app |
 
+### Reject reasons
+
+A `rejected` response's `reason` is one of the engine's reject codes, `REJECT_CODES` in `packages/engine/src/engine.ts`. A test fails if a code is missing here.
+
+| `reason` | The group is rejected because |
+| --- | --- |
+| `not_implemented` | it uses a command or runner event the engine doesn't support yet |
+| `unknown_player` | it names a player who isn't on that team's roster |
+| `game_not_started` | it's a play other than a lineup or the start, before the game starts |
+| `game_already_started` | it sets a lineup or starts the game after the start |
+| `no_pitcher` | the start has a lineup with no pitcher, or a pitch comes with no pitcher in |
+| `ball_in_play_needs_pitch` | a ball in play doesn't follow an `in_play` pitch in the same group |
+| `in_play_needs_outcome` | an `in_play` pitch isn't followed by its ball in play |
+| `base_occupied` | a runner moves to a base another runner still holds |
+| `runner_not_on_base` | a runner it moves isn't on base |
+| `duplicate_runner` | a ball in play moves the same runner twice |
+| `batter_destination_missing` | a double or triple play doesn't say where the batter went |
+| `outs_dont_match_outcome` | a double play doesn't record two outs, or a triple play three |
+| `too_many_outs` | its outs would take the half-inning past three |
+| `invalid_out_type` | an out's `outType` doesn't fit the runner or the hit |
+| `undo_not_latest` | an undo targets a group that isn't the latest active one |
+| `undo_must_be_alone` | it mixes an undo with other commands |
+| `cannot_undo_undo` | an undo targets another undo |
+| `nothing_to_undo` | an undo comes when no group is left to undo |
+| `game_over` | the game has already ended |
+| `invalid_runner_destination` | a runner goes backward or stays, a caught stealing or pickoff isn't an out, or a stolen base is |
+| `stealing_home_not_allowed` | a runner steals home where the rules allow scoring only on a passed ball |
+| `balks_not_allowed` | it records a balk where the rules have none |
+| `pitcher_reentry_not_allowed` | a removed pitcher comes back where the rules don't allow it |
+| `bunting_not_allowed` | it records a bunt where the rules don't allow bunting |
+
 When the queue stops, the phone shows how many plays are waiting, for example "3 plays waiting. Tap to fix." The fix is **Discard from here**. It deletes the stuck group and every group after it on the phone, and it runs only when the scorer taps it. The phone never deletes pending plays on its own.
 
 ## Scoring handoff

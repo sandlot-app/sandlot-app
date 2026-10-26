@@ -1,0 +1,33 @@
+name: A passed-ball run that wins the game in inning 6 still lets the other runner
+  move on the same play, and only the winning run counts
+cite: Moraga Mustang revised February 2024 D.3 and D.16, https://www.moragabaseball.org/pony-rules/;
+  Official Baseball Rules 5.08(b), 7.01(g) (the game ends when the home team scores
+  the winning run in its last half-inning)
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: bottom
+  score: { home: 2, away: 2 }
+  bases:
+    "2":
+      player: { kind: player, id: home-2 }
+      chargedTo: { kind: opponent, id: away-1 }
+    "3":
+      player: { kind: player, id: home-1 }
+      chargedTo: { kind: opponent, id: away-1 }
+when:
+  - - kind: runner
+      event: passed_ball
+      runner: { kind: player, id: home-1 }
+      to: home
+    - kind: runner
+      event: passed_ball
+      runner: { kind: player, id: home-2 }
+      to: home
+then:
+  status: final
+  inning: 6
+  half: bottom
+  score: { home: 3, away: 2 }

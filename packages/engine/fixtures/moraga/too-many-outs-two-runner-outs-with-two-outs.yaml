@@ -1,0 +1,27 @@
+name: Two runners put out on one play with two outs already is rejected, because a
+  half-inning ends at the third out
+cite: Official Baseball Rules 5.08(a), 5.09(b)(6) (a half-inning ends when three
+  offensive players are put out)
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 2
+  bases:
+    "1":
+      player: { kind: opponent, id: away-2 }
+      chargedTo: { kind: player, id: home-1 }
+    "2":
+      player: { kind: opponent, id: away-1 }
+      chargedTo: { kind: player, id: home-1 }
+when:
+  - - kind: runner
+      event: wild_pitch
+      runner: { kind: opponent, id: away-1 }
+      to: out
+    - kind: runner
+      event: wild_pitch
+      runner: { kind: opponent, id: away-2 }
+      to: out
+then:
+  rejected: too_many_outs
