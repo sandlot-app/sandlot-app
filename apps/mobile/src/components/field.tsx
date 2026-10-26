@@ -1,3 +1,4 @@
+import { tokens } from '@sandlot/tokens';
 import type { GameState } from '@sandlot/engine';
 import Svg, {
   Circle,
@@ -11,6 +12,8 @@ import Svg, {
   Stop,
   Text as SvgText,
 } from 'react-native-svg';
+
+const { colors } = tokens.modes.Light;
 
 const positions = [
   { label: 'LF', x: 78, y: 105 },
@@ -34,23 +37,23 @@ export function BaseDiamond({ bases }: { bases: GameState['bases'] }) {
     <Svg width={50} height={43} viewBox="0 0 50 43" accessible={false}>
       <Path
         d="m25 2 8 8-8 8-8-8Z"
-        fill={bases[2] ? '#147b55' : '#fff'}
-        stroke="#657d8d"
+        fill={bases[2] ? colors['count/ball'] : colors['surface/card']}
+        stroke={colors['border/subtle']}
         strokeWidth={1.5}
       />
       <Path
         d="m14 13 8 8-8 8-8-8Z"
-        fill={bases[3] ? '#147b55' : '#fff'}
-        stroke="#657d8d"
+        fill={bases[3] ? colors['count/ball'] : colors['surface/card']}
+        stroke={colors['border/subtle']}
         strokeWidth={1.5}
       />
       <Path
         d="m36 13 8 8-8 8-8-8Z"
-        fill={bases[1] ? '#147b55' : '#fff'}
-        stroke="#657d8d"
+        fill={bases[1] ? colors['count/ball'] : colors['surface/card']}
+        stroke={colors['border/subtle']}
         strokeWidth={1.5}
       />
-      <Path d="m22 35 3 3 3-3v-4h-6Z" fill="#132d43" />
+      <Path d="m22 35 3 3 3-3v-4h-6Z" fill={colors['text/primary']} />
     </Svg>
   );
 }
@@ -72,16 +75,16 @@ export function Field({
     >
       <Defs>
         <LinearGradient id="sky" x2="0" y2="1">
-          <Stop stopColor="#deeff2" />
-          <Stop offset="1" stopColor="#b7dfe4" />
+          <Stop stopColor={colors['surface/page']} />
+          <Stop offset="1" stopColor={colors['surface/voice']} />
         </LinearGradient>
         <LinearGradient id="grass" x2="0" y2="1">
-          <Stop stopColor="#5b9a55" />
-          <Stop offset="1" stopColor="#24673e" />
+          <Stop stopColor={colors['field/grass-stripe']} />
+          <Stop offset="1" stopColor={colors['field/grass']} />
         </LinearGradient>
         <LinearGradient id="clay" x2="0" y2="1">
-          <Stop stopColor="#dca276" />
-          <Stop offset="1" stopColor="#c78659" />
+          <Stop stopColor={colors['field/mound']} />
+          <Stop offset="1" stopColor={colors['field/dirt']} />
         </LinearGradient>
         <ClipPath id="outfield">
           <Path d="M-15 87Q195 21 405 87L405 326H-15Z" />
@@ -94,18 +97,18 @@ export function Field({
       <Path
         d="M-20 82Q195 12 410 82"
         fill="none"
-        stroke="#8bb9ad"
+        stroke={colors['scoreboard/text-muted']}
         strokeWidth="13"
       />
-      <Path d="M-20 81Q195 15 410 81V113H-20Z" fill="#204f40" />
+      <Path d="M-20 81Q195 15 410 81V113H-20Z" fill={colors['scoreboard/bg']} />
       <Path
         d="M-20 80Q195 14 410 80"
         fill="none"
-        stroke="#efd292"
+        stroke={colors['field/mound']}
         strokeWidth="2.2"
       />
       <Path d="M-15 97Q195 30 405 97V326H-15Z" fill="url(#grass)" />
-      <G clipPath="url(#outfield)" opacity=".14" fill="#d8e8a3">
+      <G clipPath="url(#outfield)" opacity=".14" fill={colors['field/grass-stripe']}>
         <Path d="M-200 180 260 20 295 35-160 220Z" />
         <Path d="M-100 235 340 70 375 85-60 270Z" />
         <Path d="M10 290 440 125 475 140 45 323Z" />
@@ -113,10 +116,10 @@ export function Field({
         <Path d="M255 400 670 235 705 250 290 433Z" />
       </G>
       <Path d="M-15 254 195 122 405 254 405 326H-15Z" fill="url(#clay)" />
-      <Path d="M-20 196 195 301 410 196V244Q195 396-20 244Z" fill="#347847" />
+      <Path d="M-20 196 195 301 410 196V244Q195 396-20 244Z" fill={colors['field/grass']} />
       <Path d="M195 293-10 196Q195 82 400 196Z" fill="url(#clay)" />
-      <Path d="M195 281 31 196Q195 110 359 196Z" fill="#418448" />
-      <G clipPath="url(#innergrass)" fill="#93b568" opacity=".2">
+      <Path d="M195 281 31 196Q195 110 359 196Z" fill={colors['field/grass-stripe']} />
+      <G clipPath="url(#innergrass)" fill={colors['field/grass']} opacity=".2">
         <Path d="M-15 214 282 104 312 118 15 230Z" />
         <Path d="M48 248 345 138 375 152 78 264Z" />
         <Path d="M113 281 410 171 440 185 143 297Z" />
@@ -124,26 +127,26 @@ export function Field({
       <Path
         d="M195 276 71 212 195 148 319 212Z"
         fill="none"
-        stroke="#fbefdb"
+        stroke={colors['field/line']}
         strokeWidth="1.2"
         opacity=".85"
       />
       <Path
         d="M195 276-15 168M195 276 405 168"
         fill="none"
-        stroke="#fff5df"
+        stroke={colors['field/line']}
         strokeWidth="1.4"
         opacity=".8"
       />
-      <Ellipse cx="195" cy="223" rx="19" ry="8" fill="#dba174" />
-      <Rect x="190" y="221" width="10" height="2" rx="1" fill="#fff7e8" />
-      <G fill="#fffae9" stroke="#ecd7b9" strokeWidth=".6">
+      <Ellipse cx="195" cy="223" rx="19" ry="8" fill={colors['field/mound']} />
+      <Rect x="190" y="221" width="10" height="2" rx="1" fill={colors['field/base']} />
+      <G fill={colors['field/base']} stroke={colors['field/dirt']} strokeWidth=".6">
         <Path d="m195 144 5 4-5 4-5-4Z" />
         <Path d="m71 208 5 4-5 4-5-4Z" />
         <Path d="m319 208 5 4-5 4-5-4Z" />
         <Path d="M191 272h8v5l-4 3-4-3Z" />
       </G>
-      <G fill="none" stroke="#f7e5cb" strokeWidth=".8" opacity=".8">
+      <G fill="none" stroke={colors['field/line']} strokeWidth=".8" opacity=".8">
         <Path d="M181 269h6v12h-6ZM203 269h6v12h-6Z" />
         <Path d="M173 285Q195 301 217 285" />
       </G>
@@ -151,8 +154,8 @@ export function Field({
         <G key={label} transform={`translate(${x} ${y})`}>
           <Circle
             r="12"
-            fill={label === 'P' ? '#fffdf4' : '#245b43'}
-            stroke="#c4d8bc"
+            fill={label === 'P' ? colors['chip/fielding/bg'] : colors['scoreboard/bg']}
+            stroke={colors['chip/outline']}
             strokeWidth=".8"
           />
           <SvgText
@@ -160,7 +163,7 @@ export function Field({
             textAnchor="middle"
             fontWeight="600"
             fontSize="10"
-            fill={label === 'P' ? '#264e37' : '#fff'}
+            fill={label === 'P' ? colors['chip/fielding/text'] : colors['surface/card']}
           >
             {label}
           </SvgText>
@@ -170,13 +173,13 @@ export function Field({
         .filter(({ base }) => bases[base])
         .map(({ base, x, y }) => (
           <G key={base} transform={`translate(${x} ${y})`}>
-            <Circle r="10" fill="#1466cf" stroke="#fff" strokeWidth="2" />
+            <Circle r="10" fill={colors['action/primary']} stroke={colors['surface/card']} strokeWidth="2" />
             <SvgText
               y="3.5"
               textAnchor="middle"
               fontWeight="700"
               fontSize="11"
-              fill="#fff"
+              fill={colors['surface/card']}
             >
               {base}
             </SvgText>

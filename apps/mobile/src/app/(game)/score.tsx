@@ -1,9 +1,10 @@
+import { tokens } from '@sandlot/tokens';
+import { createStyles } from '../../../style';
 import type { PitchResult } from '@sandlot/engine';
 import { router } from 'expo-router';
 import {
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   useWindowDimensions,
   View,
@@ -12,10 +13,12 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
-import { BaseDiamond, Field } from '../components/field.tsx';
-import { GameStatus } from '../components/game-status.tsx';
-import { basesSummary, gameSummary } from '../scoring/game-summary.ts';
-import { useOfflineGame } from '../scoring/use-offline-game.tsx';
+import { BaseDiamond, Field } from '../../components/field.tsx';
+import { GameStatus } from '../../components/game-status.tsx';
+import { basesSummary, gameSummary } from '../../scoring/game-summary.ts';
+import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
+
+const { colors, sizes } = tokens.modes.Light;
 
 const pitches: {
   result: Exclude<PitchResult, 'in_play'>;
@@ -33,12 +36,12 @@ function CountDots({
   label,
   value,
   total,
-  color,
+  kind,
 }: {
   label: string;
   value: number;
   total: number;
-  color: string;
+  kind: 'ballDot' | 'strikeDot' | 'outDot';
 }) {
   return (
     <View
@@ -52,7 +55,7 @@ function CountDots({
           key={index}
           style={[
             styles.dot,
-            index < value && { backgroundColor: color, borderColor: color },
+            index < value && styles[kind],
           ]}
         />
       ))}
@@ -88,6 +91,7 @@ export default function ScoreScreen() {
           onPress={() => router.replace('/')}
           accessibilityRole="button"
           style={styles.homeButton}
+          testID="empty-game-navigation"
         >
           <Text style={styles.navLabel}>Your games</Text>
         </Pressable>
@@ -149,19 +153,19 @@ export default function ScoreScreen() {
             label="balls"
             value={state.count.balls}
             total={4}
-            color="#147b55"
+            kind="ballDot"
           />
           <CountDots
             label="strikes"
             value={state.count.strikes}
             total={3}
-            color="#b17613"
+            kind="strikeDot"
           />
           <CountDots
             label="outs"
             value={state.outs}
             total={3}
-            color="#b74640"
+            kind="outDot"
           />
         </View>
         <Text
@@ -336,25 +340,25 @@ export default function ScoreScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#fff' },
+const styles = createStyles({
+  screen: { flex: 1, backgroundColor: colors['surface/card'] },
   scrolling: { flex: 1 },
   page: { flexGrow: 1 },
   header: {
-    paddingHorizontal: 18,
+    paddingHorizontal: sizes['space/4'],
     minHeight: 54,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: sizes['space/2'],
   },
   nav: { minHeight: 44, minWidth: 64, justifyContent: 'center' },
-  navLabel: { color: '#1466cf', fontSize: 15, fontWeight: '600' },
-  brand: { color: '#132d43', fontSize: 23, fontWeight: '800' },
-  local: { fontSize: 12, color: '#526674' },
-  board: { paddingHorizontal: 20, paddingBottom: 12, gap: 10 },
+  navLabel: { color: colors['action/primary'], fontSize: 15, fontWeight: '600' },
+  brand: { color: colors['text/primary'], fontSize: 23, fontWeight: '800' },
+  local: { fontSize: 12, color: colors['text/secondary'] },
+  board: { paddingHorizontal: sizes['space/4'], paddingBottom: sizes['space/3'], gap: sizes['space/3'] },
   meta: {
-    color: '#526674',
+    color: colors['text/secondary'],
     textAlign: 'center',
     fontSize: 13,
     fontWeight: '600',
@@ -363,112 +367,115 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: sizes['space/3'],
   },
-  team: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 },
+  team: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: sizes['space/3'] },
   homeTeam: { flexDirection: 'row-reverse' },
   teamName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#132d43',
+    color: colors['text/primary'],
     flexShrink: 1,
   },
   score: {
     fontSize: 41,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
-    color: '#132d43',
+    color: colors['text/primary'],
   },
-  count: { flexDirection: 'row', gap: 20, justifyContent: 'center' },
-  countSet: { flexDirection: 'row', gap: 5, alignItems: 'center' },
+  count: { flexDirection: 'row', gap: sizes['space/4'], justifyContent: 'center' },
+  countSet: { flexDirection: 'row', gap: sizes['space/1'], alignItems: 'center' },
   countLabel: {
-    color: '#526674',
+    color: colors['text/secondary'],
     fontSize: 13,
     fontWeight: '600',
-    marginRight: 3,
+    marginRight: sizes['space/1'],
   },
   dot: {
     width: 8,
     height: 8,
     borderWidth: 1.5,
-    borderColor: '#8a9eac',
-    borderRadius: 4,
+    borderColor: colors['count/empty'],
+    borderRadius: sizes['radius/sm'],
   },
+  ballDot: { backgroundColor: colors['count/ball'], borderColor: colors['count/ball'] },
+  strikeDot: { backgroundColor: colors['count/strike'], borderColor: colors['count/strike'] },
+  outDot: { backgroundColor: colors['count/out'], borderColor: colors['count/out'] },
   summary: {
     fontSize: 11,
-    color: '#526674',
+    color: colors['text/secondary'],
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
   },
   matchup: {
-    paddingVertical: 12,
-    paddingHorizontal: 18,
+    paddingVertical: sizes['space/3'],
+    paddingHorizontal: sizes['space/4'],
     flexDirection: 'row',
-    gap: 10,
-    backgroundColor: '#f3f7fa',
+    gap: sizes['space/3'],
+    backgroundColor: colors['surface/page'],
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#e6edf1',
+    borderColor: colors['border/subtle'],
   },
   playerCard: {
     flex: 1,
-    padding: 12,
-    borderRadius: 12,
+    padding: sizes['space/3'],
+    borderRadius: sizes['radius/md'],
     borderWidth: 1,
-    borderColor: '#e2eaf0',
-    backgroundColor: '#fff',
-    gap: 3,
+    borderColor: colors['border/subtle'],
+    backgroundColor: colors['surface/card'],
+    gap: sizes['space/1'],
   },
-  cardLabel: { color: '#526674', fontSize: 10, fontWeight: '600' },
-  player: { fontSize: 16, fontWeight: '700', color: '#132d43' },
+  cardLabel: { color: colors['text/secondary'], fontSize: 10, fontWeight: '600' },
+  player: { fontSize: 16, fontWeight: '700', color: colors['text/primary'] },
   playerDetail: {
     fontSize: 12,
-    color: '#526674',
+    color: colors['text/secondary'],
     fontVariant: ['tabular-nums'],
   },
-  field: { flexGrow: 1, justifyContent: 'center', backgroundColor: '#d9eff1' },
+  field: { flexGrow: 1, justifyContent: 'center', backgroundColor: colors['surface/voice'] },
   dock: {
-    paddingTop: 14,
-    paddingHorizontal: 18,
-    paddingBottom: 8,
-    gap: 9,
-    backgroundColor: '#fff',
+    paddingTop: sizes['space/4'],
+    paddingHorizontal: sizes['space/4'],
+    paddingBottom: sizes['space/2'],
+    gap: sizes['space/2'],
+    backgroundColor: colors['surface/card'],
   },
   dockHeading: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: sizes['space/2'],
   },
-  dockTitle: { color: '#132d43', fontSize: 16, fontWeight: '700' },
-  hint: { color: '#526674', fontSize: 12 },
-  mainButtons: { flexDirection: 'row', gap: 9 },
+  dockTitle: { color: colors['text/primary'], fontSize: 16, fontWeight: '700' },
+  hint: { color: colors['text/secondary'], fontSize: 12 },
+  mainButtons: { flexDirection: 'row', gap: sizes['space/2'] },
   pitch: {
     flex: 1,
     minHeight: 57,
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: sizes['radius/md'],
+    padding: sizes['space/4'],
     justifyContent: 'center',
   },
-  ball: { backgroundColor: '#e4f3eb' },
-  strike: { backgroundColor: '#1466cf' },
+  ball: { backgroundColor: colors['surface/voice'] },
+  strike: { backgroundColor: colors['action/primary'] },
   pitchLabel: { fontSize: 17, fontWeight: '600' },
-  ballLabel: { color: '#11653f' },
-  strikeLabel: { color: '#fff' },
-  secondaryButtons: { flexDirection: 'row', gap: 8 },
+  ballLabel: { color: colors['logo/background'] },
+  strikeLabel: { color: colors['surface/card'] },
+  secondaryButtons: { flexDirection: 'row', gap: sizes['space/2'] },
   secondary: {
     flex: 1,
     minHeight: 48,
-    padding: 8,
-    borderRadius: 10,
+    padding: sizes['space/2'],
+    borderRadius: sizes['radius/md'],
     borderWidth: 1,
-    borderColor: '#dce5ed',
-    backgroundColor: '#f7f9fb',
+    borderColor: colors['border/subtle'],
+    backgroundColor: colors['surface/page'],
     justifyContent: 'center',
     alignItems: 'center',
   },
   secondaryLabel: {
-    color: '#284457',
+    color: colors['text/primary'],
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
@@ -476,23 +483,23 @@ const styles = StyleSheet.create({
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: sizes['space/3'],
     justifyContent: 'space-between',
   },
-  saveStatus: { flex: 1, gap: 3 },
-  saved: { fontSize: 13, fontWeight: '600', color: '#274657' },
-  pending: { fontSize: 12, color: '#526674' },
-  undo: { minHeight: 44, minWidth: 70, justifyContent: 'center', padding: 8 },
-  undoLabel: { color: '#1466cf', fontSize: 15, fontWeight: '600' },
-  feedback: { fontSize: 13, color: '#526674', lineHeight: 19 },
+  saveStatus: { flex: 1, gap: sizes['space/1'] },
+  saved: { fontSize: 13, fontWeight: '600', color: colors['text/primary'] },
+  pending: { fontSize: 12, color: colors['text/secondary'] },
+  undo: { minHeight: 44, minWidth: 70, justifyContent: 'center', padding: sizes['space/2'] },
+  undoLabel: { color: colors['action/primary'], fontSize: 15, fontWeight: '600' },
+  feedback: { fontSize: 13, color: colors['text/secondary'], lineHeight: 19 },
   pressed: { opacity: 0.55 },
   wrap: { flexWrap: 'wrap' },
   column: { flexDirection: 'column', alignItems: 'stretch' },
   emptyBrand: {
-    color: '#132d43',
+    color: colors['text/primary'],
     fontSize: 24,
     fontWeight: '700',
-    padding: 20,
+    padding: sizes['space/4'],
   },
-  homeButton: { minHeight: 48, padding: 20 },
+  homeButton: { minHeight: 48, padding: sizes['space/4'] },
 });

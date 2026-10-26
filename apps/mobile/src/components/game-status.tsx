@@ -1,19 +1,22 @@
+import { tokens } from '@sandlot/tokens';
+import { createStyles } from '../../style';
 import {
   ActivityIndicator,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from 'react-native';
 import { useOfflineGame } from '../scoring/use-offline-game.tsx';
 import { blockedMessages } from '../scoring/game-summary.ts';
 
+const { colors, sizes } = tokens.modes.Light;
+
 export function GameStatus() {
   const { view, reopen } = useOfflineGame();
   if (view.kind === 'loading')
     return (
       <View style={styles.status}>
-        <ActivityIndicator color="#1466cf" />
+        <ActivityIndicator color={colors['action/primary']} />
         <Text style={styles.message}>Opening your saved game…</Text>
       </View>
     );
@@ -36,16 +39,16 @@ export function GameStatus() {
   );
 }
 
-const styles = StyleSheet.create({
-  status: { padding: 20, gap: 16 },
-  message: { fontSize: 15, lineHeight: 22, color: '#526674' },
+const styles = createStyles({
+  status: { padding: sizes['space/4'], gap: sizes['space/4'] },
+  message: { fontSize: 15, lineHeight: 22, color: colors['text/secondary'] },
   retry: {
     minHeight: 48,
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#1466cf',
+    padding: sizes['space/4'],
+    borderRadius: sizes['radius/md'],
+    backgroundColor: colors['action/primary'],
     alignItems: 'center',
   },
-  retryLabel: { fontSize: 16, fontWeight: '600', color: '#fff' },
+  retryLabel: { fontSize: 16, fontWeight: '600', color: colors['surface/card'] },
   pressed: { opacity: 0.7 },
 });

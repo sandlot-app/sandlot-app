@@ -1,10 +1,21 @@
-import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { tokens } from '@sandlot/tokens';
+import { createStyles } from '../../../style';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { GameStatus } from '../components/game-status.tsx';
-import { useOfflineGame } from '../scoring/use-offline-game.tsx';
+import { GameStatus } from '../../components/game-status.tsx';
+import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
 
-export default function GamesScreen() {
+const { colors, sizes } = tokens.modes.Light;
+
+export default function GamesRoute() {
+  const { gallery } = useLocalSearchParams<{ gallery?: string }>();
+  if (__DEV__ && typeof gallery === 'string')
+    return <Redirect href={{ pathname: '/gallery', params: { gallery } }} />;
+  return <GamesScreen />;
+}
+
+function GamesScreen() {
   const { view, record, reopen } = useOfflineGame();
   const game =
     view.kind === 'ready' || view.kind === 'saving' ? view.game : null;
@@ -24,6 +35,11 @@ export default function GamesScreen() {
         <Text style={styles.subtitle}>
           Keep the book. Every saved pitch stays on this phone.
         </Text>
+        {__DEV__ ? (
+          <Pressable accessibilityRole="button" testID="open-scorer-gallery" style={styles.galleryLink} onPress={() => router.push('/gallery')}>
+            <Text style={styles.galleryText}>Scorer UI gallery</Text>
+          </Pressable>
+        ) : null}
         <GameStatus />
         {(view.kind === 'ready' || view.kind === 'saving') && (
           <View style={styles.card}>
@@ -76,45 +92,47 @@ export default function GamesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f3f7fa' },
-  content: { padding: 24, gap: 12 },
+const styles = createStyles({
+  galleryLink: { minHeight: sizes['tap/min'], justifyContent: 'center' },
+  galleryText: { fontSize: 15, fontWeight: '600', color: colors['action/primary'] },
+  screen: { flex: 1, backgroundColor: colors['surface/page'] },
+  content: { padding: sizes['space/6'], gap: sizes['space/3'] },
   brand: {
     fontSize: 27,
     fontWeight: '800',
-    color: '#132d43',
-    marginBottom: 24,
+    color: colors['text/primary'],
+    marginBottom: sizes['space/6'],
   },
-  title: { fontSize: 28, fontWeight: '700', color: '#132d43' },
+  title: { fontSize: 28, fontWeight: '700', color: colors['text/primary'] },
   subtitle: {
     fontSize: 16,
     lineHeight: 24,
-    color: '#526674',
-    marginBottom: 16,
+    color: colors['text/secondary'],
+    marginBottom: sizes['space/4'],
   },
   card: {
-    borderRadius: 16,
-    padding: 20,
-    gap: 16,
-    backgroundColor: '#fff',
+    borderRadius: sizes['radius/lg'],
+    padding: sizes['space/4'],
+    gap: sizes['space/4'],
+    backgroundColor: colors['surface/card'],
     borderWidth: 1,
-    borderColor: '#dce5ed',
+    borderColor: colors['border/subtle'],
   },
-  label: { fontSize: 12, fontWeight: '600', color: '#526674' },
-  matchup: { fontSize: 23, fontWeight: '700', color: '#132d43' },
+  label: { fontSize: 12, fontWeight: '600', color: colors['text/secondary'] },
+  matchup: { fontSize: 23, fontWeight: '700', color: colors['text/primary'] },
   detail: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#526674',
+    color: colors['text/secondary'],
     fontVariant: ['tabular-nums'],
   },
   button: {
     minHeight: 52,
-    borderRadius: 12,
-    backgroundColor: '#1466cf',
-    padding: 14,
+    borderRadius: sizes['radius/md'],
+    backgroundColor: colors['action/primary'],
+    padding: sizes['space/4'],
     alignItems: 'center',
   },
-  buttonLabel: { fontSize: 17, fontWeight: '600', color: '#fff' },
+  buttonLabel: { fontSize: 17, fontWeight: '600', color: colors['surface/card'] },
   pressed: { opacity: 0.65 },
 });

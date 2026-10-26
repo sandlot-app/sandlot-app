@@ -4,7 +4,7 @@ import type { PropsWithChildren } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 import type { SqlDatabase } from './database.ts';
 import { blockedMessages, gameSummary } from './game-summary.ts';
-import { openNativeDatabase } from './native-database.ts';
+import { openNativeDatabase } from './native-database';
 import { openOfflineGame } from './offline-game.ts';
 import type { DemoAction, OpenResult, SavedGame } from './offline-game.ts';
 
