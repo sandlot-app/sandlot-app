@@ -1,0 +1,12 @@
+{
+  "base": "b3478ecff359f2dc4f2f948950d2f0b31068f27f",
+  "pnpm": "10.28.0",
+  "app_code_changed": false,
+  "install_frozen": "PASS",
+  "pnpm_verify": "PASS engine722 web27 tokens5 mobile48",
+  "mobile_lint": "PASS",
+  "mobile_typecheck": "PASS",
+  "ios_android_bundle": "PASS",
+  "mac38": "NOT RUN; stopped before implementation",
+  "figma_match": "FAIL unchanged baseline, HBP design absent"
+}

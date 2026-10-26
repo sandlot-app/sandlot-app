@@ -1,0 +1,13 @@
+{
+  "figma_session": "e12597e2-ceec-4c22-af53-d229e21c47dd",
+  "file": "J8F4zRkkV63ji3AYhcHHwA",
+  "node": "165:11107",
+  "baseline_source": "a3338ee91a12626c4c45641d3180793ba6e45a8a",
+  "baseline_original": "docs/verification/27/final.png",
+  "new_ticket_acceptance": false,
+  "sha256": {
+    "figma/field-figma.png": "774d528b3d352634693479e28a01b0e96e2d0e50821df1b633349fddca4604fd",
+    "figma/field-baseline-mac.png": "b5a71f5e2583ec58c85a40d102d09f95a7d8eac0b2d37116ab5b2d42bd7cb687",
+    "figma/field-baseline-pair.png": "cfc3a7b22b0059e85fefd5c51370f030075086c67be6be40d3bf972c387434e8"
+  }
+}
