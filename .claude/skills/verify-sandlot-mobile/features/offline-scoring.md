@@ -25,7 +25,7 @@ Preconditions:
 - The existing demo is in progress. The flow reads its actual count and pending total and does not assume inning 1 or an empty count.
 - The relaunch step uses the default Metro port 8091. A run on another port needs an external copy of the flow with only that link changed.
 
-- **Complete Mac acceptance.** Run `verify.sh drive offline-acceptance.yaml` after launch and doctor. It combines the layout, all pitch controls and gallery paths in one Maestro session. Its passing Mac proof is in `docs/verification/26`.
+- **Complete Mac acceptance.** Run `verify.sh drive offline-acceptance.yaml` after launch and doctor. It combines the layout, all pitch controls and gallery paths in one Maestro session. Its passing result and log are in `docs/verification/26`, with screenshots and video in the `proof-26` release.
 - **Pitch and undo.** Run `verify.sh drive offline-scoring.yaml`. It captures the existing count, records a ball, confirms the count changes and waiting total increases by one, then undoes it. The exact prior count returns and waiting increases by another play.
 - **Reopen.** The same flow returns to Games, taps Continue scoring, and compares the exact prior count and pending total. It then stops Expo Go without clearing data, reopens the project link, and compares them again.
 - **Other pitch buttons.** Capture the count before and after tapping `pitch-strike` then `strike-looking`, `pitch-strike` then `strike-swinging`, `pitch-foul`, and `scorer-more` then `more-hit_by_pitch`. Undo each accepted pitch before trying the next. Use three strikes and four balls to show an out and a runner on first. Save before and after screenshots and the resulting accessibility tree.

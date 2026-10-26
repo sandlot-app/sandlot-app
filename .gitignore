@@ -12,3 +12,9 @@ android/
 
 # Verification runs and evidence (see .claude/skills/verify-sandlot-mobile)
 .verify/
+
+# Ticket proof: only RESULT.txt and maestro.log are committed.
+# Screenshots and video go in the ticket's proof-<number> release (docs/agents/implementation-loop.md).
+docs/verification/*/*
+!docs/verification/*/RESULT.txt
+!docs/verification/*/maestro.log
