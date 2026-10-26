@@ -106,14 +106,15 @@ export function PlayerChip({ number, name, role, followed = false, onPress, test
   return onPress ? <Pressable accessibilityRole="button" accessibilityLabel={`${name}, number ${number}`} onPress={onPress} testID={testID}>{chip}</Pressable> : <View testID={testID}>{chip}</View>;
 }
 
-function PitchButton({ label, kind, onPress, selected, testID }: {
+export function PitchButton({ label, kind, onPress, selected, disabled = false, testID }: {
   label: string;
   kind: 'ball' | 'strike' | 'foul' | 'in-play';
   onPress: () => void;
   selected?: boolean;
-  testID: string;
+  disabled?: boolean;
+  testID?: string;
 }) {
-  return <Pressable accessibilityRole="button" onPress={onPress} style={[styles.pitchButton, selected && styles.pitchSelected]} testID={testID}>
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[styles.pitchButton, (selected || disabled) && styles.pitchSelected]} testID={testID}>
     {kind === 'in-play' ? <Text style={styles.pitchIcon}>⚾</Text> : <View style={kind === 'ball' ? styles.ballDot : kind === 'strike' ? styles.strikeDot : styles.foulDot} />}
     <Text style={styles.pitchLabel}>{label}</Text>
   </Pressable>;
@@ -141,10 +142,13 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, testID }: {
   const [choosingStrike, setChoosingStrike] = useState(false);
   const strike = (pitch: Pitch) => { setChoosingStrike(false); onPitch(pitch); };
   return <View style={styles.scorerBar} testID={testID}>
-    {choosingStrike ? <View style={styles.strikeChooser}>
-      <Text style={styles.strikeHeading}>Strike —</Text>
-      <Pressable accessibilityRole="button" onPress={() => strike('strike-looking')} style={styles.strikeOption} testID="strike-looking"><Text style={styles.pitchLabel}>Looking</Text></Pressable>
-      <Pressable accessibilityRole="button" onPress={() => strike('strike-swinging')} style={styles.strikeOption} testID="strike-swinging"><Text style={styles.pitchLabel}>Swinging</Text></Pressable>
+    {choosingStrike ? <View style={styles.strikeControls}>
+      <View style={styles.strikeChooser}>
+        <Text style={styles.strikeHeading}>Strike —</Text>
+        <Pressable accessibilityRole="button" onPress={() => strike('strike-looking')} style={styles.strikeOption} testID="strike-looking"><Text style={styles.pitchLabel}>Looking</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => strike('strike-swinging')} style={styles.strikeOption} testID="strike-swinging"><Text style={styles.pitchLabel}>Swinging</Text></Pressable>
+      </View>
+      <View style={styles.strikeProgress}><View style={styles.strikeProgressFill} /></View>
     </View> : null}
     <View style={styles.pitchRow}>
       <PitchButton label="Ball" kind="ball" onPress={() => onPitch('ball')} testID="pitch-ball" />
@@ -178,7 +182,7 @@ const styles = createStyles({
   link: { ...textStyles['Body/Strong'], color: colors['action/primary'] },
   sheetScroll: { flexGrow: 0, flexShrink: 1 },
   sheetBody: { paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/4'], paddingBottom: sizes['space/2'], gap: sizes['space/4'] },
-  sheetActions: { paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/2'], gap: sizes['space/3'] },
+  sheetActions: { paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/4'], gap: sizes['space/3'] },
   section: { gap: sizes['space/2'] },
   caps: { ...textStyles['Label/Caps'], color: colors['text/tertiary'], textTransform: 'uppercase' },
   primary: { minHeight: 52, borderRadius: sizes['radius/full'], backgroundColor: colors['scoreboard/bg'], alignItems: 'center', justifyContent: 'center', paddingHorizontal: sizes['space/4'] },
@@ -204,6 +208,9 @@ const styles = createStyles({
   strikeDot: { width: sizes['dot/size'], height: sizes['dot/size'], borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
   foulDot: { width: sizes['dot/size'], height: sizes['dot/size'], borderRadius: sizes['radius/full'], borderWidth: 2, borderColor: colors['count/strike'] },
   strikeChooser: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
+  strikeControls: { gap: sizes['space/2'] },
+  strikeProgress: { height: 2, backgroundColor: colors['border/subtle'] },
+  strikeProgressFill: { width: '67%', height: 2, backgroundColor: colors['count/strike'] },
   strikeHeading: { ...textStyles['Body/Strong'], color: colors['text/secondary'] },
   strikeOption: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors['count/strike'], borderRadius: sizes['radius/full'] },
   barActions: { flexDirection: 'row', gap: sizes['space/3'] },

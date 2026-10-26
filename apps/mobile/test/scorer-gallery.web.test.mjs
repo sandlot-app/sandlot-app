@@ -67,12 +67,17 @@ test('gallery opens and closes sheets and ignores a disabled button', { timeout:
   });
   await new Promise((resolve) => server.listen(0, resolve));
   const port = server.address().port;
-  const browser = spawn(chrome, ['--headless=new', '--no-first-run', '--no-default-browser-check', '--disable-dev-shm-usage', '--remote-debugging-port=19038', `--user-data-dir=${profile}`, 'about:blank'], {
+  const browser = spawn(chrome, ['--headless=new', '--no-first-run', '--no-default-browser-check', '--disable-dev-shm-usage', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], {
     stdio: 'ignore', windowsHide: true,
   });
   try {
+    const debugPort = await retry(() => {
+      const portFile = join(profile, 'DevToolsActivePort');
+      assert.ok(existsSync(portFile), 'Chrome debugging port should be ready');
+      return Number(readFileSync(portFile, 'utf8').split(/\r?\n/, 1)[0]);
+    });
     const info = await retry(async () => {
-      const targets = await (await fetch('http://localhost:19038/json')).json();
+      const targets = await (await fetch(`http://localhost:${debugPort}/json`)).json();
       const page = targets.find((target) => target.type === 'page' && target.url === 'about:blank');
       assert.ok(page, 'headless browser page should be ready');
       return page;
@@ -113,8 +118,16 @@ test('gallery opens and closes sheets and ignores a disabled button', { timeout:
       await visible('gallery-sheet-closed');
       await cdp.send('Page.navigate', { url: `http://localhost:${port}/?gallery=button` });
       await visible('gallery-button');
+      await click('gallery-enabled-button');
+      assert.equal(await evaluate(`document.querySelector('[data-testid="gallery-button-count"]').textContent`), 'Pressed 1 time');
       await click('gallery-disabled-button');
-      assert.equal(await evaluate(`document.querySelector('[data-testid="gallery-button-count"]').textContent`), 'Pressed 0 times');
+      assert.equal(await evaluate(`document.querySelector('[data-testid="gallery-button-count"]').textContent`), 'Pressed 1 time');
+      await cdp.send('Page.navigate', { url: `http://localhost:${port}/?gallery=bar` });
+      await visible('gallery-scorer-bar-saved');
+      await click('pitch-strike');
+      await visible('strike-looking');
+      await click('strike-looking');
+      assert.equal(await evaluate(`document.body.innerText.includes('Pitch: strike-looking')`), true);
     } finally { cdp.close(); }
   } finally {
     browser.kill();

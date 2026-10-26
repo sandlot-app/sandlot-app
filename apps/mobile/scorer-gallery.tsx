@@ -1,7 +1,7 @@
 import { tokens } from '@sandlot/tokens';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { PlayerChip, PrimaryButton, ScorerBar, Sheet, SheetHeader, SheetSection, type Pitch, type SyncState } from './scorer-ui';
+import { PitchButton, PlayerChip, PrimaryButton, ScorerBar, Sheet, SheetHeader, SheetSection, type Pitch, type SyncState } from './scorer-ui';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -62,6 +62,13 @@ export default function ScorerGallery({ onExit }: { onExit: () => void }) {
         <ScorerBar sync={saved} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} testID="gallery-scorer-bar-saved" />
         <ScorerBar sync={{ status: 'saving', lastPlay: 'Strike' }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} testID="gallery-scorer-bar-saving" />
         <ScorerBar sync={{ status: 'offline', lastPlay: 'Ball', waiting: 3 }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} testID="gallery-scorer-bar-offline" />
+        <Text style={styles.heading}>Disabled pitch buttons</Text>
+        <View style={styles.pitchSampleRow} testID="gallery-disabled-pitches">
+          <PitchButton label="Ball" kind="ball" disabled onPress={() => {}} />
+          <PitchButton label="Strike" kind="strike" disabled onPress={() => {}} />
+          <PitchButton label="Foul" kind="foul" disabled onPress={() => {}} />
+          <PitchButton label="In play" kind="in-play" disabled onPress={() => {}} />
+        </View>
       </View> : null}
     </ScrollView>
     <Sheet open={sheetOpen} onRequestClose={() => setSheetOpen(false)} testID="gallery-sheet"
@@ -87,5 +94,6 @@ const styles = createStyles({
   chipRow: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/4'] },
   chipRole: { ...textStyles.Caption, color: colors['text/on-accent'] },
   sampleRow: { minHeight: 56, justifyContent: 'center', borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/md'], paddingHorizontal: sizes['space/3'] },
+  pitchSampleRow: { flexDirection: 'row', gap: sizes['space/2'] },
   rowText: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
 });
