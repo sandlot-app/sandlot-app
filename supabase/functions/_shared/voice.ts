@@ -16,6 +16,7 @@ export const unavailable = reply(502, { error: 'voice_unavailable' });
 export function rateLimit(max: number, windowMs: number) {
   const recent = new Map<string, number[]>();
   return (userId: string, now: number): boolean => {
+    for (const [id, times] of recent) if (times.every((at) => now - at >= windowMs)) recent.delete(id);
     const kept = (recent.get(userId) ?? []).filter((at) => now - at < windowMs);
     if (kept.length >= max) {
       recent.set(userId, kept);
@@ -27,12 +28,24 @@ export function rateLimit(max: number, windowMs: number) {
   };
 }
 
-/** A list of short display names from the phone, or null if it isn't one. */
+/** Short display names from the phone, skipping any that are empty or have characters a name doesn't, or null if it isn't a list. */
 export function names(value: unknown, max = 40): string[] | null {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > max) return null;
-  if (!value.every((item) => typeof item === 'string' && item.length <= 40 && /^[\p{L}\p{N} .'’-]*$/u.test(item))) return null;
-  return value as string[];
+  return value.filter((item): item is string => typeof item === 'string' && item.trim() !== '' && item.length <= 40
+    && /^[\p{L}\p{N} .'’-]+$/u.test(item));
+}
+
+/** Last names only: what the transcriber needs to spell a player's name, and no more (data minimization). */
+export const lastNames = (list: string[]) => [...new Set(list.map((name) => name.trim().split(/\s+/).at(-1)!.replace(/^[.'’-]+|[.'’-]+$/g, '')).filter(Boolean))];
+
+/**
+ * Supabase's answer to "who sent this token". A 4xx means the token is no good (401), except 429, which, like a 5xx
+ * or a network error, means sign-in is busy or down right now (503), so the phone doesn't throw away a good session.
+ */
+export function signedIn(user: { id: string } | null, error: { status?: number } | null): { userId: string | null; unavailable: boolean } {
+  const rejected = error?.status !== undefined && error.status >= 400 && error.status < 500 && error.status !== 429;
+  return { userId: user?.id ?? null, unavailable: Boolean(error) && !rejected };
 }
 
 /** Who signed the request, or whether the auth service couldn't say. */

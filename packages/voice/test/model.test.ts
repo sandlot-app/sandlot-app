@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fromModel, parserInstructions } from '../src/model.ts';
 import { route } from '../src/route.ts';
-import { gameWith, said } from './game.ts';
+import { said } from './game.ts';
 
 const play = (fields: Record<string, unknown>) => ({
   words: '', pitch: null, looking: null, bases: null, trajectory: null, fielder: null, event: null, to: null, who: null, ...fields,
@@ -27,7 +27,11 @@ describe("the parser model's answer", () => {
     expect(fromModel({ result: 'plays', plays: [play({ kind: 'hit', bases: 5 })] })).toEqual({ kind: 'unclear' });
     expect(fromModel({ result: 'plays', plays: [play({ kind: 'pitch', pitch: 'balk' })] })).toEqual({ kind: 'unclear' });
     expect(fromModel({ result: 'plays', plays: [play({ kind: 'teleport' })] })).toEqual({ kind: 'unclear' });
-    expect(fromModel({ result: 'plays', plays: [play({ kind: 'out', trajectory: 'ground', fielder: 'ROVER2' })] })).toMatchObject({ kind: 'plays' });
+    expect(fromModel({ result: 'plays', plays: [play({ kind: 'out', trajectory: 'ground', fielder: 'ROVER2' })] })).toEqual({ kind: 'unclear' });
+    expect(fromModel({ result: 'plays', plays: [play({ kind: 'steal', to: '4' })] })).toEqual({ kind: 'unclear' });
+    expect(fromModel({ result: 'plays', plays: [play({ kind: 'pickoff', to: 'home' })] })).toEqual({ kind: 'unclear' });
+    expect(fromModel({ result: 'plays', plays: [play({ kind: 'steal', who: { name: null, number: null, base: '5' } })] })).toEqual({ kind: 'unclear' });
+    expect(fromModel({ result: 'plays', plays: [play({ kind: 'steal', who: { name: null, number: 'twelve', base: null } })] })).toEqual({ kind: 'unclear' });
   });
 
   it("B4: the echo check compares the model's play with the whole transcript", () => {
@@ -41,6 +45,5 @@ describe("the parser model's answer", () => {
     const text = parserInstructions({ batting: ['J. Soto', 'L. Darcy'], fielding: ['K. Moss'], runners: ['J. Soto on 1st'] });
     expect(text).toContain('Batting team: J. Soto, L. Darcy. Fielding team: K. Moss.');
     expect(text).toContain('Runners on base: J. Soto on 1st.');
-    expect(gameWith([])).toBeTruthy();
   });
 });

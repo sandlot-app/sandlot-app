@@ -1,4 +1,4 @@
-import { names, type OpenAi, reply, type Reply, unavailable } from '../_shared/voice.ts';
+import { lastNames, names, type OpenAi, reply, type Reply, unavailable } from '../_shared/voice.ts';
 
 export const SAMPLE_RATE = 24000;
 export const SECRET_SECONDS = 60;
@@ -29,7 +29,7 @@ export async function startSession(body: unknown, openai: OpenAi, model: string)
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: SAMPLE_RATE },
-            transcription: { model, languages: ['en'], keywords: [...SCORING_WORDS, ...lineup] },
+            transcription: { model, languages: ['en'], keywords: [...SCORING_WORDS, ...lastNames(lineup)] },
             turn_detection: null,
           },
         },

@@ -187,7 +187,7 @@ Taps record pitches and voice records plays. That split keeps voice cheap, at ab
 
 The prototype is thrown away. Its recorded test set and the on-phone phrase parser carry into the real app. September's voice edge-case spec carries over unchanged, apart from deferring parent flags.
 
-The first version records the whole press, then uploads the clip for transcription. It is simpler to build and test, and it runs in Expo Go. Streaming transcription, which shows words while the scorer speaks, comes before the beta.
+The first version streams the press for live transcription, so words show while the scorer speaks, as the Figma screens do. When streaming can't connect, the phone uploads the recorded clip instead (spec A4, A5). The contract's Voice section has both endpoints.
 
 ## Family features
 
@@ -262,14 +262,14 @@ Milestones follow dependencies, not dates. Each one ends in a check that has to 
 | 2 | Shared contract | Both | [contract.md](contract.md): event numbering, upload request, commit checks, errors, live page, demo access | Contract agreed in PR 2. Kevin's backend stores an event the engine produced. |
 | 3 | Engine core | Christian | Mustang rules for pitches, walks, strikeouts, balls in play with runner advances, steals, inning changes, score, undo and box score. The interface freezes early so voice and sync can build on it. | Fixtures pass, and one real game replays to the right box score |
 | 4 | Tap scoring app | Christian | Lineup setup, diamond, pitch bar, play outcomes, play log, undo, games saved on the phone | A full game scored by tap from video, in airplane mode |
-| 5 | Voice | Christian | Hold to talk, recorded clip sent for transcription, AI parser, engine check, confirm card | Meets the five targets in Voice scoring |
+| 5 | Voice | Christian | Hold to talk, streaming transcription with a recorded-clip fallback, AI parser, engine check, confirm card | Meets the five targets in Voice scoring |
 | 6 | Event sync and family live page | Kevin | Events uploaded to Supabase, live score on a private web link | A second device sees each play within a few seconds |
 | 7 | Live streaming and the demo clip | Kevin | A second phone streams through an existing app to a hosted service, which records it. The live page plays it with the score drawn on top. One clip of one play is cut from the recording using the event's time and an offset entered by hand, and shown on the live page next to the stat card. The demo uses footage that needs no consent. | Video plays on the live page with a correct score overlay, and the clip shows the whole play |
 | 8 | Game stat card | Christian | A card of one child's game line, styled for sharing, exported as an image. It shows only the stats the division uses. | After a scored game, the card exports in one tap and matches the box score |
 | 9 | YC demo | Both | One recorded game scored and streamed end to end, a stat card with one highlight clip, design mock-ups of the top-plays feed and a scout's view labeled as what comes next, the live page at a public link, at least three real parents trying the app, the demo video, the founder video, the written answers. Details in [demo-plan.md](demo-plan.md). | Application submitted |
 | 10 | Accounts, teams and privacy | Both | Sign in with Apple and Google, invite links, parent claims, row-level security, deletion | Database tests pass for every visibility rule, and a parent claims and deletes a test child |
 | 11 | GameChanger import | Kevin | Rosters and season stat lines from GameChanger's CSV export, marked imported | A real team's export loads, and its season totals match GameChanger's |
-| 12 | Beta with the Moraga Mustang team | Both | Apple developer account, TestFlight, streaming transcription for voice, error tracking, sync and latency dashboards, alerts, weekly releases | Six games in a row match GameChanger's box scores, with zero data loss |
+| 12 | Beta with the Moraga Mustang team | Both | Apple developer account, TestFlight, error tracking, sync and latency dashboards, alerts, weekly releases | Six games in a row match GameChanger's box scores, with zero data loss |
 | 13 | In-app broadcaster, replays and moderation | Kevin | Development build with a streaming module, recording, media consent, replays, report and stop-stream tools | A full game streamed from the app, with a replay |
 | 14 | Highlight clips and the league feed | Both | Clips cut around each of a child's plays, a clip list for each family, one-tap export, the league's top-plays feed ranked by game situation and family reactions, vision models that trim, check and frame clips | After a streamed game, a parent sees clips of only their child and exports one, and the league feed shows only that league's registered families |
 | 15 | Payments | Kevin | The paid family tier through the app stores, priced from the measured cost of a streamed game | Sandbox purchases work on both stores |
@@ -287,7 +287,7 @@ The architecture stays. What changes is the order of work, so the riskiest parts
 | Engine, event log, scorer lock, AI proposes and engine decides | As designed | Kept | These are the right foundations |
 | Voice edge-case spec | Full spec | Kept, with parent flags deferred | It is thorough and still fits |
 | Order of work | Backend, privacy and presets before any game is scored, voice after | Engine, tap app and voice first. Accounts and privacy after the YC demo. | Proves the scoring experience first |
-| Voice transcription | Streaming from the first version | A recorded clip first, streaming before the beta | Simpler to build and test, and it runs in Expo Go |
+| Voice transcription | Streaming from the first version | Streaming first, with a recorded clip as the fallback (changed in October from clip first) | The Figma screens show live words, and the clip path still covers a weak signal |
 | Who builds | Codex writes all the code | Christian and Kevin, each with Claude Code and Codex | Two people with separate directories |
 | Sports | Baseball presets | Baseball and softball in the rule data from day one. Softball presets ship with a softball beta team. | Adding a sport after the types are fixed means a rewrite |
 | Beta presets | Little League Minors and Majors | Moraga Mustang, then Pinto, both PONY | The beta team plays Mustang |

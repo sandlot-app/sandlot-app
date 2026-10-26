@@ -78,16 +78,27 @@ export function parserInstructions(context: ParserContext): string {
 const isOneOf = <T extends string>(values: readonly T[], value: unknown): value is T => typeof value === 'string' && (values as readonly string[]).includes(value);
 const base = (value: unknown): Base | undefined => value === '1' ? 1 : value === '2' ? 2 : value === '3' ? 3 : undefined;
 const target = (value: unknown): Target | undefined => value === 'home' ? 'home' : base(value);
+const position = (value: unknown): Position | undefined => isOneOf(positions, value) ? value : undefined;
+
+/** A field the model may leave null. Present but unreadable is `bad`, which rejects the whole answer rather than dropping the field. */
+const bad = Symbol('bad');
+function optional<T>(value: unknown, read: (value: unknown) => T | undefined): T | undefined | typeof bad {
+  if (value === null || value === undefined) return undefined;
+  return read(value) ?? bad;
+}
 
 function mention(value: unknown): Mention | undefined | null {
   if (value === null || value === undefined) return undefined;
   if (typeof value !== 'object') return null;
-  const { name, number, base: on } = value as Record<string, unknown>;
+  const raw = value as Record<string, unknown>;
+  const name = optional(raw.name, (text) => typeof text === 'string' ? text.trim().toLowerCase() : undefined);
+  const number = optional(raw.number, (text) => typeof text === 'string' && /^\d{1,2}$/.test(text) ? text : undefined);
+  const on = optional(raw.base, base);
+  if (name === bad || number === bad || on === bad) return null;
   const who: Mention = {};
-  if (typeof name === 'string' && name.trim()) who.name = name.trim().toLowerCase();
-  if (typeof number === 'string' && /^\d{1,2}$/.test(number)) who.number = number;
-  const onBase = base(on);
-  if (onBase) who.base = onBase;
+  if (name) who.name = name;
+  if (number) who.number = number;
+  if (on) who.base = on;
   return Object.keys(who).length ? who : undefined;
 }
 
@@ -96,8 +107,9 @@ function play(raw: unknown): Spoken | null {
   if (!raw || typeof raw !== 'object') return null;
   const value = raw as Record<string, unknown>;
   const who = mention(value.who);
-  if (who === null) return null;
-  const fielder = isOneOf(positions, value.fielder) ? value.fielder as Position : undefined;
+  const fielder = optional(value.fielder, position);
+  const to = value.kind === 'pickoff' ? optional(value.to, base) : optional(value.to, target);
+  if (who === null || fielder === bad || to === bad) return null;
   const at = fielder ? { fielder } : {};
   const person = (key: 'batter' | 'runner') => who ? { [key]: who } : {};
   switch (value.kind) {
@@ -108,27 +120,13 @@ function play(raw: unknown): Spoken | null {
     case 'out': return isOneOf(trajectories, value.trajectory) ? { kind: 'out', trajectory: value.trajectory, ...at, ...person('batter') } : null;
     case 'error': return { kind: 'error', ...at, ...person('batter') };
     case 'reached': return { kind: 'reached', ...at, ...person('batter') };
-    case 'steal': {
-      const to = target(value.to);
-      return { kind: 'steal', ...(to ? { to } : {}), ...person('runner') };
-    }
-    case 'caught_stealing': {
-      const to = target(value.to);
-      return { kind: 'caught_stealing', ...(to ? { at: to } : {}), ...person('runner') };
-    }
-    case 'pickoff': {
-      const on = base(value.to);
-      return { kind: 'pickoff', ...(on ? { at: on } : {}), ...person('runner') };
-    }
-    case 'advance': {
+    case 'steal': return { kind: 'steal', ...(to ? { to } : {}), ...person('runner') };
+    case 'caught_stealing': return { kind: 'caught_stealing', ...(to ? { at: to } : {}), ...person('runner') };
+    case 'pickoff': return { kind: 'pickoff', ...(to && to !== 'home' ? { at: to } : {}), ...person('runner') };
+    case 'advance':
       if (value.event !== 'wild_pitch' && value.event !== 'passed_ball') return null;
-      const to = target(value.to);
       return { kind: 'advance', event: value.event, ...(to ? { to } : {}), ...person('runner') };
-    }
-    case 'moves': {
-      const to = target(value.to);
-      return to ? { kind: 'moves', to, ...person('runner') } : null;
-    }
+    case 'moves': return to ? { kind: 'moves', to, ...person('runner') } : null;
     case 'scores': return { kind: 'scores', ...person('runner') };
     case 'undo': return { kind: 'undo' };
     default: return null;

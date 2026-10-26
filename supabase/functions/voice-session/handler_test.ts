@@ -1,5 +1,5 @@
 import { deepStrictEqual, strictEqual } from 'node:assert/strict';
-import { rateLimit, voiceEndpoint, type OpenAi } from '../_shared/voice.ts';
+import { lastNames, names, rateLimit, signedIn, voiceEndpoint, type OpenAi } from '../_shared/voice.ts';
 import { REALTIME_URL, SCORING_WORDS, startSession } from './handler.ts';
 
 type Call = { path: string; body: unknown };
@@ -25,7 +25,7 @@ Deno.test('voice-session asks OpenAI for a one-minute transcription-only secret 
       audio: {
         input: {
           format: { type: 'audio/pcm', rate: 24000 },
-          transcription: { model: 'gpt-live-transcribe', languages: ['en'], keywords: [...SCORING_WORDS, 'J. Soto', 'L. Darcy'] },
+          transcription: { model: 'gpt-live-transcribe', languages: ['en'], keywords: [...SCORING_WORDS, 'Soto', 'Darcy'] },
           turn_detection: null,
         },
       },
@@ -33,12 +33,22 @@ Deno.test('voice-session asks OpenAI for a one-minute transcription-only secret 
   });
 });
 
-Deno.test('voice-session refuses a lineup that is not a short list of names', async () => {
+Deno.test('voice-session refuses a lineup that is not a short list, and skips names it cannot use', async () => {
   const { openai, calls } = fakeOpenAi(200, {});
   strictEqual((await startSession({ names: 'J. Soto' }, openai, 'm')).status, 400);
-  strictEqual((await startSession({ names: ['<script>'] }, openai, 'm')).status, 400);
   strictEqual((await startSession({ names: Array(41).fill('A') }, openai, 'm')).status, 400);
   strictEqual(calls.length, 0);
+  deepStrictEqual(names(['J. Soto', '<script>', '', 'A & B', "D. O'Neil-Ruiz"]), ['J. Soto', "D. O'Neil-Ruiz"]);
+  deepStrictEqual(lastNames(['J. Soto', 'R. Soto', "D. O'Neil-Ruiz", 'Lin']), ['Soto', "O'Neil-Ruiz", 'Lin']);
+});
+
+Deno.test('sign-in answers: a rejected token is 401, but a busy or down sign-in service is 503', () => {
+  deepStrictEqual(signedIn({ id: 'user-1' }, null), { userId: 'user-1', unavailable: false });
+  deepStrictEqual(signedIn(null, { status: 403 }), { userId: null, unavailable: false });
+  deepStrictEqual(signedIn(null, { status: 401 }), { userId: null, unavailable: false });
+  deepStrictEqual(signedIn(null, { status: 429 }), { userId: null, unavailable: true });
+  deepStrictEqual(signedIn(null, { status: 500 }), { userId: null, unavailable: true });
+  deepStrictEqual(signedIn(null, {}), { userId: null, unavailable: true });
 });
 
 Deno.test('A10: an OpenAI failure or a bad answer is "voice unavailable", so the phone falls back to taps', async () => {
@@ -73,5 +83,6 @@ Deno.test('the rate limit lets each phone make 30 requests a minute', async () =
   strictEqual(allow('user-1', 100), false);
   strictEqual(allow('user-2', 100), true);
   strictEqual(allow('user-1', 60_000), true);
+  strictEqual(allow('user-2', 200_000), true, 'users with no recent requests are forgotten');
   strictEqual((await endpoint('user-1', false, () => false)(post())).status, 429);
 });
