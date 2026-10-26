@@ -1,6 +1,9 @@
-name: A home run derives the batter score and leaves an unlisted runner in place
-cite: Official Baseball Rules 5.06(a)(1), 5.09; parent spec 10 runner identity,
-  explicit destinations, atomic plays; ADR 0001
+name: A home run that scores the batter but leaves an unlisted runner on second is rejected
+cite: Official Baseball Rules 5.06(a)(1), 5.09(b)(9) (a runner who passes a preceding
+  runner before that runner is out is out),
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf;
+  parent spec 10 explicit destinations; ADR 0001. Was home-run-moves-only-listed-runners,
+  which accepted the batter passing the runner on second; the scorer must say what happened
 preset: moraga-mustang-first-half
 started: true
 given:
@@ -35,18 +38,4 @@ when:
             id: away-1
           to: home
 then:
-  bases:
-    "2":
-      player:
-        kind: opponent
-        id: away-2
-      chargedTo:
-        kind: player
-        id: home-1
-  score:
-    home: 0
-    away: 2
-  runsThisHalf: 2
-  nextBatter:
-    home: 0
-    away: 3
+  rejected: runner_passed

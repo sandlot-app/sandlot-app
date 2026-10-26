@@ -89,7 +89,8 @@ describe('random games through the public event log', () => {
           book.record([{ kind: 'pitch', result: 'in_play' }, { kind: 'ball_in_play', outcome: 'out', trajectory: 'fly', fielders: ['CF'], advances: [] }]);
         } else if (kind === 'runner' || kind === 'retire') {
           const occupied = ([1, 2, 3] as Base[]).filter((base) => book.state.bases[base]);
-          const base = occupied[choice % occupied.length];
+          // A passed ball scores only the lead runner, so no trailing runner passes them (OBR 5.09(b)(9)).
+          const base = kind === 'retire' ? occupied[choice % occupied.length] : occupied.at(-1);
           if (base === undefined) {
             book.record([{ kind: 'pitch', result: 'hit_by_pitch' }]);
           } else {

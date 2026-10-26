@@ -42,6 +42,7 @@ export const REJECT_CODES = [
   'balks_not_allowed',
   'pitcher_reentry_not_allowed',
   'bunting_not_allowed',
+  'runner_passed',
 ] as const;
 
 export type RejectCode = (typeof REJECT_CODES)[number];
@@ -230,10 +231,19 @@ function changePitcher(setup: GameSetup, game: GameState, side: TeamSide, incomi
 function moveRunners(setup: GameSetup, game: GameState, commands: RunnerCommand[]): RejectCode | null {
   const outs = game.outs + commands.filter(({ to }) => to === 'out').length;
   if (outs > 3) return 'too_many_outs';
+  const started = ([1, 2, 3] as const).flatMap((from) => {
+    const runner = game.bases[from];
+    return runner ? [{ from, player: runner.player }] : [];
+  });
   for (const command of commands) {
     const code = moveRunner(setup, game, command);
     if (code) return code;
   }
+  const finishes = started.map(({ from, player }) => ({
+    from,
+    to: commands.filter(({ runner }) => samePlayer(runner, player)).at(-1)?.to ?? from,
+  }));
+  if (passesRunner(finishes)) return 'runner_passed';
   // A runner event never makes a force out, so its runs count even when the play makes the third out (OBR 5.08(a)).
   const scored = commands.filter(({ to }) => to === 'home').length;
   const runs = game.half === 'bottom' && game.inning >= setup.rules.innings
@@ -409,6 +419,11 @@ function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball
       bases[to] = runner;
     }
   }
+  const finishes = active.map(({ from }) => ({
+    from,
+    to: destinations.find((advance) => advance.from === from)?.to ?? from,
+  }));
+  if (passesRunner(finishes)) return 'runner_passed';
   let forceThrough = 0;
   for (const base of [1, 2, 3] as const) {
     if (!game.bases[base]) break;
@@ -429,6 +444,12 @@ function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball
   }
   const runs = thirdOutPreventsRuns ? 0 : destinations.filter(({ to }) => to === 'home').length;
   return { bases, runs, totalOuts };
+}
+
+/** A runner who passes a runner ahead of them, before that runner is out, is out (OBR 5.09(b)(9)), so the play as recorded can't stand. */
+function passesRunner(finishes: { from: 0 | Base; to: Destination | 0 }[]): boolean {
+  const safe = finishes.flatMap(({ from, to }) => (to === 'out' ? [] : [{ from, at: to === 'home' ? 4 : to }]));
+  return safe.some((trailing) => safe.some((lead) => lead.from > trailing.from && trailing.at > lead.at));
 }
 
 function samePlayer(a: PlayerRef, b: PlayerRef): boolean {
