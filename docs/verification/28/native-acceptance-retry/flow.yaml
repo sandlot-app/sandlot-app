@@ -1,0 +1,366 @@
+appId: host.exp.Exponent
+---
+- runFlow: _ready.yaml
+- assertVisible:
+    id: "new-game"
+- takeScreenshot: games-before-setup
+- tapOn:
+    id: "new-game"
+- extendedWaitUntil:
+    visible:
+      id: "game-setup"
+    timeout: 15000
+- assertVisible:
+    id: "start-configured-game"
+    enabled: false
+- takeScreenshot: setup-before-lineups
+- tapOn:
+    id: "season-half-first"
+- assertVisible:
+    id: "season-half-note"
+    text: ".*6 outs.*"
+- takeScreenshot: setup-first-half
+- tapOn:
+    id: "season-half-second"
+- assertVisible:
+    id: "season-half-note"
+    text: ".*9 outs.*"
+- tapOn:
+    id: "setup-lineup-away"
+- extendedWaitUntil:
+    visible:
+      id: "lineup-screen"
+    timeout: 15000
+- takeScreenshot: lineup-before-reorder
+- scrollUntilVisible:
+    element:
+      id: "save-lineup"
+    direction: DOWN
+- takeScreenshot: lineup-reference-bottom
+- tapOn:
+    id: "save-lineup"
+- extendedWaitUntil:
+    visible:
+      id: "game-setup"
+    timeout: 15000
+- takeScreenshot: setup-reference-state
+- tapOn:
+    id: "setup-lineup-away"
+- extendedWaitUntil:
+    visible:
+      id: "lineup-screen"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "lineup-position-sample-away-7"
+    direction: DOWN
+- tapOn:
+    id: "lineup-position-sample-away-7"
+- scrollUntilVisible:
+    element:
+      id: "position-bats-only"
+    direction: DOWN
+- tapOn:
+    id: "position-bats-only"
+- scrollUntilVisible:
+    element:
+      id: "save-lineup"
+    direction: DOWN
+- tapOn:
+    id: "save-lineup"
+- assertVisible:
+    id: "lineup-message"
+    text: ".*starting pitcher.*"
+- takeScreenshot: lineup-missing-pitcher-rejected
+- scrollUntilVisible:
+    element:
+      id: "lineup-position-sample-away-7"
+    direction: UP
+- tapOn:
+    id: "lineup-position-sample-away-7"
+- scrollUntilVisible:
+    element:
+      id: "position-P"
+    direction: DOWN
+- tapOn:
+    id: "position-P"
+- scrollUntilVisible:
+    element:
+      id: "lineup-drag-sample-away-1"
+    direction: UP
+    centerElement: true
+- takeScreenshot: lineup-drag-target-before
+- copyTextFrom:
+    id: "lineup-order-sample-away-1"
+- evalScript: ${output.originalOrder = maestro.copiedText}
+- swipe:
+    from:
+      id: "lineup-drag-sample-away-1"
+    direction: DOWN
+    duration: 1200
+- copyTextFrom:
+    id: "lineup-order-sample-away-1"
+- assertTrue: ${maestro.copiedText !== output.originalOrder}
+- takeScreenshot: lineup-after-real-drag
+- scrollUntilVisible:
+    element:
+      id: "lineup-position-sample-away-1"
+    direction: DOWN
+- tapOn:
+    id: "lineup-position-sample-away-1"
+- scrollUntilVisible:
+    element:
+      id: "position-P"
+    direction: DOWN
+- tapOn:
+    id: "position-P"
+- scrollUntilVisible:
+    element:
+      id: "lineup-starting-pitcher"
+    direction: DOWN
+- assertVisible:
+    id: "lineup-starting-pitcher"
+    text: ".*K. Moss.*"
+- takeScreenshot: lineup-position-swap
+- tapOn:
+    id: "change-starting-pitcher"
+- scrollUntilVisible:
+    element:
+      id: "choose-pitcher-sample-away-3"
+    direction: DOWN
+- tapOn:
+    id: "choose-pitcher-sample-away-3"
+- assertVisible:
+    id: "lineup-starting-pitcher"
+    text: ".*S. Bell.*"
+- scrollUntilVisible:
+    element:
+      id: "lineup-add-player"
+    direction: UP
+- tapOn:
+    id: "lineup-add-player"
+- scrollUntilVisible:
+    element:
+      id: "add-player-sample-away-11"
+    direction: DOWN
+- tapOn:
+    id: "add-player-sample-away-11"
+- scrollUntilVisible:
+    element:
+      id: "lineup-position-sample-away-11"
+    direction: DOWN
+- assertVisible:
+    id: "lineup-position-sample-away-11"
+    text: "Bats only"
+- takeScreenshot: lineup-added-roster-player-bats-only
+- scrollUntilVisible:
+    element:
+      id: "save-lineup"
+    direction: DOWN
+- tapOn:
+    id: "save-lineup"
+- extendedWaitUntil:
+    visible:
+      id: "game-setup"
+    timeout: 15000
+- assertVisible:
+    id: "setup-lineup-away-summary"
+    text: ".*11 players.*S. Bell.*"
+- assertVisible:
+    id: "start-configured-game"
+    enabled: false
+- takeScreenshot: setup-one-lineup-set
+- tapOn:
+    id: "setup-lineup-home"
+- extendedWaitUntil:
+    visible:
+      id: "lineup-screen"
+    timeout: 15000
+- takeScreenshot: lineup-home-before-save
+- scrollUntilVisible:
+    element:
+      id: "change-starting-pitcher"
+    direction: DOWN
+- tapOn:
+    id: "change-starting-pitcher"
+- scrollUntilVisible:
+    element:
+      id: "choose-pitcher-sample-home-3"
+    direction: DOWN
+- tapOn:
+    id: "choose-pitcher-sample-home-3"
+- assertVisible:
+    id: "lineup-starting-pitcher"
+    text: ".*N. Cole.*"
+- scrollUntilVisible:
+    element:
+      id: "save-lineup"
+    direction: DOWN
+- tapOn:
+    id: "save-lineup"
+- extendedWaitUntil:
+    visible:
+      id: "start-configured-game"
+      enabled: true
+    timeout: 15000
+- takeScreenshot: setup-ready-to-start
+- tapOn:
+    id: "start-configured-game"
+- extendedWaitUntil:
+    visible:
+      id: "pitch-ball"
+    timeout: 15000
+- assertVisible:
+    id: "waiting-plays"
+    text: "1 waiting to sync · Local demo"
+- takeScreenshot: setup-saved-on-phone
+- takeScreenshot: field-before-play-draft
+- tapOn:
+    id: "pitch-in-play"
+- extendedWaitUntil:
+    visible:
+      id: "play-outcomes"
+    timeout: 15000
+- takeScreenshot: inplay-step-1-outcome
+- tapOn:
+    id: "outcome-single"
+- extendedWaitUntil:
+    visible:
+      id: "play-fielders"
+    timeout: 15000
+- tapOn:
+    id: "fielder-CF"
+- takeScreenshot: inplay-step-2-fielder
+- tapOn:
+    id: "play-next"
+- extendedWaitUntil:
+    visible:
+      id: "play-runners"
+    timeout: 15000
+- takeScreenshot: inplay-step-3-runners
+- tapOn: "Cancel"
+- extendedWaitUntil:
+    visible:
+      id: "pitch-ball"
+    timeout: 15000
+- assertVisible:
+    id: "waiting-plays"
+    text: "1 waiting to sync · Local demo"
+- copyTextFrom:
+    id: "current-batter-identity"
+- evalScript: ${output.startingBatter = maestro.copiedText}
+- copyTextFrom:
+    id: "current-pitcher-identity"
+- evalScript: ${output.startingPitcher = maestro.copiedText}
+- assertTrue: ${output.startingPitcher.includes('N. Cole')}
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "2 waiting to sync · Local demo"
+    timeout: 15000
+- runFlow:
+    file: _tap-outcome.yaml
+    env:
+      OUTCOME: "single"
+- tapOn:
+    id: "save-play"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "3 waiting to sync · Local demo"
+    timeout: 15000
+- takeScreenshot: setup-game-scored
+- tapOn:
+    id: "scorer-more"
+- takeScreenshot: more-before-runner-sheet
+- tapOn:
+    id: "more-steal"
+- extendedWaitUntil:
+    visible:
+      id: "play-runner-action"
+    timeout: 15000
+- takeScreenshot: runner-sheet-selected-game
+- tapOn: "Cancel"
+- assertVisible:
+    id: "waiting-plays"
+    text: "3 waiting to sync · Local demo"
+- tapOn:
+    id: "tab-plays"
+- extendedWaitUntil:
+    visible:
+      id: "plays-screen"
+    timeout: 15000
+- assertVisible:
+    id: "play-5"
+- takeScreenshot: ordered-saved-play-log
+- tapOn:
+    id: "tab-field"
+- tapOn:
+    id: "undo-play"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "4 waiting to sync · Local demo"
+    timeout: 15000
+- assertVisible:
+    id: "score-summary"
+    text: ".*Count 1 ball and 0 strikes. Bases empty.*"
+- copyTextFrom:
+    id: "current-batter-identity"
+- assertTrue: ${maestro.copiedText === output.startingBatter}
+- copyTextFrom:
+    id: "current-pitcher-identity"
+- assertTrue: ${maestro.copiedText === output.startingPitcher}
+- tapOn:
+    id: "tab-plays"
+- scrollUntilVisible:
+    element:
+      id: "at-bat-5"
+    direction: DOWN
+- tapOn:
+    id: "at-bat-5"
+- extendedWaitUntil:
+    visible:
+      id: "play-undone-5"
+    timeout: 15000
+- takeScreenshot: ordered-log-with-whole-play-undone
+- stopApp
+- openLink: "exp://localhost:8091?__expo_disable_fab=1&__expo_disable_auto_launch=1&__expo_disable_onboarding=1"
+- extendedWaitUntil:
+    visible:
+      id: "resume-game"
+    timeout: 90000
+- tapOn:
+    id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+      text: ".*Count 1 ball and 0 strikes. Bases empty.*"
+    timeout: 15000
+- assertVisible:
+    id: "waiting-plays"
+    text: "4 waiting to sync · Local demo"
+- takeScreenshot: chosen-lineups-game-after-reopening
+- copyTextFrom:
+    id: "current-batter-identity"
+- assertTrue: ${maestro.copiedText === output.startingBatter}
+- copyTextFrom:
+    id: "current-pitcher-identity"
+- assertTrue: ${maestro.copiedText === output.startingPitcher}
+- tapOn:
+    id: "tab-plays"
+- scrollUntilVisible:
+    element:
+      id: "at-bat-5"
+    direction: DOWN
+- tapOn:
+    id: "at-bat-5"
+- extendedWaitUntil:
+    visible:
+      id: "play-undone-5"
+    timeout: 15000
+- assertVisible:
+    id: "play-4"
+- takeScreenshot: saved-undo-history-after-reopening
