@@ -23,7 +23,7 @@ Preconditions:
 - Any saved demo state works. The flow reads the current summary and waiting total and returns to them.
 
 - **Screen, Undo pill and Hit by pitch.** Run `verify.sh drive scoring-screen.yaml`. It captures the screen, records a Ball and sees "Undo · Ball", opens More (screenshot `more`), records Hit by pitch and sees "Undo · Hit by pitch" with a runner on first in the summary, undoes both, and checks the summary matches the start. It then scrolls to the Matchup card and Last pitch row.
-- **Figma pairs.** The `field` and `more` screenshots are the app halves of the Figma comparison in `docs/verification/38/figma/`.
+- **Figma pairs.** The `field` and `more` screenshots are the app halves of the Figma comparison. They go in the ticket's `proof-<number>` release as `figma-field-pair.png` and `figma-more-pair.png`, as the implementation loop's Proof release section says.
 
 ## Gotchas
 
