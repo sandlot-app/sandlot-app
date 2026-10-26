@@ -133,6 +133,15 @@ test('gallery opens and closes sheets and ignores a disabled button', { timeout:
       await visible('strike-looking');
       await click('strike-looking');
       assert.equal(await evaluate(`document.body.innerText.includes('Pitch: strike-looking')`), true);
+      await cdp.send('Page.navigate', { url: `http://localhost:${port}/?gallery=chips` });
+      await visible('gallery-chip-fielding-followed');
+      for (const [role, diameter] of [['fielding', 34], ['batting', 34], ['batter', 40]]) {
+        for (const followed of [false, true]) {
+          const id = `gallery-chip-${role}${followed ? '-followed' : ''}`;
+          const bounds = await evaluate(`(() => { const circle = document.querySelector('[data-testid="${id}"]').firstElementChild.firstElementChild; const r = circle.getBoundingClientRect(); return { width: r.width, height: r.height }; })()`);
+          assert.deepEqual(bounds, { width: diameter + (followed ? 6 : 0), height: diameter + (followed ? 6 : 0) }, `${id} preserves the inner chip and adds the Figma ring outside it`);
+        }
+      }
     } finally { cdp.close(); }
   } finally {
     browser.kill();

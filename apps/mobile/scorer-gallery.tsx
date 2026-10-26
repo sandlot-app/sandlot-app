@@ -50,8 +50,8 @@ export default function ScorerGallery({ onExit }: { onExit: () => void }) {
         <Text style={styles.heading}>Player chip</Text>
         <View style={styles.fieldSample}>
           {(['fielding', 'batting', 'batter'] as const).map((role) => <View key={role} style={styles.chipRow}>
-            <PlayerChip number="6" name="L. Darcy" role={role} />
-            <PlayerChip number="6" name="L. Darcy" role={role} followed />
+            <PlayerChip number="6" name="L. Darcy" role={role} testID={`gallery-chip-${role}`} />
+            <PlayerChip number="6" name="L. Darcy" role={role} followed testID={`gallery-chip-${role}-followed`} />
             <Text style={styles.chipRole}>{role}</Text>
           </View>)}
         </View>

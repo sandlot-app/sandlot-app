@@ -29,6 +29,10 @@ appId: host.exp.Exponent
 - takeScreenshot: scorer-gallery-buttons
 - scrollUntilVisible:
     element:
+      id: "gallery-chip-batter-followed"
+- takeScreenshot: scorer-gallery-chips
+- scrollUntilVisible:
+    element:
       id: "gallery-scorer-bar-saved"
 - assertVisible: "Last: Ball · All plays saved"
 - takeScreenshot: scorer-gallery-bar

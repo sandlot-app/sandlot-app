@@ -97,9 +97,11 @@ export function PlayerChip({ number, name, role, followed = false, onPress, test
   testID?: string;
 }) {
   const chip = <View style={styles.playerChip}>
-    <View style={[role === 'fielding' ? styles.fieldingCircle : role === 'batter' ? styles.batterCircle : styles.battingCircle, followed && styles.followedCircle]}>
-      <Text style={role === 'fielding' ? styles.fieldingNumber : styles.battingNumber}>{number}</Text>
-      {role === 'batter' ? <View style={styles.batMark} /> : null}
+    <View style={followed && styles.followedCircle}>
+      <View style={[role === 'fielding' ? styles.fieldingCircle : role === 'batter' ? styles.batterCircle : styles.battingCircle, followed && styles.followedInner]}>
+        <Text style={role === 'fielding' ? styles.fieldingNumber : styles.battingNumber}>{number}</Text>
+        {role === 'batter' ? <View style={styles.batMark} /> : null}
+      </View>
     </View>
     <Text style={styles.chipName} numberOfLines={1}>{name}</Text>
   </View>;
@@ -196,7 +198,8 @@ const styles = createStyles({
   fieldingCircle: { width: sizes['chip/size'], height: sizes['chip/size'], borderRadius: sizes['radius/full'], backgroundColor: colors['chip/fielding/bg'], borderWidth: sizes['chip/outline-width'], borderColor: colors['chip/outline'], alignItems: 'center', justifyContent: 'center' },
   battingCircle: { width: sizes['chip/size'], height: sizes['chip/size'], borderRadius: sizes['radius/full'], backgroundColor: colors['chip/batting/bg'], borderWidth: sizes['chip/outline-width'], borderColor: colors['chip/outline'], alignItems: 'center', justifyContent: 'center' },
   batterCircle: { width: sizes['chip/batter-size'], height: sizes['chip/batter-size'], borderRadius: sizes['radius/full'], backgroundColor: colors['chip/batting/bg'], borderWidth: sizes['chip/outline-width'], borderColor: colors['chip/outline'], alignItems: 'center', justifyContent: 'center' },
-  followedCircle: { borderWidth: sizes['ring/width'], borderColor: colors['ring/followed'] },
+  followedCircle: { borderWidth: sizes['ring/width'], borderColor: colors['ring/followed'], borderRadius: sizes['radius/full'] },
+  followedInner: { borderWidth: 0 },
   fieldingNumber: { ...textStyles['Chip/Number'], color: colors['chip/fielding/text'] },
   battingNumber: { ...textStyles['Chip/Number'], color: colors['chip/batting/text'] },
   batMark: { position: 'absolute', right: -7, top: -8, width: 5, height: 28, backgroundColor: colors['icon/bat'], borderRadius: sizes['radius/full'], transform: [{ rotate: '36deg' }] },
