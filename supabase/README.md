@@ -62,4 +62,6 @@ psql "$SUPABASE_DB_URL" -q -v pins="$pins" -f supabase/scripts/reset-test-games.
 psql "$SUPABASE_DB_URL" -q -v pins="$pins" -v ids=<game id>,<game id> -f supabase/scripts/reset-test-games.sql
 ```
 
-The first command changes nothing. Check its list before running the second. Deletion runs in one transaction and refuses the whole list if any ID is unknown or names a game on the current pins. It removes each game's sessions, groups and events, and prints what it deleted and the games still on older pins. Record both lists on #21. The anonymous scorer accounts stay, and the seed script makes a new game for the rehearsal.
+Generate `pins` from an up-to-date `main` that matches the deployed `sync-events`. The script compares games only against the pins it's given, so pins from an older or newer checkout would list current games as stale. It prints the pins it uses first. Connect directly or through the session pooler on port 5432, not the transaction pooler on 6543.
+
+The first command changes nothing. Check its pins and list before running the second. Deletion runs in one transaction and refuses the whole list if any ID is unknown or names a game on the current pins. It removes each game's sessions, groups and events, and prints what it deleted and the games still on older pins. Record both lists on #21. The anonymous scorer accounts stay, and the seed script makes a new game for the rehearsal.
