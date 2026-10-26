@@ -2,6 +2,7 @@ import type {
   Advance, BallInPlayOutcome, Base, Destination, OutType, PlayerRef, Position, Trajectory,
 } from '@sandlot/engine';
 import type { DemoAction, SavedGame } from './offline-game.ts';
+import { displayPlayer } from './roster-presentation.ts';
 
 export type OutcomeChoice = {
   id: string;
@@ -78,7 +79,7 @@ export function runnerRows(game: SavedGame, choice: OutcomeChoice | null): Runne
     }
     const forced = from > 0 && from <= forceThrough;
     return {runner, from, to, forced,
-      number: String(lineup.findIndex((slot) => slot.player.id === runner.id && slot.player.kind === runner.kind) + 1),
+      number: displayPlayer(runner).number,
       outType: choice?.section === 'Hit' ? 'non_force' : from === 0 ? 'batter_before_first' : !forced || choice?.bases === 0 ? 'non_force' : 'force',
       outOrder: to === 'out' ? 1 : 0};
   });

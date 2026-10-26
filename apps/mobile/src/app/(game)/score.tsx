@@ -21,6 +21,7 @@ import type { PlayDraft } from '../../scoring/tap-play.ts';
 import { GameStatus } from '../../components/game-status.tsx';
 import { basesSummary, blockedMessages, gameSummary } from '../../scoring/game-summary.ts';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
+import { playerPresentation } from '../../scoring/player-presentation.ts';
 
 const { colors, sizes } = tokens.modes.Light;
 
@@ -108,6 +109,7 @@ export default function ScoreScreen() {
   const pitchingSide = state.half === 'top' ? 'home' : 'away';
   const pitcher = state.pitchers[pitchingSide];
   const batterIndex = state.nextBatter[battingSide];
+  const batter = state.lineups[battingSide][batterIndex]?.player;
   const basesLabel = basesSummary(state.bases);
   const summary = gameSummary(state);
 
@@ -129,7 +131,7 @@ export default function ScoreScreen() {
         >
           sandlot.
         </Text>
-        <Text style={styles.local}>Local game</Text>
+        <View><Text style={styles.local}>Local game</Text><Pressable accessibilityRole="button" testID="tab-plays" onPress={() => router.push('/plays')}><Text style={styles.navLabel}>Plays</Text></Pressable></View>
       </View>
       <View style={styles.board}>
         <Text style={styles.meta}>
@@ -186,12 +188,7 @@ export default function ScoreScreen() {
           <Text style={styles.cardLabel}>
             PITCHING · {pitchingSide.toUpperCase()}
           </Text>
-          <Text style={styles.player}>
-            Pitcher #
-            {state.lineups[pitchingSide].findIndex(
-              (slot) => slot.player.id === pitcher?.id,
-            ) + 1}
-          </Text>
+          <Text style={styles.player} testID="current-pitcher-identity">{pitcher ? playerPresentation(pitcher, 'Pitcher').identity : 'No pitcher'}</Text>
           <Text style={styles.playerDetail} testID="pitch-total">
             {pitcher ? (state.pitchCounts[pitcher.id] ?? 0) : 0} pitches
           </Text>
@@ -200,7 +197,7 @@ export default function ScoreScreen() {
           <Text style={styles.cardLabel}>
             BATTING · {battingSide.toUpperCase()}
           </Text>
-          <Text style={styles.player}>Batter #{batterIndex + 1}</Text>
+          <Text style={styles.player} testID="current-batter-identity">{batter ? playerPresentation(batter, 'Batter').identity : 'No batter'}</Text>
           <Text style={styles.playerDetail}>
             Batting {batterIndex + 1} in the order
           </Text>

@@ -5,11 +5,12 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GameStatus } from '../../components/game-status.tsx';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
+import { newSetupDraft } from '../../scoring/game-setup.ts';
 
 const { colors, sizes } = tokens.modes.Light;
 
 export default function GamesScreen() {
-  const { view, record, reopen } = useOfflineGame();
+  const { view, record, reopen, setSetupDraft } = useOfflineGame();
   const game =
     view.kind === 'ready' || view.kind === 'saving' ? view.game : null;
   const available = view.kind === 'ready';
@@ -34,6 +35,7 @@ export default function GamesScreen() {
           </Pressable>
         ) : null}
         <GameStatus />
+        {available && !game ? <Pressable accessibilityRole="button" testID="new-game" style={styles.button} onPress={() => {setSetupDraft(newSetupDraft()); router.push('/setup');}}><Text style={styles.buttonLabel}>New game</Text></Pressable> : null}
         {(view.kind === 'ready' || view.kind === 'saving') && (
           <View style={styles.card}>
             <Text style={styles.label}>LOCAL DEMO · MUSTANG</Text>
@@ -68,6 +70,7 @@ export default function GamesScreen() {
                     : 'Start demo game'}
               </Text>
             </Pressable>
+            {game ? <Pressable accessibilityRole="button" testID="open-play-log" onPress={() => router.push('/plays')} style={styles.galleryLink}><Text style={styles.galleryText}>Read saved plays</Text></Pressable> : null}
             <Text style={styles.detail}>
               {game
                 ? `${game.waitingPlays} saved ${game.waitingPlays === 1 ? 'play' : 'plays'} waiting to sync`
