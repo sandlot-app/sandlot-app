@@ -27,14 +27,14 @@ appId: host.exp.Exponent
 - evalScript: ${output.initialPitches = maestro.copiedText}
 - copyTextFrom:
     id: "waiting-plays"
-- evalScript: ${output.initialWaiting = parseInt(maestro.copiedText, 10)}
+- evalScript: ${output.initialWaiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 - tapOn:
     id: "pitch-in-play"
 - takeScreenshot: tap-outcomes-before-cancel
 - tapOn: "Cancel"
 - copyTextFrom:
     id: "waiting-plays"
-- assertTrue: ${parseInt(maestro.copiedText, 10) === output.initialWaiting}
+- assertTrue: ${parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10) === output.initialWaiting}
 - runFlow:
     file: _tap-outcome.yaml
     env:
@@ -66,7 +66,7 @@ appId: host.exp.Exponent
 - evalScript: ${output.setupPitches = maestro.copiedText}
 - copyTextFrom:
     id: "waiting-plays"
-- evalScript: ${output.setupWaiting = parseInt(maestro.copiedText, 10)}
+- evalScript: ${output.setupWaiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 - assertTrue: ${output.setupWaiting === output.initialWaiting + 3}
 - tapOn:
     id: "pitch-in-play"
@@ -87,7 +87,7 @@ appId: host.exp.Exponent
     timeout: 15000
 - copyTextFrom:
     id: "waiting-plays"
-- assertTrue: ${parseInt(maestro.copiedText, 10) === output.setupWaiting + 1}
+- assertTrue: ${parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10) === output.setupWaiting + 1}
 - copyTextFrom:
     id: "score-summary"
 - evalScript: ${output.doubleSummary = maestro.copiedText}
@@ -117,11 +117,11 @@ appId: host.exp.Exponent
 - assertTrue: ${maestro.copiedText === output.doublePitches}
 - takeScreenshot: tap-double-after-relaunch
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.setupWaiting + 2} waiting to sync · Local demo"
+      text: ".* ${output.setupWaiting + 2} plays? saved on this phone"
     timeout: 15000
 - copyTextFrom:
     id: "score-summary"
@@ -155,7 +155,7 @@ appId: host.exp.Exponent
 - assertTrue: ${maestro.copiedText === output.setupPitches}
 - takeScreenshot: tap-selected-runner-scores
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "score-summary"
@@ -183,7 +183,7 @@ appId: host.exp.Exponent
 - assertTrue: ${maestro.copiedText === output.setupPitches}
 - takeScreenshot: tap-two-steals-saved
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "score-summary"
@@ -204,7 +204,7 @@ appId: host.exp.Exponent
     timeout: 15000
 - takeScreenshot: tap-pickoff-saved
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "score-summary"
@@ -228,7 +228,7 @@ appId: host.exp.Exponent
 - assertTrue: ${maestro.copiedText === output.setupPitches}
 - takeScreenshot: tap-wild-pitch-saved
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "score-summary"
@@ -272,13 +272,15 @@ appId: host.exp.Exponent
     commands:
       - copyTextFrom:
           id: "waiting-plays"
-      - evalScript: ${output.beforePitch = parseInt(maestro.copiedText, 10)}
+      - evalScript: ${output.beforePitch = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
       - tapOn:
-          id: "pitch-called_strike"
+          id: "pitch-strike"
+      - tapOn:
+          id: "strike-looking"
       - extendedWaitUntil:
           visible:
             id: "waiting-plays"
-            text: "${output.beforePitch + 1} waiting to sync · Local demo"
+            text: ".* ${output.beforePitch + 1} plays? saved on this phone"
           timeout: 15000
 - copyTextFrom:
     id: "score-summary"
@@ -310,7 +312,7 @@ appId: host.exp.Exponent
 - assertTrue: ${maestro.copiedText.split('. Inning')[0] === output.thirdOutBeforeScore}
 - takeScreenshot: tap-force-third-out-no-run
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "score-summary"
@@ -340,7 +342,7 @@ appId: host.exp.Exponent
 - assertTrue: ${maestro.copiedText.split('. Inning')[0] !== output.thirdOutBeforeScore}
 - takeScreenshot: tap-tag-third-out-run-counts
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "score-summary"
@@ -351,13 +353,13 @@ appId: host.exp.Exponent
     commands:
       - copyTextFrom:
           id: "waiting-plays"
-      - evalScript: ${output.beforeUndo = parseInt(maestro.copiedText, 10)}
+      - evalScript: ${output.beforeUndo = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
       - tapOn:
-          id: "undo-play"
+          id: "scorer-undo"
       - extendedWaitUntil:
           visible:
             id: "waiting-plays"
-            text: "${output.beforeUndo + 1} waiting to sync · Local demo"
+            text: ".* ${output.beforeUndo + 1} plays? saved on this phone"
           timeout: 15000
 - copyTextFrom:
     id: "score-summary"
@@ -367,13 +369,13 @@ appId: host.exp.Exponent
     commands:
       - copyTextFrom:
           id: "waiting-plays"
-      - evalScript: ${output.beforeUndo = parseInt(maestro.copiedText, 10)}
+      - evalScript: ${output.beforeUndo = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
       - tapOn:
-          id: "undo-play"
+          id: "scorer-undo"
       - extendedWaitUntil:
           visible:
             id: "waiting-plays"
-            text: "${output.beforeUndo + 1} waiting to sync · Local demo"
+            text: ".* ${output.beforeUndo + 1} plays? saved on this phone"
           timeout: 15000
 - copyTextFrom:
     id: "score-summary"

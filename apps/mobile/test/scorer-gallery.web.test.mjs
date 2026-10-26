@@ -159,8 +159,9 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       await click('start-game');
       await visible('pitch-ball');
       await click('pitch-ball');
-      await retry(async () => assert.equal(await evaluate(`document.querySelector('[data-testid="score-summary"]').textContent`), 'Away 0, home 0. Inning 1, top. 0 outs. Count 1 ball and 0 strikes. Bases empty.'));
-      assert.equal(await evaluate(`document.querySelector('svg')?.getAttribute('aria-hidden')`), 'true', 'the decorative diamond is hidden from browser accessibility');
+      await retry(async () => assert.equal(await evaluate(`document.querySelector('[data-testid="score-summary"]').getAttribute('aria-label')`), 'Away 0, home 0. Inning 1, top. 0 outs. Count 1 ball and 0 strikes. Bases empty.'));
+      assert.equal(await evaluate(`document.querySelector('[data-testid="score-summary"] svg')?.getAttribute('aria-hidden')`), 'true', 'the decorative diamond is hidden from browser accessibility');
+      assert.equal(await evaluate(`Boolean(document.querySelector('[data-testid="pitch-hit_by_pitch"]'))`), false, 'Hit by pitch lives in More, not the pitch bar');
       await click('pitch-in-play');
       await visible('play-outcomes');
       await click('outcome-single');
@@ -169,10 +170,16 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       await click('play-next');
       await visible('play-runners');
       await click('save-play');
-      await retry(async () => assert.match(await evaluate(`document.querySelector('[data-testid="score-summary"]').textContent`), /Runners on first/));
-      await click('undo-play');
-      await retry(async () => assert.match(await evaluate(`document.querySelector('[data-testid="score-summary"]').textContent`), /Count 1 ball and 0 strikes. Bases empty/));
+      await retry(async () => assert.match(await evaluate(`document.querySelector('[data-testid="score-summary"]').getAttribute('aria-label')`), /Runners on first/));
+      await click('scorer-undo');
+      await retry(async () => assert.match(await evaluate(`document.querySelector('[data-testid="score-summary"]').getAttribute('aria-label')`), /Count 1 ball and 0 strikes. Bases empty/));
       const text = (id) => evaluate(`document.querySelector('[data-testid="${id}"]')?.textContent`);
+      const savedAfter = (before) => retry(async () => {
+        const now = await text('waiting-plays');
+        assert.notEqual(now, before);
+        assert.doesNotMatch(now, /^Saving/);
+      });
+      const summary = () => evaluate(`document.querySelector('[data-testid="score-summary"]')?.getAttribute('aria-label')`);
       const absent = (id) => retry(async () => assert.equal(await evaluate(`Boolean(document.querySelector('[data-testid="${id}"]'))`), false));
       const clickLabel = async (label) => {
         const rect = await evaluate(`(() => { const element = [...document.querySelectorAll('[role="button"]')].find((item) => item.textContent.trim() === ${JSON.stringify(label)}); if (!element) return null; const r = element.getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
@@ -188,8 +195,9 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       };
       const pitch = async (result) => {
         const before = await text('waiting-plays');
-        await click(`pitch-${result}`);
-        await retry(async () => assert.notEqual(await text('waiting-plays'),before));
+        if (result === 'called_strike') { await click('pitch-strike'); await visible('strike-looking'); await click('strike-looking'); }
+        else await click(`pitch-${result}`);
+        await savedAfter(before);
       };
       const openPlay = async (choice) => {
         await click('pitch-in-play'); await visible('play-outcomes');
@@ -198,8 +206,8 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       };
       const savePlay = async () => { await click('save-play'); await absent('save-play'); };
       const undo = async () => {
-        const before = await text('waiting-plays'); await click('undo-play');
-        await retry(async () => assert.notEqual(await text('waiting-plays'),before));
+        const before = await text('waiting-plays'); await click('scorer-undo');
+        await savedAfter(before);
       };
       const openRunners = async (mode) => {
         await click('scorer-more'); await visible('play-more');
@@ -209,7 +217,7 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       await cdp.send('Page.reload');
       await retry(async () => assert.notEqual(await evaluate('performance.timeOrigin'), previousDocument, 'reload creates a fresh document'));
       await visible('pitch-ball');
-      await retry(async () => assert.equal(await evaluate(`document.querySelector('[data-testid="score-summary"]').textContent`), 'Away 0, home 0. Inning 1, top. 0 outs. Count 1 ball and 0 strikes. Bases empty.'));
+      await retry(async () => assert.equal(await evaluate(`document.querySelector('[data-testid="score-summary"]').getAttribute('aria-label')`), 'Away 0, home 0. Inning 1, top. 0 outs. Count 1 ball and 0 strikes. Bases empty.'));
       const beforeCancel = await text('waiting-plays');
       await click('pitch-in-play'); await visible('play-outcomes'); await clickLabel('Cancel');
       await absent('play-outcomes');
@@ -234,13 +242,20 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       assert.match(await text('play-message'), /Two runners cannot finish on the same base/);
       assert.equal(await text('waiting-plays'),beforeCollision);
       await click('destination-away-1-3'); await savePlay();
-      assert.match(await text('score-summary'), /Runners on first and third/);
+      assert.match(await summary(), /Runners on first and third/);
       await click('pitch-in-play'); await visible('play-outcomes'); await screenshot('in-play-1-outcome');
       await click('outcome-single'); await visible('play-fielders'); await click('fielder-CF'); await screenshot('in-play-2-fielder');
       await click('play-next'); await visible('play-runners');
       assert.deepEqual(await evaluate(`(() => {const chip=document.querySelector('[data-testid="runner-chip-away-3"]').firstElementChild.firstElementChild;const r=chip.getBoundingClientRect();return {width:r.width,height:r.height};})()`), {width:28,height:28}, 'runner rows use the compact Figma chip without changing the field chip');
       await screenshot('in-play-3-runners');
       await clickLabel('Cancel');
+      const beforeHitByPitch = await text('waiting-plays');
+      await click('scorer-more'); await visible('play-more'); await click('more-hit_by_pitch'); await absent('play-more');
+      await savedAfter(beforeHitByPitch);
+      assert.match(await summary(), /Runners on first and second and third/);
+      assert.match(await text('scorer-undo'), /Undo · Hit by pitch/);
+      await undo();
+      assert.match(await summary(), /Runners on first and third/);
       await click('scorer-more'); await visible('play-more'); await screenshot('more');
       assert.deepEqual(await evaluate(`(() => {
         const row=document.querySelector('[data-testid="more-steal"]');
@@ -260,22 +275,22 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       assert.match(await text('play-message'), /Stealing home is not allowed/);
       assert.equal(await text('waiting-plays'), beforeIllegalSteal);
       await click('destination-away-1-3'); await click('destination-away-2-2'); await savePlay();
-      assert.match(await text('score-summary'), /Runners on second and third/);
+      assert.match(await summary(), /Runners on second and third/);
       await undo();
       const beforeRunnerPitches = await text('pitch-total');
       await openRunners('passed_ball'); await click('destination-away-1-home'); await savePlay();
-      assert.match(await text('score-summary'), /Away 1.*Runners on first/);
+      assert.match(await summary(), /Away 1.*Runners on first/);
       assert.equal(await text('pitch-total'), beforeRunnerPitches, 'a passed-ball runner consequence adds no invented pitch');
       await undo();
       await openRunners('wild_pitch'); await click('destination-away-1-home'); await click('destination-away-2-2'); await savePlay();
-      assert.match(await text('score-summary'), /Away 1.*Runners on second/);
+      assert.match(await summary(), /Away 1.*Runners on second/);
       assert.equal(await text('pitch-total'), beforeRunnerPitches);
       await undo();
       await openRunners('pickoff'); await click('destination-away-2-out'); await savePlay();
-      assert.match(await text('score-summary'), /1 out.*Runners on third/);
+      assert.match(await summary(), /1 out.*Runners on third/);
       await undo();
       await openRunners('steal'); await click('destination-away-2-out'); await savePlay();
-      assert.match(await text('score-summary'), /1 out.*Runners on third/);
+      assert.match(await summary(), /1 out.*Runners on third/);
       await undo();
       const beforeBunt = await text('waiting-plays');
       await openPlay('sac-bunt'); await click('save-play'); await visible('play-message');
@@ -283,17 +298,17 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       assert.equal(await text('waiting-plays'),beforeBunt);
       await clickLabel('Cancel');
       for (let count = 0; count < 6; count++) await pitch('called_strike');
-      assert.match(await text('score-summary'), /2 outs.*Runners on first and third/);
+      assert.match(await summary(), /2 outs.*Runners on first and third/);
       await openPlay('fielders-choice');
       await click('destination-away-1-home'); await click('destination-away-2-out');
       await visible('third-out-evidence'); await visible('out-type-away-2-force');
       await savePlay();
-      assert.match(await text('score-summary'), /Away 0, home 0.*bottom/);
+      assert.match(await summary(), /Away 0, home 0.*bottom/);
       await undo();
       await openPlay('fielders-choice');
       await click('destination-away-1-home'); await click('destination-away-2-out');
       await click('out-type-away-2-non_force'); await savePlay();
-      assert.match(await text('score-summary'), /Away 1, home 0.*bottom/);
+      assert.match(await summary(), /Away 1, home 0.*bottom/);
       await undo();
       const total = Number((await text('pitch-total')).split(' ')[0]);
       for (let count = total; count < 65; count++) await pitch('foul');

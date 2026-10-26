@@ -15,7 +15,7 @@ From a saved local game, tap In play to choose an outcome, the fielder and runne
 - From Your games, tap Start demo game (`start-game`) or Continue scoring (`resume-game`).
 - From the scorer, tap In play (`pitch-in-play`). Choose a result, select a fielder or Skip, then review every destination and Save play.
 - From the scorer, tap More (`scorer-more`), then Steal attempt (`more-steal`), Wild pitch (`more-wild_pitch`), Passed ball (`more-passed_ball`) or Pickoff (`more-pickoff`).
-- Tap Undo (`undo-play`) in the scorer to reverse the most recent saved play.
+- Tap Undo (`scorer-undo`) in the scorer to reverse the most recent saved play.
 
 ## Driving it with Maestro
 
@@ -23,7 +23,7 @@ Preconditions: use the baseline launch and doctor steps in the index. Keep the s
 
 - **Outcome and cancel.** Tap `pitch-in-play`, capture `play-outcomes`, then Cancel. The waiting-play count must remain unchanged. The composite flow uses a saved Home run and two Singles to establish two runners through normal scoring controls.
 - **Fielder and destinations.** Tap `outcome-double`, then `fielder-CF` and `play-next`. Capture `play-runners` and tap `save-play`. The waiting count increases by one and the pitcher count increases by one.
-- **Saved result and undo.** Capture the score, stop Expo Go and reopen the project link on port8091, then tap `resume-game`. The score and pitch total must match. Tap `undo-play`; the complete setup score and pitcher count return.
+- **Saved result and undo.** Capture the score, stop Expo Go and reopen the project link on port8091, then tap `resume-game`. The score and pitch total must match. Tap `scorer-undo`; the complete setup score and pitcher count return.
 - **Choose a runner.** Tap `more-passed_ball` and the second `destination-.*-home` control. After `save-play`, the selected lead runner scores while the other runner remains on base. The pitcher count stays unchanged. Undo must restore the previous score.
 - **Other runner paths.** Use `more-steal` to move the lead runner to third and the trailing runner to second. Use `more-pickoff` and the first `destination-.*-out` control for an out. Use `more-wild_pitch` to score the chosen runner. Save and Undo each path before starting the next one.
 - **Bunt rejection.** Open `outcome-sac-bunt`, Skip and Save play. `play-message` must say bunting is not allowed, and the waiting count must be unchanged. Cancel leaves the previous saved score.

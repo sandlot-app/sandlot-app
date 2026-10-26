@@ -5,6 +5,7 @@ import { Platform, Pressable, Text, View } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { PlayerChip, PrimaryButton, Sheet, SheetHeader, SheetSection } from '../../scorer-ui';
 import { createStyles } from '../../style';
+import { UserIcon } from './icons.tsx';
 import { basesSummary } from '../scoring/game-summary.ts';
 import type { DemoAction } from '../scoring/offline-game.ts';
 import {
@@ -129,10 +130,7 @@ export function PlaySheets({draft, onChange, onClose, record, saving, available,
         <Pressable accessibilityRole="button" testID="more-hit_by_pitch" disabled={saving || !available}
           accessibilityState={{disabled: saving || !available}} onPress={() => {void hitByPitch();}} style={styles.moreRow}>
           <View style={styles.moreIcon}>
-            <Svg width={24} height={24} viewBox="0 0 24 24" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
-              <Path fillRule="evenodd" clipRule="evenodd" fill={colors['text/primary']} d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7ZM14.5 7C14.5 8.38071 13.3807 9.5 12 9.5C10.6193 9.5 9.5 8.38071 9.5 7C9.5 5.61929 10.6193 4.5 12 4.5C13.3807 4.5 14.5 5.61929 14.5 7Z" />
-              <Path fillRule="evenodd" clipRule="evenodd" fill={colors['text/primary']} d="M20 17.1666C20 16.7333 19.8642 16.3074 19.5815 15.979C17.7477 13.8488 15.0313 12.5 12 12.5C8.96866 12.5 6.25235 13.8488 4.41847 15.979C4.13576 16.3074 4 16.7333 4 17.1666V19C4 20.1046 4.89543 21 6 21H18C19.1046 21 20 20.1046 20 19V17.1666ZM18 19.5C18.2761 19.5 18.5 19.2761 18.5 19V17.1666C18.5 17.0384 18.4601 16.9754 18.4448 16.9576C16.8837 15.1443 14.5763 14 12 14C9.4237 14 7.11631 15.1443 5.55524 16.9576C5.53991 16.9754 5.5 17.0384 5.5 17.1666V19C5.5 19.2761 5.72386 19.5 6 19.5H18Z" />
-            </Svg>
+            <UserIcon color={colors['text/primary']} />
           </View>
           <View style={styles.moreDescription}><Text style={styles.strong}>Hit by pitch</Text><Text style={styles.caption}>Batter takes first base</Text></View>
         </Pressable>

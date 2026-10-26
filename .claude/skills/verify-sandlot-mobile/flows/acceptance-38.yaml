@@ -1,0 +1,5 @@
+appId: host.exp.Exponent
+---
+- runFlow: scoring-screen.yaml
+- runFlow: offline-acceptance.yaml
+- runFlow: tap-plays.yaml

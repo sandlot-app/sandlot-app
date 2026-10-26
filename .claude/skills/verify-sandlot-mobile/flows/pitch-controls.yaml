@@ -9,23 +9,24 @@ appId: host.exp.Exponent
 - evalScript: ${output.before = maestro.copiedText}
 - copyTextFrom:
     id: "waiting-plays"
-- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 - takeScreenshot: called_strike-before
 - tapOn:
-    id: "pitch-called_strike"
-    retryTapIfNoChange: true
+    id: "pitch-strike"
+- tapOn:
+    id: "strike-looking"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 1} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
     timeout: 15000
 - takeScreenshot: called_strike-saved
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 2} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
     timeout: 15000
 - copyTextFrom:
     id: "score-summary"
@@ -36,23 +37,24 @@ appId: host.exp.Exponent
 - evalScript: ${output.before = maestro.copiedText}
 - copyTextFrom:
     id: "waiting-plays"
-- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 - takeScreenshot: swinging_strike-before
 - tapOn:
-    id: "pitch-swinging_strike"
-    retryTapIfNoChange: true
+    id: "pitch-strike"
+- tapOn:
+    id: "strike-swinging"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 1} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
     timeout: 15000
 - takeScreenshot: swinging_strike-saved
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 2} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
     timeout: 15000
 - copyTextFrom:
     id: "score-summary"
@@ -63,7 +65,7 @@ appId: host.exp.Exponent
 - evalScript: ${output.before = maestro.copiedText}
 - copyTextFrom:
     id: "waiting-plays"
-- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 - takeScreenshot: foul-before
 - tapOn:
     id: "pitch-foul"
@@ -71,15 +73,15 @@ appId: host.exp.Exponent
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 1} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
     timeout: 15000
 - takeScreenshot: foul-saved
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 2} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
     timeout: 15000
 - copyTextFrom:
     id: "score-summary"
@@ -90,23 +92,24 @@ appId: host.exp.Exponent
 - evalScript: ${output.before = maestro.copiedText}
 - copyTextFrom:
     id: "waiting-plays"
-- evalScript: ${output.waiting = parseInt(maestro.copiedText, 10)}
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 - takeScreenshot: hit_by_pitch-before
 - tapOn:
-    id: "pitch-hit_by_pitch"
-    retryTapIfNoChange: true
+    id: "scorer-more"
+- tapOn:
+    id: "more-hit_by_pitch"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 1} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
     timeout: 15000
 - takeScreenshot: hit_by_pitch-saved
 - tapOn:
-    id: "undo-play"
+    id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: "${output.waiting + 2} waiting to sync · Local demo"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
     timeout: 15000
 - copyTextFrom:
     id: "score-summary"
