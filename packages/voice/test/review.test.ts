@@ -22,7 +22,7 @@ describe('review round 1', () => {
 
   it('M1/C5/B1/B12: names on walks, hit by pitches and strikeouts are checked too', () => {
     expect(press(said(['ball', 'ball', 'ball']), 'Darcy walks')).toMatchObject({ kind: 'ask', prompt: 'J. Soto is up, not L. Darcy.' });
-    expect(press(gameWith([]), 'Ramirez hit by pitch')).toMatchObject({ kind: 'save', reading: { readBack: 'Hit by pitch → J. Soto to 1st' } });
+    expect(press(gameWith([]), 'Ramirez hit by pitch')).toMatchObject({ kind: 'ask', prompt: 'Who is Ramirez?' });
     expect(press(said(['strike looking', 'strike looking']), 'Moss strikes out looking')).toEqual({ kind: 'reject', message: 'K. Moss is in the field this half.' });
     expect(press(gameWith([]), 'he got hit by the pitch')).toMatchObject({ kind: 'save', reading: { readBack: 'Hit by pitch → J. Soto to 1st' } });
     expect(press(said(['ball', 'ball', 'ball']), 'Soto walks')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto walks' } });
@@ -80,6 +80,12 @@ describe('review round 2', () => {
     expect(press(said(['ball', 'ball', 'ball']), "that's ball four for Darcy")).toMatchObject({ kind: 'unknown_phrase' });
     expect(press(said(['ball', 'ball', 'ball']), 'Darcy walks')).toMatchObject({ kind: 'ask', prompt: 'J. Soto is up, not L. Darcy.' });
     expect(press(gameWith([]), 'number 3 hit by pitch')).toMatchObject({ kind: 'ask', prompt: 'J. Soto is up, not L. Darcy.' });
+  });
+
+  // Grokbot's re-review at fa64686 (M7): stripping lead-ins is the whole M6 fix; an unknown name still asks.
+  it('M7/B1: an unknown or misheard name on a walk or strikeout asks who it was', () => {
+    expect(press(said(['ball', 'ball', 'ball']), 'Ramirez walks')).toMatchObject({ kind: 'ask', prompt: 'Who is Ramirez?' });
+    expect(press(said(['strike looking', 'strike looking']), 'Darsy strikes out looking')).toMatchObject({ kind: 'ask', prompt: 'Who is Darsy?' });
   });
 
   it('B5: "no wait" at the end cancels the play before it', () => {

@@ -190,12 +190,8 @@ function leadFirst(state: GameState, a: Command, b: Command): number {
   return base(b) - base(a);
 }
 
-const named = (game: PressGame, who: Mention) => Boolean(who.player || who.number || who.base
-  || matches(game.roster, who, 'home').length || matches(game.roster, who, 'away').length);
-
 function expand(game: PressGame, state: GameState, draft: Draft, play: Spoken, clause: number): Expanded {
-  // Words before a walk, strikeout or hit by pitch only count as the batter when they name someone on the roster (M6).
-  if ((play.kind === 'pitch' || play.kind === 'walk' || play.kind === 'strikeout') && play.batter && named(game, play.batter)) {
+  if ((play.kind === 'pitch' || play.kind === 'walk' || play.kind === 'strikeout') && play.batter) {
     const batter = batterFor(game, state, play.batter, clause);
     if (isIssue(batter)) return { kind: 'issue', issue: batter };
   }

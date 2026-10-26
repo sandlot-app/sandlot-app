@@ -62,3 +62,4 @@
 {"id":"wrong-side","said":["Soto singles"],"transcript":"Moss steals second","expect":{"kind":"reject","message":"K. Moss is in the field this half."}}
 {"id":"lead-in-walk","said":["ball","ball","ball"],"transcript":"That's ball four","expect":{"kind":"save","readBack":"J. Soto walks"}}
 {"id":"lead-in-strikeout","said":["strike looking","strike looking"],"transcript":"that's strike three","expect":{"kind":"ask","prompt":"Looking or swinging?"}}
+{"id":"who-is-walk","said":["ball","ball","ball"],"transcript":"Ramirez walks","expect":{"kind":"ask","prompt":"Who is Ramirez?"}}
