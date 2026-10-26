@@ -4,8 +4,8 @@ import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { tokens } from '@sandlot/tokens';
+import type { GameState, TeamSide } from '@sandlot/engine';
 import { createStyles } from '../../../style';
-import { BaseDiamond } from '../../components/field.tsx';
 import { GameStatus } from '../../components/game-status.tsx';
 import { bookStyles } from '../../components/book-ui.tsx';
 import { BookIcon } from '../../components/book-icons.tsx';
@@ -14,8 +14,17 @@ import { inningLog, pitchCount, pitchLabels, playTitle } from '../../scoring/pla
 import type { SavedPlay } from '../../scoring/play-log.ts';
 import { teamNames } from '../../scoring/roster-presentation.ts';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
+import { playerPresentation } from '../../scoring/player-presentation.ts';
 
 const {colors, sizes, textStyles} = tokens.modes.Light;
+
+function ScoreDiamond({bases}: {bases: GameState['bases']}) {
+  return <Svg width={50} height={36} viewBox="0 0 50 36" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
+    <Path d="m25 1 8 8-8 8-8-8Z" fill={bases[2] ? colors['count/strike'] : colors['chip/outline']} stroke={colors['border/well']} strokeWidth={1.5} />
+    <Path d="m14 12 8 8-8 8-8-8Z" fill={bases[3] ? colors['count/strike'] : colors['chip/outline']} stroke={colors['border/well']} strokeWidth={1.5} />
+    <Path d="m36 12 8 8-8 8-8-8Z" fill={bases[1] ? colors['count/strike'] : colors['chip/outline']} stroke={colors['border/well']} strokeWidth={1.5} />
+  </Svg>;
+}
 
 function Baseball() {
   return <Svg width={22} height={22} viewBox="0 0 24 24" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
@@ -44,6 +53,10 @@ export default function PlaysScreen() {
   if (!game) return <SafeAreaView style={bookStyles.screen}><GameStatus /><Pressable style={bookStyles.linkTap} onPress={() => router.replace('/')} accessibilityRole="button"><Text style={bookStyles.link}>Your games</Text></Pressable></SafeAreaView>;
   const state = game.state;
   const innings = inningLog(game.plays);
+  const teamLabel = (side: TeamSide) => {
+    const player = game.setup.roster[side][0];
+    return player && playerPresentation(player, 'Player').named ? teamNames[side] : side === 'away' ? 'Away' : 'Home';
+  };
   return <SafeAreaView style={bookStyles.screen} testID="plays-screen">
     <View style={bookStyles.header}>
       <Pressable style={bookStyles.headerSide} accessibilityRole="button" accessibilityLabel="Your games" onPress={() => router.replace('/')}><BookIcon name="caret-left" size={24} color={colors['text/primary']} /></Pressable>
@@ -52,8 +65,8 @@ export default function PlaysScreen() {
     </View>
     <ScrollView contentContainerStyle={bookStyles.content}>
       <View style={styles.scoreboard}>
-        <View style={styles.scoreTop}><Text style={styles.teamName}>HAWKS</Text><Text style={styles.teamName}>MARLINS</Text></View>
-        <View style={styles.scoreMiddle}><Text style={styles.score}>{state.score.away}</Text><View style={styles.inning}><BaseDiamond bases={state.bases} /><Text style={styles.inningText}>{state.half === 'top' ? 'Top' : 'Bottom'} {state.inning}</Text></View><Text style={styles.score}>{state.score.home}</Text></View>
+        <View style={styles.scoreTop}><Text style={styles.teamName}>{teamLabel('away').toUpperCase()}</Text><Text style={styles.teamName}>{teamLabel('home').toUpperCase()}</Text></View>
+        <View style={styles.scoreMiddle}><Text style={styles.score}>{state.score.away}</Text><View style={styles.inning}><ScoreDiamond bases={state.bases} /><Text style={styles.inningText}>{state.half === 'top' ? 'Top' : 'Bottom'} {state.inning}</Text></View><Text style={styles.score}>{state.score.home}</Text></View>
         <View style={styles.scoreBottomLabels}><Text style={styles.scoreLabel}>AWAY</Text><Text style={styles.scoreLabel}>HOME</Text></View>
         <View style={styles.scoreBottom}><View style={styles.counts}>
           {([['B', 4, state.count.balls], ['S', 3, state.count.strikes], ['O', 3, state.outs]] as const).map(([label, total, value]) => <View key={label} style={styles.count}><Text style={styles.countLabel}>{label}</Text>{Array.from({length: total}, (_, index) => <View key={index} style={[styles.countDot, index < value && (label === 'B' ? styles.ball : label === 'S' ? styles.strike : styles.resultDot)]} />)}</View>)}
@@ -65,17 +78,21 @@ export default function PlaysScreen() {
           const expanded = openInnings[inning.key] ?? inningIndex === 0;
           return <View key={inning.key} style={bookStyles.card}>
             <Pressable accessibilityRole="button" accessibilityState={{expanded}} testID={`inning-${inning.key}`} onPress={() => setOpenInnings({...openInnings, [inning.key]: !expanded})} style={styles.inningHeader}>
-              <View style={styles.inningHeading}>{inningIndex === 0 ? <View style={styles.resultDotSmall} /> : null}<Text style={bookStyles.strong}>{inning.half === 'top' ? 'Top' : 'Bottom'} {inning.inning}<Text style={styles.muted}> · {teamNames[inning.side]} batting</Text></Text></View>
+              <View style={styles.inningHeading}>{inningIndex === 0 ? <View style={styles.resultDotSmall} /> : null}<Text style={bookStyles.strong}>{inning.half === 'top' ? 'Top' : 'Bottom'} {inning.inning}<Text style={styles.muted}> · {teamLabel(inning.side)} batting</Text></Text></View>
               <Text style={styles.muted}>{inning.runs} R · {inning.hits} H</Text>{expanded ? null : <BookIcon name="caret-right" size={16} />}
             </Pressable>
             {expanded ? [...inning.entries].reverse().map((entry, index) => {
               const latest = entry.plays.at(-1)!;
+              const headerPlay = [...entry.plays].reverse().find((play) => !play.undone) ?? latest;
+              const completed = headerPlay.before.half !== headerPlay.after.half || headerPlay.before.inning !== headerPlay.after.inning || headerPlay.before.nextBatter[inning.side] !== headerPlay.after.nextBatter[inning.side];
+              const headerCount = completed ? headerPlay.before.count : headerPlay.after.count;
+              const halfEnded = headerPlay.commands[0]?.kind !== 'undo' && (headerPlay.before.half !== headerPlay.after.half || headerPlay.before.inning !== headerPlay.after.inning);
               const open = openAtBats[entry.key] ?? index === 0;
               const undone = entry.plays.every((play) => play.undone);
               return <View key={entry.key} style={styles.atBat}>
                 <Pressable testID={`at-bat-${latest.firstSeq}`} accessibilityRole="button" accessibilityState={{expanded: open}} onPress={() => setOpenAtBats({...openAtBats, [entry.key]: !open})} style={styles.atBatHeader}>
-                  <View style={styles.baseball}><Baseball /></View><View style={styles.playDescription}><Text style={[bookStyles.body, undone && styles.undone]}>{playTitle(latest, game.plays)}</Text><Text style={styles.muted}>{latest.before.half !== latest.after.half || latest.before.inning !== latest.after.inning ? '3 outs · half-inning ended' : `${latest.after.outs} ${latest.after.outs === 1 ? 'out' : 'outs'} · ${basesSummary(latest.after.bases).replace(/\.$/, '').toLowerCase()}`}</Text></View>
-                  <Text style={styles.countPill}>{latest.before.count.balls}–{latest.before.count.strikes}</Text><BookIcon name={open ? 'caret-down' : 'caret-right'} size={14} />
+                  <View style={styles.baseball}><Baseball /></View><View style={styles.playDescription}><Text style={[bookStyles.body, undone && styles.undone]}>{playTitle(headerPlay, game.plays)}</Text><Text style={styles.muted}>{halfEnded ? '3 outs · half-inning ended' : `${headerPlay.after.outs} ${headerPlay.after.outs === 1 ? 'out' : 'outs'} · ${basesSummary(headerPlay.after.bases).replace(/\.$/, '').toLowerCase()}`}</Text></View>
+                  <Text style={styles.countPill}>{headerCount.balls}–{headerCount.strikes}</Text><BookIcon name={open ? 'caret-down' : 'caret-right'} size={14} />
                 </Pressable>
                 {open ? <View style={styles.pitchList}>{entry.plays.map((play, playIndex) => <PlayRow key={play.id} play={play} all={game.plays} ordinal={entry.plays.slice(0, playIndex + 1).filter((previous) => previous.commands.some((command) => command.kind === 'pitch')).length} />)}</View> : null}
               </View>;
