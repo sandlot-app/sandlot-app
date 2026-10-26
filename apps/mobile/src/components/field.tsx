@@ -1,5 +1,6 @@
 import { tokens } from '@sandlot/tokens';
 import type { GameState } from '@sandlot/engine';
+import { Platform } from 'react-native';
 import Svg, {
   Circle,
   ClipPath,
@@ -34,7 +35,13 @@ const basePoints = [
 
 export function BaseDiamond({ bases }: { bases: GameState['bases'] }) {
   return (
-    <Svg width={50} height={43} viewBox="0 0 50 43" accessible={false}>
+    <Svg
+      width={50}
+      height={43}
+      viewBox="0 0 50 43"
+      accessible={Platform.OS === 'web' ? undefined : false}
+      aria-hidden={Platform.OS === 'web' ? true : undefined}
+    >
       <Path
         d="m25 2 8 8-8 8-8-8Z"
         fill={bases[2] ? colors['count/ball'] : colors['surface/card']}
@@ -71,7 +78,8 @@ export function Field({
       height={height}
       viewBox="0 0 390 326"
       preserveAspectRatio="none"
-      accessible={false}
+      accessible={Platform.OS === 'web' ? undefined : false}
+      aria-hidden={Platform.OS === 'web' ? true : undefined}
     >
       <Defs>
         <LinearGradient id="sky" x2="0" y2="1">

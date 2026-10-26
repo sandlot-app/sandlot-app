@@ -1,5 +1,7 @@
 appId: host.exp.Exponent
 ---
+- waitForAnimationToEnd:
+    timeout: 5000
 - assertVisible:
     id: "score-summary"
 - copyTextFrom:
@@ -11,6 +13,7 @@ appId: host.exp.Exponent
 - takeScreenshot: called_strike-before
 - tapOn:
     id: "pitch-called_strike"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
@@ -37,6 +40,7 @@ appId: host.exp.Exponent
 - takeScreenshot: swinging_strike-before
 - tapOn:
     id: "pitch-swinging_strike"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
@@ -63,6 +67,7 @@ appId: host.exp.Exponent
 - takeScreenshot: foul-before
 - tapOn:
     id: "pitch-foul"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
@@ -89,6 +94,7 @@ appId: host.exp.Exponent
 - takeScreenshot: hit_by_pitch-before
 - tapOn:
     id: "pitch-hit_by_pitch"
+    retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"

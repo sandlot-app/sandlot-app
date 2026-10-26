@@ -1,5 +1,12 @@
 appId: host.exp.Exponent
 ---
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
 - assertVisible: "Sandlot"
 - tapOn:
     id: "open-scorer-gallery"

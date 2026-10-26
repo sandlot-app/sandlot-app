@@ -1,6 +1,6 @@
 import { tokens } from '@sandlot/tokens';
 import { createStyles } from '../../../style';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { router } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GameStatus } from '../../components/game-status.tsx';
@@ -8,14 +8,7 @@ import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
 
 const { colors, sizes } = tokens.modes.Light;
 
-export default function GamesRoute() {
-  const { gallery } = useLocalSearchParams<{ gallery?: string }>();
-  if (__DEV__ && typeof gallery === 'string')
-    return <Redirect href={{ pathname: '/gallery', params: { gallery } }} />;
-  return <GamesScreen />;
-}
-
-function GamesScreen() {
+export default function GamesScreen() {
   const { view, record, reopen } = useOfflineGame();
   const game =
     view.kind === 'ready' || view.kind === 'saving' ? view.game : null;
