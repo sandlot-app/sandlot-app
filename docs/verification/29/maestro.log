@@ -1,0 +1,557 @@
+=== 17pro tap-plays
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow tap-plays
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.initialSummary = maestro.copiedText}... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Run ${output.initialPitches = maestro.copiedText}... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.initialWaiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Tap on id: pitch-in-play... COMPLETED
+Take screenshot tap-outcomes-before-cancel... COMPLETED
+Tap on "Cancel"... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Assert that ${parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10) === output.initialWaiting} is true... COMPLETED
+Run _tap-outcome.yaml...
+  Tap on id: pitch-in-play... COMPLETED
+  Assert that id: play-outcomes is visible... COMPLETED
+  Tap on id: outcome-${OUTCOME}... COMPLETED
+  Assert that id: play-fielders is visible... COMPLETED
+  Tap on id: skip-fielder... COMPLETED
+  Assert that id: play-runners is visible... COMPLETED
+Run _tap-outcome.yaml... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Repeat 2 times...
+  Run _tap-outcome.yaml...
+    Tap on id: pitch-in-play... COMPLETED
+    Assert that id: play-outcomes is visible... COMPLETED
+    Tap on id: outcome-${OUTCOME}... COMPLETED
+    Assert that id: play-fielders is visible... COMPLETED
+    Tap on id: skip-fielder... COMPLETED
+    Assert that id: play-runners is visible... COMPLETED
+  Run _tap-outcome.yaml... COMPLETED
+  Tap on id: save-play... COMPLETED
+  Assert that id: save-play is not visible... COMPLETED
+Repeat 2 times... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.setupSummary = maestro.copiedText}... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Run ${output.setupPitches = maestro.copiedText}... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.setupWaiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Assert that ${output.setupWaiting === output.initialWaiting + 3} is true... COMPLETED
+Tap on id: pitch-in-play... COMPLETED
+Take screenshot tap-outcome-options... COMPLETED
+Tap on id: outcome-double... COMPLETED
+Tap on id: fielder-CF... COMPLETED
+Take screenshot tap-fielder-selection... COMPLETED
+Tap on id: play-next... COMPLETED
+Take screenshot tap-double-destinations... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Assert that ${parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10) === output.setupWaiting + 1} is true... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.doubleSummary = maestro.copiedText}... COMPLETED
+Assert that ${output.doubleSummary !== output.setupSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Run ${output.doublePitches = maestro.copiedText}... COMPLETED
+Assert that ${parseInt(output.doublePitches.match(/(\d+)/)[1], 10) === parseInt(output.setupPitches.match(/(\d+)/)[1], 10) + 1} is true... COMPLETED
+Take screenshot tap-double-saved... COMPLETED
+Stop host.exp.Exponent... COMPLETED
+Open exp://localhost:8091?__expo_disable_fab=1&__expo_disable_auto_launch=1&__expo_disable_onboarding=1... COMPLETED
+Assert that id: resume-game is visible... COMPLETED
+Tap on id: resume-game... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText === output.doubleSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.doublePitches} is true... COMPLETED
+Take screenshot tap-double-after-relaunch... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.setupWaiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText === output.setupSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.setupPitches} is true... COMPLETED
+Take screenshot tap-whole-play-undone... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Take screenshot tap-more... COMPLETED
+Assert that "Pitching change" is not visible... COMPLETED
+Assert that "Balk" is not visible... COMPLETED
+Tap on id: more-passed_ball... COMPLETED
+Take screenshot tap-two-runners... COMPLETED
+Tap on id: destination-.*-home, Index: 1... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText !== output.setupSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.setupPitches} is true... COMPLETED
+Take screenshot tap-selected-runner-scores... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.setupSummary}", id: score-summary is visible... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Tap on id: more-steal... COMPLETED
+Tap on id: destination-.*-3, Index: 1... COMPLETED
+Tap on id: destination-.*-2, Index: 0... COMPLETED
+Take screenshot tap-steal-choices... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.setupPitches} is true... COMPLETED
+Take screenshot tap-two-steals-saved... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.setupSummary}", id: score-summary is visible... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Tap on id: more-pickoff... COMPLETED
+Tap on id: destination-.*-out, Index: 0... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Take screenshot tap-pickoff-saved... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.setupSummary}", id: score-summary is visible... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Tap on id: more-wild_pitch... COMPLETED
+Tap on id: destination-.*-home, Index: 1... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.setupPitches} is true... COMPLETED
+Take screenshot tap-wild-pitch-saved... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.setupSummary}", id: score-summary is visible... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.beforeBuntWaiting = maestro.copiedText}... COMPLETED
+Run _tap-outcome.yaml...
+  Tap on id: pitch-in-play... COMPLETED
+  Assert that id: play-outcomes is visible... COMPLETED
+  Tap on id: outcome-${OUTCOME}... COMPLETED
+  Assert that id: play-fielders is visible... COMPLETED
+  Tap on id: skip-fielder... COMPLETED
+  Assert that id: play-runners is visible... COMPLETED
+Run _tap-outcome.yaml... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that ".*Bunting is not allowed.*", id: play-message is visible... COMPLETED
+Take screenshot tap-mustang-bunt-rejected... COMPLETED
+Tap on "Cancel"... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Assert that ${maestro.copiedText === output.beforeBuntWaiting} is true... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Tap on id: more-wild_pitch... COMPLETED
+Tap on id: destination-.*-3, Index: 1... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Run ${output.clarificationPitches = (2 - parseInt(output.setupSummary.match(/([0-2]) outs?/)[1], 10)) * 3}... COMPLETED
+Repeat indefinitely...
+  Copy text from element with id: waiting-plays... COMPLETED
+  Run ${output.beforePitch = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+  Tap on id: pitch-strike... COMPLETED
+  Tap on id: strike-looking... COMPLETED
+  Assert that ".* ${output.beforePitch + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Repeat 3 times... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.thirdOutBefore = maestro.copiedText}... COMPLETED
+Run ${output.thirdOutBeforeScore = output.thirdOutBefore.split('. Inning')[0]}... COMPLETED
+Run _tap-outcome.yaml...
+  Tap on id: pitch-in-play... COMPLETED
+  Assert that id: play-outcomes is visible... COMPLETED
+  Tap on id: outcome-${OUTCOME}... COMPLETED
+  Assert that id: play-fielders is visible... COMPLETED
+  Tap on id: skip-fielder... COMPLETED
+  Assert that id: play-runners is visible... COMPLETED
+Run _tap-outcome.yaml... COMPLETED
+Tap on id: destination-.*-home, Index: 2... COMPLETED
+Tap on id: destination-.*-out, Index: 1... COMPLETED
+Scrolling DOWN until id: third-out-evidence is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: out-type-.*-force... COMPLETED
+Take screenshot tap-force-third-out-choice... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText.split('. Inning')[0] === output.thirdOutBeforeScore} is true... COMPLETED
+Take screenshot tap-force-third-out-no-run... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.thirdOutBefore}", id: score-summary is visible... COMPLETED
+Run _tap-outcome.yaml...
+  Tap on id: pitch-in-play... COMPLETED
+  Assert that id: play-outcomes is visible... COMPLETED
+  Tap on id: outcome-${OUTCOME}... COMPLETED
+  Assert that id: play-fielders is visible... COMPLETED
+  Tap on id: skip-fielder... COMPLETED
+  Assert that id: play-runners is visible... COMPLETED
+Run _tap-outcome.yaml... COMPLETED
+Tap on id: destination-.*-home, Index: 2... COMPLETED
+Tap on id: destination-.*-out, Index: 1... COMPLETED
+Tap on id: out-type-.*-non_force... COMPLETED
+Take screenshot tap-tag-third-out-choice... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText.split('. Inning')[0] !== output.thirdOutBeforeScore} is true... COMPLETED
+Take screenshot tap-tag-third-out-run-counts... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.thirdOutBefore}", id: score-summary is visible... COMPLETED
+Repeat indefinitely...
+  Copy text from element with id: waiting-plays... COMPLETED
+  Run ${output.beforeUndo = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".* ${output.beforeUndo + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Repeat 4 times... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText === output.setupSummary} is true... COMPLETED
+Repeat 3 times...
+  Copy text from element with id: waiting-plays... COMPLETED
+  Run ${output.beforeUndo = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".* ${output.beforeUndo + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Repeat 3 times... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText === output.initialSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.initialPitches} is true... COMPLETED
+Take screenshot tap-original-game-restored... COMPLETED
+
+=== 17pro live-game-unseeded
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow live-game-unseeded
+Run flow when id: games-navigation is visible...
+  Tap on id: games-navigation... COMPLETED
+Run flow when id: games-navigation is visible... COMPLETED
+Assert that "Your games" is visible... COMPLETED
+Scrolling DOWN until id: start-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: start-live... COMPLETED
+Scrolling DOWN until id: live-message is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Assert that "This phone isn’t the demo game’s scorer yet. Phone ID for the seed script: .*", id: live-message is visible... COMPLETED
+Take screenshot live-needs-seed... COMPLETED
+
+=== 17pro live-game
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow live-game
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Your games" is visible... COMPLETED
+Scrolling DOWN until id: live-game-card is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Run flow when id: start-live is visible...
+  Tap on id: start-live... COMPLETED
+Run flow when id: start-live is visible... COMPLETED
+Run flow when id: resume-live is visible...
+Run flow when id: resume-live is visible... SKIPPED
+Assert that id: score-summary is visible... COMPLETED
+Tap on id: pitch-ball... COMPLETED
+Assert that "Last: Ball · All plays saved", id: waiting-plays is visible... COMPLETED
+Tap on id: pitch-foul... COMPLETED
+Assert that "Last: Foul · All plays saved", id: waiting-plays is visible... COMPLETED
+Take screenshot live-all-saved... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.summary = maestro.copiedText}... COMPLETED
+Tap on id: games-navigation... COMPLETED
+Scrolling DOWN until id: live-waiting is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Assert that "Every play is on the server.", id: live-waiting is visible... COMPLETED
+Take screenshot live-home-uploaded... COMPLETED
+
+=== 17pro live-game-offline
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow live-game-offline
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Your games" is visible... COMPLETED
+Scrolling DOWN until id: resume-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: resume-live... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Tap on id: pitch-ball... COMPLETED
+Assert that "Last: Ball · Offline · 1 play saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot live-offline-waiting... COMPLETED
+
+=== 17pro live-game-reconnect
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow live-game-reconnect
+Assert that "Last: Ball · All plays saved", id: waiting-plays is visible... COMPLETED
+Take screenshot live-reconnected... COMPLETED
+
+=== se tap-plays
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow tap-plays
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.initialSummary = maestro.copiedText}... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Run ${output.initialPitches = maestro.copiedText}... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.initialWaiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Tap on id: pitch-in-play... COMPLETED
+Take screenshot tap-outcomes-before-cancel... COMPLETED
+Tap on "Cancel"... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Assert that ${parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10) === output.initialWaiting} is true... COMPLETED
+Run _tap-outcome.yaml...
+  Tap on id: pitch-in-play... COMPLETED
+  Assert that id: play-outcomes is visible... COMPLETED
+  Tap on id: outcome-${OUTCOME}... COMPLETED
+  Assert that id: play-fielders is visible... COMPLETED
+  Tap on id: skip-fielder... COMPLETED
+  Assert that id: play-runners is visible... COMPLETED
+Run _tap-outcome.yaml... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Repeat 2 times...
+  Run _tap-outcome.yaml...
+    Tap on id: pitch-in-play... COMPLETED
+    Assert that id: play-outcomes is visible... COMPLETED
+    Tap on id: outcome-${OUTCOME}... COMPLETED
+    Assert that id: play-fielders is visible... COMPLETED
+    Tap on id: skip-fielder... COMPLETED
+    Assert that id: play-runners is visible... COMPLETED
+  Run _tap-outcome.yaml... COMPLETED
+  Tap on id: save-play... COMPLETED
+  Assert that id: save-play is not visible... COMPLETED
+Repeat 2 times... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.setupSummary = maestro.copiedText}... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Run ${output.setupPitches = maestro.copiedText}... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.setupWaiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Assert that ${output.setupWaiting === output.initialWaiting + 3} is true... COMPLETED
+Tap on id: pitch-in-play... COMPLETED
+Take screenshot tap-outcome-options... COMPLETED
+Tap on id: outcome-double... COMPLETED
+Tap on id: fielder-CF... COMPLETED
+Take screenshot tap-fielder-selection... COMPLETED
+Tap on id: play-next... COMPLETED
+Take screenshot tap-double-destinations... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Assert that ${parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10) === output.setupWaiting + 1} is true... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.doubleSummary = maestro.copiedText}... COMPLETED
+Assert that ${output.doubleSummary !== output.setupSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Run ${output.doublePitches = maestro.copiedText}... COMPLETED
+Assert that ${parseInt(output.doublePitches.match(/(\d+)/)[1], 10) === parseInt(output.setupPitches.match(/(\d+)/)[1], 10) + 1} is true... COMPLETED
+Take screenshot tap-double-saved... COMPLETED
+Stop host.exp.Exponent... COMPLETED
+Open exp://localhost:8091?__expo_disable_fab=1&__expo_disable_auto_launch=1&__expo_disable_onboarding=1... COMPLETED
+Assert that id: resume-game is visible... COMPLETED
+Tap on id: resume-game... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText === output.doubleSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.doublePitches} is true... COMPLETED
+Take screenshot tap-double-after-relaunch... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.setupWaiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText === output.setupSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.setupPitches} is true... COMPLETED
+Take screenshot tap-whole-play-undone... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Take screenshot tap-more... COMPLETED
+Assert that "Pitching change" is not visible... COMPLETED
+Assert that "Balk" is not visible... COMPLETED
+Tap on id: more-passed_ball... COMPLETED
+Take screenshot tap-two-runners... COMPLETED
+Tap on id: destination-.*-home, Index: 1... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText !== output.setupSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.setupPitches} is true... COMPLETED
+Take screenshot tap-selected-runner-scores... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.setupSummary}", id: score-summary is visible... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Tap on id: more-steal... COMPLETED
+Tap on id: destination-.*-3, Index: 1... COMPLETED
+Tap on id: destination-.*-2, Index: 0... COMPLETED
+Take screenshot tap-steal-choices... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.setupPitches} is true... COMPLETED
+Take screenshot tap-two-steals-saved... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.setupSummary}", id: score-summary is visible... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Tap on id: more-pickoff... COMPLETED
+Tap on id: destination-.*-out, Index: 0... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Take screenshot tap-pickoff-saved... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.setupSummary}", id: score-summary is visible... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Tap on id: more-wild_pitch... COMPLETED
+Tap on id: destination-.*-home, Index: 1... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.setupPitches} is true... COMPLETED
+Take screenshot tap-wild-pitch-saved... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.setupSummary}", id: score-summary is visible... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.beforeBuntWaiting = maestro.copiedText}... COMPLETED
+Run _tap-outcome.yaml...
+  Tap on id: pitch-in-play... COMPLETED
+  Assert that id: play-outcomes is visible... COMPLETED
+  Tap on id: outcome-${OUTCOME}... COMPLETED
+  Assert that id: play-fielders is visible... COMPLETED
+  Tap on id: skip-fielder... COMPLETED
+  Assert that id: play-runners is visible... COMPLETED
+Run _tap-outcome.yaml... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that ".*Bunting is not allowed.*", id: play-message is visible... COMPLETED
+Take screenshot tap-mustang-bunt-rejected... COMPLETED
+Tap on "Cancel"... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Assert that ${maestro.copiedText === output.beforeBuntWaiting} is true... COMPLETED
+Tap on id: scorer-more... COMPLETED
+Tap on id: more-wild_pitch... COMPLETED
+Tap on id: destination-.*-3, Index: 1... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Run ${output.clarificationPitches = (2 - parseInt(output.setupSummary.match(/([0-2]) outs?/)[1], 10)) * 3}... COMPLETED
+Repeat indefinitely...
+Repeat indefinitely... SKIPPED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.thirdOutBefore = maestro.copiedText}... COMPLETED
+Run ${output.thirdOutBeforeScore = output.thirdOutBefore.split('. Inning')[0]}... COMPLETED
+Run _tap-outcome.yaml...
+  Tap on id: pitch-in-play... COMPLETED
+  Assert that id: play-outcomes is visible... COMPLETED
+  Tap on id: outcome-${OUTCOME}... COMPLETED
+  Assert that id: play-fielders is visible... COMPLETED
+  Tap on id: skip-fielder... COMPLETED
+  Assert that id: play-runners is visible... COMPLETED
+Run _tap-outcome.yaml... COMPLETED
+Tap on id: destination-.*-home, Index: 2... COMPLETED
+Tap on id: destination-.*-out, Index: 1... COMPLETED
+Scrolling DOWN until id: third-out-evidence is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: out-type-.*-force... COMPLETED
+Take screenshot tap-force-third-out-choice... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText.split('. Inning')[0] === output.thirdOutBeforeScore} is true... COMPLETED
+Take screenshot tap-force-third-out-no-run... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.thirdOutBefore}", id: score-summary is visible... COMPLETED
+Run _tap-outcome.yaml...
+  Tap on id: pitch-in-play... COMPLETED
+  Assert that id: play-outcomes is visible... COMPLETED
+  Tap on id: outcome-${OUTCOME}... COMPLETED
+  Assert that id: play-fielders is visible... COMPLETED
+  Tap on id: skip-fielder... COMPLETED
+  Assert that id: play-runners is visible... COMPLETED
+Run _tap-outcome.yaml... COMPLETED
+Tap on id: destination-.*-home, Index: 2... COMPLETED
+Tap on id: destination-.*-out, Index: 1... COMPLETED
+Tap on id: out-type-.*-non_force... COMPLETED
+Take screenshot tap-tag-third-out-choice... COMPLETED
+Tap on id: save-play... COMPLETED
+Assert that id: save-play is not visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText.split('. Inning')[0] !== output.thirdOutBeforeScore} is true... COMPLETED
+Take screenshot tap-tag-third-out-run-counts... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that "${output.thirdOutBefore}", id: score-summary is visible... COMPLETED
+Repeat indefinitely...
+  Copy text from element with id: waiting-plays... COMPLETED
+  Run ${output.beforeUndo = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".* ${output.beforeUndo + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Repeat indefinitely... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText === output.setupSummary} is true... COMPLETED
+Repeat 3 times...
+  Copy text from element with id: waiting-plays... COMPLETED
+  Run ${output.beforeUndo = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".* ${output.beforeUndo + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Repeat 3 times... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Assert that ${maestro.copiedText === output.initialSummary} is true... COMPLETED
+Copy text from element with id: pitch-total... COMPLETED
+Assert that ${maestro.copiedText === output.initialPitches} is true... COMPLETED
+Take screenshot tap-original-game-restored... COMPLETED
+
+=== se live-game-unseeded
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow live-game-unseeded
+Run flow when id: games-navigation is visible...
+  Tap on id: games-navigation... COMPLETED
+Run flow when id: games-navigation is visible... COMPLETED
+Assert that "Your games" is visible... COMPLETED
+Scrolling DOWN until id: start-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: start-live... COMPLETED
+Scrolling DOWN until id: live-message is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Assert that "This phone isn’t the demo game’s scorer yet. Phone ID for the seed script: .*", id: live-message is visible... COMPLETED
+Take screenshot live-needs-seed... COMPLETED
+
+=== se live-game
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow live-game
+Run flow when id: games-navigation is visible...
+  Tap on id: games-navigation... COMPLETED
+Run flow when id: games-navigation is visible... COMPLETED
+Scrolling DOWN until id: live-game-card is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Run flow when id: start-live is visible...
+  Tap on id: start-live... COMPLETED
+Run flow when id: start-live is visible... COMPLETED
+Run flow when id: resume-live is visible...
+  Tap on id: resume-live... COMPLETED
+Run flow when id: resume-live is visible... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Tap on id: pitch-ball... COMPLETED
+Assert that "Last: Ball · All plays saved", id: waiting-plays is visible... COMPLETED
+Tap on id: pitch-foul... COMPLETED
+Assert that "Last: Foul · All plays saved", id: waiting-plays is visible... COMPLETED
+Take screenshot live-all-saved... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.summary = maestro.copiedText}... COMPLETED
+Tap on id: games-navigation... COMPLETED
+Scrolling DOWN until id: live-waiting is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Assert that "Every play is on the server.", id: live-waiting is visible... COMPLETED
+Take screenshot live-home-uploaded... COMPLETED
+
+=== se live-game-offline
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow live-game-offline
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Scrolling DOWN until id: resume-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: resume-live... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Tap on id: pitch-ball... COMPLETED
+Assert that "Last: Ball · Offline · 1 play saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot live-offline-waiting... COMPLETED
+
+=== se live-game-reconnect
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow live-game-reconnect
+Assert that "Last: Ball · All plays saved", id: waiting-plays is visible... COMPLETED
+Take screenshot live-reconnected... COMPLETED
+
