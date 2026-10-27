@@ -296,8 +296,10 @@ appId: host.exp.Exponent
 - tapOn:
     id: "destination-.*-out"
     index: 1
-- assertVisible:
-    id: "third-out-evidence"
+# On a short phone like the iPhone SE the runners list runs below the fold.
+- scrollUntilVisible:
+    element:
+      id: "third-out-evidence"
 - tapOn:
     id: "out-type-.*-force"
 - takeScreenshot: tap-force-third-out-choice
