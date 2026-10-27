@@ -1,7 +1,7 @@
 import { tokens } from '@sandlot/tokens';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { PitchButton, PlayerChip, PrimaryButton, ScorerBar, Sheet, SheetHeader, SheetSection, type Pitch, type SyncState } from './scorer-ui';
+import { PitchButton, PlayerChip, PrimaryButton, ScorerBar, Sheet, SheetHeader, SheetSection, VoiceBar, type Pitch, type SyncState } from './scorer-ui';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -22,6 +22,7 @@ export default function ScorerGallery({ onExit }: { onExit: () => void }) {
   const show = (name: GallerySection) => section === 'all' || section === name;
   const onPitch = (pitch: Pitch) => { setLastPitch(pitch); setBarResult(`Pitch: ${pitch}`); };
   const saved: SyncState = { status: 'saved', lastPlay: lastPitch };
+  const voiceBar = <VoiceBar listening={false} onStart={() => setBarResult('Voice pressed')} onRelease={() => {}} onCancel={() => {}} />;
   return <View style={styles.root}>
     <ScrollView contentContainerStyle={styles.content}>
       <Pressable accessibilityRole="button" onPress={onExit} style={styles.exit}><Text style={styles.exitText}>‹ Sandlot</Text></Pressable>
@@ -57,11 +58,11 @@ export default function ScorerGallery({ onExit }: { onExit: () => void }) {
         </View>
       </View> : null}
       {show('bar') ? <View style={styles.section}>
-        <Text style={styles.heading}>Scorer bar · Voice off</Text>
+        <Text style={styles.heading}>Scorer bar</Text>
         <Text style={styles.caption}>{barResult}</Text>
-        <ScorerBar sync={saved} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} testID="gallery-scorer-bar-saved" />
-        <ScorerBar sync={{ status: 'saving', lastPlay: 'Strike' }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} testID="gallery-scorer-bar-saving" />
-        <ScorerBar sync={{ status: 'offline', lastPlay: 'Ball', waiting: 3 }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} testID="gallery-scorer-bar-offline" />
+        <ScorerBar sync={saved} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} voice={voiceBar} testID="gallery-scorer-bar-saved" />
+        <ScorerBar sync={{ status: 'saving', lastPlay: 'Strike' }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} voice={voiceBar} testID="gallery-scorer-bar-saving" />
+        <ScorerBar sync={{ status: 'offline', lastPlay: 'Ball', waiting: 3 }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} voice={voiceBar} testID="gallery-scorer-bar-offline" />
         <Text style={styles.heading}>Disabled pitch buttons</Text>
         <View style={styles.pitchSampleRow} testID="gallery-disabled-pitches">
           <PitchButton label="Ball" kind="ball" disabled onPress={() => {}} />

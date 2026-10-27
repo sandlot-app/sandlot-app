@@ -1,0 +1,107 @@
+appId: host.exp.Exponent
+# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="strike swinging|strike". See features/voice-scoring.md.
+---
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+    timeout: 15000
+- assertVisible: "Hold to score by voice"
+- takeScreenshot: voice-idle
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
+
+# 1. "strike swinging" reads as a play while held, and releasing saves it.
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
+    timeout: 15000
+- assertNotVisible:
+    id: "voice-card"
+- assertVisible: "Undo · Strike"
+- assertVisible: "Hold to score by voice"
+- takeScreenshot: voice-saved
+
+# 2. "strike" could be looking or swinging, so nothing saves until a choice.
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Not sure — which one?"
+    timeout: 15000
+- assertVisible: "“strike”"
+- assertVisible: "Strike looking"
+- assertVisible: "Strike swinging"
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting + 1} plays? saved on this phone"
+- takeScreenshot: voice-not-sure
+- tapOn:
+    id: "voice-choice-0"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
+    timeout: 15000
+- assertNotVisible:
+    id: "voice-card"
+- takeScreenshot: voice-chosen
+
+# 3. Sliding off the bar cancels the press, and nothing saves.
+- swipe:
+    from:
+      id: "voice-bar"
+    direction: UP
+    duration: 1500
+- waitForAnimationToEnd:
+    timeout: 3000
+- assertNotVisible:
+    id: "voice-card"
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting + 2} plays? saved on this phone"
+- takeScreenshot: voice-cancelled
+
+# Put the game back: undo both voice plays.
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 3} plays? saved on this phone"
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 4} plays? saved on this phone"
+    timeout: 15000

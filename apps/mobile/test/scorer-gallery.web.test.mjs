@@ -253,7 +253,7 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       await click('scorer-more'); await visible('play-more'); await click('more-hit_by_pitch'); await absent('play-more');
       await savedAfter(beforeHitByPitch);
       assert.match(await summary(), /Runners on first and second and third/);
-      assert.match(await text('scorer-undo'), /Undo · Hit by pitch/);
+      assert.equal(await evaluate(`document.querySelector('[data-testid="scorer-undo"]')?.getAttribute('aria-label')`), 'Undo · Hit by pitch', 'the round Undo names the play it takes back');
       await undo();
       assert.match(await summary(), /Runners on first and third/);
       await click('scorer-more'); await visible('play-more'); await screenshot('more');

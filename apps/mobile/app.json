@@ -31,6 +31,12 @@
             "web": false
           }
         }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "Sandlot listens only while you hold the voice bar, to score the play you say."
+        }
       ]
     ]
   }

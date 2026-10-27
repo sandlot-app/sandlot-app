@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { Image, Platform, Pressable, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createStyles } from '../../../style';
-import { ScorerBar, type Pitch, type SyncState } from '../../../scorer-ui';
+import { ScorerBar, TranscriptCard, VoiceBar, type Pitch, type SyncState } from '../../../scorer-ui';
 import { belowBarSpace } from '../../components/bottom-space.ts';
 import { Field } from '../../components/field.tsx';
 import { GameStatus } from '../../components/game-status.tsx';
@@ -19,6 +19,7 @@ import { playLabel } from '../../scoring/play-label.ts';
 import { beginInPlay } from '../../scoring/tap-play.ts';
 import type { PlayDraft } from '../../scoring/tap-play.ts';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
+import { useVoice } from '../../voice/use-voice.tsx';
 
 const { colors, sizes } = tokens.modes.Light;
 
@@ -54,6 +55,7 @@ export default function ScoreScreen() {
   const { fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const game = view.kind === 'ready' || view.kind === 'saving' || view.kind === 'blocked' ? view.game : null;
+  const voice = useVoice(game, record);
 
   if (!game)
     return (
@@ -75,6 +77,7 @@ export default function ScoreScreen() {
     ? { status: 'saving', lastPlay }
     : { status: 'offline', lastPlay, waiting: game.waitingPlays };
   const onPitch = (pitch: Pitch) => {
+    voice.dismiss();
     if (pitch === 'in-play') setDraft(beginInPlay(game, new Date().toISOString()));
     else void record({ kind: 'pitch', result: pitchResults[pitch] });
   };
@@ -88,10 +91,13 @@ export default function ScoreScreen() {
   );
   const dock = (
     <View style={largeText ? null : styles.dock} onLayout={(event) => setDockHeight(event.nativeEvent.layout.height)}>
-      {view.kind === 'ready' && view.problem && view.message ? <Text testID="action-message" style={styles.message} accessibilityLiveRegion="polite">{view.message}</Text> : null}
+      {voice.message ? <Text testID="voice-message" style={styles.message} accessibilityLiveRegion="polite">{voice.message}</Text>
+        : view.kind === 'ready' && view.problem && view.message ? <Text testID="action-message" style={styles.message} accessibilityLiveRegion="polite">{view.message}</Text> : null}
       <GameStatus />
-      <ScorerBar sync={sync} onPitch={onPitch} onUndo={() => { void record({ kind: 'undo' }); }}
-        onMore={() => setDraft({ kind: 'more', game })} disabled={!enabled}
+      {voice.card ? <TranscriptCard card={voice.card} onChoose={voice.choose} /> : null}
+      <ScorerBar sync={sync} onPitch={onPitch} onUndo={() => { voice.dismiss(); void record({ kind: 'undo' }); }}
+        onMore={() => { voice.dismiss(); setDraft({ kind: 'more', game }); }} disabled={!enabled}
+        voice={<VoiceBar listening={voice.listening} disabled={!enabled} onStart={voice.start} onRelease={voice.release} onCancel={voice.cancel} testID="voice-bar" />}
         undoDisabled={view.kind !== 'ready' || !game.canUndo} testID="scorer-bar" syncTestID="waiting-plays" />
       <View style={[styles.belowBar, spacerHeight(belowBarSpace(Platform.OS, insets.bottom))]} />
     </View>

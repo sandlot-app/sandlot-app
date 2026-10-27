@@ -1,0 +1,113 @@
+import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
+import { test } from 'node:test';
+import { openOfflineGame, type DemoAction, type SavedGame } from '../src/scoring/offline-game.ts';
+import { createVoiceController, type VoiceView } from '../src/voice/voice-controller.ts';
+import { connect } from './database.ts';
+import { fakeApi, fakeMic, fakeSocket, tick, timeouts } from './voice-fakes.ts';
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, timeouts.openMs + timeouts.finalMs + 30));
+
+/** A started offline game, a controller on it, and a fake mic and socket for each press. */
+async function scorer(voiceOn = true) {
+  const session = await openOfflineGame(connect(':memory:'), { newId: randomUUID, now: () => '2026-10-26T17:00:00.000Z' });
+  if (session.kind !== 'ready') throw new Error('Session must open');
+  const started = await session.record({ kind: 'start' });
+  if (started.kind !== 'saved') throw new Error('Game must start');
+  let game: SavedGame = started.game;
+  const recorded: DemoAction[] = [];
+  const record = async (action: DemoAction) => {
+    recorded.push(action);
+    const result = await session.record(action);
+    if (result.kind === 'saved') game = result.game;
+    return result.kind === 'saved';
+  };
+  const mic = fakeMic();
+  let socket = fakeSocket();
+  const views: VoiceView[] = [];
+  const controller = createVoiceController({
+    voice: voiceOn ? { mic, api: fakeApi(), openSocket: () => (socket = fakeSocket()), timeouts } : null,
+    game: () => game,
+    record,
+    now: () => Date.parse('2026-10-26T17:01:00.000Z'),
+    onChange: (view) => views.push(view),
+  });
+  /** Holds the bar and lets go; the final words arrive when `hear` is called. */
+  async function hold() {
+    controller.start();
+    await tick();
+    socket.open();
+    mic.push([1, 0, 2, 0]);
+    controller.release();
+    await tick();
+    const heldSocket = socket;
+    return (transcript: string) => heldSocket.server({ type: 'conversation.item.input_audio_transcription.completed', transcript });
+  }
+  const plays = () => game.events.slice(started.game.events.length);
+  return { controller, record, recorded, views, hold, plays, game: () => game };
+}
+
+test('a voice play saves once, against the game the press started on', async () => {
+  const { hold, plays, recorded } = await scorer();
+  (await hold())('strike swinging');
+  await settle();
+  assert.deepEqual(plays().map((event) => [event.source, event.command]), [['voice', { kind: 'pitch', result: 'swinging_strike' }]]);
+  assert.equal(recorded.length, 1);
+});
+
+test('a tap after letting go takes over: the voice result that arrives later saves nothing', async () => {
+  const { controller, hold, plays, record, views } = await scorer();
+  const hear = await hold();
+  controller.dismiss();
+  await record({ kind: 'pitch', result: 'called_strike' });
+  hear('strike swinging');
+  await settle();
+  assert.deepEqual(plays().map((event) => [event.source, event.command]), [['tap', { kind: 'pitch', result: 'called_strike' }]], 'one strike, not two');
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+});
+
+test('a save from anywhere else while a press is read makes the press stale, so it never writes on top', async () => {
+  const { hold, plays, record, recorded } = await scorer();
+  const hear = await hold();
+  await record({ kind: 'pitch', result: 'ball' });
+  hear('strike swinging');
+  await settle();
+  assert.deepEqual(plays().map((event) => event.source), ['tap']);
+  assert.equal(recorded.at(-1)?.kind, 'voice', 'the press tried, and the engine refused the stale revision');
+});
+
+test('a Not sure choice saves the reading tapped, and a tap instead clears the card', async () => {
+  const first = await scorer();
+  (await first.hold())('strike');
+  await settle();
+  assert.equal(first.views.at(-1)?.card?.kind, 'choose');
+  first.controller.choose(1);
+  await settle();
+  assert.deepEqual(first.plays().map((event) => event.command), [{ kind: 'pitch', result: 'swinging_strike' }]);
+
+  const second = await scorer();
+  (await second.hold())('strike');
+  await settle();
+  second.controller.dismiss();
+  second.controller.choose(0);
+  await settle();
+  assert.deepEqual(second.plays(), [], 'the choice is gone once the scorer taps a button');
+});
+
+test('D4: the same play said again right after an undo saves, because the undo cleared the duplicate guard', async () => {
+  const { controller, hold, plays, record, views } = await scorer();
+  (await hold())('ball');
+  await settle();
+  controller.dismiss();
+  await record({ kind: 'undo' });
+  (await hold())('ball');
+  await settle();
+  assert.equal(views.at(-1)?.card, null, 'no "check this play" card');
+  assert.deepEqual(plays().filter((event) => event.source === 'voice').map((event) => event.command), [{ kind: 'pitch', result: 'ball' }, { kind: 'pitch', result: 'ball' }]);
+});
+
+test('with voice off, a touch shows the unavailable line and no Listening card', async () => {
+  const { controller, views } = await scorer(false);
+  controller.start();
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Voice is unavailable right now. Tap to score.' });
+});

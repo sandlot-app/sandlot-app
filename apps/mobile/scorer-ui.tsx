@@ -1,6 +1,7 @@
 import { tokens } from '@sandlot/tokens';
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Image, PanResponder, Pressable, ScrollView, Text, View } from 'react-native';
+import { MicIcon, MoreHorizontalIcon } from './src/components/icons.tsx';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -143,11 +144,13 @@ function SyncStatus({ state, syncTestID }: { state: SyncState; syncTestID?: stri
   </View>;
 }
 
-export function ScorerBar({ onPitch, onUndo, onMore, sync, disabled = false, undoDisabled = disabled, testID, syncTestID }: {
+export function ScorerBar({ onPitch, onUndo, onMore, sync, voice, disabled = false, undoDisabled = disabled, testID, syncTestID }: {
   onPitch: (pitch: Pitch) => void;
   onUndo: () => void;
   onMore: () => void;
   sync: SyncState;
+  /** The Voice Bar, between Undo and More. */
+  voice: ReactNode;
   disabled?: boolean;
   undoDisabled?: boolean;
   testID?: string;
@@ -172,15 +175,100 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, disabled = false, und
     </View>
     <View style={styles.barActions}>
       <Pressable accessibilityRole="button" accessibilityLabel={sync.lastPlay ? `Undo · ${sync.lastPlay}` : 'Undo'} accessibilityState={{ disabled: undoDisabled }}
-        disabled={undoDisabled} onPress={onUndo} style={[styles.undoButton, undoDisabled && styles.dimmed]} testID="scorer-undo">
+        disabled={undoDisabled} onPress={onUndo} style={[styles.roundButton, undoDisabled && styles.dimmed]} testID="scorer-undo">
         <Image source={require('./assets/scorer/undo.png')} accessible={false} style={styles.undoIcon} />
-        <Text style={styles.undoText}>{sync.lastPlay ? `Undo · ${sync.lastPlay}` : 'Undo'}</Text>
       </Pressable>
+      {voice}
       <Pressable accessibilityRole="button" accessibilityLabel="More" accessibilityState={{ disabled }} disabled={disabled}
-        onPress={onMore} style={[styles.moreButton, disabled && styles.dimmed]} testID="scorer-more"><Text style={styles.moreGlyph}>•••</Text></Pressable>
+        onPress={onMore} style={[styles.roundButton, disabled && styles.dimmed]} testID="scorer-more"><MoreHorizontalIcon color={colors['text/primary']} /></Pressable>
     </View>
     <SyncStatus state={sync} syncTestID={syncTestID} />
   </View>;
+}
+
+/** What the Transcript Card shows while voice is in use. */
+export type VoiceCard =
+  | { kind: 'listening'; words: string }
+  /** The live words already read as a play: releasing saves `result`. */
+  | { kind: 'got_it'; words: string; result: string; tone: 'ball' | 'strike' }
+  /** Nothing is saved until the scorer taps a choice. */
+  | { kind: 'choose'; heading: string; words: string; choices: string[]; note: string };
+
+/**
+ * Hold to score by voice. Touch-down starts listening, release applies, and sliding off the bar cancels. The bar keeps
+ * the touch while held, so a scroll can't steal it.
+ */
+export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCancel, testID }: {
+  listening: boolean;
+  disabled?: boolean;
+  onStart: () => void;
+  onRelease: () => void;
+  onCancel: () => void;
+  testID?: string;
+}) {
+  const latest = useRef({ disabled, onStart, onRelease, onCancel });
+  useEffect(() => { latest.current = { disabled, onStart, onRelease, onCancel }; });
+  const size = useRef({ width: 0, height: 0 });
+  const held = useRef(false);
+  const responder = useMemo(() => {
+    const cancel = () => {
+      if (!held.current) return;
+      held.current = false;
+      latest.current.onCancel();
+    };
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => !latest.current.disabled,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: () => {
+        held.current = true;
+        latest.current.onStart();
+      },
+      onPanResponderMove: (_, gesture) => {
+        if (Math.abs(gesture.dy) > size.current.height || Math.abs(gesture.dx) > size.current.width / 2) cancel();
+      },
+      onPanResponderRelease: () => {
+        if (!held.current) return;
+        held.current = false;
+        latest.current.onRelease();
+      },
+      onPanResponderTerminate: cancel,
+    });
+  }, []);
+  return <View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={listening ? 'Listening' : 'Hold to score by voice'}
+    accessibilityState={{ disabled, busy: listening }} onLayout={(event) => { size.current = event.nativeEvent.layout; }}
+    style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed]} testID={testID}>
+    {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
+    <Text style={styles.voiceLabel} numberOfLines={1}>{listening ? 'Listening…' : 'Hold to score by voice'}</Text>
+  </View>;
+}
+
+/** Floats above the Scorer Bar while voice is in use: Listening, Got it, or Not sure. */
+export function TranscriptCard({ card, onChoose }: { card: VoiceCard; onChoose: (index: number) => void }) {
+  const status = card.kind === 'listening' ? 'Listening…' : card.kind === 'got_it' ? 'Got it' : card.heading;
+  return (
+    <View style={styles.card} accessibilityLiveRegion="polite" testID="voice-card">
+      <View style={styles.cardHead}>
+        <View style={card.kind === 'listening' ? styles.liveDot : card.kind === 'got_it' ? styles.savedDot : styles.unsureDot} />
+        <Text style={styles.cardStatus} testID="voice-status">{status}</Text>
+      </View>
+      {card.kind === 'listening'
+        ? <Text style={styles.cardWords} testID="voice-words">{card.words ? `“${card.words}` : ''}<Text style={styles.cardPending}>…</Text></Text>
+        : <Text style={styles.cardWords} testID="voice-words">{`“${card.words}”`}</Text>}
+      {card.kind === 'got_it' ? <View style={styles.cardResult}>
+        <View style={card.tone === 'ball' ? styles.ballResult : styles.strikeResult} />
+        <Text style={styles.cardResultText} testID="voice-result">{card.result}</Text>
+      </View> : null}
+      {card.kind === 'choose' ? <View style={styles.choices}>
+        {card.choices.map((choice, index) => <Pressable key={choice} accessibilityRole="button" onPress={() => onChoose(index)}
+          style={({ pressed }) => [styles.choice, pressed && styles.dimmed]} testID={`voice-choice-${index}`}>
+          <Text style={styles.choiceText}>{choice}</Text>
+        </Pressable>)}
+      </View> : null}
+      <Text style={styles.cardHint}>
+        {card.kind === 'listening' ? 'Say a pitch or a play · release when done' : card.kind === 'got_it' ? 'Release to save · slide away to cancel' : card.note}
+      </Text>
+    </View>
+  );
 }
 
 const styles = createStyles({
@@ -239,13 +327,29 @@ const styles = createStyles({
   strikeProgressFill: { width: '67%', height: 2, backgroundColor: colors['count/strike'] },
   strikeHeading: { ...textStyles['Body/Strong'], color: colors['text/secondary'] },
   strikeOption: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors['count/strike'], borderRadius: sizes['radius/full'] },
-  barActions: { flexDirection: 'row', gap: sizes['space/3'] },
-  undoButton: { flex: 1, minHeight: sizes['tap/min'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/1'] },
-  undoIcon: { width: textStyles['Body/Strong'].lineHeight, height: textStyles['Body/Strong'].lineHeight, tintColor: colors['text/primary'] },
-  undoText: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
-  moreButton: { width: 46, height: 46, borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], alignItems: 'center', justifyContent: 'center' },
+  barActions: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/3'] },
+  roundButton: { width: 46, height: 46, borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], backgroundColor: colors['surface/card'], alignItems: 'center', justifyContent: 'center' },
+  undoIcon: { width: 22, height: 22, tintColor: colors['text/primary'] },
   dimmed: { opacity: 0.4 },
-  moreGlyph: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
+  voiceBar: { flex: 1, minWidth: 0, height: 52, borderRadius: sizes['radius/full'], backgroundColor: colors['scoreboard/bg'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/2'], paddingHorizontal: sizes['space/4'] },
+  voiceListening: { borderWidth: 2, borderColor: colors['scoreboard/text-muted'], transform: [{ scale: 0.98 }] },
+  voiceLabel: { ...textStyles['Body/Strong'], fontWeight: '500', letterSpacing: 0.075, color: colors['scoreboard/text'], flexShrink: 1 },
+  liveDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['status/live'] },
+  savedDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/ball'] },
+  unsureDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
+  card: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/3'], backgroundColor: colors['text/primary'], borderWidth: 1, borderColor: colors['border/glass'], borderRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingVertical: sizes['space/3'], gap: sizes['space/3'], shadowColor: colors['chip/label/halo'], shadowOpacity: 0.18, shadowRadius: sizes['radius/md'], shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
+  cardStatus: { ...textStyles.Caption, fontWeight: '600', color: colors['scoreboard/text-muted'] },
+  cardWords: { ...textStyles['Player/Name'], fontWeight: '500', color: colors['scoreboard/text'] },
+  cardPending: { color: colors['scoreboard/text-muted'] },
+  cardHint: { ...textStyles.Caption, color: colors['scoreboard/text-muted'] },
+  cardResult: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'], backgroundColor: colors['surface/glass'], borderRadius: sizes['radius/md'], paddingHorizontal: sizes['space/3'], paddingVertical: sizes['space/2'] },
+  ballResult: { width: 10, height: 10, borderRadius: sizes['radius/full'], backgroundColor: colors['count/ball'] },
+  strikeResult: { width: 10, height: 10, borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
+  cardResultText: { ...textStyles['Body/Strong'], color: colors['scoreboard/text'], flexShrink: 1 },
+  choices: { flexDirection: 'row', flexWrap: 'wrap', gap: sizes['space/2'] },
+  choice: { flexGrow: 1, flexBasis: '40%', minHeight: sizes['tap/min'], borderRadius: sizes['radius/full'], backgroundColor: colors['surface/card'], alignItems: 'center', justifyContent: 'center', paddingHorizontal: sizes['space/3'] },
+  choiceText: { ...textStyles['Body/Strong'], color: colors['text/primary'], textAlign: 'center' },
   syncLine: { minHeight: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/2'] },
   syncSaved: { ...textStyles.Caption, color: colors['count/ball'] },
   syncMuted: { ...textStyles.Caption, color: colors['text/tertiary'] },
