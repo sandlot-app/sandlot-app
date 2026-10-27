@@ -9,12 +9,14 @@ appId: host.exp.Exponent
     commands:
       - tapOn:
           id: "games-navigation"
+          retryTapIfNoChange: true
 - scrollUntilVisible:
     element:
       id: "start-live"
     direction: DOWN
 - tapOn:
     id: "start-live"
+    retryTapIfNoChange: true
 - scrollUntilVisible:
     element:
       id: "live-message"

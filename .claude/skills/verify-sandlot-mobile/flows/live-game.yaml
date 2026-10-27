@@ -9,6 +9,7 @@ appId: host.exp.Exponent
     commands:
       - tapOn:
           id: "games-navigation"
+          retryTapIfNoChange: true
 - scrollUntilVisible:
     element:
       id: "live-game-card"
@@ -20,6 +21,7 @@ appId: host.exp.Exponent
     commands:
       - tapOn:
           id: "start-live"
+          retryTapIfNoChange: true
 - runFlow:
     when:
       visible:
@@ -27,6 +29,7 @@ appId: host.exp.Exponent
     commands:
       - tapOn:
           id: "resume-live"
+          retryTapIfNoChange: true
 - extendedWaitUntil:
     visible:
       id: "score-summary"
@@ -51,6 +54,7 @@ appId: host.exp.Exponent
 - evalScript: ${output.summary = maestro.copiedText}
 - tapOn:
     id: "games-navigation"
+    retryTapIfNoChange: true
 - scrollUntilVisible:
     element:
       id: "live-waiting"
