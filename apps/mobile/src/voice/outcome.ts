@@ -44,8 +44,14 @@ export function failureMessage(failure: VoiceFailure): string {
   }
 }
 
-/** "Strike swinging → count 1–2" names the button "Strike swinging"; the card already shows the count. */
-export const choiceLabel = (reading: Reading) => reading.readBack.split(' → ')[0]!;
+/**
+ * "Strike swinging → count 1–2" names its button "Strike swinging", because the full read-back doesn't fit half the
+ * card. Only the count goes: every clause stays, and when two buttons would read the same, they show it all.
+ */
+export function choiceLabels(readings: Reading[]): string[] {
+  const short = readings.map((reading) => reading.readBack.replace(/ → count [^·]*?(?= ·|$)/g, ''));
+  return new Set(short).size === short.length ? short : readings.map((reading) => reading.readBack);
+}
 
 /** The result dot: a ball's green, everything else the strike yellow, as the Pitch Row marks them. */
 export function tone(commands: Command[]): 'ball' | 'strike' {

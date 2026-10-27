@@ -38,7 +38,7 @@ export function names(value: unknown, max = 40): string[] | null {
 }
 
 /** Jr and Sr in any case, Roman numerals in capitals only, so a surname like "Ii" stays. */
-const SUFFIX = /^(?:[JjSs]r\.?|II|III|IV)$/;
+const SUFFIX = /^(?:[JjSs][Rr]\.?|II|III|IV)$/;
 
 /** Last names only, past any Jr or III: what the transcriber needs to spell a player's name, and no more (data minimization). */
 export const lastNames = (list: string[]) => [...new Set(list.map((name) => {

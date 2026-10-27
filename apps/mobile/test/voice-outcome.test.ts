@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { route } from '@sandlot/voice';
 import { openOfflineGame, type SavedGame } from '../src/scoring/offline-game.ts';
-import { choiceLabel, failureMessage, liveCard, outcome, pressGame, pressInput } from '../src/voice/outcome.ts';
+import { choiceLabels, failureMessage, liveCard, outcome, pressGame, pressInput } from '../src/voice/outcome.ts';
 import { connect } from './database.ts';
 
 async function started() {
@@ -44,7 +44,7 @@ test('C3: "strike" asks which one, and nothing saves until a choice', async () =
   assert.equal(result.kind, 'choose');
   if (result.kind !== 'choose') return;
   assert.equal(result.heading, 'Not sure — which one?');
-  assert.deepEqual(result.choices.map(choiceLabel), ['Strike looking', 'Strike swinging']);
+  assert.deepEqual(choiceLabels(result.choices), ['Strike looking', 'Strike swinging']);
   assert.equal(result.note, 'Looking or swinging? Tap one, or use the buttons below. Nothing is saved yet.');
 });
 
@@ -80,4 +80,11 @@ test('a press sends the lineup\'s display names, split by side, with the runners
     if (saved.kind === 'saved') current = saved.game;
   }
   assert.deepEqual(pressInput(current).context.runners, ['J. Soto']);
+});
+
+test('a choice keeps every clause, and shows the whole read-back when two short labels would match', () => {
+  const reading = (readBack: string) => ({ commands: [], readBack });
+  assert.deepEqual(choiceLabels([reading('Ball → count 1–0 · Ball → count 2–0')]), ['Ball · Ball'], 'a two-pitch part names both pitches');
+  assert.deepEqual(choiceLabels([reading('Hit by pitch → J. Soto to 1st')]), ['Hit by pitch → J. Soto to 1st'], 'only the count is dropped');
+  assert.deepEqual(choiceLabels([reading('Ball → count 3–0'), reading('Ball → count 2–0')]), ['Ball → count 3–0', 'Ball → count 2–0']);
 });
