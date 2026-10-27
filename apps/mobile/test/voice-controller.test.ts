@@ -111,3 +111,61 @@ test('with voice off, a touch shows the unavailable line and no Listening card',
   controller.start();
   assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Voice is unavailable right now. Tap to score.' });
 });
+
+const lost = 'The last voice play didn\'t save. Say it again or tap to score.';
+const unsaved = 'That voice play didn\'t save. Say it again or tap to score.';
+
+test('#65: holding the bar again before the last result arrives says the last play was lost', async () => {
+  const { controller, hold, plays, views } = await scorer();
+  const hear = await hold();
+  controller.start();
+  assert.equal(views.at(-1)?.message, lost);
+  assert.equal(views.at(-1)?.listening, true, 'the new press still listens');
+  hear('strike swinging');
+  await settle();
+  assert.deepEqual(plays(), [], 'the cancelled press saves nothing');
+});
+
+test('#65: a voice play the engine refuses as stale says it didn\'t save', async () => {
+  const { hold, record, views } = await scorer();
+  const hear = await hold();
+  await record({ kind: 'pitch', result: 'ball' });
+  hear('strike swinging');
+  await settle();
+  assert.equal(views.at(-1)?.message, unsaved);
+});
+
+test('#65: a spoken undo is pinned to its press, so after another save it undoes nothing', async () => {
+  const { hold, plays, record, recorded, views } = await scorer();
+  (await hold())('ball');
+  await settle();
+  const hear = await hold();
+  await record({ kind: 'pitch', result: 'foul' });
+  hear('scratch that');
+  await settle();
+  assert.deepEqual(plays().map((event) => [event.source, event.command]), [
+    ['voice', { kind: 'pitch', result: 'ball' }],
+    ['tap', { kind: 'pitch', result: 'foul' }],
+  ], 'the foul saved after the press began stays');
+  const undo = recorded.at(-1);
+  assert.equal(undo?.kind, 'undo');
+  assert.equal(undo && 'expectedRevision' in undo ? typeof undo.expectedRevision : null, 'number');
+  assert.equal(views.at(-1)?.message, unsaved);
+});
+
+test('#65: a spoken undo on the game it started on still undoes the last play', async () => {
+  const { hold, plays } = await scorer();
+  (await hold())('ball');
+  await settle();
+  (await hold())('scratch that');
+  await settle();
+  assert.deepEqual(plays().map((event) => event.command.kind), ['pitch', 'undo']);
+});
+
+test('#65: tearing the controller down mid-press puts the bar back to idle', async () => {
+  const { controller, hold, views } = await scorer();
+  await hold();
+  controller.start();
+  controller.dispose();
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+});

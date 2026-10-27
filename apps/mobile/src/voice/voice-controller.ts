@@ -2,7 +2,7 @@ import type { Command } from '@sandlot/engine';
 import { route, type ParseResult, type Reading } from '@sandlot/voice';
 import type { VoiceCard } from '../../scorer-ui';
 import type { DemoAction, SavedGame } from '../scoring/offline-game.ts';
-import { choiceLabels, failureMessage, liveCard, outcome, pressGame, pressInput } from './outcome.ts';
+import { choiceLabels, failureMessage, liveCard, lostMessage, outcome, pressGame, pressInput, unsavedMessage } from './outcome.ts';
 import { startPress, type PressHandle, type VoiceDeps } from './press.ts';
 
 // The scoring screen's voice state, kept out of React so tests can drive it: the Transcript Card while a press is
@@ -32,6 +32,8 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
   let choosing: Choosing | null = null;
   let message: string | null = null;
   let press: PressHandle | null = null;
+  /** True once the finger is up and the press is still being read. */
+  let reading = false;
   let pressed: Pressed | null = null;
   /** The last play voice saved, for route()'s duplicate guard (D4). A tap or an undo clears it. */
   let previous: { commands: Command[]; at: number } | undefined;
@@ -45,11 +47,19 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
   async function save(commands: Command[], from: Pressed) {
     const saved = await record({ kind: 'voice', at: new Date(from.at).toISOString(), expectedRevision: from.revision, commands });
     if (saved) previous = { commands, at: from.at };
+    else refused();
+  }
+
+  /** A save or undo the engine refused, as stale or busy: the scorer hears it, not silence. */
+  function refused() {
+    message = unsavedMessage;
+    publish();
   }
 
   function stop() {
     press?.cancel();
     press = null;
+    reading = false;
     listening = false;
     live = null;
   }
@@ -57,6 +67,8 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
   function start() {
     const current = game();
     if (!current) return;
+    // A press still being read is cancelled by this one, so the scorer knows that play needs saying again.
+    const dropped = reading;
     stop();
     choosing = null;
     if (!voice) {
@@ -64,7 +76,7 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
       message = failureMessage('voice_unavailable');
       return publish();
     }
-    message = null;
+    message = dropped ? lostMessage : null;
     listening = true;
     live = { kind: 'listening', words: '' };
     const from: Pressed = { at: now(), revision: current.revision };
@@ -78,6 +90,7 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
         return publish();
       }
       press = null;
+      reading = false;
       listening = false;
       live = null;
       if (update.kind === 'failed') {
@@ -88,7 +101,8 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
       if (result.kind === 'save') void save(result.commands, from);
       else if (result.kind === 'undo') {
         previous = undefined;
-        void record({ kind: 'undo' });
+        // Pinned like a save, so an undo said before another save never takes that save back.
+        void record({ kind: 'undo', expectedRevision: from.revision }).then((undone) => { if (!undone) refused(); });
       } else if (result.kind === 'message') message = result.message;
       else choosing = {
         card: { kind: 'choose', heading: result.heading, words: update.transcript, choices: choiceLabels(result.choices), note: result.note },
@@ -104,8 +118,10 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
     start,
     /** The finger came up on the bar: the press finishes and its result arrives later. */
     release() {
-      if (press) press.release();
-      else {
+      if (press) {
+        reading = true;
+        press.release();
+      } else {
         listening = false;
         live = null;
       }
@@ -132,8 +148,10 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
       publish();
     },
     dispose() {
-      press?.cancel();
-      press = null;
+      stop();
+      choosing = null;
+      message = null;
+      publish();
     },
   };
 }

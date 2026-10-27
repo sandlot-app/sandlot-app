@@ -1,11 +1,17 @@
 import { tokens } from '@sandlot/tokens';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Image, PanResponder, Pressable, ScrollView, Text, View } from 'react-native';
+import { Animated, Easing, Image, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { MicIcon, MoreHorizontalIcon } from './src/components/icons.tsx';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
 const dragTransform = (translateY: number) => ({ transform: [{ translateY }] });
+const pressTransform = (scale: Animated.Value) => ({ transform: [{ scale }] });
+
+/** Figma's Voice Bar press: ease to 0.98 on touch-down and back on release. */
+function easePress(scale: Animated.Value, held: boolean) {
+  Animated.timing(scale, { toValue: held ? 0.98 : 1, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: Platform.OS !== 'web' }).start();
+}
 
 export type SyncState =
   | { status: 'saved'; lastPlay: string }
@@ -210,10 +216,12 @@ export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCa
   useEffect(() => { latest.current = { disabled, onStart, onRelease, onCancel }; });
   const size = useRef({ width: 0, height: 0 });
   const held = useRef(false);
+  const [scale] = useState(() => new Animated.Value(1));
   const responder = useMemo(() => {
     const cancel = () => {
       if (!held.current) return;
       held.current = false;
+      easePress(scale, false);
       latest.current.onCancel();
     };
     return PanResponder.create({
@@ -221,6 +229,7 @@ export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCa
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         held.current = true;
+        easePress(scale, true);
         latest.current.onStart();
       },
       onPanResponderMove: (_, gesture) => {
@@ -229,17 +238,18 @@ export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCa
       onPanResponderRelease: () => {
         if (!held.current) return;
         held.current = false;
+        easePress(scale, false);
         latest.current.onRelease();
       },
       onPanResponderTerminate: cancel,
     });
-  }, []);
-  return <View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={listening ? 'Listening' : 'Hold to score by voice'}
+  }, [scale]);
+  return <Animated.View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={listening ? 'Listening' : 'Hold to score by voice'}
     accessibilityState={{ disabled, busy: listening }} onLayout={(event) => { size.current = event.nativeEvent.layout; }}
-    style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed]} testID={testID}>
+    style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, pressTransform(scale)]} testID={testID}>
     {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
     <Text style={styles.voiceLabel} numberOfLines={1}>{listening ? 'Listening…' : 'Hold to score by voice'}</Text>
-  </View>;
+  </Animated.View>;
 }
 
 /** Floats above the Scorer Bar while voice is in use: Listening, Got it, or Not sure. */
@@ -332,7 +342,7 @@ const styles = createStyles({
   undoIcon: { width: 22, height: 22, tintColor: colors['text/primary'] },
   dimmed: { opacity: 0.4 },
   voiceBar: { flex: 1, minWidth: 0, height: 52, borderRadius: sizes['radius/full'], backgroundColor: colors['scoreboard/bg'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/2'], paddingHorizontal: sizes['space/4'] },
-  voiceListening: { borderWidth: 2, borderColor: colors['scoreboard/text-muted'], transform: [{ scale: 0.98 }] },
+  voiceListening: { borderWidth: 2, borderColor: colors['scoreboard/text-muted'] },
   voiceLabel: { ...textStyles['Body/Strong'], fontWeight: '500', letterSpacing: 0.075, color: colors['scoreboard/text'], flexShrink: 1 },
   liveDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['status/live'] },
   savedDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/ball'] },

@@ -8,7 +8,7 @@ The scorer holds the Voice Bar, says a pitch or a play, and lets go. While held,
 - `voice-live` shows the Listening card with the live words, then Got it with the read-back, while the bar is held (`voice-card`, `voice-status`, `voice-words`, `voice-result`).
 - `voice-not-sure` shows the readings as choices and saves only the one tapped (`voice-choice-0`, `voice-choice-1`).
 - `voice-cancel` saves nothing when the finger slides off the bar.
-- `voice-fallback` shows one line (`voice-message`) when voice can't help, such as "Voice is unavailable right now. Tap to score."
+- `voice-fallback` shows one line (`voice-message`) when voice can't help, such as "Voice is unavailable right now. Tap to score." A press the engine refuses because the game moved says "That voice play didn't save. Say it again or tap to score." Holding the bar again before the last result arrives says "The last voice play didn't save. Say it again or tap to score." These are covered by the app's controller tests, not the Maestro flow, because the stub answers too fast to overlap two presses.
 
 ## How to get to it (user POV)
 
