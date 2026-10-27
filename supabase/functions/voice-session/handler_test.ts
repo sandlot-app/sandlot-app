@@ -42,7 +42,7 @@ Deno.test('voice-session refuses a lineup that is not a short list of text, and 
   deepStrictEqual(names(['J. Soto', '<script>', '', 'A & B', "D. O'Neil-Ruiz"]), ['J. Soto', "D. O'Neil-Ruiz"]);
   strictEqual(names([1, 2]), null);
   deepStrictEqual(lastNames(['J. Soto', 'R. Soto', "D. O'Neil-Ruiz", 'Lin']), ['Soto', "O'Neil-Ruiz", 'Lin']);
-  deepStrictEqual(lastNames(['J. Soto Jr.', 'K. Moss III', 'L. Darcy sr', 'Jr']), ['Soto', 'Moss', 'Darcy', 'Jr']);
+  deepStrictEqual(lastNames(['J. Soto Jr.', 'K. Moss III', 'L. Darcy sr', 'Jr', 'M. Ii', 'T. Iv']), ['Soto', 'Moss', 'Darcy', 'Jr', 'Ii', 'Iv']);
 });
 
 Deno.test('sign-in answers: a rejected token is 401, but a busy or down sign-in service is 503', () => {

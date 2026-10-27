@@ -1,0 +1,123 @@
+import { isEmptyTranscript, parsePhrase, type ParseResult } from '@sandlot/voice';
+import { Clip, SAMPLE_RATE, toBase64 } from './pcm.ts';
+import { liveTimeouts, openLive, type Live, type LiveTimeouts, type OpenSocket } from './realtime.ts';
+import type { ParseContext, Session, VoiceApi, VoiceFailure } from './voice-api.ts';
+
+// One hold of the voice bar. The mic starts on touch-down, before any connection opens, so no words are lost
+// (plan, Voice scoring step 1). Live words stream while the scorer holds. On release the final transcript is read
+// by the phone's own grammar, and voice-parse reads only what that grammar can't. When streaming didn't connect,
+// the recorded clip goes to voice-parse instead (spec A4, A5). Nothing here saves a play: the caller routes what
+// was heard through route(), and the engine decides (rule 6).
+
+export type Mic = {
+  /** Starts capture. Resolves false when the scorer hasn't allowed the microphone. */
+  start(onChunk: (chunk: Uint8Array, sampleRate: number) => void): Promise<boolean>;
+  stop(): void;
+};
+
+export type PressUpdate =
+  | { kind: 'words'; words: string }
+  | { kind: 'heard'; transcript: string; parsed: ParseResult }
+  | { kind: 'failed'; failure: VoiceFailure };
+
+export type VoiceDeps = { mic: Mic; api: VoiceApi; openSocket: OpenSocket; timeouts?: LiveTimeouts };
+export type PressInput = { names: string[]; context: ParseContext };
+export type PressHandle = { release(): void; cancel(): void };
+
+const nothing = (): PressUpdate => ({ kind: 'heard', transcript: '', parsed: parsePhrase('') });
+
+export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update: PressUpdate) => void): PressHandle {
+  const timeouts = deps.timeouts ?? liveTimeouts;
+  const clip = new Clip();
+  let live: Live | null = null;
+  let released = false;
+  let cancelled = false;
+  let wrongRate = false;
+  /** Set once a release stops waiting for the socket, so a late session opens nothing. */
+  let gaveUp = false;
+
+  const emit = (update: PressUpdate) => { if (!cancelled) onUpdate(update); };
+  const stopMic = () => {
+    try {
+      deps.mic.stop();
+    } catch {
+      // The stream was never running.
+    }
+  };
+
+  function connect(session: Session) {
+    if (cancelled || gaveUp || session.sampleRate !== SAMPLE_RATE) return;
+    let opened: Live;
+    try {
+      opened = openLive(deps.openSocket(session.url, session.secret), (words) => { if (!released) emit({ kind: 'words', words }); }, timeouts);
+    } catch {
+      return;
+    }
+    // The audio from before the socket opened goes first.
+    for (const chunk of clip.sent()) opened.append(chunk);
+    live = opened;
+  }
+
+  const sessionReady = deps.api.session(input.names).then((result) => { if (result.ok) connect(result.value); }, () => {});
+
+  const micReady = deps.mic.start((chunk, sampleRate) => {
+    if (released) return;
+    if (sampleRate !== SAMPLE_RATE) {
+      // voice-parse and the socket take 24 kHz only. A phone that can't deliver it falls back to taps.
+      wrongRate = true;
+      return;
+    }
+    const kept = clip.append(chunk);
+    if (kept.length) live?.append(kept);
+    if (clip.full) void release();
+  }).catch(() => false);
+  // Without the microphone the scorer hears at once, not after letting go.
+  void micReady.then((ready) => {
+    if (ready || released || cancelled) return;
+    released = true;
+    gaveUp = true;
+    live?.close();
+    emit({ kind: 'failed', failure: 'microphone' });
+  });
+
+  async function heard(transcript: string) {
+    const local = parsePhrase(transcript);
+    if (isEmptyTranscript(transcript) || local.kind !== 'unclear') return emit({ kind: 'heard', transcript, parsed: local });
+    const result = await deps.api.parse({ transcript, context: input.context });
+    // When voice-parse can't help, route() still says "Didn't understand" and points to the buttons.
+    emit({ kind: 'heard', transcript, parsed: result.ok && result.value.parsed ? result.value.parsed : local });
+  }
+
+  async function release() {
+    if (released || cancelled) return;
+    released = true;
+    stopMic();
+    if (!(await micReady)) return;
+    if (wrongRate) return emit({ kind: 'failed', failure: 'voice_unavailable' });
+    if (!clip.bytes) return emit(nothing());
+    // A short press can end before voice-session answers, so it waits a little for the socket.
+    await Promise.race([sessionReady, new Promise((resolve) => setTimeout(resolve, timeouts.openMs))]);
+    gaveUp = true;
+    const stream = live as Live | null;
+    if (cancelled) return;
+    const streamed = stream ? await stream.finish() : null;
+    stream?.close();
+    if (cancelled) return;
+    if (streamed !== null) return heard(streamed);
+    const result = await deps.api.parse({ audio: toBase64(clip.join()), context: input.context });
+    if (!result.ok) return emit({ kind: 'failed', failure: result.failure });
+    if (!result.value.parsed) return emit(nothing());
+    emit({ kind: 'heard', transcript: result.value.transcript, parsed: result.value.parsed });
+  }
+
+  return {
+    release() { void release(); },
+    cancel() {
+      if (cancelled) return;
+      cancelled = true;
+      if (!released) stopMic();
+      released = true;
+      live?.close();
+    },
+  };
+}

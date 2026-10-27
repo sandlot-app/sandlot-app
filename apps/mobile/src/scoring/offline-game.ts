@@ -33,12 +33,16 @@ export type DemoAction =
       trajectory: Trajectory | null; fielders: Position[]; advances: Advance[] }
   | { kind: 'runner_play'; at: string; expectedRevision: number;
       event: 'steal' | 'wild_pitch' | 'passed_ball' | 'pickoff';
-      moves: { runner: PlayerRef; to: Destination }[] };
+      moves: { runner: PlayerRef; to: Destination }[] }
+  /** A reading the scorer said, as route() proposed it. The engine checks it like any other play (rule 6). */
+  | { kind: 'voice'; at: string; expectedRevision: number; commands: Command[] };
 
 export type SavedGame = {
   id: GameId;
   revision: number;
   state: GameState;
+  /** The saved events, so voice can replay the game when it routes a press. */
+  events: Event[];
   waitingPlays: number;
   canUndo: boolean;
   /** The commands of the play Undo would take back, or null when there is none. */
@@ -196,7 +200,7 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
       if (
         event.gameId !== row.id ||
         event.lockEpoch !== 1 ||
-        event.source !== 'tap' ||
+        (event.source !== 'tap' && event.source !== 'voice') ||
         event.seq !== events.length + 1 ||
         stored.game_id !== row.id ||
         stored.seq !== event.seq ||
@@ -243,6 +247,7 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
       id: row.id as GameId,
       revision: events.length,
       state: result.state,
+      events,
       waitingPlays: outbox.length,
       canUndo: undoTarget(groups, row.bootstrap_group) !== null,
       lastPlay: last?.map((event) => event.command) ?? null,
@@ -375,6 +380,14 @@ export async function openOfflineGame(
                   ? move.to === 'out' ? 'caught_stealing' : 'stolen_base'
                   : action.event }));
             }
+            else if (action.kind === 'voice') {
+              // A spoken press records plays only. Lineups, the start and undo have their own controls.
+              if (!action.commands.length || action.commands.some((command) => command.kind === 'game' || command.kind === 'undo')) {
+                result = { kind: 'rejected', code: 'not_implemented' };
+                return;
+              }
+              commands = action.commands;
+            }
             else {
               const target = undoTarget(
                 current!.groups,
@@ -417,7 +430,7 @@ export async function openOfflineGame(
               seq: (current?.events.length ?? 0) + index + 1,
               group: savedGroup,
               lockEpoch: 1,
-              source: 'tap',
+              source: action.kind === 'voice' ? 'voice' : 'tap',
               at,
               command,
             }));

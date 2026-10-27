@@ -3,8 +3,8 @@ import Svg, { Path } from 'react-native-svg';
 
 // icons.download, medium / outline / round, as the Figma nav bar uses.
 
-function Icon({ color, children }: { color: string; children: React.ReactNode }) {
-  return <Svg width={24} height={24} viewBox="0 0 24 24" color={color}
+function Icon({ color, size = 24, children }: { color: string; size?: number; children: React.ReactNode }) {
+  return <Svg width={size} height={size} viewBox="0 0 24 24" color={color}
     accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
     {children}
   </Svg>;
@@ -20,5 +20,20 @@ export function UserIcon({ color }: { color: string }) {
   return <Icon color={color}>
     <Path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7ZM14 7C14 8.10457 13.1046 9 12 9C10.8954 9 10 8.10457 10 7C10 5.89543 10.8954 5 12 5C13.1046 5 14 5.89543 14 7Z" />
     <Path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d="M20 17.1666C20 16.7333 19.8642 16.3074 19.5815 15.979C17.7477 13.8488 15.0313 12.5 12 12.5C8.96866 12.5 6.25235 13.8488 4.41847 15.979C4.13576 16.3074 4 16.7333 4 17.1666V19C4 20.1046 4.89543 21 6 21H18C19.1046 21 20 20.1046 20 19V17.1666ZM18 17.2083C16.5313 15.5445 14.3887 14.5 12 14.5C9.61132 14.5 7.46872 15.5445 6 17.2083V19H18V17.2083ZM6.00017 17.1622C6.00017 17.1622 6.00018 17.1622 6.00017 17.1623C6.00016 17.1624 6.00015 17.1625 6.00012 17.1627C6.00014 17.1625 6.00016 17.1623 6.00017 17.1622Z" />
+  </Icon>;
+}
+
+export function MoreHorizontalIcon({ color }: { color: string }) {
+  return <Icon color={color}>
+    <Path fill="currentColor" d="M3.25 12C3.25 12.9665 4.0335 13.75 5 13.75C5.9665 13.75 6.75 12.9665 6.75 12C6.75 11.0335 5.9665 10.25 5 10.25C4.0335 10.25 3.25 11.0335 3.25 12Z" />
+    <Path fill="currentColor" d="M12 13.75C11.0335 13.75 10.25 12.9665 10.25 12C10.25 11.0335 11.0335 10.25 12 10.25C12.9665 10.25 13.75 11.0335 13.75 12C13.75 12.9665 12.9665 13.75 12 13.75Z" />
+    <Path fill="currentColor" d="M19 13.75C18.0335 13.75 17.25 12.9665 17.25 12C17.25 11.0335 18.0335 10.25 19 10.25C19.9665 10.25 20.75 11.0335 20.75 12C20.75 12.9665 19.9665 13.75 19 13.75Z" />
+  </Icon>;
+}
+
+export function MicIcon({ color, size = 24 }: { color: string; size?: number }) {
+  return <Icon color={color} size={size}>
+    <Path fill="currentColor" fillRule="evenodd" clipRule="evenodd" d="M8 5C8 2.79086 9.79086 1 12 1C14.2091 1 16 2.79086 16 5V12C16 14.2091 14.2091 16 12 16C9.79086 16 8 14.2091 8 12V5ZM12 3C13.1046 3 14 3.89543 14 5V12C14 13.1046 13.1046 14 12 14C10.8954 14 10 13.1046 10 12V5C10 3.89543 10.8954 3 12 3Z" />
+    <Path fill="currentColor" d="M5 11C4.44772 11 4 11.4477 4 12C4 16.0796 7.05369 19.446 11 19.9381V22C11 22.5523 11.4477 23 12 23C12.5523 23 13 22.5523 13 22V19.9381C16.9463 19.446 20 16.0796 20 12C20 11.4477 19.5523 11 19 11C18.4477 11 18 11.4477 18 12C18 12.3407 17.9716 12.6748 17.917 13C17.441 15.8377 14.973 18 12 18C9.027 18 6.55904 15.8377 6.08296 13C6.0284 12.6748 6 12.3407 6 12C6 11.4477 5.55228 11 5 11Z" />
   </Icon>;
 }
