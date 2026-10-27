@@ -6,6 +6,7 @@ import Svg, { Rect } from 'react-native-svg';
 import { PlayerChip } from '../../scorer-ui';
 import { createStyles } from '../../style';
 import { playerDisplay } from '../scoring/demo-roster.ts';
+import { chipScale } from './field-room.ts';
 
 const { colors, sizes } = tokens.modes.Light;
 
@@ -30,6 +31,7 @@ const spot = (scale: number, { x, y }: { x: number; y: number }) => ({ left: x *
 export function Field({ state }: { state: GameState }) {
   const [width, setWidth] = useState(designWidth);
   const scale = width / designWidth;
+  const shrink = chipScale(width);
   const batting = state.half === 'top' ? 'away' : 'home';
   const fielding = state.half === 'top' ? 'home' : 'away';
   const batter = state.lineups[batting][state.nextBatter[batting]]?.player;
@@ -41,7 +43,7 @@ export function Field({ state }: { state: GameState }) {
         const at = position ? fielderSpots[position] : undefined;
         if (!at) return null;
         const shown = playerDisplay(state, fielding, player);
-        return <View key={player.id} style={[styles.chip, spot(scale, at)]}>
+        return <View key={player.id} style={[styles.chip, spot(scale, at), shrink]}>
           <PlayerChip number={shown.number} name={shown.name} role="fielding" />
         </View>;
       })}
@@ -49,11 +51,11 @@ export function Field({ state }: { state: GameState }) {
         const runner = state.bases[base]?.player;
         if (!runner) return null;
         const shown = playerDisplay(state, batting, runner);
-        return <View key={base} style={[styles.chip, spot(scale, runnerSpots[base])]} testID={`field-runner-${base}`}>
+        return <View key={base} style={[styles.chip, spot(scale, runnerSpots[base]), shrink]} testID={`field-runner-${base}`}>
           <PlayerChip number={shown.number} name={shown.name} role="batting" />
         </View>;
       })}
-      {batter && state.status !== 'final' ? <View style={[styles.chip, spot(scale, batterSpot)]}>
+      {batter && state.status !== 'final' ? <View style={[styles.chip, spot(scale, batterSpot), shrink]}>
         <PlayerChip {...playerDisplay(state, batting, batter)} role="batter" />
       </View> : null}
     </View>

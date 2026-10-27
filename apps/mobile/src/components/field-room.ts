@@ -15,3 +15,13 @@ export function fieldWidth(room: { width: number; height: number }, below: numbe
 export function roomBelowField({ blocked, bar, dock }: { blocked: boolean; bar: number; dock: number }): number {
   return blocked ? dock : bar;
 }
+
+/**
+ * On a field smaller than Figma's, every chip shrinks by the field's own scale, names included, so they keep
+ * Figma's spacing instead of piling up (an iPhone SE's field is about two thirds size). The top center stays on
+ * the chip's spot. Chips never grow past their Figma size.
+ */
+export function chipScale(fieldWidth: number) {
+  const scale = fieldWidth / 361;
+  return scale < 1 ? { transform: [{ scale }], transformOrigin: '50% 0%' } as const : null;
+}
