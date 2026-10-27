@@ -1,6 +1,7 @@
 import type {
   BallInPlayOutcome,
   Base,
+  BattingLine,
   Command,
   Destination,
   Event,
@@ -11,6 +12,7 @@ import type {
   LineupSlot,
   OutType,
   PitchResult,
+  PlateAppearanceResult,
   PlayerRef,
   Runner,
   TeamSide,
@@ -90,6 +92,59 @@ export function applyGroupFrom(setup: GameSetup, from: GameState, events: Event[
   return foldHistory(setup, from, events, commands);
 }
 
+/**
+ * Each batter's line from the plays that stand, keyed by player or opponent ID. An undone play counts for no one.
+ * It reads a log `replay` accepts; on one it rejects, the lines stop before the rejected play.
+ */
+export function battingLines(setup: GameSetup, events: Event[]): Record<string, BattingLine> {
+  return battingLinesFrom(setup, initialState(setup), events);
+}
+
+/** `battingLines` from a given state instead of the start. Fixtures use it to begin mid-game; the app and server never do. */
+export function battingLinesFrom(setup: GameSetup, from: GameState, events: Event[]): Record<string, BattingLine> {
+  const standing: { id: GroupId; state: GameState; ended: PlateAppearance[] }[] = [];
+  for (const play of plays(events)) {
+    const [first] = play.commands;
+    if (first?.kind === 'undo') {
+      if (standing.at(-1)?.id !== first.target) break;
+      standing.pop();
+      continue;
+    }
+    const ended: PlateAppearance[] = [];
+    const result = applyPlay(setup, standing.at(-1)?.state ?? from, play.commands, ended);
+    if (!result.ok) break;
+    standing.push({ id: play.id, state: result.state, ended });
+  }
+  const lines: Record<string, BattingLine> = {};
+  for (const { batter, result } of standing.flatMap((play) => play.ended)) {
+    const line = lines[batter.id] ??= {
+      plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0,
+    };
+    line.plateAppearances += 1;
+    if (!notAtBats.has(result)) line.atBats += 1;
+    if (hits.has(result)) line.hits += 1;
+    if (result === 'double' || result === 'ground_rule_double') line.doubles += 1;
+    if (result === 'triple') line.triples += 1;
+    if (result === 'home_run') line.homeRuns += 1;
+    if (result === 'walk') line.walks += 1;
+    if (result === 'hit_by_pitch') line.hitByPitch += 1;
+    if (result === 'strikeout') line.strikeouts += 1;
+  }
+  return lines;
+}
+
+type PlateAppearance = { batter: PlayerRef; result: PlateAppearanceResult };
+
+// OBR 9.02(a)(1): no time at bat for a sacrifice, a walk or a hit by pitch. OBR 9.05(a): the safe hits.
+const notAtBats = new Set<PlateAppearanceResult>(['walk', 'hit_by_pitch', 'sacrifice_fly', 'sacrifice_bunt']);
+const hits = new Set<PlateAppearanceResult>(['single', 'double', 'ground_rule_double', 'triple', 'home_run']);
+
+/**
+ * Where `endAtBat` notes each finished plate appearance, for the working copy of one play that `battingLines` applies.
+ * Keyed by that copy, so a replay that isn't counting lines notes nothing.
+ */
+const endedAppearances = new WeakMap<GameState, PlateAppearance[]>();
+
 type StoredPlay = { id: GroupId; commands: Command[] };
 
 /** Splits the event log into plays: each run of events sharing a group. */
@@ -137,9 +192,10 @@ function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending
   return pending ? next(pending) : { ok: true, state };
 }
 
-function applyPlay(setup: GameSetup, state: GameState, commands: Command[]): ApplyResult {
+function applyPlay(setup: GameSetup, state: GameState, commands: Command[], ended?: PlateAppearance[]): ApplyResult {
   // Commands change this copy in place. A rejection throws the copy away, so nothing from the play is kept.
   const game = copy(state);
+  if (ended) endedAppearances.set(game, ended);
   game.alerts = [];
   let needsOutcome = false;
   for (const step of steps(commands)) {
@@ -312,7 +368,7 @@ function pitch(setup: GameSetup, game: GameState, result: PitchResult): RejectCo
   switch (result) {
     case 'ball':
       game.count.balls += 1;
-      if (game.count.balls === 4) awardFirst(setup, game, pitcher);
+      if (game.count.balls === 4) awardFirst(setup, game, pitcher, 'walk');
       break;
     case 'called_strike':
     case 'swinging_strike':
@@ -323,7 +379,7 @@ function pitch(setup: GameSetup, game: GameState, result: PitchResult): RejectCo
       if (game.count.strikes < 2) game.count.strikes += 1;
       break;
     case 'hit_by_pitch':
-      awardFirst(setup, game, pitcher);
+      awardFirst(setup, game, pitcher, 'hit_by_pitch');
       break;
   }
   return null;
@@ -365,7 +421,7 @@ function ballInPlay(setup: GameSetup, game: GameState, command: Extract<Command,
     ? Math.min(plan.runs, game.score.away - game.score.home + 1)
     : plan.runs;
   for (let run = 0; run < runs; run++) scoreRun(game);
-  endAtBat(setup, game);
+  endAtBat(setup, game, command.outcome);
   if (plan.totalOuts >= 3) endHalf(setup, game);
   else game.outs = plan.totalOuts as GameState['outs'];
   return null;
@@ -436,7 +492,7 @@ function samePlayer(a: PlayerRef, b: PlayerRef): boolean {
 }
 
 /** Puts the batter on first. Each runner forced off a base moves up one, and a runner forced off third scores. */
-function awardFirst(setup: GameSetup, game: GameState, pitcher: PlayerRef) {
+function awardFirst(setup: GameSetup, game: GameState, pitcher: PlayerRef, result: 'walk' | 'hit_by_pitch') {
   const { bases } = game;
   if (bases[1]) {
     if (bases[2]) {
@@ -446,11 +502,11 @@ function awardFirst(setup: GameSetup, game: GameState, pitcher: PlayerRef) {
     bases[2] = bases[1];
   }
   bases[1] = { player: batterUp(game), chargedTo: pitcher } satisfies Runner;
-  endAtBat(setup, game);
+  endAtBat(setup, game, result);
 }
 
 function batterOut(setup: GameSetup, game: GameState) {
-  endAtBat(setup, game);
+  endAtBat(setup, game, 'strikeout');
   if (game.outs === 2) {
     endHalf(setup, game);
   } else {
@@ -458,7 +514,8 @@ function batterOut(setup: GameSetup, game: GameState) {
   }
 }
 
-function endAtBat(setup: GameSetup, game: GameState) {
+function endAtBat(setup: GameSetup, game: GameState, result: PlateAppearanceResult) {
+  endedAppearances.get(game)?.push({ batter: batterUp(game), result });
   const side = batting(game);
   game.nextBatter[side] = (game.nextBatter[side] + 1) % game.lineups[side].length;
   game.count = { ...setup.rules.startingCount, pitches: 0 };

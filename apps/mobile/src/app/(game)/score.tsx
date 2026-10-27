@@ -10,10 +10,9 @@ import { belowBarSpace } from '../../components/bottom-space.ts';
 import { Field } from '../../components/field.tsx';
 import { GameStatus } from '../../components/game-status.tsx';
 import { CaretLeftIcon } from '../../components/icons.tsx';
-import { LastPitch, Matchup } from '../../components/matchup.tsx';
+import { LeagueAlerts, MatchupTicket } from '../../components/matchup.tsx';
 import { PlaySheets } from '../../components/play-sheets.tsx';
 import { Scoreboard } from '../../components/scoreboard.tsx';
-import { demoSetup } from '../../scoring/demo-game.ts';
 import { blockedMessages, gameSummary } from '../../scoring/game-summary.ts';
 import { playLabel } from '../../scoring/play-label.ts';
 import { beginInPlay } from '../../scoring/tap-play.ts';
@@ -31,6 +30,13 @@ const pitchResults: Record<Exclude<Pitch, 'in-play'>, Exclude<PitchResult, 'in_p
 };
 
 const spacerHeight = (height: number) => ({ height });
+
+// Figma Field (21:264) is 361 × 390. The field keeps that shape and shrinks to the room left above the Scorer Bar,
+// with Figma's 12 gap between them, so the whole screen fits without scrolling.
+const fieldShape = 361 / 390;
+const fieldGap = 12;
+const fieldWidth = (room: { width: number; height: number }, bar: number) =>
+  room.width ? { width: Math.max(0, Math.min(room.width, (room.height - bar - fieldGap) * fieldShape)) } : null;
 
 function NavBar() {
   return (
@@ -51,7 +57,8 @@ function NavBar() {
 export default function ScoreScreen() {
   const { view, record } = useOfflineGame();
   const [draft, setDraft] = useState<PlayDraft | null>(null);
-  const [dockHeight, setDockHeight] = useState(0);
+  const [barHeight, setBarHeight] = useState(0);
+  const [room, setRoom] = useState({ width: 0, height: 0 });
   const { fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const game = view.kind === 'ready' || view.kind === 'saving' || view.kind === 'blocked' ? view.game : null;
@@ -82,24 +89,27 @@ export default function ScoreScreen() {
     else void record({ kind: 'pitch', result: pitchResults[pitch] });
   };
 
-  const content = (
+  const matchup = (
     <>
-      <Field state={state} />
-      <Matchup state={state} limits={demoSetup.rules.pitchCountLimits} />
-      <LastPitch label={lastPlay || null} pitch={game.lastPitchNumber} />
+      <Scoreboard state={state} summary={gameSummary(state)} />
+      <MatchupTicket game={game} />
+      <LeagueAlerts alerts={state.alerts} />
     </>
   );
+  // Messages and the transcript card sit over the bottom of the field for a moment, so only the bar takes room from it.
   const dock = (
-    <View style={largeText ? null : styles.dock} onLayout={(event) => setDockHeight(event.nativeEvent.layout.height)}>
+    <View style={largeText ? null : styles.dock}>
       {voice.message ? <Text testID="voice-message" style={styles.message} accessibilityLiveRegion="polite">{voice.message}</Text>
         : view.kind === 'ready' && view.problem && view.message ? <Text testID="action-message" style={styles.message} accessibilityLiveRegion="polite">{view.message}</Text> : null}
       <GameStatus />
       {voice.card ? <TranscriptCard card={voice.card} onChoose={voice.choose} /> : null}
-      <ScorerBar sync={sync} onPitch={onPitch} onUndo={() => { voice.dismiss(); void record({ kind: 'undo' }); }}
-        onMore={() => { voice.dismiss(); setDraft({ kind: 'more', game }); }} disabled={!enabled}
-        voice={<VoiceBar listening={voice.listening} disabled={!enabled} onStart={voice.start} onRelease={voice.release} onCancel={voice.cancel} testID="voice-bar" />}
-        undoDisabled={view.kind !== 'ready' || !game.canUndo} testID="scorer-bar" syncTestID="waiting-plays" />
-      <View style={[styles.belowBar, spacerHeight(belowBarSpace(Platform.OS, insets.bottom))]} />
+      <View onLayout={(event) => setBarHeight(event.nativeEvent.layout.height)}>
+        <ScorerBar sync={sync} onPitch={onPitch} onUndo={() => { voice.dismiss(); void record({ kind: 'undo' }); }}
+          onMore={() => { voice.dismiss(); setDraft({ kind: 'more', game }); }} disabled={!enabled}
+          voice={<VoiceBar listening={voice.listening} disabled={!enabled} onStart={voice.start} onRelease={voice.release} onCancel={voice.cancel} testID="voice-bar" />}
+          undoDisabled={view.kind !== 'ready' || !game.canUndo} testID="scorer-bar" syncTestID="waiting-plays" />
+        <View style={[styles.belowBar, spacerHeight(belowBarSpace(Platform.OS, insets.bottom))]} />
+      </View>
     </View>
   );
 
@@ -108,18 +118,19 @@ export default function ScoreScreen() {
       <View style={styles.screen} accessibilityElementsHidden={draft !== null} importantForAccessibility={draft ? 'no-hide-descendants' : 'auto'}>
         <NavBar />
         {largeText ? (
+          // At the largest text sizes nothing fits on one screen, so the page scrolls with the field at full width.
           <ScrollView testID="game-content" contentContainerStyle={styles.content}>
-            <Scoreboard state={state} summary={gameSummary(state)} />
-            {content}
+            {matchup}
+            <Field state={state} />
             {dock}
           </ScrollView>
         ) : (
           <>
-            <View style={styles.pinned}><Scoreboard state={state} summary={gameSummary(state)} /></View>
-            <ScrollView testID="game-content" style={styles.scrolling} contentContainerStyle={styles.content}>
-              {content}
-              <View style={spacerHeight(dockHeight)} />
-            </ScrollView>
+            <View style={styles.pinned}>{matchup}</View>
+            <View style={styles.room} testID="game-content"
+              onLayout={(event) => setRoom({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}>
+              <View style={fieldWidth(room, barHeight)}><Field state={state} /></View>
+            </View>
             {dock}
           </>
         )}
@@ -137,8 +148,8 @@ const styles = createStyles({
   wordmark: { flexDirection: 'row', alignItems: 'flex-start', gap: sizes['space/1'] },
   wordmarkText: { fontSize: 24, fontWeight: '800', letterSpacing: -0.96, color: colors['scoreboard/bg'] },
   emblem: { width: 22.4, height: 22.4, top: 5.5 },
-  pinned: { paddingTop: sizes['space/1'], paddingBottom: sizes['space/3'], paddingHorizontal: sizes['space/4'] },
-  scrolling: { flex: 1 },
+  pinned: { gap: sizes['space/3'], paddingTop: sizes['space/1'], paddingBottom: sizes['space/3'], paddingHorizontal: sizes['space/4'] },
+  room: { flex: 1, alignItems: 'center', marginHorizontal: sizes['space/4'] },
   content: { gap: sizes['space/3'], paddingHorizontal: sizes['space/4'] },
   dock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   belowBar: { backgroundColor: colors['surface/card'] },

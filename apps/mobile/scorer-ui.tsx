@@ -248,7 +248,8 @@ export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCa
     accessibilityState={{ disabled, busy: listening }} onLayout={(event) => { size.current = event.nativeEvent.layout; }}
     style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, pressTransform(scale)]} testID={testID}>
     {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
-    <Text style={styles.voiceLabel} numberOfLines={1}>{listening ? 'Listening…' : 'Hold to score by voice'}</Text>
+    {/* Larger system text shrinks the label to fit the bar, down to 80%, instead of cutting it off. */}
+    <Text style={styles.voiceLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{listening ? 'Listening…' : 'Hold to score by voice'}</Text>
   </Animated.View>;
 }
 

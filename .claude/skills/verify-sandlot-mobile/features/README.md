@@ -41,7 +41,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Home screen](./home-screen.md) covers the saved-game entry point.
 - [Offline scoring](./offline-scoring.md) covers pitches, undo, saved state, and reopening.
 - [Tap outcomes and runner moves](./tap-plays.md) covers In play, the four More actions, third-out evidence and whole-play undo.
-- [Scoring screen](./scoring-screen.md) covers the Figma Field tab: scoreboard, field chips, Matchup card, Last pitch row, the Scorer Bar, and Hit by pitch in More.
+- [Scoring screen](./scoring-screen.md) covers the Figma Field tab: scoreboard, matchup ticket, field chips, the Scorer Bar, and Hit by pitch in More.
 - [Voice scoring](./voice-scoring.md) covers hold to talk: Listening, Got it, Not sure, cancel and the tap fallback.
 
 The first tap slice adds a preloaded lineup, diamond, pitch bar, undo, and a local pending-play badge. The tap outcomes and runner-move recipe adds hits, outs, chosen destinations and runner actions. Lineup editing, the play log, hosted sync and the stat card remain later work. The local Mac acceptance flow passed with its result and log in docs/verification/26 and its screenshots and video in the `proof-26` release. It covers saved-game reopening, every pitch control, the normal-text dock and the development gallery. Standalone airplane-mode launch and spoken screen-reader delivery remain separate checks.
