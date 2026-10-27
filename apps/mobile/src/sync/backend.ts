@@ -1,6 +1,7 @@
 import type { UploadRequest } from '@sandlot/engine';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, isAuthRetryableFetchError } from '@supabase/supabase-js';
 import Storage from 'expo-sqlite/kv-store';
+import { resolveToken, type AuthPort, type TokenResult } from './identity.ts';
 import { ServerRefused, type ServerRows } from './server-game.ts';
 import type { Send } from './upload.ts';
 
@@ -17,13 +18,23 @@ const supabase = url && key ? createClient(url, key, {
 /** The project's URL and publishable key, or null when this build has none. */
 export const project = url && key ? { url, key } : null;
 
-/** The signed-in phone's token. An anonymous sign-in is enough for the demo. */
+const auth: AuthPort | null = supabase ? {
+  getSession: async () => { const { data, error } = await supabase.auth.getSession(); return { session: data.session, error }; },
+  refreshSession: async () => { const { data, error } = await supabase.auth.refreshSession(); return { session: data.session, error }; },
+  signInAnonymously: async () => { const { data, error } = await supabase.auth.signInAnonymously(); return { session: data.session, error }; },
+  retryable: (error) => isAuthRetryableFetchError(error),
+} : null;
+
+/** The signed-in phone's token, keeping the identity the seed made a scorer (see identity.ts). */
+async function phoneToken(fresh: boolean): Promise<TokenResult> {
+  if (!auth) return { failure: 'signed_out' };
+  return resolveToken(auth, Storage, fresh).catch(() => ({ failure: 'offline' as const }));
+}
+
+/** The signed-in phone's token, or null when there isn't one. An anonymous sign-in is enough for the demo. */
 export async function token(fresh: boolean): Promise<string | null> {
-  if (!supabase) return null;
-  const current = fresh ? await supabase.auth.refreshSession() : await supabase.auth.getSession();
-  if (current.data.session) return current.data.session.access_token;
-  const signedIn = await supabase.auth.signInAnonymously();
-  return signedIn.error ? null : signedIn.data.session?.access_token ?? null;
+  const result = await phoneToken(fresh);
+  return 'token' in result ? result.token : null;
 }
 
 /** This phone's user ID, which the seed script needs to make it the demo game's scorer. Null until it signs in. */
@@ -34,8 +45,10 @@ export async function phoneId(): Promise<string | null> {
 
 /** sync-events, with a 20-second limit. Null when no answer came back. */
 export const send: Send | null = project ? async (request: UploadRequest, fresh: boolean) => {
-  const bearer = await token(fresh).catch(() => null);
-  if (!bearer) return null;
+  const signedIn = await phoneToken(fresh);
+  // With no answer from sign-in, nothing was sent. Signed out reads like the server's own 401.
+  if ('failure' in signedIn) return signedIn.failure === 'offline' ? null : { status: 401, body: { error: 'unauthenticated' } };
+  const bearer = signedIn.token;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20_000);
   try {

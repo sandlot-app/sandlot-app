@@ -8,8 +8,7 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
-    "verify": "pnpm typecheck && pnpm test",
-    "lint": "expo lint"
+    "verify": "pnpm typecheck && pnpm test"
   },
   "devDependencies": {
     "typescript": "6.0.3"

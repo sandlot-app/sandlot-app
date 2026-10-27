@@ -22,7 +22,7 @@ import { playLog } from '../../scoring/play-log.ts';
 import { beginInPlay } from '../../scoring/tap-play.ts';
 import type { PlayDraft } from '../../scoring/tap-play.ts';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
-import type { StopReason } from '../../sync/upload.ts';
+import { syncLine } from '../../sync/sync-line.ts';
 import { useVoice } from '../../voice/use-voice.tsx';
 
 const { colors, sizes } = tokens.modes.Light;
@@ -35,13 +35,6 @@ const pitchResults: Record<Exclude<Pitch, 'in-play'>, Exclude<PitchResult, 'in_p
 };
 
 const spacerHeight = (height: number) => ({ height });
-
-const stopReasons: Record<StopReason, string> = {
-  update_app: 'update the app',
-  rejected: 'a play was rejected',
-  session: 'another phone is scoring',
-  conflict: 'the server’s game differs',
-};
 
 function NavBar() {
   return (
@@ -60,7 +53,7 @@ function NavBar() {
 }
 
 export default function ScoreScreen() {
-  const { view, record, upload, uploading } = useOfflineGame();
+  const { view, record, upload, uploadSlow } = useOfflineGame();
   const [draft, setDraft] = useState<PlayDraft | null>(null);
   const [tab, setTab] = useState<GameTab>('field');
   const [barHeight, setBarHeight] = useState(0);
@@ -88,18 +81,9 @@ export default function ScoreScreen() {
   const enabled = view.kind === 'ready' && state.status !== 'final';
   const largeText = fontScale > 1.35;
   const lastPlay = game.lastPlay ? playLabel(game.lastPlay) : '';
-  const live = game.context.kind === 'synced';
-  const waiting = game.waitingPlays;
-  // A live game is Saved once the server has every play, Saving while it uploads, and Offline while plays wait.
-  const sync: SyncState = saving
-    ? { status: 'saving', lastPlay }
-    : live && waiting && upload?.kind === 'stopped'
-      ? { status: 'stopped', lastPlay, waiting, reason: stopReasons[upload.reason] }
-      : live && !waiting
-        ? { status: 'saved', lastPlay }
-        : live && uploading
-          ? { status: 'saving', lastPlay }
-          : { status: 'offline', lastPlay, waiting };
+  const sync: SyncState = syncLine({
+    live: game.context.kind === 'synced', waiting: game.waitingPlays, saving, upload, slow: uploadSlow, lastPlay,
+  });
   const selectTab = (next: GameTab) => {
     voice.dismiss();
     setTab(next);

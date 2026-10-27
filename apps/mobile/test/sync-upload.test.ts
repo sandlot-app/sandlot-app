@@ -108,6 +108,28 @@ test('an expired sign-in is refreshed once and the same play is sent again', asy
   assert.deepEqual(fake.state.tokens, [false, true]);
 });
 
+test('a sign-in that can’t be refreshed stops the queue as signed out, and never sends as someone else', async () => {
+  const { session } = await scorer();
+  const tokens: boolean[] = [];
+  const result = await uploadWaiting(session, async (_request, fresh) => {
+    tokens.push(fresh);
+    return { status: 401, body: { error: 'unauthenticated' } };
+  });
+  assert.deepEqual(result.status, { kind: 'stopped', reason: 'signed_out' });
+  assert.deepEqual(tokens, [false, true]);
+});
+
+test('an acknowledgment the phone can’t save leaves the play waiting, and only a server mismatch stops the queue', async () => {
+  const { session } = await scorer();
+  const fake = fakeServer();
+  const failingStore = { nextUpload: session.nextUpload, acknowledge: async () => null };
+  const result = await uploadWaiting(failingStore, fake.send);
+  assert.deepEqual(result.status, { kind: 'waiting' }, 'a storage failure on this phone is not the server’s game differing');
+  assert.equal((await session.nextUpload())?.events[0]?.seq, 1);
+  assert.deepEqual((await uploadWaiting(session, fake.send)).status, { kind: 'synced' }, 'the next run sends it again and the server answers with its stored acknowledgment');
+  assert.equal(fake.events.length, 3);
+});
+
 test('a rejected play stops the queue, keeps every later play on the phone, and says why', async () => {
   const { session, save } = await scorer();
   await save({ kind: 'pitch', result: 'ball' });

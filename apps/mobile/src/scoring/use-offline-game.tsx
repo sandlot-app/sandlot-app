@@ -5,7 +5,8 @@ import type { PropsWithChildren } from 'react';
 import { AccessibilityInfo, AppState, Platform } from 'react-native';
 import { send, serverRows } from '../sync/backend';
 import { findServerGame } from '../sync/server-game.ts';
-import { uploadWaiting, type UploadStatus } from '../sync/upload.ts';
+import { createUploadRunner } from '../sync/runner.ts';
+import type { UploadStatus } from '../sync/upload.ts';
 import type { SqlDatabase } from './database.ts';
 import { blockedMessages, gameSummary } from './game-summary.ts';
 import { openNativeDatabase } from './native-database';
@@ -50,7 +51,8 @@ type ScoringContext = {
   games: Record<Slot, SavedGame | null>;
   /** Where the live game's upload queue stands, or null before its first try. */
   upload: UploadStatus | null;
-  uploading: boolean;
+  /** True while an upload has taken over half a second, when the sync line says Saving… */
+  uploadSlow: boolean;
   record(action: DemoAction): Promise<boolean>;
   /** Scores `slot`'s game from now on, reopening both from storage. */
   open(slot: Slot): void;
@@ -66,10 +68,11 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
   const [active, setActive] = useState<Slot>('local');
   const [games, setGames] = useState<Record<Slot, SavedGame | null>>({ local: null, synced: null });
   const [upload, setUpload] = useState<UploadStatus | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [uploadSlow, setUploadSlow] = useState(false);
   const sessions = useRef<Partial<Record<Slot, Session>>>({});
   const session = useRef<Session | null>(null);
-  const syncing = useRef(false);
+  const runner = useRef(send ? createUploadRunner(send) : null);
+  const stopped = useRef(false);
   const operation = useRef<Promise<unknown> | null>(null);
   const closing = useRef<Promise<void>>(Promise.resolve());
 
@@ -100,6 +103,7 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     let disposed = false;
     const databases: SqlDatabase[] = [];
+    const uploads = runner.current;
     const opened = (async () => {
       const results: Partial<Record<Slot, OpenResult>> = {};
       try {
@@ -122,6 +126,7 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
       sessions.current = { local: ready('local'), synced: ready('synced') };
       session.current = sessions.current[active] ?? null;
       setGames({ local: ready('local')?.game ?? null, synced: ready('synced')?.game ?? null });
+      stopped.current = false;
       const result = results[active];
       if (result?.kind === 'ready')
         setView({ kind: 'ready', game: result.game, message: null });
@@ -133,7 +138,8 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
       session.current = null;
       sessions.current = {};
       const pending = operation.current;
-      closing.current = Promise.all([opened, pending])
+      // An upload still using these databases finishes before they close.
+      closing.current = Promise.all([opened, pending, uploads?.idle()])
         .then(async () => {
           await Promise.all(databases.map((database) => database.close()));
         })
@@ -158,23 +164,18 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
   /** Sends the live game's waiting plays, one run at a time. A stopped queue waits for the next open. */
   async function syncNow() {
     const store = sessions.current.synced;
-    if (!store || !send || syncing.current) return;
-    syncing.current = true;
-    setUploading(true);
-    try {
-      const result = await uploadWaiting(store, send);
-      setUpload(result.status);
-      const latest = result.game;
-      if (!latest) return;
-      setGames((current) => ({ ...current, synced: latest }));
-      setView((current) =>
-        current.kind === 'ready' && current.game?.id === latest.id && current.game.revision <= latest.revision
-          ? { ...current, game: latest }
-          : current);
-    } finally {
-      syncing.current = false;
-      setUploading(false);
-    }
+    if (!store || !runner.current) return;
+    const result = await runner.current.run(store, setUploadSlow);
+    if (store !== sessions.current.synced) return;
+    stopped.current = result.status.kind === 'stopped';
+    setUpload(result.status);
+    const latest = result.game;
+    if (!latest) return;
+    setGames((current) => ({ ...current, synced: latest }));
+    setView((current) =>
+      current.kind === 'ready' && current.game?.id === latest.id && current.game.revision <= latest.revision
+        ? { ...current, game: latest }
+        : current);
   }
 
   async function record(action: DemoAction): Promise<boolean> {
@@ -191,7 +192,7 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
       switch (result.kind) {
         case 'saved':
           setGames((current) => ({ ...current, [slot]: result.game }));
-          if (slot === 'synced') void syncNow();
+          if (slot === 'synced' && !stopped.current) void syncNow();
           setView({
             kind: 'ready',
             game: result.game,
@@ -282,7 +283,7 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
     return 'started';
   }
 
-  return <Context value={{ view, active, games, upload, uploading, record, open, start, reopen }}>{children}</Context>;
+  return <Context value={{ view, active, games, upload, uploadSlow, record, open, start, reopen }}>{children}</Context>;
 }
 
 export function useOfflineGame(): ScoringContext {

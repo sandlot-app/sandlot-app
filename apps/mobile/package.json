@@ -37,7 +37,7 @@
     "ios": "expo start --ios",
     "typecheck": "tsc --noEmit",
     "lint": "node scripts/lint-styles.mjs && expo lint",
-    "test": "node scripts/lint-styles.mjs && expo export --platform web --dev --output-dir dist-web && node --experimental-strip-types --test test/*.test.mjs test/offline-game.test.ts test/voice-press.test.ts test/voice-outcome.test.ts test/voice-controller.test.ts test/matchup-line.test.ts test/play-log.test.ts test/sync-store.test.ts test/sync-upload.test.ts test/server-game.test.ts",
+    "test": "node scripts/lint-styles.mjs && expo export --platform web --dev --output-dir dist-web && node --experimental-strip-types --test test/*.test.mjs test/offline-game.test.ts test/voice-press.test.ts test/voice-outcome.test.ts test/voice-controller.test.ts test/matchup-line.test.ts test/play-log.test.ts test/sync-store.test.ts test/sync-upload.test.ts test/server-game.test.ts test/sync-runner.test.ts test/sync-line.test.ts test/identity.test.ts",
     "bundle": "expo export --platform ios --platform android --output-dir dist",
     "demo-pins": "node --experimental-strip-types scripts/demo-pins.ts"
   },

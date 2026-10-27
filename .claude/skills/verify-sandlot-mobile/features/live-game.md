@@ -24,6 +24,7 @@ Preconditions:
 - **Seed.** `psql "$SUPABASE_DB_URL" -v scorer=<phone ID> -v pins="$(pnpm -s --filter @sandlot/mobile demo-pins)" -f supabase/scripts/seed-test-game.sql` prints the game and session IDs.
 - **Scoring uploads.** Run `verify.sh drive live-game.yaml`. It starts the live game, records a ball and a foul, sees "All plays saved" after each (screenshot `live-all-saved`), and sees "Every play is on the server." on Your games.
 - **No signal, then back.** Stop `sync-events`, run `verify.sh drive live-game-offline.yaml` (a ball waits: "Offline · 1 play saved on this phone"), start `sync-events` again, and run `verify.sh drive live-game-reconnect.yaml` (it uploads with no tap).
+- **Stopped queue.** Hand the game's scoring to another user (`select private.take_over('<game>', '<other user>')`), run `verify.sh drive live-game-stopped.yaml` (a ball waits: "1 play waiting · Sync stopped: another phone is scoring"), give scoring back on a local database, and run `verify.sh drive live-game-resumed.yaml` (reopening the game sends it).
 - **Second device.** Open the family live page at `?game=<game ID>` against the same project and check its score, inning, count and outs match the phone's `score-summary`.
 
 ## Gotchas
