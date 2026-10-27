@@ -68,11 +68,9 @@ appId: host.exp.Exponent
       text: "Tap an inning to open or close it"
     direction: DOWN
 - takeScreenshot: plays-end
-# Back to Field, where scoring carries on; the remaining ball is undone so the game is as it was.
-- scrollUntilVisible:
-    element:
-      id: "tab-field"
-    direction: UP
+# The scoreboard and tabs stay pinned, so Field is one tap away. The remaining ball is undone so the game is as it was.
+- assertVisible:
+    id: "tab-field"
 - tapOn:
     id: "tab-field"
 - extendedWaitUntil:

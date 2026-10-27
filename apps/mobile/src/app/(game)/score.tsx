@@ -121,9 +121,11 @@ export default function ScoreScreen() {
     return (
       <SafeAreaView style={styles.screen} edges={['top']}>
         <NavBar />
-        <ScrollView testID="plays-content" contentContainerStyle={styles.plays}>
+        <View style={styles.pinned}>
           <ExpandedScoreboard state={state} summary={gameSummary(state)} />
           <GameTabs selected="plays" onSelect={selectTab} />
+        </View>
+        <ScrollView testID="plays-content" contentContainerStyle={styles.content}>
           <PlayLog halves={halves} />
           <View style={spacerHeight(Math.max(insets.bottom, 40))} />
         </ScrollView>
@@ -168,7 +170,6 @@ const styles = createStyles({
   pinned: { gap: sizes['space/3'], paddingTop: sizes['space/1'], paddingBottom: sizes['space/3'], paddingHorizontal: sizes['space/4'] },
   room: { flex: 1, alignItems: 'center', marginHorizontal: sizes['space/4'] },
   content: { gap: sizes['space/3'], paddingHorizontal: sizes['space/4'] },
-  plays: { gap: sizes['space/3'], paddingTop: sizes['space/1'], paddingHorizontal: sizes['space/4'] },
   dock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   belowBar: { backgroundColor: colors['surface/card'] },
   message: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/2'], padding: sizes['space/3'], borderRadius: sizes['radius/md'], backgroundColor: colors['surface/warning'], color: colors['text/primary'] },
