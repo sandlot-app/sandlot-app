@@ -324,7 +324,7 @@ export async function openOfflineGame(
               result = { kind: 'rejected', code: 'game_not_started' };
               return;
             }
-            if ('expectedRevision' in action && action.expectedRevision !== current!.game.revision) {
+            if ('expectedRevision' in action && action.expectedRevision !== undefined && action.expectedRevision !== current!.game.revision) {
               result = { kind: 'stale', game: current!.game };
               return;
             }

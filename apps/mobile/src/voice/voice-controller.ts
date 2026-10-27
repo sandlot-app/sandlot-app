@@ -34,6 +34,8 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
   let press: PressHandle | null = null;
   /** True once the finger is up and the press is still being read. */
   let reading = false;
+  /** Counts each time the scorer moves on (a new press, a tap, a teardown), so a late refusal can tell it's stale. */
+  let turn = 0;
   let pressed: Pressed | null = null;
   /** The last play voice saved, for route()'s duplicate guard (D4). A tap or an undo clears it. */
   let previous: { commands: Command[]; at: number } | undefined;
@@ -45,18 +47,21 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
    * nothing is written twice.
    */
   async function save(commands: Command[], from: Pressed) {
+    const mine = turn;
     const saved = await record({ kind: 'voice', at: new Date(from.at).toISOString(), expectedRevision: from.revision, commands });
     if (saved) previous = { commands, at: from.at };
-    else refused();
+    else refused(mine);
   }
 
-  /** A save or undo the engine refused, as stale or busy: the scorer hears it, not silence. */
-  function refused() {
+  /** A save or undo the engine refused, as stale or busy: the scorer hears it, unless they've already moved on. */
+  function refused(mine: number) {
+    if (mine !== turn) return;
     message = unsavedMessage;
     publish();
   }
 
   function stop() {
+    turn += 1;
     press?.cancel();
     press = null;
     reading = false;
@@ -93,6 +98,8 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
       reading = false;
       listening = false;
       live = null;
+      // This press's own result replaces any earlier line, such as the one saying the last press was lost.
+      message = null;
       if (update.kind === 'failed') {
         message = failureMessage(update.failure);
         return publish();
@@ -102,7 +109,8 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
       else if (result.kind === 'undo') {
         previous = undefined;
         // Pinned like a save, so an undo said before another save never takes that save back.
-        void record({ kind: 'undo', expectedRevision: from.revision }).then((undone) => { if (!undone) refused(); });
+        const mine = turn;
+        void record({ kind: 'undo', expectedRevision: from.revision }).then((undone) => { if (!undone) refused(mine); });
       } else if (result.kind === 'message') message = result.message;
       else choosing = {
         card: { kind: 'choose', heading: result.heading, words: update.transcript, choices: choiceLabels(result.choices), note: result.note },

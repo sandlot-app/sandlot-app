@@ -725,4 +725,6 @@ test('#65: an undo pinned to a revision undoes only when the game is still at th
   const undone = await session.record({ kind: 'undo', expectedRevision: foul.game.revision });
   assert.equal(undone.kind, 'saved');
   if (undone.kind === 'saved') assert.deepEqual(undone.game.state.count, ball.game.state.count);
+  const unpinned = await session.record({ kind: 'undo', expectedRevision: undefined });
+  assert.equal(unpinned.kind, 'saved', 'an undo with no revision is a plain undo, not a stale one');
 });
