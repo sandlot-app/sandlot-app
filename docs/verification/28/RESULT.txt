@@ -1,0 +1,9 @@
+flow: acceptance-28
+result: PASS
+commit: 62f209251c0ba22d1c244abbf9305b43b6015e91
+simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)
+
+flow: acceptance-28
+result: PASS
+commit: 62f209251c0ba22d1c244abbf9305b43b6015e91
+simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2)
