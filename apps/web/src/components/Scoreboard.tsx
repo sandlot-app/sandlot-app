@@ -5,7 +5,7 @@ const TEAMS: { side: TeamSide; name: string }[] = [
   { side: 'home', name: 'Home' },
 ];
 
-function inningText(state: GameState): string {
+export function inningText(state: GameState): string {
   switch (state.status) {
     case 'pregame':
       return 'Not started';

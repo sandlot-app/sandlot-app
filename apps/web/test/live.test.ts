@@ -18,6 +18,27 @@ describe('liveReducer', () => {
     expect(game.status).toBe('connecting');
   });
 
+  it('keeps the recording when later snapshots arrive', () => {
+    const recording = { playbackId: 'abc123', clockOffsetMs: 1500 };
+    const withVideo = liveReducer(loaded(), { type: 'recording', recording });
+    const next = liveReducer(withVideo, { type: 'snapshot', snapshot: snapshot(events, { afterSeq: 8 }) });
+
+    expect(next.recording).toEqual(recording);
+    expect(next.revision).toBeGreaterThan(withVideo.revision);
+  });
+
+  it('keeps the same game when the recording is unchanged and takes a new asset or offset', () => {
+    const withVideo = liveReducer(loaded(), { type: 'recording', recording: { playbackId: 'abc123', clockOffsetMs: 0 } });
+
+    expect(liveReducer(withVideo, { type: 'recording', recording: { playbackId: 'abc123', clockOffsetMs: 0 } })).toBe(withVideo);
+    expect(
+      liveReducer(withVideo, { type: 'recording', recording: { playbackId: 'abc123', clockOffsetMs: 1800 } }).recording,
+    ).toEqual({ playbackId: 'abc123', clockOffsetMs: 1800 });
+    expect(
+      liveReducer(withVideo, { type: 'recording', recording: { playbackId: 'newAsset', clockOffsetMs: 0 } }).recording,
+    ).toEqual({ playbackId: 'newAsset', clockOffsetMs: 0 });
+  });
+
   it('accepts a game that has no events yet', () => {
     const game = liveReducer(initialLiveGame, { type: 'snapshot', snapshot: snapshot([]) });
 

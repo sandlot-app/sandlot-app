@@ -23,6 +23,27 @@ describe('LiveView', () => {
     expect(render(sampleEvents(), 'reconnecting')).toContain('Reconnecting');
   });
 
+  it('shows no video and no clip buttons while the game has no recording', () => {
+    const html = render(sampleEvents());
+
+    expect(html).not.toContain('<video');
+    expect(html).not.toContain('Watch');
+  });
+
+  it('plays the recording under the live score and offers a clip of every play', () => {
+    const loaded = liveReducer(initialLiveGame, { type: 'snapshot', snapshot: snapshot(sampleEvents()) });
+    const withVideo = liveReducer(loaded, { type: 'recording', recording: { playbackId: 'abc123', clockOffsetMs: 0 } });
+    const html = renderToStaticMarkup(<LiveView game={withVideo} />);
+
+    expect(html).toContain('<video');
+    expect(html).toContain(`Away ${withVideo.state?.score.away} · Home ${withVideo.state?.score.home}`);
+    expect(html).toContain('The stream can run a few seconds behind the score.');
+    const onField = withVideo.plays.filter((play) => play.onField);
+    expect(onField.length).toBeGreaterThan(0);
+    expect(onField.length).toBeLessThan(withVideo.plays.length);
+    expect(html.match(/>Watch</g)).toHaveLength(onField.length);
+  });
+
   it('tells a family when the game is not public', () => {
     const hidden = liveReducer(initialLiveGame, { type: 'snapshot', snapshot: null });
 

@@ -30,6 +30,8 @@ export type Play = {
   scoreAfter: Score | null;
   inning: number | null;
   half: Half | null;
+  /** Whether something happened on the field that a camera could catch, unlike a lineup or an inning change. */
+  onField: boolean;
 };
 
 export type Timeline = { plays: Play[]; state: GameState | null };
@@ -204,6 +206,8 @@ function safeGroupText(commands: Command[], contexts: CommandContext[]): string 
 
 type Group = { id: GroupId; at: Timestamp; commands: Command[]; start: number };
 
+const ON_FIELD: ReadonlySet<Command['kind']> = new Set(['pitch', 'ball_in_play', 'runner']);
+
 function splitGroups(events: Event[]): Group[] {
   const groups: Group[] = [];
   events.forEach((event, start) => {
@@ -299,6 +303,7 @@ export function buildTimeline(pins: Pins, events: Event[], serverState: GameStat
         scoreAfter: after ? after.score : null,
         inning: before ? before.inning : null,
         half: before ? before.half : null,
+        onField: group.commands.some((command) => ON_FIELD.has(command.kind)),
       },
     ];
   });
