@@ -381,8 +381,9 @@ export async function openOfflineGame(
                   : action.event }));
             }
             else if (action.kind === 'voice') {
-              // A spoken press records plays only. Lineups, the start and undo have their own controls.
-              if (!action.commands.length || action.commands.some((command) => command.kind === 'game' || command.kind === 'undo')) {
+              // A spoken press records plays only. Lineups, substitutions, corrections and undo have their own controls.
+              const plays: Command['kind'][] = ['pitch', 'ball_in_play', 'runner', 'batter_out'];
+              if (!action.commands.length || action.commands.some((command) => !plays.includes(command.kind))) {
                 result = { kind: 'rejected', code: 'not_implemented' };
                 return;
               }

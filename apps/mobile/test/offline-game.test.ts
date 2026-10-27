@@ -669,3 +669,44 @@ test('the last pitch number comes from the pitcher who threw the last play, not 
   if (result.kind !== 'saved') throw new Error('Wild pitch must save');
   assert.equal(result.game.lastPitchNumber, null, 'a runner-only play has no pitch number');
 });
+
+test('a voice play saves as a voice event, survives a reopen, and accepts only play commands', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'sandlot-voice-'));
+  try {
+    const path = join(directory, 'game.db');
+    const first = connect(path);
+    const session = await openOfflineGame(first, boundary);
+    if (session.kind !== 'ready') throw new Error('Session must open');
+    const started = await session.record({ kind: 'start' });
+    if (started.kind !== 'saved') throw new Error('Game must start');
+    const at = '2026-10-26T17:05:00.000Z';
+    const saved = await session.record({ kind: 'voice', at, expectedRevision: started.game.revision,
+      commands: [{ kind: 'pitch', result: 'swinging_strike' }] });
+    assert.equal(saved.kind, 'saved');
+    if (saved.kind !== 'saved') return;
+    assert.deepEqual(saved.game.events.slice(started.game.events.length).map((event) => [event.source, event.at]), [['voice', at]]);
+    assert.equal(saved.game.waitingPlays, started.game.waitingPlays + 1, 'a voice play waits to sync like a tap play');
+
+    const notPlays = [
+      [],
+      [{ kind: 'undo', target: started.game.events[0]!.group }],
+      [{ kind: 'game', control: { kind: 'end_half', reason: 'manual' } }],
+      [{ kind: 'substitution', side: 'home', change: {} }],
+      [{ kind: 'correct', target: started.game.events[0]!.group, replacement: [] }],
+      [{ kind: 'pitch', result: 'ball' }, { kind: 'undo', target: started.game.events[0]!.group }],
+    ];
+    for (const commands of notPlays) {
+      const result = await session.record({ kind: 'voice', at, expectedRevision: saved.game.revision, commands: commands as never });
+      assert.deepEqual(result, { kind: 'rejected', code: 'not_implemented' }, JSON.stringify(commands));
+    }
+    const stale = await session.record({ kind: 'voice', at, expectedRevision: started.game.revision, commands: [{ kind: 'pitch', result: 'ball' }] });
+    assert.equal(stale.kind, 'stale', 'a press that started before the last save never writes on top of it');
+    await first.close();
+
+    const reopened = await openOfflineGame(connect(path), boundary);
+    assert.equal(reopened.kind, 'ready', 'a saved game with voice events loads');
+    if (reopened.kind === 'ready') assert.deepEqual(reopened.game, saved.game);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

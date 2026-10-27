@@ -63,7 +63,8 @@ export function useVoiceDeps(): VoiceDeps | null {
       if (stream.isStreaming) stream.stop();
     },
   }), [stream]);
+  // One object per mic, so the screen's voice controller lives as long as the stream does.
+  const real = useMemo(() => (api ? { mic, api, openSocket } : null), [mic]);
   const stub = useMemo(() => (__DEV__ && stubPhrases.length ? stubDeps(stubPhrases) : null), []);
-  if (stub) return stub;
-  return api ? { mic, api, openSocket } : null;
+  return stub ?? real;
 }

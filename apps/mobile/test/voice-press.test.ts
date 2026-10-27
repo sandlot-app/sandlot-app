@@ -1,50 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import type { ParseResult } from '@sandlot/voice';
 import { Clip, MAX_CLIP_BYTES, SAMPLE_RATE, toBase64 } from '../src/voice/pcm.ts';
 import { startPress, type Mic, type PressUpdate } from '../src/voice/press.ts';
 import type { Socket } from '../src/voice/realtime.ts';
-import type { ParseResult } from '@sandlot/voice';
-import { createVoiceApi, type ParseBody, type Parsed, type Result, type Session, type VoiceApi } from '../src/voice/voice-api.ts';
+import { createVoiceApi, type VoiceApi } from '../src/voice/voice-api.ts';
+import { fakeApi, fakeMic, fakeSocket, session, tick, timeouts } from './voice-fakes.ts';
 
 const context = { batting: ['L. Darcy'], fielding: ['A. Kindle'], runners: [] };
 const input = { names: ['L. Darcy', 'A. Kindle'], context };
-const session: Session = { url: 'wss://api.openai.com/v1/realtime?intent=transcription', secret: 'ek_test', expiresAt: 0, sampleRate: SAMPLE_RATE };
-const timeouts = { openMs: 30, finalMs: 30 };
-const tick = () => new Promise((resolve) => setTimeout(resolve, 0));
-
-function fakeMic(granted = true) {
-  let push: ((chunk: Uint8Array, rate: number) => void) | null = null;
-  const mic: Mic & { stopped: number; push(bytes: number[], rate?: number): void } = {
-    stopped: 0,
-    async start(onChunk) { push = onChunk; return granted; },
-    stop() { mic.stopped += 1; },
-    push(bytes, rate = SAMPLE_RATE) { push!(Uint8Array.from(bytes), rate); },
-  };
-  return mic;
-}
-
-function fakeSocket() {
-  const sent: Record<string, unknown>[] = [];
-  const socket: Socket & { sent: typeof sent; closed: boolean; open(): void; server(event: object): void } = {
-    sent, closed: false,
-    onopen: null, onmessage: null, onerror: null, onclose: null,
-    send(data) { sent.push(JSON.parse(data) as Record<string, unknown>); },
-    close() { socket.closed = true; },
-    open() { socket.onopen!(); },
-    server(event) { socket.onmessage!({ data: JSON.stringify(event) }); },
-  };
-  return socket;
-}
-
-function fakeApi(sessionResult: Result<Session> = { ok: true, value: session }, parseResult: Result<Parsed> = { ok: true, value: { transcript: '', parsed: null } }) {
-  const parsed: ParseBody[] = [];
-  const api: VoiceApi & { parsed: ParseBody[] } = {
-    parsed,
-    session: async () => sessionResult,
-    parse: async (body) => { parsed.push(body); return parseResult; },
-  };
-  return api;
-}
 
 function run(mic: Mic, api: VoiceApi, socket: Socket) {
   const updates: PressUpdate[] = [];

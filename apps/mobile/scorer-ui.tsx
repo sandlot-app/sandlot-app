@@ -245,7 +245,7 @@ export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCa
 /** Floats above the Scorer Bar while voice is in use: Listening, Got it, or Not sure. */
 export function TranscriptCard({ card, onChoose }: { card: VoiceCard; onChoose: (index: number) => void }) {
   const status = card.kind === 'listening' ? 'Listening…' : card.kind === 'got_it' ? 'Got it' : card.heading;
-  return <>
+  return (
     <View style={styles.card} accessibilityLiveRegion="polite" testID="voice-card">
       <View style={styles.cardHead}>
         <View style={card.kind === 'listening' ? styles.liveDot : card.kind === 'got_it' ? styles.savedDot : styles.unsureDot} />
@@ -268,8 +268,7 @@ export function TranscriptCard({ card, onChoose }: { card: VoiceCard; onChoose: 
         {card.kind === 'listening' ? 'Say a pitch or a play · release when done' : card.kind === 'got_it' ? 'Release to save · slide away to cancel' : card.note}
       </Text>
     </View>
-    <View style={styles.cardGap} />
-  </>;
+  );
 }
 
 const styles = createStyles({
@@ -333,13 +332,12 @@ const styles = createStyles({
   undoIcon: { width: 22, height: 22, tintColor: colors['text/primary'] },
   dimmed: { opacity: 0.4 },
   voiceBar: { flex: 1, minWidth: 0, height: 52, borderRadius: sizes['radius/full'], backgroundColor: colors['scoreboard/bg'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/2'], paddingHorizontal: sizes['space/4'] },
-  voiceListening: { borderWidth: 2, borderColor: colors['scoreboard/text-muted'] },
+  voiceListening: { borderWidth: 2, borderColor: colors['scoreboard/text-muted'], transform: [{ scale: 0.98 }] },
   voiceLabel: { ...textStyles['Body/Strong'], fontWeight: '500', letterSpacing: 0.075, color: colors['scoreboard/text'], flexShrink: 1 },
   liveDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['status/live'] },
   savedDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/ball'] },
   unsureDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
-  card: { marginHorizontal: sizes['space/4'], backgroundColor: colors['text/primary'], borderWidth: 1, borderColor: colors['border/glass'], borderRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingVertical: sizes['space/3'], gap: sizes['space/3'], shadowColor: colors['chip/label/halo'], shadowOpacity: 0.18, shadowRadius: sizes['radius/md'], shadowOffset: { width: 0, height: 8 }, elevation: 6 },
-  cardGap: { height: 13 },
+  card: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/3'], backgroundColor: colors['text/primary'], borderWidth: 1, borderColor: colors['border/glass'], borderRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingVertical: sizes['space/3'], gap: sizes['space/3'], shadowColor: colors['chip/label/halo'], shadowOpacity: 0.18, shadowRadius: sizes['radius/md'], shadowOffset: { width: 0, height: 8 }, elevation: 6 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
   cardStatus: { ...textStyles.Caption, fontWeight: '600', color: colors['scoreboard/text-muted'] },
   cardWords: { ...textStyles['Player/Name'], fontWeight: '500', color: colors['scoreboard/text'] },
