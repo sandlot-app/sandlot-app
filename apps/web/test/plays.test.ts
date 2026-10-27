@@ -17,6 +17,17 @@ const homeRun: Command[] = [
 ];
 
 describe('buildTimeline', () => {
+  it('marks only plays on the field as ones a camera could catch', () => {
+    const { plays } = buildTimeline(pins(), sampleEvents(), null);
+    const byText = (text: string) => plays.find((play) => play.text === text)?.onField;
+
+    expect(byText('Lineup set (away)')).toBe(false);
+    expect(byText('Game started')).toBe(false);
+    expect(byText('Ball')).toBe(true);
+    expect(byText('away-1 singles to left (LF)')).toBe(true);
+    expect(byText('away-1 steals 2nd')).toBe(true);
+  });
+
   it('describes each play of the sample half-inning and ends in the bottom of the 1st', () => {
     const { plays, state } = buildTimeline(pins(), sampleEvents(), null);
 

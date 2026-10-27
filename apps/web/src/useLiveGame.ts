@@ -1,12 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
+import { parseRecording } from './clips.ts';
 import type { SupabaseConfig } from './config.ts';
 import { initialLiveGame, lastSeq, liveReducer, needsFetch, type LiveAction, type LiveGame } from './live.ts';
 import { snapshotFetcher } from './snapshotFetcher.ts';
 
 const REFRESH_MS = 30_000;
 
-/** Follows one public game: fetches a snapshot on load, on every subscribe, on a newer revision, and every 30 seconds. */
+/**
+ * Follows one public game: fetches a snapshot on load, on every subscribe, on a newer revision, and every 30 seconds.
+ * It looks for the game's recording on the same schedule until it finds one, since a stream can start mid-game.
+ */
 export function useLiveGame({ url, anonKey }: SupabaseConfig, gameId: string): LiveGame {
   const [game, setGame] = useState(initialLiveGame);
 
@@ -50,9 +54,24 @@ export function useLiveGame({ url, anonKey }: SupabaseConfig, gameId: string): L
         }
       });
 
+    const fetchRecording = async () => {
+      if (current.recording) return;
+      const { data } = await client
+        .from('recordings')
+        .select('playback_id, clock_offset_ms')
+        .eq('game_id', gameId)
+        .maybeSingle();
+      const recording = parseRecording(data);
+      if (recording) send({ type: 'recording', recording });
+    };
+
     // Load and poll even while Realtime is down, so the score still shows and catches up.
     void fetchSnapshot();
-    const refresh = setInterval(() => void fetchSnapshot(), REFRESH_MS);
+    void fetchRecording();
+    const refresh = setInterval(() => {
+      void fetchSnapshot();
+      void fetchRecording();
+    }, REFRESH_MS);
 
     return () => {
       closed = true;

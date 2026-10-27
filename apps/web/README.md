@@ -65,10 +65,30 @@ Plays name players by ID only. The page never shows a name.
 
 If the demo game is reset while a page is open, reload the page. A page ignores a lower revision by design.
 
+## Video and clips
+
+The page shows video only when the game has a row in `public.recordings`. Without one, the page looks exactly as before. The page checks for a recording on load and every 30 seconds until it finds one, so a stream can start mid-game.
+
+To add the demo game's video, start a Mux live stream, stream to it from a second phone (Larix works), and run this in the Supabase SQL editor:
+
+```sql
+insert into public.recordings (game_id, playback_id, clock_offset_ms)
+values ('<game id>', '<Mux playback ID>', 0)
+on conflict (game_id) do update set playback_id = excluded.playback_id, clock_offset_ms = excluded.clock_offset_ms;
+```
+
+`clock_offset_ms` is the recording's clock minus the scorer phone's clock. Measure it from the clap at the first pitch, then update the row.
+
+- The stream plays under the live score, with the caption "The stream can run a few seconds behind the score."
+- Each play on the field gets a Watch button. Its clip is the Mux playback URL with `program_start_time` and `program_end_time`, from 12 seconds before the scorer started the play to 5 seconds after. Mux needs up to about 15 seconds after a play before its clip plays.
+- Safari and recent Chrome play HLS themselves. Other browsers load the light build of hls.js, only when a game has video.
+- The playback ID is public. That's fine for the adult demo game. Use signed playback before any game with children.
+
 ## Layout
 
 - `src/plays.ts` turns events into plays and the current state.
 - `src/live.ts` is the reducer that applies snapshots to the page's model.
 - `src/useLiveGame.ts` is the only module that touches supabase-js.
 - `src/snapshotFetcher.ts` sends one `get_snapshot` call at a time and gives up on a call after 10 seconds.
-- `src/components` holds the scoreboard, diamond, count and play list.
+- `src/clips.ts` reads a recording and makes a play's clip URL.
+- `src/components` holds the scoreboard, diamond, count, play list and the stream card.
