@@ -26,7 +26,7 @@ const slots: Slot[] = syncAvailable ? ['local', 'synced'] : ['local'];
 const retryMs = 15_000;
 
 /** How starting a game went. A live game can't start until the server names this phone a game's scorer. */
-export type StartResult = 'started' | 'none' | 'mismatch' | 'offline' | 'unavailable';
+export type StartResult = 'started' | 'none' | 'mismatch' | 'refused' | 'offline' | 'unavailable';
 type ViewState =
   | { kind: 'loading' }
   | {

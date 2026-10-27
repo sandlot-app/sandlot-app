@@ -18,7 +18,12 @@ export type ServerGameResult =
   | { kind: 'none' }
   /** The game can't take this phone's plays: other pins or setup, plays already on it, or a newer scorer. */
   | { kind: 'mismatch' }
+  /** The server answered but refused the read, such as a missing grant. */
+  | { kind: 'refused' }
   | { kind: 'offline' };
+
+/** Thrown by a read the server answered with an error, as opposed to no answer at all. */
+export class ServerRefused extends Error {}
 
 /** The version pins, rules and setup the seed script gives the demo game, so the server replays what the phone scores. */
 export function demoPins() {
@@ -46,7 +51,7 @@ export async function findServerGame(rows: ServerRows): Promise<ServerGameResult
       // A new synced game starts from the server's first play, under the game's current scoring session.
       && game.revision === 0 && game.lock_epoch === session.epoch;
     return fits ? { kind: 'found', server: { gameId: game.id, sessionId: session.id, lockEpoch: session.epoch } } : { kind: 'mismatch' };
-  } catch {
-    return { kind: 'offline' };
+  } catch (error) {
+    return { kind: error instanceof ServerRefused ? 'refused' : 'offline' };
   }
 }

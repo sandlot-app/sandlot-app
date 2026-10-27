@@ -1,0 +1,9 @@
+appId: host.exp.Exponent
+---
+# Once sync-events answers again, the waiting play uploads on the next retry with no tap. Run after live-game-offline.yaml.
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "Last: Ball · All plays saved"
+    timeout: 45000
+- takeScreenshot: live-reconnected

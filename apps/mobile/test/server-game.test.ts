@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ENGINE_VERSION, EVENT_SCHEMA_VERSION } from '@sandlot/engine';
 import { demoSetup } from '../src/scoring/demo-game.ts';
-import { demoPins, findServerGame, type ServerRows } from '../src/sync/server-game.ts';
+import { demoPins, findServerGame, ServerRefused, type ServerRows } from '../src/sync/server-game.ts';
 
 const session = { id: '6f1d2c4e-0000-4000-8000-0000000000a1', game_id: '6f1d2c4e-0000-4000-8000-000000000001', epoch: 2 };
 // Postgres jsonb stores keys in its own order, so the server's copy reads back reordered.
@@ -36,6 +36,10 @@ test('a game that doesn’t match this app, or already has plays, or moved to an
 
 test('no answer from the server reads as offline', async () => {
   assert.deepEqual(await findServerGame({ latestSession: async () => { throw new Error('offline'); }, game: async () => game }), { kind: 'offline' });
+});
+
+test('a server that answers but refuses the read is not mistaken for no signal', async () => {
+  assert.deepEqual(await findServerGame({ latestSession: async () => { throw new ServerRefused('42501'); }, game: async () => game }), { kind: 'refused' });
 });
 
 test('the seed script’s pins are the phone’s own demo setup, so the server replays exactly what the phone scores', () => {

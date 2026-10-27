@@ -16,6 +16,7 @@ const summary = (game: SavedGame) =>
 
 const startProblems: Record<Exclude<StartResult, 'started' | 'none'>, string> = {
   mismatch: 'The server’s demo game can’t take this app’s plays. Seed a new one with this app’s demo pins.',
+  refused: 'The server wouldn’t let this phone read its game. Check the project’s settings.',
   offline: 'No signal. Try again once this phone is online.',
   unavailable: 'The live game couldn’t start. Try again.',
 };

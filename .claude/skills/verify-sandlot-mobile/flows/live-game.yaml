@@ -1,0 +1,64 @@
+appId: host.exp.Exponent
+---
+# With the seed run, Start live game opens the server's game. Each play uploads, and the sync line says so.
+# Start from Your games, wherever the last flow left the app.
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Your games"
+    timeout: 15000
+- scrollUntilVisible:
+    element:
+      id: "live-game-card"
+    direction: DOWN
+- runFlow:
+    when:
+      visible:
+        id: "start-live"
+    commands:
+      - tapOn:
+          id: "start-live"
+- runFlow:
+    when:
+      visible:
+        id: "resume-live"
+    commands:
+      - tapOn:
+          id: "resume-live"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 20000
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "Last: Ball · All plays saved"
+    timeout: 20000
+- tapOn:
+    id: "pitch-foul"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "Last: Foul · All plays saved"
+    timeout: 20000
+- takeScreenshot: live-all-saved
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.summary = maestro.copiedText}
+- tapOn:
+    id: "games-navigation"
+- scrollUntilVisible:
+    element:
+      id: "live-waiting"
+    direction: DOWN
+- assertVisible:
+    id: "live-waiting"
+    text: "Every play is on the server."
+- takeScreenshot: live-home-uploaded

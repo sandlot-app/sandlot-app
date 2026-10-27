@@ -1,7 +1,7 @@
 import type { UploadRequest } from '@sandlot/engine';
 import { createClient } from '@supabase/supabase-js';
 import Storage from 'expo-sqlite/kv-store';
-import type { ServerRows } from './server-game.ts';
+import { ServerRefused, type ServerRows } from './server-game.ts';
 import type { Send } from './upload.ts';
 
 // The phone's Supabase project, shared by voice and sync: one anonymous sign-in, kept across launches.
@@ -57,13 +57,13 @@ export const serverRows: ServerRows | null = supabase ? {
     if (!(await token(false))) throw new Error('Not signed in');
     const { data, error } = await supabase.from('scoring_sessions').select('id, game_id, epoch')
       .order('started_at', { ascending: false }).limit(1).maybeSingle();
-    if (error) throw error;
+    if (error) throw error.code ? new ServerRefused(error.code) : error;
     return data;
   },
   async game(id) {
     const { data, error } = await supabase.from('games')
       .select('id, engine_version, schema_version, rules, setup, lock_epoch, revision').eq('id', id).maybeSingle();
-    if (error) throw error;
+    if (error) throw error.code ? new ServerRefused(error.code) : error;
     return data;
   },
 } : null;
