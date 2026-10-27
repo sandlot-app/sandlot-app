@@ -95,9 +95,11 @@ export function PrimaryButton({ label, onPress, disabled = false, testID }: {
   </Pressable>;
 }
 
-export function PlayerChip({ number, name, role, followed = false, layout = 'field', onPress, testID }: {
+export function PlayerChip({ number, name, role, followed = false, layout = 'field', showName = true, onPress, testID }: {
   number: string;
   name: string;
+  /** False on a field too tight for names; the number still shows. */
+  showName?: boolean;
   role: 'fielding' | 'batting' | 'batter';
   layout?: 'field' | 'inline';
   followed?: boolean;
@@ -115,7 +117,7 @@ export function PlayerChip({ number, name, role, followed = false, layout = 'fie
         </View> : null}
       </View>
     </View>
-    <Text style={layout === 'inline' ? styles.inlineName : styles.chipName} numberOfLines={1}>{name}</Text>
+    {showName ? <Text style={layout === 'inline' ? styles.inlineName : styles.chipName} numberOfLines={1}>{name}</Text> : null}
   </View>;
   return onPress ? <Pressable accessibilityRole="button" accessibilityLabel={`${name}, number ${number}`} onPress={onPress} testID={testID}>{chip}</Pressable> : <View testID={testID}>{chip}</View>;
 }

@@ -1,28 +1,19 @@
 import { tokens } from '@sandlot/tokens';
-import type { Base, GameState, Position } from '@sandlot/engine';
+import type { Base, GameState } from '@sandlot/engine';
 import { useState } from 'react';
 import { Image, Platform, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 import { PlayerChip } from '../../scorer-ui';
 import { createStyles } from '../../style';
 import { playerDisplay } from '../scoring/demo-roster.ts';
-import { chipScale } from './field-room.ts';
+import { batterSpot, chipLook, fielderSpots, runnerSpots } from './field-room.ts';
 
 const { colors, sizes } = tokens.modes.Light;
 
-// Figma Field (21:264) is 361 × 390. Spots are each chip disc's center x and the chip's top y.
+// Figma Field (21:264) is 361 × 390. The chip spots are in field-room.ts.
 const designWidth = 361;
 const designHeight = 390;
 const chipWidth = 74;
-const fielderSpots: Partial<Record<Position, { x: number; y: number }>> = {
-  CF: { x: 181, y: 31 }, LF: { x: 68, y: 71 }, RF: { x: 293.5, y: 71 },
-  SS: { x: 131, y: 137 }, '2B': { x: 230, y: 137 }, '3B': { x: 56.5, y: 155 },
-  '1B': { x: 302, y: 155 }, P: { x: 180.5, y: 205 }, C: { x: 181, y: 329 },
-};
-const runnerSpots: Record<Base, { x: number; y: number }> = {
-  1: { x: 259, y: 201 }, 2: { x: 181, y: 123 }, 3: { x: 103, y: 201 },
-};
-const batterSpot = { x: 141, y: 268 };
 
 const fieldSize = (width: number) => ({ height: (width * designHeight) / designWidth });
 const surfaceFrame = (scale: number) => ({ left: -119.5 * scale, top: 0, width: 600 * scale, height: 600 * scale });
@@ -31,7 +22,7 @@ const spot = (scale: number, { x, y }: { x: number; y: number }) => ({ left: x *
 export function Field({ state }: { state: GameState }) {
   const [width, setWidth] = useState(designWidth);
   const scale = width / designWidth;
-  const shrink = chipScale(width);
+  const chips = chipLook(width);
   const batting = state.half === 'top' ? 'away' : 'home';
   const fielding = state.half === 'top' ? 'home' : 'away';
   const batter = state.lineups[batting][state.nextBatter[batting]]?.player;
@@ -43,20 +34,20 @@ export function Field({ state }: { state: GameState }) {
         const at = position ? fielderSpots[position] : undefined;
         if (!at) return null;
         const shown = playerDisplay(state, fielding, player);
-        return <View key={player.id} style={[styles.chip, spot(scale, at), shrink]}>
-          <PlayerChip number={shown.number} name={shown.name} role="fielding" />
+        return <View key={player.id} style={[styles.chip, spot(scale, at), chips.style]}>
+          <PlayerChip number={shown.number} name={shown.name} role="fielding" showName={chips.names} />
         </View>;
       })}
       {([1, 2, 3] as const).map((base) => {
         const runner = state.bases[base]?.player;
         if (!runner) return null;
         const shown = playerDisplay(state, batting, runner);
-        return <View key={base} style={[styles.chip, spot(scale, runnerSpots[base]), shrink]} testID={`field-runner-${base}`}>
-          <PlayerChip number={shown.number} name={shown.name} role="batting" />
+        return <View key={base} style={[styles.chip, spot(scale, runnerSpots[base]), chips.style]} testID={`field-runner-${base}`}>
+          <PlayerChip number={shown.number} name={shown.name} role="batting" showName={chips.names} />
         </View>;
       })}
-      {batter && state.status !== 'final' ? <View style={[styles.chip, spot(scale, batterSpot), shrink]}>
-        <PlayerChip {...playerDisplay(state, batting, batter)} role="batter" />
+      {batter && state.status !== 'final' ? <View style={[styles.chip, spot(scale, batterSpot), chips.style]}>
+        <PlayerChip {...playerDisplay(state, batting, batter)} role="batter" showName={chips.names} />
       </View> : null}
     </View>
   );
