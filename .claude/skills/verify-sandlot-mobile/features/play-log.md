@@ -21,11 +21,12 @@ Preconditions:
 - `verify.sh launch` printed READY and `verify.sh doctor` reports every line ok.
 - Any saved demo state works. The flow records two balls and undoes both, so the game ends as it began.
 
-- **Plays tab.** Run `verify.sh drive play-log.yaml`. It records two balls and undoes the second, opens Plays and sees the scoreboard, the Live badge and the batter at bat (screenshot `plays`), scrolls to the Undone row (screenshot `plays-undone`) and the hint, goes back to Field and undoes the first ball.
+- **Plays tab.** Run `verify.sh drive play-log.yaml`. It records two balls and undoes the second, opens Plays and sees the scoreboard, a half-inning header and the batter at bat (screenshot `plays`), scrolls to the Undone row (screenshot `plays-undone`) and the hint, goes back to Field and undoes the first ball.
 - **Ticket 28 acceptance.** Run `verify.sh drive acceptance-28.yaml`. It runs `tap-plays.yaml` first, then the scoring screen, the matchup ticket and the play log.
 - **Figma pair.** The `plays` screenshot is the app half of the Figma comparison with `69:1895`, uploaded to the `proof-28` release as `figma-plays-pair.png`.
 
 ## Gotchas
 
 - The log is built from the saved events each time Plays opens, so a long game takes a moment longer to open than a new one.
+- iOS folds the list's container and the scoreboard's parts into their rows, so wait on visible text (a header's "batting", a row's "at bat") rather than `play-log`.
 - The scoreboard on Plays doesn't shrink to the compact one as the list scrolls; it scrolls away with the list.

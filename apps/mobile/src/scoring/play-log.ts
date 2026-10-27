@@ -157,7 +157,7 @@ function savedPlays(events: Event[]): Play[] {
 function atBatOf(plays: Play[]): AtBat {
   const first = plays[0]!;
   const side = battingSide(first.before);
-  const active = plays.filter((play) => !play.undone);
+  const active = standing(plays);
   const ending = active.find(endsAppearance) ?? (active.at(-1) && halfChanged(active.at(-1)!) ? active.at(-1)! : undefined);
   let pitches = 0;
   const rows = plays.map((play): PlayRow => {
@@ -198,6 +198,26 @@ function atBatOf(plays: Play[]): AtBat {
   };
 }
 
+const standing = (plays: Play[]) => plays.filter((play) => !play.undone);
+const finished = (plays: Play[]) => {
+  const active = standing(plays);
+  return active.some(endsAppearance) || (active.length > 0 && halfChanged(active.at(-1)!));
+};
+
+/**
+ * The at-bat `play` continues, if any: the latest one for the same batter that hasn't finished. Undo can take the game
+ * back past whole at-bats, so at-bats with nothing standing are passed over, and a later batter's are left out of the log.
+ */
+function resumable(atBats: Play[][], play: Play): Play[] | null {
+  const side = battingSide(play.before);
+  for (let index = atBats.length - 1; index >= 0; index -= 1) {
+    const plays = atBats[index]!;
+    if (plays[0]!.before.nextBatter[side] === play.before.nextBatter[side] && !finished(plays)) return plays;
+    if (standing(plays).length) return null;
+  }
+  return null;
+}
+
 /**
  * The saved game as the Plays tab lists it, newest half-inning first. The current half comes from the game's state,
  * so after an undo it is the half the game went back to. Halves after it hold only undone plays and are left out.
@@ -209,11 +229,8 @@ export function playLog(game: SavedGame): HalfInning[] {
     const order = halfOrder(play.before);
     const half = halves.get(order) ?? { before: play.before, atBats: [] };
     halves.set(order, half);
-    const side = battingSide(play.before);
-    const open = half.atBats.at(-1);
-    const openPlays = open?.filter((other) => !other.undone) ?? [];
-    const finished = openPlays.some(endsAppearance) || (openPlays.length > 0 && halfChanged(openPlays.at(-1)!));
-    if (open && !finished && open[0]!.before.nextBatter[side] === play.before.nextBatter[side]) open.push(play);
+    const open = resumable(half.atBats, play);
+    if (open) open.push(play);
     else half.atBats.push([play]);
   }
   const live = state.status !== 'final';
@@ -236,7 +253,10 @@ export function playLog(game: SavedGame): HalfInning[] {
         batting: demoTeams[side].name,
         totals: `${runs} R · ${hitCount} H${current ? '' : ` · ${errors} E`}`,
         current,
-        atBats: atBats.map(atBatOf).reverse(),
+        // An at-bat with nothing standing shows only while that batter is still up, with the undone plays in it.
+        atBats: atBats.filter((plays) => standing(plays).length
+          || (current && plays === atBats.at(-1) && plays[0]!.before.nextBatter[side] === state.nextBatter[side]))
+          .map(atBatOf).reverse(),
       };
     });
 }

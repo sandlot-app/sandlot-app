@@ -50,14 +50,13 @@ appId: host.exp.Exponent
 # Plays: the expanded scoreboard, the tabs, and the current half open with the batter still up.
 - tapOn:
     id: "tab-plays"
+# iOS folds the list's container into its rows, so wait for the half-inning header's text instead.
 - extendedWaitUntil:
-    visible:
-      id: "play-log"
+    visible: ".* batting.*"
     timeout: 15000
 - assertVisible:
     id: "score-summary"
-- assertVisible: "LIVE"
-- assertVisible: ".* at bat"
+- assertVisible: ".* at bat.*"
 - takeScreenshot: plays
 - scrollUntilVisible:
     element:

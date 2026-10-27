@@ -108,6 +108,19 @@ test('a new half with no plays yet is current and empty, and the finished half s
     [[null, 'In play · Fly out', true], [1, 'In play', false]]);
 });
 
+test('undoing back past a whole at-bat resumes the earlier batter’s at-bat and drops the one that never happened', async () => {
+  const { save } = await scorer();
+  await save(inPlay('single', 'CF'));
+  await save({ kind: 'pitch', result: 'ball' });
+  await save({ kind: 'undo' });
+  await save({ kind: 'undo' });
+  const game = await save({ kind: 'pitch', result: 'ball' });
+  const [top] = playLog(game);
+  assert.deepEqual(top!.atBats.map((atBat) => atBat.title), ['J. Soto at bat']);
+  assert.deepEqual(top!.atBats[0]!.rows.map((row) => [row.number, row.label, row.undone]),
+    [[null, 'In play · Single', true], [1, 'Ball', false]]);
+});
+
 test('a runner play during an at-bat is a row in that at-bat', async () => {
   const { save } = await scorer();
   await save(inPlay('single', 'CF'));
