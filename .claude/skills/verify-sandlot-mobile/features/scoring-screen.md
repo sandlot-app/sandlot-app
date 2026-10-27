@@ -29,4 +29,4 @@ Preconditions:
 ## Gotchas
 
 - The sample names and jersey numbers come from the design's sample game. They live only in `src/scoring/demo-roster.ts` and never in events.
-- The Video, Plays and Box score tabs and the nav's More menu are hidden until those features exist.
+- The tabs show Field and Plays. Video and Box score and the nav's More menu are hidden until those features exist.

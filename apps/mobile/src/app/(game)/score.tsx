@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { tokens } from '@sandlot/tokens';
 import type { PitchResult } from '@sandlot/engine';
 import { router } from 'expo-router';
@@ -10,12 +10,15 @@ import { belowBarSpace } from '../../components/bottom-space.ts';
 import { Field } from '../../components/field.tsx';
 import { fieldWidth, roomBelowField } from '../../components/field-room.ts';
 import { GameStatus } from '../../components/game-status.tsx';
+import { GameTabs, type GameTab } from '../../components/game-tabs.tsx';
 import { CaretLeftIcon } from '../../components/icons.tsx';
 import { LeagueAlerts, MatchupTicket } from '../../components/matchup.tsx';
+import { PlayLog } from '../../components/play-log.tsx';
 import { PlaySheets } from '../../components/play-sheets.tsx';
-import { Scoreboard } from '../../components/scoreboard.tsx';
+import { ExpandedScoreboard, Scoreboard } from '../../components/scoreboard.tsx';
 import { blockedMessages, gameSummary } from '../../scoring/game-summary.ts';
 import { playLabel } from '../../scoring/play-label.ts';
+import { playLog } from '../../scoring/play-log.ts';
 import { beginInPlay } from '../../scoring/tap-play.ts';
 import type { PlayDraft } from '../../scoring/tap-play.ts';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
@@ -51,6 +54,7 @@ function NavBar() {
 export default function ScoreScreen() {
   const { view, record } = useOfflineGame();
   const [draft, setDraft] = useState<PlayDraft | null>(null);
+  const [tab, setTab] = useState<GameTab>('field');
   const [barHeight, setBarHeight] = useState(0);
   const [dockHeight, setDockHeight] = useState(0);
   const [room, setRoom] = useState({ width: 0, height: 0 });
@@ -58,6 +62,7 @@ export default function ScoreScreen() {
   const insets = useSafeAreaInsets();
   const game = view.kind === 'ready' || view.kind === 'saving' || view.kind === 'blocked' ? view.game : null;
   const voice = useVoice(game, record);
+  const halves = useMemo(() => (tab === 'plays' && game ? playLog(game) : []), [tab, game]);
 
   if (!game)
     return (
@@ -78,6 +83,10 @@ export default function ScoreScreen() {
   const sync: SyncState = saving
     ? { status: 'saving', lastPlay }
     : { status: 'offline', lastPlay, waiting: game.waitingPlays };
+  const selectTab = (next: GameTab) => {
+    voice.dismiss();
+    setTab(next);
+  };
   const onPitch = (pitch: Pitch) => {
     voice.dismiss();
     if (pitch === 'in-play') setDraft(beginInPlay(game, new Date().toISOString()));
@@ -87,6 +96,7 @@ export default function ScoreScreen() {
   const matchup = (
     <>
       <Scoreboard state={state} summary={gameSummary(state)} />
+      <GameTabs selected="field" onSelect={selectTab} />
       <MatchupTicket game={game} />
       <LeagueAlerts alerts={state.alerts} />
     </>
@@ -106,6 +116,21 @@ export default function ScoreScreen() {
       </View>
     </View>
   );
+
+  if (tab === 'plays')
+    return (
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <NavBar />
+        <View style={styles.pinned}>
+          <ExpandedScoreboard state={state} summary={gameSummary(state)} />
+          <GameTabs selected="plays" onSelect={selectTab} />
+        </View>
+        <ScrollView testID="plays-content" contentContainerStyle={styles.content}>
+          <PlayLog halves={halves} />
+          <View style={spacerHeight(Math.max(insets.bottom, 40))} />
+        </ScrollView>
+      </SafeAreaView>
+    );
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>

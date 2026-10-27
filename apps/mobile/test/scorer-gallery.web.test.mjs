@@ -315,6 +315,12 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       await visible('league-alert-pitch_count_near_limit');
       assert.match(await text('league-alert-pitch_count_near_limit'), /10 pitches from the limit/);
       await undo(); await absent('league-alert-pitch_count_near_limit');
+      await click('tab-plays'); await visible('play-log');
+      assert.match(await text('half-top-1'), /^Top 1· Marlins batting/, 'the current half leads the log');
+      assert.match(await text('half-top-1'), /at bat/, 'the batter still up is open at the top');
+      assert.ok(await evaluate(`document.querySelectorAll('[data-testid^="play-undone-"]').length`) > 0, 'the undone foul stays in the log, marked undone');
+      await screenshot('plays');
+      await click('tab-field'); await visible('pitch-ball');
       assert.deepEqual(cdp.events.filter((event) => event.method === 'Runtime.exceptionThrown' || event.method === 'Runtime.consoleAPICalled' && event.params.type === 'error'), [], 'the real browser path has no runtime errors or Expo error overlays');
 
     } finally { cdp.close(); }

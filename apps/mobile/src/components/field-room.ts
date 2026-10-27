@@ -30,21 +30,47 @@ export const runnerSpots: Record<Base, { x: number; y: number }> = {
 };
 export const batterSpot = { x: 141, y: 268 };
 
-// Chip names are never drawn smaller than this, so they stay readable at a glance outdoors.
-const minNameSize = 10;
+// Chip names are never drawn smaller than this, so they stay readable at a glance outdoors. Christian lowered it from
+// 10 to 9 on 2026-10-27 so the iPhone 17 Pro keeps its names under the Field and Plays tabs.
+const minNameSize = 9;
 const minChipScale = minNameSize / tokens.modes.Light.textStyles['Chip/Name'].fontSize;
+
+const { sizes } = tokens.modes.Light;
+const discs = [
+  ...Object.values(fielderSpots).map((spot) => ({ spot, size: sizes['chip/size'] })),
+  ...Object.values(runnerSpots).map((spot) => ({ spot, size: sizes['chip/size'] })),
+  { spot: batterSpot, size: sizes['chip/batter-size'] },
+];
+
+/** Whether any two discs touch, with chips at `chip` scale on a field this wide. Each chip hangs from its spot. */
+function touching(fieldWidth: number, chip: number): boolean {
+  const field = fieldWidth / 361;
+  const placed = discs.map(({ spot, size }) => ({ x: spot.x * field, y: spot.y * field + (size * chip) / 2, r: (size * chip) / 2 }));
+  return placed.some((a, index) => placed.slice(index + 1).some((b) => Math.hypot(a.x - b.x, a.y - b.y) <= a.r + b.r + 1));
+}
+
+/** The largest chip scale, up to the names' floor, at which no two discs touch. */
+function clearScale(fieldWidth: number): number {
+  let [low, high] = [0, minChipScale];
+  for (let step = 0; step < 20; step += 1) {
+    const middle = (low + high) / 2;
+    if (touching(fieldWidth, middle)) high = middle;
+    else low = middle;
+  }
+  return touching(fieldWidth, minChipScale) ? low : minChipScale;
+}
 
 /**
  * How the chips draw on a field this wide. On a field smaller than Figma's, every chip shrinks by the field's own
- * scale, names included, so the chips keep Figma's spacing. They stop shrinking once the names would drop below
- * 10 points. On a field tighter than that, such as an iPhone SE's, the chips stay at that size and drop their
- * names, because the names would run into each other. The top center stays on the chip's spot, and chips never
- * grow past their Figma size.
+ * scale, names included, so the chips keep Figma's spacing, until the names would drop below 9 points. On a field
+ * tighter than that, such as an iPhone SE's, the chips drop their names and shrink only as far as they must for no two
+ * to touch. The top center stays on the chip's spot, and chips never grow past their Figma size.
  */
 export function chipLook(fieldWidth: number) {
-  const scale = Math.min(1, Math.max(minChipScale, fieldWidth / 361));
+  const names = fieldWidth / 361 >= minChipScale;
+  const scale = names ? Math.min(1, fieldWidth / 361) : clearScale(fieldWidth);
   return {
     style: scale < 1 ? { transform: [{ scale }], transformOrigin: '50% 0%' } as const : null,
-    names: fieldWidth / 361 >= minChipScale,
+    names,
   };
 }

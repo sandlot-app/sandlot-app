@@ -1,0 +1,6 @@
+appId: host.exp.Exponent
+---
+- runFlow: tap-plays.yaml
+- runFlow: scoring-screen.yaml
+- runFlow: matchup-ticket.yaml
+- runFlow: play-log.yaml
