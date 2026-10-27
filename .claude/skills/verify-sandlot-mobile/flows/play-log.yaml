@@ -1,0 +1,90 @@
+appId: host.exp.Exponent
+---
+# The Plays tab lists the saved book, newest half-inning first, and keeps an undone play in it, marked Undone.
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+- assertVisible:
+    id: "tab-field"
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
+# Two balls, then Undo takes the second back.
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
+    timeout: 15000
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 3} plays? saved on this phone"
+    timeout: 15000
+- takeScreenshot: field-tabs
+# Plays: the expanded scoreboard, the tabs, and the current half open with the batter still up.
+- tapOn:
+    id: "tab-plays"
+- extendedWaitUntil:
+    visible:
+      id: "play-log"
+    timeout: 15000
+- assertVisible:
+    id: "score-summary"
+- assertVisible: "LIVE"
+- assertVisible: ".* at bat"
+- takeScreenshot: plays
+- scrollUntilVisible:
+    element:
+      text: "Undone"
+    direction: DOWN
+- takeScreenshot: plays-undone
+- scrollUntilVisible:
+    element:
+      text: "Tap an inning to open or close it"
+    direction: DOWN
+- takeScreenshot: plays-end
+# Back to Field, where scoring carries on; the remaining ball is undone so the game is as it was.
+- scrollUntilVisible:
+    element:
+      id: "tab-field"
+    direction: UP
+- tapOn:
+    id: "tab-field"
+- extendedWaitUntil:
+    visible:
+      id: "pitch-ball"
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 4} plays? saved on this phone"
+    timeout: 15000
+- takeScreenshot: field-after-plays

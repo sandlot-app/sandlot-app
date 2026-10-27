@@ -12,5 +12,6 @@ The Field tab artwork comes from Sandlot's [Figma Field tab (milestone 4)](https
 | `bat.svg` | Icon/Bat (16:47), with its shadow | 30.45 × 8.54 |
 | `baseball.svg` | Icon/Baseball (29:288), with its shadow | 25.44 × 25.44 |
 | `logo-emblem.svg` | Logo / Emblem (124:7447) | 64 × 64 |
+| `glove.svg` | Icon/Glove (41:950), with its shadow, from the [Plays tab](https://www.figma.com/design/J8F4zRkkV63ji3AYhcHHwA?node-id=69-1895) scoreboard | 16.07 × 17.21 |
 
 Each PNG and its `@2x` and `@3x` copies rasterize that SVG with transparent backgrounds, rendered by headless Chrome. The artwork is fixed in Figma (its colors aren't tokens), so it ships as images rather than redrawn shapes.

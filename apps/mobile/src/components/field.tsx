@@ -56,9 +56,12 @@ export function Field({ state }: { state: GameState }) {
 // Figma Mini Diamond (3:74): 8.8 squares with 3.5 corners, turned 45°.
 const miniBases: Record<Base, { x: number; y: number }> = { 2: { x: 15.4, y: 6.6 }, 3: { x: 6.6, y: 15.4 }, 1: { x: 24.2, y: 15.4 } };
 
-/** The scoreboard's runner state: raised yellow when a base is occupied, a recessed well when it's empty. */
-export function MiniDiamond({ bases }: { bases: GameState['bases'] }) {
-  return <Svg width={30.8} height={22} viewBox="0 0 30.8 22" accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
+/**
+ * The scoreboard's runner state: raised yellow when a base is occupied, a recessed well when it's empty.
+ * The compact scoreboard draws it 30.8 wide; the expanded one at `scale` 56 / 30.8, so each base is 16.
+ */
+export function MiniDiamond({ bases, scale = 1 }: { bases: GameState['bases']; scale?: number }) {
+  return <Svg width={30.8 * scale} height={22 * scale} viewBox="0 0 30.8 22"accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
     {([1, 2, 3] as const).map((base) => {
       const { x, y } = miniBases[base];
       return <Rect key={base} x={x - 4.4} y={y - 4.4} width={8.8} height={8.8} rx={3.5} transform={`rotate(45 ${x} ${y})`}
