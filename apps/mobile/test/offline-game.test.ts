@@ -180,7 +180,7 @@ test('a local storage format changed after opening blocks scoring without append
   assert.equal(opened.kind, 'ready');
   if (opened.kind !== 'ready') return;
   await opened.record({ kind: 'start' });
-  await database.exec('PRAGMA user_version = 2');
+  await database.exec('PRAGMA user_version = 3');
   assert.deepEqual(await opened.record({ kind: 'pitch', result: 'ball' }), {
     kind: 'blocked',
     reason: 'version',

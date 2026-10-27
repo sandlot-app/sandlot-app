@@ -1,17 +1,69 @@
 import { tokens } from '@sandlot/tokens';
 import { createStyles } from '../../../style';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { GameStatus } from '../../components/game-status.tsx';
-import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
+import type { SavedGame } from '../../scoring/offline-game.ts';
+import { syncAvailable, useOfflineGame, type StartResult } from '../../scoring/use-offline-game.tsx';
+import { phoneId } from '../../sync/backend';
 
 const { colors, sizes } = tokens.modes.Light;
 
+const summary = (game: SavedGame) =>
+  `${game.state.score.away}–${game.state.score.home} · ${game.state.half === 'top' ? 'Top' : 'Bottom'} ${game.state.inning}`;
+
+const startProblems: Record<Exclude<StartResult, 'started' | 'none'>, string> = {
+  mismatch: 'The server’s demo game can’t take this app’s plays. Seed a new one with this app’s demo pins.',
+  refused: 'The server wouldn’t let this phone read its game. Check the project’s settings.',
+  offline: 'No signal. Try again once this phone is online.',
+  unavailable: 'The live game couldn’t start. Try again.',
+};
+
+/** The game the server issued this phone, whose plays upload as they're scored. */
+function LiveGameCard() {
+  const { view, games, upload, open, start } = useOfflineGame();
+  const [problem, setProblem] = useState<string | null>(null);
+  const game = games.synced;
+  const available = view.kind === 'ready';
+  const waiting = game?.waitingPlays ?? 0;
+  return (
+    <View style={styles.card} testID="live-game-card">
+      <Text style={styles.label}>LIVE DEMO · MUSTANG</Text>
+      <Text style={styles.matchup}>Away vs. Home</Text>
+      <Text style={styles.detail} testID="live-game-summary">
+        {game ? summary(game) : 'The demo game on the server. Family members follow it live.'}
+      </Text>
+      <Pressable disabled={!available} testID={game ? 'resume-live' : 'start-live'} accessibilityRole="button"
+        accessibilityState={{ disabled: !available }} style={({ pressed }) => [styles.button, (!available || pressed) && styles.pressed]}
+        onPress={async () => {
+          setProblem(null);
+          if (game) {
+            open('synced');
+            router.push('/score');
+            return;
+          }
+          const result = await start('synced');
+          if (result === 'started') router.push('/score');
+          else if (result === 'none') setProblem(`This phone isn’t the demo game’s scorer yet. Phone ID for the seed script: ${await phoneId() ?? 'not signed in'}`);
+          else setProblem(startProblems[result]);
+        }}>
+        <Text style={styles.buttonLabel}>{game ? 'Continue scoring' : 'Start live game'}</Text>
+      </Pressable>
+      <Text style={styles.detail} testID="live-waiting">
+        {!game ? 'Plays upload as you score, and wait on this phone without signal.'
+          : waiting === 0 ? 'Every play is on the server.'
+            : `${waiting} ${waiting === 1 ? 'play' : 'plays'} waiting to upload${upload?.kind === 'stopped' ? ' · sync stopped' : ''}`}
+      </Text>
+      {problem ? <Text style={styles.detail} accessibilityLiveRegion="polite" testID="live-message" selectable>{problem}</Text> : null}
+    </View>
+  );
+}
+
 export default function GamesScreen() {
-  const { view, record, reopen } = useOfflineGame();
-  const game =
-    view.kind === 'ready' || view.kind === 'saving' ? view.game : null;
+  const { view, active, games, open, start } = useOfflineGame();
+  const game = games.local;
   const available = view.kind === 'ready';
 
   return (
@@ -39,9 +91,7 @@ export default function GamesScreen() {
             <Text style={styles.label}>LOCAL DEMO · MUSTANG</Text>
             <Text style={styles.matchup}>Away vs. Home</Text>
             <Text style={styles.detail} testID="saved-game-summary">
-              {game
-                ? `${game.state.score.away}–${game.state.score.home} · ${game.state.half === 'top' ? 'Top' : 'Bottom'} ${game.state.inning}`
-                : 'Preloaded rosters and lineups. Ready for the first pitch.'}
+              {game ? summary(game) : 'Preloaded rosters and lineups. Ready for the first pitch.'}
             </Text>
             <Pressable
               disabled={!available}
@@ -54,9 +104,9 @@ export default function GamesScreen() {
               ]}
               onPress={async () => {
                 if (game) {
-                  reopen();
+                  open('local');
                   router.push('/score');
-                } else if (await record({ kind: 'start' }))
+                } else if (await start('local') === 'started')
                   router.push('/score');
               }}
             >
@@ -73,13 +123,14 @@ export default function GamesScreen() {
                 ? `${game.waitingPlays} saved ${game.waitingPlays === 1 ? 'play' : 'plays'} waiting to sync`
                 : 'This local demo does not upload to a live game.'}
             </Text>
-            {view.message && (
+            {active === 'local' && view.message && (
               <Text style={styles.detail} accessibilityLiveRegion="polite">
                 {view.message}
               </Text>
             )}
           </View>
         )}
+        {syncAvailable ? <LiveGameCard /> : null}
       </ScrollView>
     </SafeAreaView>
   );

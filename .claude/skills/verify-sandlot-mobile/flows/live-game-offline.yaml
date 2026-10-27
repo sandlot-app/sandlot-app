@@ -1,0 +1,32 @@
+appId: host.exp.Exponent
+---
+# With the server unreachable, a play still saves on the phone and waits. Run with sync-events stopped.
+# Start from Your games, wherever the last flow left the app.
+- repeat:
+    times: 3
+    while:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+      - waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "resume-live"
+    direction: DOWN
+- tapOn:
+    id: "resume-live"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 20000
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: "Last: Ball · Offline · 1 play saved on this phone"
+    timeout: 30000
+- takeScreenshot: live-offline-waiting

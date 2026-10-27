@@ -1,0 +1,29 @@
+appId: host.exp.Exponent
+---
+# Before the seed script names this phone a game's scorer, Start live game says so and shows the phone ID it needs.
+# Start from Your games, wherever the last flow left the app.
+- repeat:
+    times: 3
+    while:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+      - waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "start-live"
+    direction: DOWN
+- tapOn:
+    id: "start-live"
+    retryTapIfNoChange: true
+- scrollUntilVisible:
+    element:
+      id: "live-message"
+    direction: DOWN
+    timeout: 20000
+- assertVisible:
+    id: "live-message"
+    text: "This phone isn’t the demo game’s scorer yet. Phone ID for the seed script: .*"
+- takeScreenshot: live-needs-seed
