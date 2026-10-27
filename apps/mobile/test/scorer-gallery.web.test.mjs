@@ -310,7 +310,7 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       await click('out-type-away-2-non_force'); await savePlay();
       assert.match(await summary(), /Away 1, home 0.*bottom/);
       await undo();
-      const total = Number((await text('pitch-total')).split(' ')[0]);
+      const total = Number((await text('pitch-total')).match(/(\d+)\//)[1]);
       for (let count = total; count < 65; count++) await pitch('foul');
       await visible('league-alert-pitch_count_near_limit');
       assert.match(await text('league-alert-pitch_count_near_limit'), /10 pitches from the limit/);

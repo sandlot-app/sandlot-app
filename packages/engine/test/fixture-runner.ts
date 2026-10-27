@@ -2,13 +2,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { deepStrictEqual } from 'node:assert';
 import { parse } from 'yaml';
-import { applyGroupFrom, replayFrom } from '../src/engine.ts';
+import { applyGroupFrom, battingLinesFrom, replayFrom } from '../src/engine.ts';
 import {
   applyGroup,
   initialState,
   presets,
   replay,
   type ApplyResult,
+  type BattingLine,
   type Command,
   type Event,
   type EventId,
@@ -41,6 +42,8 @@ export type Fixture = {
   when: Command[][];
   /** Each top-level key must equal the final state's, or the last play must be rejected with this code. */
   then: Partial<GameState> | { rejected: string };
+  /** Every batter's line after the plays, keyed by player or opponent ID. Batters left out must have no line. */
+  batting?: Record<string, BattingLine>;
 };
 
 export const fixtureRoot = join(import.meta.dirname, '..', 'fixtures');
@@ -125,11 +128,20 @@ export function runFixture(fixture: Fixture): ApplyResult {
   return result;
 }
 
-export const fixtureFiles = readdirSync(fixtureRoot, { recursive: true, encoding: 'utf8' })
+const yamlFiles = (root: string) => readdirSync(root, { recursive: true, encoding: 'utf8' })
   .filter((file) => file.endsWith('.yaml'))
   .map((file) => file.replaceAll('\\', '/'))
   .sort()
-  .map((file) => join(fixtureRoot, file));
+  .map((file) => join(root, file));
+
+export const fixtureFiles = yamlFiles(fixtureRoot);
+
+/**
+ * Batting-line fixtures. They sit outside `fixtures/` because the release lock records replayed states, and a
+ * batting line is read from the replay without changing it, so these never move the engine version.
+ */
+export const statsFixtureRoot = join(import.meta.dirname, '..', 'stats-fixtures');
+export const statsFixtureFiles = yamlFiles(statsFixtureRoot);
 
 export function checkFixture(fixture: Fixture, result: ApplyResult): void {
   if ('rejected' in fixture.then) {
@@ -139,5 +151,9 @@ export function checkFixture(fixture: Fixture, result: ApplyResult): void {
   if (!result.ok) throw new Error(`${fixture.name}: rejected with ${result.code}`);
   for (const [key, value] of Object.entries(fixture.then)) {
     deepStrictEqual(result.state[key as keyof GameState], value, `${fixture.name}: ${key}`);
+  }
+  if (fixture.batting) {
+    const setup = setupFor(fixture);
+    deepStrictEqual(battingLinesFrom(setup, startingState(fixture, setup), toEvents(fixture.when)), fixture.batting, `${fixture.name}: batting`);
   }
 }

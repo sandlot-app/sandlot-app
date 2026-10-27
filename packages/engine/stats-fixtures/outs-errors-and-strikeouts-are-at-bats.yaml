@@ -1,0 +1,28 @@
+name: A strikeout, a fly out, reaching on an error and a fielder's choice are each an at-bat without a hit
+cite: Official Baseball Rules 9.02(a)(1), 9.05(b), 9.12, 9.15,
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+when:
+  - [{ kind: pitch, result: swinging_strike }]
+  - [{ kind: pitch, result: called_strike }]
+  - [{ kind: pitch, result: foul_tip }]
+  - - { kind: pitch, result: in_play }
+    - { kind: ball_in_play, outcome: out, trajectory: fly, fielders: [CF], advances: [] }
+  - - { kind: pitch, result: in_play }
+    - { kind: ball_in_play, outcome: error, trajectory: ground, fielders: [SS], advances: [] }
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: fielders_choice
+      trajectory: ground
+      fielders: [SS, 2B]
+      advances: [{ runner: { kind: opponent, id: away-3 }, to: out, outType: force }]
+then:
+  half: bottom
+  outs: 0
+  nextBatter: { home: 0, away: 4 }
+batting:
+  away-1: { plateAppearances: 1, atBats: 1, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 1 }
+  away-2: { plateAppearances: 1, atBats: 1, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0 }
+  away-3: { plateAppearances: 1, atBats: 1, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0 }
+  away-4: { plateAppearances: 1, atBats: 1, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0 }

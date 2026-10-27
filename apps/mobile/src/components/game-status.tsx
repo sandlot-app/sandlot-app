@@ -40,7 +40,11 @@ export function GameStatus() {
 }
 
 const styles = createStyles({
-  status: { padding: sizes['space/4'], gap: sizes['space/4'] },
+  // A card, so it reads clearly when it sits over the field on the score screen.
+  status: {
+    marginHorizontal: sizes['space/4'], marginBottom: sizes['space/2'], padding: sizes['space/4'], gap: sizes['space/4'],
+    borderRadius: sizes['radius/lg'], borderWidth: 1, borderColor: colors['border/subtle'], backgroundColor: colors['surface/card'],
+  },
   message: { fontSize: 15, lineHeight: 22, color: colors['text/secondary'] },
   retry: {
     minHeight: 48,

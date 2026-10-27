@@ -1,0 +1,71 @@
+appId: host.exp.Exponent
+---
+# The matchup ticket sits under the scoreboard, and the field shrinks so the whole screen fits without scrolling.
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+# Scoreboard, ticket and the whole Scorer Bar are on screen together, with nothing to scroll.
+- assertVisible:
+    id: "matchup"
+- assertVisible:
+    id: "batter-stat"
+    text: "At bat · .*"
+- assertVisible:
+    id: "pitch-total"
+- assertVisible:
+    id: "pitch-in-play"
+- assertVisible:
+    id: "scorer-more"
+- assertVisible: "Hold to score by voice"
+- takeScreenshot: matchup-ticket
+- copyTextFrom:
+    id: "pitch-total"
+- evalScript: ${output.pitches = maestro.copiedText}
+- copyTextFrom:
+    id: "batter-stat"
+- evalScript: ${output.batter = maestro.copiedText}
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
+# A ball adds one to the pitcher's count on the ticket.
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
+    timeout: 15000
+- copyTextFrom:
+    id: "pitch-total"
+- assertTrue: ${parseInt(maestro.copiedText.match(/(\d+)/)[1], 10) === parseInt(output.pitches.match(/(\d+)/)[1], 10) + 1}
+- takeScreenshot: matchup-ticket-after-ball
+# Undo puts the count and the batter's line back.
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
+    timeout: 15000
+- copyTextFrom:
+    id: "pitch-total"
+- assertTrue: ${maestro.copiedText === output.pitches}
+- copyTextFrom:
+    id: "batter-stat"
+- assertTrue: ${maestro.copiedText === output.batter}
+- takeScreenshot: matchup-ticket-undone

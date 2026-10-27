@@ -1,0 +1,19 @@
+name: A runner caught stealing for the third out leaves the batter without a plate appearance
+cite: Official Baseball Rules 5.04(a)(2), the batter whose time at bat didn't end leads off the next inning, and 9.02(a)(1),
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  outs: 2
+  bases:
+    1: { player: { kind: opponent, id: away-9 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - [{ kind: pitch, result: ball }]
+  - - kind: runner
+      event: caught_stealing
+      runner: { kind: opponent, id: away-9 }
+      to: out
+then:
+  half: bottom
+  nextBatter: { home: 0, away: 0 }
+batting: {}

@@ -1,8 +1,12 @@
 import { tokens } from '@sandlot/tokens';
-import type { Alert, GameState, RuleSet } from '@sandlot/engine';
-import { Image, Text, View } from 'react-native';
+import type { Alert, GameState, PlayerRef } from '@sandlot/engine';
+import { useMemo, useState } from 'react';
+import { Image, Platform, Text, View, type LayoutChangeEvent } from 'react-native';
+import Svg, { Line } from 'react-native-svg';
 import { createStyles } from '../../style';
 import { playerDisplay } from '../scoring/demo-roster.ts';
+import { markSize, marksFit, ticketLines, type PitchTone } from '../scoring/matchup-line.ts';
+import type { SavedGame } from '../scoring/offline-game.ts';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
 
@@ -13,91 +17,110 @@ const alertText = (alert: Alert) =>
         : alert.kind === 'run_limit_reached' ? 'Half-inning run limit reached.'
           : alert.kind === 'time_limit_reached' ? 'Game time limit reached.' : 'Defensive innings requirement is not met.';
 
-const meterFill = (share: number) => ({ width: `${Math.min(100, share * 100)}%` as const });
+const toneStyle = (tone: PitchTone) => tone === 'danger' ? styles.danger : tone === 'warning' ? styles.warning : null;
 
-/** Figma Matchup (34:345): the batter and on deck, then the pitcher and their pitch meter. */
-export function Matchup({ state, limits }: { state: GameState; limits: RuleSet['pitchCountLimits'] }) {
+/** Figma Matchup ticket (200:14580): the batter and their game so far, a tear line, then the pitcher and their count. */
+export function MatchupTicket({ game }: { game: SavedGame }) {
+  const { batter, pitcher } = useMemo(() => ticketLines(game), [game]);
+  const { state } = game;
   const batting = state.half === 'top' ? 'away' : 'home';
   const fielding = state.half === 'top' ? 'home' : 'away';
-  const lineup = state.lineups[batting];
-  const batter = lineup[state.nextBatter[batting]]?.player;
-  const onDeck = lineup[(state.nextBatter[batting] + 1) % lineup.length]?.player;
-  const pitcher = state.pitchers[fielding];
-  const thrown = pitcher ? (state.pitchCounts[pitcher.id] ?? 0) : 0;
-  const pitches = !limits ? `${thrown} pitches`
-    : thrown > limits.limit ? `${thrown} / ${limits.limit} · ${thrown - limits.limit} over`
-      : `${thrown} / ${limits.limit} pitches`;
-  const meter = !limits ? null : thrown >= limits.limit ? styles.overLimit : thrown >= limits.warnAt ? styles.nearLimit : styles.normal;
-  const shownBatter = batter ? playerDisplay(state, batting, batter) : null;
-  const shownPitcher = pitcher ? playerDisplay(state, fielding, pitcher) : null;
+  const batterStat = batter?.stat ?? '';
+  // Stat lines never shorten, so when one won't fit beside its mark both marks hide. The fit is worked out from
+  // the stats' own widths, measured off screen, and the half's width, so showing or hiding the marks never
+  // changes the answer and they hold steady from pitch to pitch.
+  const [halfWidth, setHalfWidth] = useState(0);
+  const [statWidths, setStatWidths] = useState({ batter: 0, pitcher: 0 });
+  const marks = marksFit(halfWidth, [statWidths.batter, statWidths.pitcher]);
+  const measure = (which: 'batter' | 'pitcher') => (event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    setStatWidths((widths) => widths[which] === width ? widths : { ...widths, [which]: width });
+  };
   return (
-    <View style={styles.card} testID="matchup">
-      <View style={styles.block}>
-        <View style={styles.labelRow}>
-          <Text style={styles.label}>At bat</Text>
-          {shownBatter ? <Text style={styles.label}>#{shownBatter.number}</Text> : null}
-        </View>
-        <Text style={styles.name} numberOfLines={1}>{shownBatter?.name ?? '—'}</Text>
-        {onDeck ? <Text style={styles.onDeck} numberOfLines={1}>On deck: {playerDisplay(state, batting, onDeck).name}</Text> : null}
+    <View style={styles.ticket} testID="matchup">
+      <View style={styles.measures} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+        aria-hidden={Platform.OS === 'web' ? true : undefined}>
+        <Text style={styles.stat} onLayout={measure('batter')}>At bat · {batterStat}</Text>
+        <Text style={styles.stat} onLayout={measure('pitcher')}>Pitching{pitcher ? ` · ${pitcher.count.count}` : ''}</Text>
       </View>
-      <View style={styles.divider} />
-      <View style={styles.block}>
-        <View style={styles.labelRow}>
-          <Text style={styles.label}>Pitching</Text>
-          {shownPitcher ? <Text style={styles.label}>#{shownPitcher.number}</Text> : null}
-          <View style={styles.spacer} />
-          <Text style={styles.line} numberOfLines={1} testID="pitch-total">{pitches}</Text>
-        </View>
-        <Text style={styles.name} numberOfLines={1}>{shownPitcher?.name ?? '—'}</Text>
-        {limits && meter ? <View style={styles.track}><View style={[styles.fill, meter, meterFill(thrown / limits.limit)]} /></View> : null}
-        {state.alerts.map((alert, index) => <Text key={index} style={styles.alert} testID={`league-alert-${alert.kind}`}>{alertText(alert)}</Text>)}
+      <Half mark={marks ? 'bat' : null} name={shownName(state, batting, batter?.player)} unset={!batter}
+        onWidth={setHalfWidth}>
+        <Text style={styles.stat} testID="batter-stat">At bat · {batterStat}</Text>
+      </Half>
+      <Svg width={1} height={39} accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
+        <Line x1={0.5} y1={0} x2={0.5} y2={39} stroke={colors['border/subtle']} strokeWidth={1} strokeDasharray="3 3" />
+      </Svg>
+      <Half mark={marks ? 'ball' : null} name={shownName(state, fielding, pitcher?.player)} unset={!pitcher}>
+        <Text style={styles.stat} testID="pitch-total" accessibilityLabel={pitcher ? `Pitching, ${pitcher.count.spoken}` : 'Pitching'}>
+          Pitching{pitcher ? ' · ' : ''}{pitcher ? <Text style={toneStyle(pitcher.count.tone)}>{pitcher.count.count}</Text> : null}
+        </Text>
+      </Half>
+      {/* The scalloped cut-outs, in the page color: one at each corner and a notch at each end of the tear line. */}
+      <View style={[styles.corner, styles.topLeft]} />
+      <View style={[styles.corner, styles.topRight]} />
+      <View style={[styles.corner, styles.bottomLeft]} />
+      <View style={[styles.corner, styles.bottomRight]} />
+      <View style={[styles.notch, styles.notchTop]} />
+      <View style={[styles.notch, styles.notchBottom]} />
+    </View>
+  );
+}
+
+function shownName(state: GameState, side: 'home' | 'away', player: PlayerRef | undefined) {
+  return player ? playerDisplay(state, side, player).name : 'Not set';
+}
+
+function Half({ mark, name, unset, onWidth, children }: {
+  mark: 'bat' | 'ball' | null; name: string; unset: boolean; onWidth?: (width: number) => void; children: React.ReactNode;
+}) {
+  return (
+    <View style={styles.half} onLayout={onWidth && ((event) => onWidth(event.nativeEvent.layout.width))}>
+      {mark ? <View style={styles.mark}>
+        {mark === 'bat'
+          ? <View style={styles.batTurn}><Image source={require('../../assets/scorer/bat.png')} accessible={false} style={styles.bat} /></View>
+          : <View style={styles.ballSlot}><Image source={require('../../assets/scorer/baseball.png')} accessible={false} style={styles.ball} /></View>}
+      </View> : null}
+      <View style={styles.text}>
+        <Text style={[styles.name, unset && styles.unset]} numberOfLines={1} ellipsizeMode="tail">{name}</Text>
+        {children}
       </View>
     </View>
   );
 }
 
-/** Figma Last Pitch (34:364), Result only or Before first pitch. */
-export function LastPitch({ label, pitch }: { label: string | null; pitch: number | null }) {
-  return (
-    <View style={styles.lastPitch} testID="last-pitch">
-      <View style={styles.ballSlot}>
-        <Image source={require('../../assets/scorer/baseball.png')} accessible={false} style={styles.ball} />
-      </View>
-      <Text style={styles.lastText} numberOfLines={1}>
-        {label ? <Text style={styles.lastResult}>{label}</Text> : 'First pitch coming up'}
-      </Text>
-      {pitch ? <Text style={styles.pitchNumber}>Pitch {pitch}</Text> : null}
-    </View>
-  );
+/** The engine's league alerts for the last play, under the ticket. */
+export function LeagueAlerts({ alerts }: { alerts: Alert[] }) {
+  return alerts.map((alert, index) => <Text key={index} style={styles.alert} accessibilityLiveRegion="polite" testID={`league-alert-${alert.kind}`}>{alertText(alert)}</Text>);
 }
 
 const styles = createStyles({
-  card: {
-    gap: sizes['space/3'], paddingTop: sizes['space/3'], paddingBottom: sizes['space/4'], paddingHorizontal: sizes['space/4'],
-    backgroundColor: colors['surface/card'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/xl'],
+  ticket: {
+    flexDirection: 'row', alignItems: 'center', gap: sizes['space/3'],
+    paddingHorizontal: sizes['space/4'], paddingVertical: sizes['space/3'],
+    backgroundColor: colors['surface/card'], overflow: 'hidden',
   },
-  block: { gap: 0 },
-  labelRow: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/1'], minHeight: 20 },
-  label: { ...textStyles['Label/Caps'], color: colors['text/tertiary'], textTransform: 'uppercase' },
-  spacer: { flex: 1 },
-  line: { ...textStyles['Body/Regular'], color: colors['text/secondary'], textAlign: 'right', flexShrink: 1, maxWidth: 210 },
-  name: { ...textStyles['Player/Name'], color: colors['text/primary'] },
-  onDeck: { ...textStyles.Caption, color: colors['text/tertiary'], paddingTop: sizes['space/1'] },
-  divider: { height: 1, backgroundColor: colors['border/subtle'] },
-  track: { height: 4, marginTop: sizes['space/2'], borderRadius: sizes['radius/full'], backgroundColor: colors['border/subtle'], overflow: 'hidden' },
-  fill: { height: 4, borderRadius: sizes['radius/full'] },
-  normal: { backgroundColor: colors['scoreboard/bg'] },
-  nearLimit: { backgroundColor: colors['count/strike'] },
-  overLimit: { backgroundColor: colors['count/out'] },
-  alert: { ...textStyles.Caption, color: colors['text/warning'], paddingTop: sizes['space/2'] },
-  lastPitch: {
-    minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'],
-    paddingLeft: sizes['space/3'], paddingRight: sizes['space/4'],
-    backgroundColor: colors['surface/card'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'],
-  },
-  ballSlot: { width: 22, height: 22 },
-  ball: { position: 'absolute', left: -1.72, top: -0.69, width: 25.4375, height: 25.4375 },
-  lastText: { ...textStyles['Body/Regular'], color: colors['text/secondary'], flex: 1 },
-  lastResult: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
-  pitchNumber: { ...textStyles.Caption, color: colors['text/tertiary'] },
+  half: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
+  mark: { width: markSize, height: markSize, borderRadius: sizes['radius/full'], backgroundColor: colors['surface/voice'], alignItems: 'center', justifyContent: 'center' },
+  // Figma Icon/Bat: an 18 × 4.5 bat turned 45°, drawn from the same artwork as the batter's chip.
+  batTurn: { width: 18, height: 4.5, transform: [{ rotate: '-45deg' }] },
+  bat: { position: 'absolute', left: -1.18, top: 0, width: 19.856, height: 5.569 },
+  ballSlot: { width: 18, height: 18 },
+  ball: { position: 'absolute', left: -1.41, top: -0.56, width: 20.8125, height: 20.8125 },
+  text: { flex: 1, minWidth: 0 },
+  // Off-screen copies of the stat lines at their natural one-line width.
+  measures: { position: 'absolute', left: 0, top: 0, alignItems: 'flex-start', opacity: 0 },
+  name: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
+  unset: { color: colors['text/secondary'] },
+  stat: { ...textStyles.Caption, color: colors['text/secondary'] },
+  warning: { color: colors['text/warning'] },
+  danger: { color: colors['text/danger'] },
+  corner: { position: 'absolute', width: 20, height: 20, borderRadius: sizes['radius/full'], backgroundColor: colors['surface/page'] },
+  topLeft: { left: -10, top: -10 },
+  topRight: { right: -10, top: -10 },
+  bottomLeft: { left: -10, bottom: -10 },
+  bottomRight: { right: -10, bottom: -10 },
+  notch: { position: 'absolute', left: '50%', width: 16, height: 16, transform: [{ translateX: -8 }], borderRadius: sizes['radius/full'], backgroundColor: colors['surface/page'] },
+  notchTop: { top: -8 },
+  notchBottom: { bottom: -8 },
+  alert: { ...textStyles.Caption, color: colors['text/warning'] },
 });

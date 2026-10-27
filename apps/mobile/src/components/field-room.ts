@@ -1,0 +1,50 @@
+import type { Base, Position } from '@sandlot/engine';
+import { tokens } from '@sandlot/tokens';
+
+// Figma Field (21:264) is 361 × 390. The field keeps that shape and shrinks to the room left above what sits
+// below it, with Figma's 12 gap between them, so the whole screen fits without scrolling.
+const fieldShape = 361 / 390;
+const fieldGap = 12;
+
+export function fieldWidth(room: { width: number; height: number }, below: number): { width: number } | null {
+  return room.width ? { width: Math.max(0, Math.min(room.width, (room.height - below - fieldGap) * fieldShape)) } : null;
+}
+
+/**
+ * How much of the bottom the field must stay clear of. Messages and the transcript card sit over the field for a
+ * moment, so normally only the Scorer Bar takes room. A saved game that won't open stays until the scorer acts,
+ * so then the whole dock, error card included, does.
+ */
+export function roomBelowField({ blocked, bar, dock }: { blocked: boolean; bar: number; dock: number }): number {
+  return blocked ? dock : bar;
+}
+
+// Figma Field's spots: each chip disc's center x and the chip's top y.
+export const fielderSpots: Partial<Record<Position, { x: number; y: number }>> = {
+  CF: { x: 181, y: 31 }, LF: { x: 68, y: 71 }, RF: { x: 293.5, y: 71 },
+  SS: { x: 131, y: 137 }, '2B': { x: 230, y: 137 }, '3B': { x: 56.5, y: 155 },
+  '1B': { x: 302, y: 155 }, P: { x: 180.5, y: 205 }, C: { x: 181, y: 329 },
+};
+export const runnerSpots: Record<Base, { x: number; y: number }> = {
+  1: { x: 259, y: 201 }, 2: { x: 181, y: 123 }, 3: { x: 103, y: 201 },
+};
+export const batterSpot = { x: 141, y: 268 };
+
+// Chip names are never drawn smaller than this, so they stay readable at a glance outdoors.
+const minNameSize = 10;
+const minChipScale = minNameSize / tokens.modes.Light.textStyles['Chip/Name'].fontSize;
+
+/**
+ * How the chips draw on a field this wide. On a field smaller than Figma's, every chip shrinks by the field's own
+ * scale, names included, so the chips keep Figma's spacing. They stop shrinking once the names would drop below
+ * 10 points. On a field tighter than that, such as an iPhone SE's, the chips stay at that size and drop their
+ * names, because the names would run into each other. The top center stays on the chip's spot, and chips never
+ * grow past their Figma size.
+ */
+export function chipLook(fieldWidth: number) {
+  const scale = Math.min(1, Math.max(minChipScale, fieldWidth / 361));
+  return {
+    style: scale < 1 ? { transform: [{ scale }], transformOrigin: '50% 0%' } as const : null,
+    names: fieldWidth / 361 >= minChipScale,
+  };
+}
