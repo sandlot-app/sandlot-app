@@ -1,50 +1,60 @@
 flow: tap-plays
 result: PASS
-commit: f56d04c7be2989cf5a240921e6ff66dc1eae9b1d
-simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)
-
-flow: live-game-unseeded
-result: PASS
-commit: f56d04c7be2989cf5a240921e6ff66dc1eae9b1d
+commit: 868887da95643bb52736970eb4ceecca9646939c
 simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)
 
 flow: live-game
 result: PASS
-commit: f56d04c7be2989cf5a240921e6ff66dc1eae9b1d
+commit: 868887da95643bb52736970eb4ceecca9646939c
 simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)
 
 flow: live-game-offline
 result: PASS
-commit: f56d04c7be2989cf5a240921e6ff66dc1eae9b1d
+commit: 868887da95643bb52736970eb4ceecca9646939c
 simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)
 
 flow: live-game-reconnect
 result: PASS
-commit: f56d04c7be2989cf5a240921e6ff66dc1eae9b1d
+commit: 868887da95643bb52736970eb4ceecca9646939c
+simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)
+
+flow: live-game-stopped
+result: PASS
+commit: 868887da95643bb52736970eb4ceecca9646939c
+simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)
+
+flow: live-game-resumed
+result: PASS
+commit: 868887da95643bb52736970eb4ceecca9646939c
 simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)
 
 flow: tap-plays
 result: PASS
-commit: 602087667dfd1eddd8a9da754c758eea9483b4de
-simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2)
-
-flow: live-game-unseeded
-result: PASS
-commit: f56d04c7be2989cf5a240921e6ff66dc1eae9b1d
+commit: 868887da95643bb52736970eb4ceecca9646939c
 simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2)
 
 flow: live-game
 result: PASS
-commit: 602087667dfd1eddd8a9da754c758eea9483b4de
+commit: 868887da95643bb52736970eb4ceecca9646939c
 simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2)
 
 flow: live-game-offline
 result: PASS
-commit: 602087667dfd1eddd8a9da754c758eea9483b4de
+commit: 868887da95643bb52736970eb4ceecca9646939c
 simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2)
 
 flow: live-game-reconnect
 result: PASS
-commit: 602087667dfd1eddd8a9da754c758eea9483b4de
+commit: 868887da95643bb52736970eb4ceecca9646939c
+simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2)
+
+flow: live-game-stopped
+result: PASS
+commit: 868887da95643bb52736970eb4ceecca9646939c
+simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2)
+
+flow: live-game-resumed
+result: PASS
+commit: 868887da95643bb52736970eb4ceecca9646939c
 simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2)
 

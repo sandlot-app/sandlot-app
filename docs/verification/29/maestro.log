@@ -222,31 +222,19 @@ Copy text from element with id: pitch-total... COMPLETED
 Assert that ${maestro.copiedText === output.initialPitches} is true... COMPLETED
 Take screenshot tap-original-game-restored... COMPLETED
 
-=== 17pro live-game-unseeded
-Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
- > Flow live-game-unseeded
-Run flow when id: games-navigation is visible...
-  Tap on id: games-navigation... COMPLETED
-Run flow when id: games-navigation is visible... COMPLETED
-Assert that "Your games" is visible... COMPLETED
-Scrolling DOWN until id: start-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
-Tap on id: start-live... COMPLETED
-Scrolling DOWN until id: live-message is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
-Assert that "This phone isn’t the demo game’s scorer yet. Phone ID for the seed script: .*", id: live-message is visible... COMPLETED
-Take screenshot live-needs-seed... COMPLETED
-
 === 17pro live-game
 Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
  > Flow live-game
-Run flow when id: games-navigation is visible...
-Run flow when id: games-navigation is visible... SKIPPED
-Assert that "Your games" is visible... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)...
+  Tap on id: games-navigation... COMPLETED
+  Wait for animation to end... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)... COMPLETED
 Scrolling DOWN until id: live-game-card is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
 Run flow when id: start-live is visible...
-  Tap on id: start-live... COMPLETED
-Run flow when id: start-live is visible... COMPLETED
+Run flow when id: start-live is visible... SKIPPED
 Run flow when id: resume-live is visible...
-Run flow when id: resume-live is visible... SKIPPED
+  Tap on id: resume-live... COMPLETED
+Run flow when id: resume-live is visible... COMPLETED
 Assert that id: score-summary is visible... COMPLETED
 Tap on id: pitch-ball... COMPLETED
 Assert that "Last: Ball · All plays saved", id: waiting-plays is visible... COMPLETED
@@ -255,7 +243,10 @@ Assert that "Last: Foul · All plays saved", id: waiting-plays is visible... COM
 Take screenshot live-all-saved... COMPLETED
 Copy text from element with id: score-summary... COMPLETED
 Run ${output.summary = maestro.copiedText}... COMPLETED
-Tap on id: games-navigation... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)...
+  Tap on id: games-navigation... COMPLETED
+  Wait for animation to end... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)... COMPLETED
 Scrolling DOWN until id: live-waiting is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
 Assert that "Every play is on the server.", id: live-waiting is visible... COMPLETED
 Take screenshot live-home-uploaded... COMPLETED
@@ -263,9 +254,8 @@ Take screenshot live-home-uploaded... COMPLETED
 === 17pro live-game-offline
 Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
  > Flow live-game-offline
-Run flow when id: games-navigation is visible...
-Run flow when id: games-navigation is visible... SKIPPED
-Assert that "Your games" is visible... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)...
+Repeat while id: games-navigation is visible (up to 3 times)... SKIPPED
 Scrolling DOWN until id: resume-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
 Tap on id: resume-live... COMPLETED
 Assert that id: score-summary is visible... COMPLETED
@@ -278,6 +268,32 @@ Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
  > Flow live-game-reconnect
 Assert that "Last: Ball · All plays saved", id: waiting-plays is visible... COMPLETED
 Take screenshot live-reconnected... COMPLETED
+
+=== 17pro live-game-stopped
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow live-game-stopped
+Repeat while id: games-navigation is visible (up to 3 times)...
+  Tap on id: games-navigation... COMPLETED
+  Wait for animation to end... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)... COMPLETED
+Scrolling DOWN until id: resume-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: resume-live... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Tap on id: pitch-ball... COMPLETED
+Assert that "1 play waiting · Sync stopped: another phone is scoring", id: waiting-plays is visible... COMPLETED
+Take screenshot live-stopped... COMPLETED
+
+=== 17pro live-game-resumed
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow live-game-resumed
+Repeat while id: games-navigation is visible (up to 3 times)...
+  Tap on id: games-navigation... COMPLETED
+  Wait for animation to end... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)... COMPLETED
+Scrolling DOWN until id: resume-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: resume-live... COMPLETED
+Assert that "Last: Ball · All plays saved", id: waiting-plays is visible... COMPLETED
+Take screenshot live-resumed... COMPLETED
 
 === se tap-plays
 Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
@@ -498,29 +514,16 @@ Copy text from element with id: pitch-total... COMPLETED
 Assert that ${maestro.copiedText === output.initialPitches} is true... COMPLETED
 Take screenshot tap-original-game-restored... COMPLETED
 
-=== se live-game-unseeded
-Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
- > Flow live-game-unseeded
-Run flow when id: games-navigation is visible...
-  Tap on id: games-navigation... COMPLETED
-Run flow when id: games-navigation is visible... COMPLETED
-Assert that "Your games" is visible... COMPLETED
-Scrolling DOWN until id: start-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
-Tap on id: start-live... COMPLETED
-Scrolling DOWN until id: live-message is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
-Assert that "This phone isn’t the demo game’s scorer yet. Phone ID for the seed script: .*", id: live-message is visible... COMPLETED
-Take screenshot live-needs-seed... COMPLETED
-
 === se live-game
 Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
  > Flow live-game
-Run flow when id: games-navigation is visible...
+Repeat while id: games-navigation is visible (up to 3 times)...
   Tap on id: games-navigation... COMPLETED
-Run flow when id: games-navigation is visible... COMPLETED
+  Wait for animation to end... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)... COMPLETED
 Scrolling DOWN until id: live-game-card is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
 Run flow when id: start-live is visible...
-  Tap on id: start-live... COMPLETED
-Run flow when id: start-live is visible... COMPLETED
+Run flow when id: start-live is visible... SKIPPED
 Run flow when id: resume-live is visible...
   Tap on id: resume-live... COMPLETED
 Run flow when id: resume-live is visible... COMPLETED
@@ -532,7 +535,10 @@ Assert that "Last: Foul · All plays saved", id: waiting-plays is visible... COM
 Take screenshot live-all-saved... COMPLETED
 Copy text from element with id: score-summary... COMPLETED
 Run ${output.summary = maestro.copiedText}... COMPLETED
-Tap on id: games-navigation... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)...
+  Tap on id: games-navigation... COMPLETED
+  Wait for animation to end... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)... COMPLETED
 Scrolling DOWN until id: live-waiting is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
 Assert that "Every play is on the server.", id: live-waiting is visible... COMPLETED
 Take screenshot live-home-uploaded... COMPLETED
@@ -540,8 +546,8 @@ Take screenshot live-home-uploaded... COMPLETED
 === se live-game-offline
 Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
  > Flow live-game-offline
-Run flow when id: games-navigation is visible...
-Run flow when id: games-navigation is visible... SKIPPED
+Repeat while id: games-navigation is visible (up to 3 times)...
+Repeat while id: games-navigation is visible (up to 3 times)... SKIPPED
 Scrolling DOWN until id: resume-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
 Tap on id: resume-live... COMPLETED
 Assert that id: score-summary is visible... COMPLETED
@@ -554,4 +560,30 @@ Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
  > Flow live-game-reconnect
 Assert that "Last: Ball · All plays saved", id: waiting-plays is visible... COMPLETED
 Take screenshot live-reconnected... COMPLETED
+
+=== se live-game-stopped
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow live-game-stopped
+Repeat while id: games-navigation is visible (up to 3 times)...
+  Tap on id: games-navigation... COMPLETED
+  Wait for animation to end... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)... COMPLETED
+Scrolling DOWN until id: resume-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: resume-live... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Tap on id: pitch-ball... COMPLETED
+Assert that "1 play waiting · Sync stopped: another phone is scoring", id: waiting-plays is visible... COMPLETED
+Take screenshot live-stopped... COMPLETED
+
+=== se live-game-resumed
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow live-game-resumed
+Repeat while id: games-navigation is visible (up to 3 times)...
+  Tap on id: games-navigation... COMPLETED
+  Wait for animation to end... COMPLETED
+Repeat while id: games-navigation is visible (up to 3 times)... COMPLETED
+Scrolling DOWN until id: resume-live is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+Tap on id: resume-live... COMPLETED
+Assert that "Last: Ball · All plays saved", id: waiting-plays is visible... COMPLETED
+Take screenshot live-resumed... COMPLETED
 
