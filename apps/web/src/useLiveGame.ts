@@ -9,7 +9,8 @@ const REFRESH_MS = 30_000;
 
 /**
  * Follows one public game: fetches a snapshot on load, on every subscribe, on a newer revision, and every 30 seconds.
- * It looks for the game's recording on the same schedule until it finds one, since a stream can start mid-game.
+ * It reads the game's recording on the same schedule, since a stream can start mid-game and its row changes when the
+ * clap offset is measured or a reconnect starts a new asset.
  */
 export function useLiveGame({ url, anonKey }: SupabaseConfig, gameId: string): LiveGame {
   const [game, setGame] = useState(initialLiveGame);
@@ -55,7 +56,6 @@ export function useLiveGame({ url, anonKey }: SupabaseConfig, gameId: string): L
       });
 
     const fetchRecording = async () => {
-      if (current.recording) return;
       const { data } = await client
         .from('recordings')
         .select('playback_id, clock_offset_ms')

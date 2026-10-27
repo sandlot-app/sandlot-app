@@ -47,7 +47,7 @@ export type StreamView =
 
 const ERROR_TEXT: Record<StreamView['kind'], string> = {
   live: 'The video isn’t playing. The score and plays still update.',
-  clip: 'This clip isn’t ready yet. A clip is ready about 15 seconds after the play.',
+  clip: 'This clip can’t play. A clip is ready about 15 seconds after its play, and only plays after the video started have one.',
 };
 
 export function StreamCard({ view, onBackToLive }: { view: StreamView; onBackToLive: () => void }) {

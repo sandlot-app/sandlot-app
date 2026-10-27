@@ -257,6 +257,7 @@ The phone gives each request its own timeout, about 25 seconds, because a clip g
 - The page subscribes to updates on its game's row. When the subscription is active, the page fetches a snapshot. It fetches again after every reconnect.
 - The page fetches when a message or a snapshot has a higher revision than the one shown. It ignores any message or snapshot with a lower revision. It also fetches on load and every 30 seconds, even while the subscription is down, so the score still catches up.
 - Messages and snapshots carry player IDs, never names.
+- The page also reads its game's row in `recordings` (`playback_id`, `clock_offset_ms`) on load and every 30 seconds. Row-level security shows it wherever the game is visible, and only a public game can have one until playback is signed.
 
 ## Demo access
 

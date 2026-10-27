@@ -35,8 +35,13 @@ export function liveReducer(game: LiveGame, action: LiveAction): LiveGame {
   switch (action.type) {
     case 'connection':
       return game.status === 'not_found' ? game : { ...game, status: action.status };
-    case 'recording':
-      return game.status === 'not_found' ? game : { ...game, recording: action.recording };
+    case 'recording': {
+      const { recording } = action;
+      if (game.status === 'not_found') return game;
+      const same =
+        game.recording?.playbackId === recording.playbackId && game.recording.clockOffsetMs === recording.clockOffsetMs;
+      return same ? game : { ...game, recording };
+    }
     case 'snapshot': {
       const { snapshot } = action;
       if (snapshot === null) return { ...initialLiveGame, status: 'not_found' };
