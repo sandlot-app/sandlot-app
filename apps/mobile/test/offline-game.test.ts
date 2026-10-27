@@ -710,3 +710,21 @@ test('a voice play saves as a voice event, survives a reopen, and accepts only p
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('#65: an undo pinned to a revision undoes only when the game is still at that revision', async () => {
+  const session = await openOfflineGame(connect(':memory:'), boundary);
+  if (session.kind !== 'ready') throw new Error('Session must open');
+  const started = await session.record({ kind: 'start' });
+  if (started.kind !== 'saved') throw new Error('Game must start');
+  const ball = await session.record({ kind: 'pitch', result: 'ball' });
+  if (ball.kind !== 'saved') throw new Error('Ball must save');
+  const foul = await session.record({ kind: 'pitch', result: 'foul' });
+  if (foul.kind !== 'saved') throw new Error('Foul must save');
+  const stale = await session.record({ kind: 'undo', expectedRevision: ball.game.revision });
+  assert.equal(stale.kind, 'stale');
+  const undone = await session.record({ kind: 'undo', expectedRevision: foul.game.revision });
+  assert.equal(undone.kind, 'saved');
+  if (undone.kind === 'saved') assert.deepEqual(undone.game.state.count, ball.game.state.count);
+  const unpinned = await session.record({ kind: 'undo', expectedRevision: undefined });
+  assert.equal(unpinned.kind, 'saved', 'an undo with no revision is a plain undo, not a stale one');
+});

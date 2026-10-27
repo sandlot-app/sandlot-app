@@ -33,6 +33,9 @@ export function outcome(decision: Decision): Outcome {
   }
 }
 
+export const lostMessage = "The last voice play didn't save. Say it again or tap to score.";
+export const unsavedMessage = "That voice play didn't save. Say it again or tap to score.";
+
 export function failureMessage(failure: VoiceFailure): string {
   switch (failure) {
     case 'microphone': return 'Sandlot can’t use the microphone. Allow it in Settings, or tap to score.';

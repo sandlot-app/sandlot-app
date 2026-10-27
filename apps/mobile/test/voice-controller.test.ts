@@ -9,7 +9,7 @@ import { fakeApi, fakeMic, fakeSocket, tick, timeouts } from './voice-fakes.ts';
 const settle = () => new Promise((resolve) => setTimeout(resolve, timeouts.openMs + timeouts.finalMs + 30));
 
 /** A started offline game, a controller on it, and a fake mic and socket for each press. */
-async function scorer(voiceOn = true) {
+async function scorer(voiceOn = true, gate?: Promise<boolean>) {
   const session = await openOfflineGame(connect(':memory:'), { newId: randomUUID, now: () => '2026-10-26T17:00:00.000Z' });
   if (session.kind !== 'ready') throw new Error('Session must open');
   const started = await session.record({ kind: 'start' });
@@ -18,6 +18,8 @@ async function scorer(voiceOn = true) {
   const recorded: DemoAction[] = [];
   const record = async (action: DemoAction) => {
     recorded.push(action);
+    // A gate holds a voice save open, then answers it, so a test can act while record() is in flight.
+    if (gate && action.kind === 'voice') return gate;
     const result = await session.record(action);
     if (result.kind === 'saved') game = result.game;
     return result.kind === 'saved';
@@ -110,4 +112,88 @@ test('with voice off, a touch shows the unavailable line and no Listening card',
   const { controller, views } = await scorer(false);
   controller.start();
   assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Voice is unavailable right now. Tap to score.' });
+});
+
+const lost = 'The last voice play didn\'t save. Say it again or tap to score.';
+const unsaved = 'That voice play didn\'t save. Say it again or tap to score.';
+
+test('#65: holding the bar again before the last result arrives says the last play was lost, until the new one saves', async () => {
+  const { controller, hold, plays, views } = await scorer();
+  const hearFirst = await hold();
+  controller.start();
+  assert.equal(views.at(-1)?.message, lost);
+  assert.equal(views.at(-1)?.listening, true, 'the new press still listens');
+  controller.cancel();
+  const hearSecond = await hold();
+  assert.equal(views.at(-1)?.message, null, 'a press that began after the line is new work, so the line goes');
+  hearFirst('strike swinging');
+  hearSecond('ball');
+  await settle();
+  assert.deepEqual(plays().map((event) => event.command), [{ kind: 'pitch', result: 'ball' }], 'only the new press saves');
+  assert.equal(views.at(-1)?.message, null);
+
+  const again = await scorer();
+  const lostFirst = await again.hold();
+  const hearReplacement = await again.hold();
+  assert.equal(again.views.at(-1)?.message, lost);
+  lostFirst('strike swinging');
+  hearReplacement('ball');
+  await settle();
+  assert.deepEqual(again.plays().map((event) => event.command), [{ kind: 'pitch', result: 'ball' }]);
+  assert.equal(again.views.at(-1)?.message, null, 'the line clears once the replacement press saves');
+});
+
+test('#65: a refusal that lands after the scorer moved on stays quiet', async () => {
+  let answer: (saved: boolean) => void = () => {};
+  const { controller, hold, views } = await scorer(true, new Promise((resolve) => { answer = resolve; }));
+  (await hold())('ball');
+  await settle();
+  controller.dismiss();
+  answer(false);
+  await settle();
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+});
+
+test('#65: a voice play the engine refuses as stale says it didn\'t save', async () => {
+  const { hold, record, views } = await scorer();
+  const hear = await hold();
+  await record({ kind: 'pitch', result: 'ball' });
+  hear('strike swinging');
+  await settle();
+  assert.equal(views.at(-1)?.message, unsaved);
+});
+
+test('#65: a spoken undo is pinned to its press, so after another save it undoes nothing', async () => {
+  const { hold, plays, record, recorded, views } = await scorer();
+  (await hold())('ball');
+  await settle();
+  const hear = await hold();
+  await record({ kind: 'pitch', result: 'foul' });
+  hear('scratch that');
+  await settle();
+  assert.deepEqual(plays().map((event) => [event.source, event.command]), [
+    ['voice', { kind: 'pitch', result: 'ball' }],
+    ['tap', { kind: 'pitch', result: 'foul' }],
+  ], 'the foul saved after the press began stays');
+  const undo = recorded.at(-1);
+  assert.equal(undo?.kind, 'undo');
+  assert.equal(undo && 'expectedRevision' in undo ? typeof undo.expectedRevision : null, 'number');
+  assert.equal(views.at(-1)?.message, unsaved);
+});
+
+test('#65: a spoken undo on the game it started on still undoes the last play', async () => {
+  const { hold, plays } = await scorer();
+  (await hold())('ball');
+  await settle();
+  (await hold())('scratch that');
+  await settle();
+  assert.deepEqual(plays().map((event) => event.command.kind), ['pitch', 'undo']);
+});
+
+test('#65: tearing the controller down mid-press puts the bar back to idle', async () => {
+  const { controller, hold, views } = await scorer();
+  await hold();
+  controller.start();
+  controller.dispose();
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
 });

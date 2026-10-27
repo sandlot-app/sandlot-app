@@ -28,7 +28,8 @@ import { demoLineups, demoSetup } from './demo-game.ts';
 export type DemoAction =
   | { kind: 'start' }
   | { kind: 'pitch'; result: Exclude<PitchResult, 'in_play'> }
-  | { kind: 'undo' }
+  /** `expectedRevision` pins a spoken undo to the game its press started on. */
+  | { kind: 'undo'; expectedRevision?: number }
   | { kind: 'ball_in_play'; at: string; expectedRevision: number; outcome: BallInPlayOutcome;
       trajectory: Trajectory | null; fielders: Position[]; advances: Advance[] }
   | { kind: 'runner_play'; at: string; expectedRevision: number;
@@ -323,7 +324,7 @@ export async function openOfflineGame(
               result = { kind: 'rejected', code: 'game_not_started' };
               return;
             }
-            if ('expectedRevision' in action && action.expectedRevision !== current!.game.revision) {
+            if ('expectedRevision' in action && action.expectedRevision !== undefined && action.expectedRevision !== current!.game.revision) {
               result = { kind: 'stale', game: current!.game };
               return;
             }
