@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import type { BattingLine } from '@sandlot/engine';
-import { batterStat, pitchLine, ticketLines } from '../src/scoring/matchup-line.ts';
+import { batterStat, marksFit, pitchLine, ticketLines } from '../src/scoring/matchup-line.ts';
 import { openOfflineGame } from '../src/scoring/offline-game.ts';
 import { connect } from './database.ts';
 
@@ -50,4 +50,18 @@ test('the ticket reads the batter line from the saved plays, and an undo takes i
   if (result.kind !== 'saved') throw new Error('The undo must save');
   assert.equal(ticketLines(result.game).lines[leadoff.id], undefined);
   assert.equal(ticketLines(result.game).batter?.stat, 'First up');
+});
+
+test('the icon marks show only when both stat lines fit beside them on one line', () => {
+  // A half 150 wide leaves 110 for text beside a 32-point mark and its 8-point gap.
+  assert.equal(marksFit(150, [110, 96]), true);
+  assert.equal(marksFit(150, [110.4, 96]), true, 'sub-point rounding does not hide the marks');
+  assert.equal(marksFit(150, [96, 111]), false, 'either line too long hides both marks');
+  assert.equal(marksFit(0, [96, 96]), true, 'marks show until the ticket is measured');
+});
+
+test('the marks depend only on the widths, so each pitch gives the same answer whether they were showing or not', () => {
+  const widths = [118, 119, 119, 121, 121];
+  const shown = widths.map((width) => marksFit(160, [100, width]));
+  assert.deepEqual(shown, [true, true, true, false, false], 'once the count outgrows the room the marks stay hidden pitch after pitch');
 });

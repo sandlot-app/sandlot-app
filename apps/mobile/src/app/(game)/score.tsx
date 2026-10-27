@@ -8,6 +8,7 @@ import { createStyles } from '../../../style';
 import { ScorerBar, TranscriptCard, VoiceBar, type Pitch, type SyncState } from '../../../scorer-ui';
 import { belowBarSpace } from '../../components/bottom-space.ts';
 import { Field } from '../../components/field.tsx';
+import { fieldWidth, roomBelowField } from '../../components/field-room.ts';
 import { GameStatus } from '../../components/game-status.tsx';
 import { CaretLeftIcon } from '../../components/icons.tsx';
 import { LeagueAlerts, MatchupTicket } from '../../components/matchup.tsx';
@@ -31,13 +32,6 @@ const pitchResults: Record<Exclude<Pitch, 'in-play'>, Exclude<PitchResult, 'in_p
 
 const spacerHeight = (height: number) => ({ height });
 
-// Figma Field (21:264) is 361 × 390. The field keeps that shape and shrinks to the room left above the Scorer Bar,
-// with Figma's 12 gap between them, so the whole screen fits without scrolling.
-const fieldShape = 361 / 390;
-const fieldGap = 12;
-const fieldWidth = (room: { width: number; height: number }, bar: number) =>
-  room.width ? { width: Math.max(0, Math.min(room.width, (room.height - bar - fieldGap) * fieldShape)) } : null;
-
 function NavBar() {
   return (
     <View style={styles.nav}>
@@ -58,6 +52,7 @@ export default function ScoreScreen() {
   const { view, record } = useOfflineGame();
   const [draft, setDraft] = useState<PlayDraft | null>(null);
   const [barHeight, setBarHeight] = useState(0);
+  const [dockHeight, setDockHeight] = useState(0);
   const [room, setRoom] = useState({ width: 0, height: 0 });
   const { fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -96,9 +91,8 @@ export default function ScoreScreen() {
       <LeagueAlerts alerts={state.alerts} />
     </>
   );
-  // Messages and the transcript card sit over the bottom of the field for a moment, so only the bar takes room from it.
   const dock = (
-    <View style={largeText ? null : styles.dock}>
+    <View style={largeText ? null : styles.dock} onLayout={(event) => setDockHeight(event.nativeEvent.layout.height)}>
       {voice.message ? <Text testID="voice-message" style={styles.message} accessibilityLiveRegion="polite">{voice.message}</Text>
         : view.kind === 'ready' && view.problem && view.message ? <Text testID="action-message" style={styles.message} accessibilityLiveRegion="polite">{view.message}</Text> : null}
       <GameStatus />
@@ -129,7 +123,7 @@ export default function ScoreScreen() {
             <View style={styles.pinned}>{matchup}</View>
             <View style={styles.room} testID="game-content"
               onLayout={(event) => setRoom({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}>
-              <View style={fieldWidth(room, barHeight)}><Field state={state} /></View>
+              <View style={fieldWidth(room, roomBelowField({ blocked: view.kind === 'blocked', bar: barHeight, dock: dockHeight }))}><Field state={state} /></View>
             </View>
             {dock}
           </>

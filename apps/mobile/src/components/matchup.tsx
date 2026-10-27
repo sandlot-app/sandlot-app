@@ -1,11 +1,11 @@
 import { tokens } from '@sandlot/tokens';
 import type { Alert, GameState, PlayerRef } from '@sandlot/engine';
 import { useMemo, useState } from 'react';
-import { Image, Platform, Text, View, type TextLayoutEvent } from 'react-native';
+import { Image, Platform, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 import { createStyles } from '../../style';
 import { playerDisplay } from '../scoring/demo-roster.ts';
-import { ticketLines, type PitchTone } from '../scoring/matchup-line.ts';
+import { markSize, marksFit, ticketLines, type PitchTone } from '../scoring/matchup-line.ts';
 import type { SavedGame } from '../scoring/offline-game.ts';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -26,26 +26,32 @@ export function MatchupTicket({ game }: { game: SavedGame }) {
   const batting = state.half === 'top' ? 'away' : 'home';
   const fielding = state.half === 'top' ? 'home' : 'away';
   const batterStat = batter?.stat ?? '';
-  const pitchStat = pitcher ? `· ${pitcher.count.count}` : '';
-  // Stat lines never shorten. When one wraps, both icon marks hide for these lines at this width, which gives
-  // each half 40 points back. New lines or a new width show the marks again and measure afresh.
-  const [width, setWidth] = useState(0);
-  const [hiddenFor, setHiddenFor] = useState<string | null>(null);
-  const key = `${width}|${batterStat}|${pitchStat}`;
-  const marks = hiddenFor !== key;
-  const onStatLayout = (event: TextLayoutEvent) => {
-    if (marks && width && event.nativeEvent.lines.length > 1) setHiddenFor(key);
+  // Stat lines never shorten, so when one won't fit beside its mark both marks hide. The fit is worked out from
+  // the stats' own widths, measured off screen, and the half's width, so showing or hiding the marks never
+  // changes the answer and they hold steady from pitch to pitch.
+  const [halfWidth, setHalfWidth] = useState(0);
+  const [statWidths, setStatWidths] = useState({ batter: 0, pitcher: 0 });
+  const marks = marksFit(halfWidth, [statWidths.batter, statWidths.pitcher]);
+  const measure = (which: 'batter' | 'pitcher') => (event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    setStatWidths((widths) => widths[which] === width ? widths : { ...widths, [which]: width });
   };
   return (
-    <View style={styles.ticket} onLayout={(event) => setWidth(Math.round(event.nativeEvent.layout.width))} testID="matchup">
-      <Half mark={marks ? 'bat' : null} name={shownName(state, batting, batter?.player)} unset={!batter}>
-        <Text style={styles.stat} onTextLayout={onStatLayout} testID="batter-stat">At bat · {batterStat}</Text>
+    <View style={styles.ticket} testID="matchup">
+      <View style={styles.measures} pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+        aria-hidden={Platform.OS === 'web' ? true : undefined}>
+        <Text style={styles.stat} onLayout={measure('batter')}>At bat · {batterStat}</Text>
+        <Text style={styles.stat} onLayout={measure('pitcher')}>Pitching{pitcher ? ` · ${pitcher.count.count}` : ''}</Text>
+      </View>
+      <Half mark={marks ? 'bat' : null} name={shownName(state, batting, batter?.player)} unset={!batter}
+        onWidth={setHalfWidth}>
+        <Text style={styles.stat} testID="batter-stat">At bat · {batterStat}</Text>
       </Half>
       <Svg width={1} height={39} accessible={Platform.OS === 'web' ? undefined : false} aria-hidden={Platform.OS === 'web' ? true : undefined}>
         <Line x1={0.5} y1={0} x2={0.5} y2={39} stroke={colors['border/subtle']} strokeWidth={1} strokeDasharray="3 3" />
       </Svg>
       <Half mark={marks ? 'ball' : null} name={shownName(state, fielding, pitcher?.player)} unset={!pitcher}>
-        <Text style={styles.stat} onTextLayout={onStatLayout} testID="pitch-total" accessibilityLabel={pitcher ? `Pitching, ${pitcher.count.spoken}` : 'Pitching'}>
+        <Text style={styles.stat} testID="pitch-total" accessibilityLabel={pitcher ? `Pitching, ${pitcher.count.spoken}` : 'Pitching'}>
           Pitching{pitcher ? ' · ' : ''}{pitcher ? <Text style={toneStyle(pitcher.count.tone)}>{pitcher.count.count}</Text> : null}
         </Text>
       </Half>
@@ -64,9 +70,11 @@ function shownName(state: GameState, side: 'home' | 'away', player: PlayerRef | 
   return player ? playerDisplay(state, side, player).name : 'Not set';
 }
 
-function Half({ mark, name, unset, children }: { mark: 'bat' | 'ball' | null; name: string; unset: boolean; children: React.ReactNode }) {
+function Half({ mark, name, unset, onWidth, children }: {
+  mark: 'bat' | 'ball' | null; name: string; unset: boolean; onWidth?: (width: number) => void; children: React.ReactNode;
+}) {
   return (
-    <View style={styles.half}>
+    <View style={styles.half} onLayout={onWidth && ((event) => onWidth(event.nativeEvent.layout.width))}>
       {mark ? <View style={styles.mark}>
         {mark === 'bat'
           ? <View style={styles.batTurn}><Image source={require('../../assets/scorer/bat.png')} accessible={false} style={styles.bat} /></View>
@@ -92,13 +100,15 @@ const styles = createStyles({
     backgroundColor: colors['surface/card'], overflow: 'hidden',
   },
   half: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
-  mark: { width: 32, height: 32, borderRadius: sizes['radius/full'], backgroundColor: colors['surface/voice'], alignItems: 'center', justifyContent: 'center' },
+  mark: { width: markSize, height: markSize, borderRadius: sizes['radius/full'], backgroundColor: colors['surface/voice'], alignItems: 'center', justifyContent: 'center' },
   // Figma Icon/Bat: an 18 × 4.5 bat turned 45°, drawn from the same artwork as the batter's chip.
   batTurn: { width: 18, height: 4.5, transform: [{ rotate: '-45deg' }] },
   bat: { position: 'absolute', left: -1.18, top: 0, width: 19.856, height: 5.569 },
   ballSlot: { width: 18, height: 18 },
   ball: { position: 'absolute', left: -1.41, top: -0.56, width: 20.8125, height: 20.8125 },
   text: { flex: 1, minWidth: 0 },
+  // Off-screen copies of the stat lines at their natural one-line width.
+  measures: { position: 'absolute', left: 0, top: 0, alignItems: 'flex-start', opacity: 0 },
   name: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
   unset: { color: colors['text/secondary'] },
   stat: { ...textStyles.Caption, color: colors['text/secondary'] },

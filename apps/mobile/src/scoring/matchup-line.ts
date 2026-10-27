@@ -1,4 +1,5 @@
 import { battingLines, type BattingLine, type PlayerRef, type RuleSet } from '@sandlot/engine';
+import { tokens } from '@sandlot/tokens';
 import { demoSetup } from './demo-game.ts';
 import type { SavedGame } from './offline-game.ts';
 
@@ -20,6 +21,19 @@ export function pitchLine(thrown: number, limits: RuleSet['pitchCountLimits']): 
   if (!limits) return { count: `${thrown}`, tone: 'normal', spoken: `${thrown} pitch${thrown === 1 ? '' : 'es'}` };
   const tone = thrown >= limits.limit ? 'danger' : thrown >= limits.warnAt ? 'warning' : 'normal';
   return { count: `${thrown}/${limits.limit}`, tone, spoken: `${thrown} of ${limits.limit} pitches` };
+}
+
+/** The ticket's bat and ball marks are 32 across, with a space/2 gap before the text. */
+export const markSize = 32;
+const markRoom = markSize + tokens.modes.Light.sizes['space/2'];
+
+/**
+ * Whether the icon marks fit: both stat lines must stay on one line in a half less the mark's room. Stats never
+ * shorten, so when one won't fit both marks hide. The widths are the stats' own and the half's, neither of which
+ * changes when the marks do, so the answer can't flip back and forth from pitch to pitch.
+ */
+export function marksFit(halfWidth: number, statWidths: number[]): boolean {
+  return !halfWidth || statWidths.every((width) => width <= halfWidth - markRoom + 0.5);
 }
 
 /** Who's up and who's pitching, with the lines the ticket shows, from the game the scorer's phone has saved. */
