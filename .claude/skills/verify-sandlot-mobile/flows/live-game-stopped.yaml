@@ -2,14 +2,15 @@ appId: host.exp.Exponent
 ---
 # When another phone holds scoring, the next upload stops the queue, the play stays on this phone, and the line says why.
 # Run after handing the game's scoring to another user (private.take_over).
-- runFlow:
-    when:
+- repeat:
+    times: 3
+    while:
       visible:
         id: "games-navigation"
     commands:
       - tapOn:
           id: "games-navigation"
-          retryTapIfNoChange: true
+      - waitForAnimationToEnd
 - scrollUntilVisible:
     element:
       id: "resume-live"

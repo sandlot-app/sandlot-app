@@ -1,9 +1,15 @@
 appId: host.exp.Exponent
 ---
 # Once this phone holds scoring again, reopening the game sends the waiting play. Run after live-game-stopped.yaml.
-- tapOn:
-    id: "games-navigation"
-    retryTapIfNoChange: true
+- repeat:
+    times: 3
+    while:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+      - waitForAnimationToEnd
 - scrollUntilVisible:
     element:
       id: "resume-live"

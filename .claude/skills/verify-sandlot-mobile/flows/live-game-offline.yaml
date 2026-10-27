@@ -2,14 +2,15 @@ appId: host.exp.Exponent
 ---
 # With the server unreachable, a play still saves on the phone and waits. Run with sync-events stopped.
 # Start from Your games, wherever the last flow left the app.
-- runFlow:
-    when:
+- repeat:
+    times: 3
+    while:
       visible:
         id: "games-navigation"
     commands:
       - tapOn:
           id: "games-navigation"
-          retryTapIfNoChange: true
+      - waitForAnimationToEnd
 - scrollUntilVisible:
     element:
       id: "resume-live"

@@ -2,14 +2,15 @@ appId: host.exp.Exponent
 ---
 # With the seed run, Start live game opens the server's game. Each play uploads, and the sync line says so.
 # Start from Your games, wherever the last flow left the app.
-- runFlow:
-    when:
+- repeat:
+    times: 3
+    while:
       visible:
         id: "games-navigation"
     commands:
       - tapOn:
           id: "games-navigation"
-          retryTapIfNoChange: true
+      - waitForAnimationToEnd
 - scrollUntilVisible:
     element:
       id: "live-game-card"
@@ -52,9 +53,15 @@ appId: host.exp.Exponent
 - copyTextFrom:
     id: "score-summary"
 - evalScript: ${output.summary = maestro.copiedText}
-- tapOn:
-    id: "games-navigation"
-    retryTapIfNoChange: true
+- repeat:
+    times: 3
+    while:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+      - waitForAnimationToEnd
 - scrollUntilVisible:
     element:
       id: "live-waiting"
