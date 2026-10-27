@@ -1,8 +1,8 @@
 import { openDatabaseAsync } from 'expo-sqlite';
 import type { SqlConnection, SqlDatabase } from './database.ts';
 
-export async function openNativeDatabase(): Promise<SqlDatabase> {
-  const database = await openDatabaseAsync('sandlot-games.db', {
+export async function openNativeDatabase(name: string): Promise<SqlDatabase> {
+  const database = await openDatabaseAsync(name, {
     useNewConnection: true,
   });
   const connection: SqlConnection = {

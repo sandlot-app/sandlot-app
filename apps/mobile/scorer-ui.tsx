@@ -16,7 +16,9 @@ function easePress(scale: Animated.Value, held: boolean) {
 export type SyncState =
   | { status: 'saved'; lastPlay: string }
   | { status: 'saving'; lastPlay: string }
-  | { status: 'offline'; lastPlay: string; waiting: number };
+  | { status: 'offline'; lastPlay: string; waiting: number }
+  /** A live game's upload queue stopped. Figma's Sync Status has no frame for it, so it reads like Offline. */
+  | { status: 'stopped'; lastPlay: string; waiting: number; reason: string };
 
 export type Pitch = 'ball' | 'strike-looking' | 'strike-swinging' | 'foul' | 'in-play';
 
@@ -141,14 +143,18 @@ export function PitchButton({ label, kind, onPress, selected, disabled = false, 
 
 function SyncStatus({ state, syncTestID }: { state: SyncState; syncTestID?: string }) {
   const last = state.lastPlay ? `Last: ${state.lastPlay} · ` : '';
+  const plays = (count: number) => `${count} ${count === 1 ? 'play' : 'plays'}`;
   const label = state.status === 'saved'
     ? `${last}All plays saved`
     : state.status === 'saving'
       ? 'Saving...'
-      : `${last}Offline · ${state.waiting} ${state.waiting === 1 ? 'play' : 'plays'} saved on this phone`;
+      : state.status === 'stopped'
+        ? `${plays(state.waiting)} waiting · Sync stopped: ${state.reason}`
+        : `${last}Offline · ${plays(state.waiting)} saved on this phone`;
+  const warning = state.status === 'offline' || state.status === 'stopped';
   return <View style={styles.syncLine}>
-    <Text style={state.status === 'offline' ? styles.syncOffline : state.status === 'saving' ? styles.syncMuted : styles.syncSaved}>{state.status === 'saved' ? '✓' : state.status === 'offline' ? '●' : '⟳'}</Text>
-    <Text style={state.status === 'offline' ? styles.syncOffline : styles.syncMuted} testID={syncTestID}>{label}</Text>
+    <Text style={warning ? styles.syncOffline : state.status === 'saving' ? styles.syncMuted : styles.syncSaved}>{state.status === 'saved' ? '✓' : warning ? '●' : '⟳'}</Text>
+    <Text style={warning ? styles.syncOffline : styles.syncMuted} testID={syncTestID}>{label}</Text>
   </View>;
 }
 

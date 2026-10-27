@@ -12,8 +12,8 @@ function connection(database: SQLiteDatabase): SqlConnection {
   };
 }
 
-export async function openNativeDatabase(): Promise<SqlDatabase> {
-  const database = await openDatabaseAsync('sandlot-games.db', {
+export async function openNativeDatabase(name: string): Promise<SqlDatabase> {
+  const database = await openDatabaseAsync(name, {
     useNewConnection: true,
   });
   try {
