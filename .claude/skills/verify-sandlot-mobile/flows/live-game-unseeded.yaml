@@ -9,9 +9,6 @@ appId: host.exp.Exponent
     commands:
       - tapOn:
           id: "games-navigation"
-- extendedWaitUntil:
-    visible: "Your games"
-    timeout: 15000
 - scrollUntilVisible:
     element:
       id: "start-live"
