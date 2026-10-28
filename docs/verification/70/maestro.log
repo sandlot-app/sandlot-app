@@ -1,0 +1,65 @@
+== sandlot-verify-38 (iPhone 17 Pro)
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow acceptance-70
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on id: open-share-sample... COMPLETED
+Run flow when "Share Javier’s game" is not visible...
+  Wait for animation to end within 3000 ms... COMPLETED
+  Tap on id: open-share-sample... COMPLETED
+Run flow when "Share Javier’s game" is not visible... COMPLETED
+Assert that "Share Javier’s game" is visible... COMPLETED
+Assert that "1 picked", id: share-picked-count is visible... COMPLETED
+Assert that "Poster sticker, Hawks, number 6" is visible... COMPLETED
+Assert that "Lower third sticker, Hawks, number 6" is visible... COMPLETED
+Assert that ".*Ruiz.*" is not visible... COMPLETED
+Take screenshot 01-default-white-name-off... COMPLETED
+Tap on id: share-ink-black... COMPLETED
+Tap on id: share-show-name... COMPLETED
+Assert that "Poster sticker, Javier Ruiz, number 6" is visible... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Assert that "2 picked", id: share-picked-count is visible... COMPLETED
+Assert that "Copy and More send one sticker at a time. Save keeps them all." is visible... COMPLETED
+Take screenshot 02-black-name-on-two-picked... COMPLETED
+Tap on id: share-save... COMPLETED
+Run flow when "Allow Full Access|Allow|OK" is visible...
+Run flow when "Allow Full Access|Allow|OK" is visible... SKIPPED
+Assert that "Saved 2 to Photos." is visible... COMPLETED
+Take screenshot 03-saved-two... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Assert that "1 picked", id: share-picked-count is visible... COMPLETED
+Tap on id: share-copy... COMPLETED
+Assert that "Copied. Paste it into your story." is visible... COMPLETED
+Take screenshot 04-copied-one... COMPLETED
+
+== sandlot-verify-se (iPhone SE)
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow acceptance-70
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on id: open-share-sample... COMPLETED
+Run flow when "Share Javier’s game" is not visible...
+Run flow when "Share Javier’s game" is not visible... SKIPPED
+Assert that "Share Javier’s game" is visible... COMPLETED
+Assert that "1 picked", id: share-picked-count is visible... COMPLETED
+Assert that "Poster sticker, Hawks, number 6" is visible... COMPLETED
+Assert that "Lower third sticker, Hawks, number 6" is visible... COMPLETED
+Assert that ".*Ruiz.*" is not visible... COMPLETED
+Take screenshot 01-default-white-name-off... COMPLETED
+Tap on id: share-ink-black... COMPLETED
+Tap on id: share-show-name... COMPLETED
+Assert that "Poster sticker, Javier Ruiz, number 6" is visible... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Assert that "2 picked", id: share-picked-count is visible... COMPLETED
+Assert that "Copy and More send one sticker at a time. Save keeps them all." is visible... COMPLETED
+Take screenshot 02-black-name-on-two-picked... COMPLETED
+Tap on id: share-save... COMPLETED
+Run flow when "Allow Full Access|Allow|OK" is visible...
+Run flow when "Allow Full Access|Allow|OK" is visible... SKIPPED
+Assert that "Saved 2 to Photos." is visible... COMPLETED
+Take screenshot 03-saved-two... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Assert that "1 picked", id: share-picked-count is visible... COMPLETED
+Tap on id: share-copy... COMPLETED
+Assert that "Copied. Paste it into your story." is visible... COMPLETED
+Take screenshot 04-copied-one... COMPLETED
