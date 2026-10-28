@@ -61,3 +61,7 @@
 {"id":"same-hbp-plain","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"hit by pitch, Ruiz to first","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
 {"id":"same-hbp-the-batter","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"Soto hit the batter","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
 {"id":"crowd-word-can-be-a-name","said":[],"transcript":"Good singles","expect":{"kind":"ask","prompt":"Who is Good?"}}
+{"id":"strikeout-is-not-a-forced-run","said":["Soto triples","Darcy flies out","Vance flies out","strike looking","strike looking"],"transcript":"strike three looking, Soto scores","expect":{"kind":"reject"}}
+{"id":"hits-a-batted-ball-is-not-hbp","said":[],"transcript":"he hits line drive to left","expect":{"kind":"unknown_phrase"}}
+{"id":"hits-fly-ball-is-not-hbp","said":[],"transcript":"Soto hits fly ball","expect":{"kind":"unknown_phrase"}}
+{"id":"hits-homer","said":[],"transcript":"Soto hits homer","expect":{"kind":"save","readBack":"J. Soto homers"}}

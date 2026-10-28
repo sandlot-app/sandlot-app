@@ -58,7 +58,7 @@ const pronoun = /^(?:(?:the|that|this) )?(?:runner|batter|hitter|kid)$|^(?:he|sh
 
 /** Who a clause names, from the words around its verb. */
 function mention(words: string | undefined): Mention | undefined {
-  const text = words?.replace(leadIn, '').replace(/ (?:got|gets|was|is|has been)$/, '').trim();
+  const text = words?.replace(leadIn, '').replace(/ (?:got|gets|was|is|has been|hits|hit|hits a|hit a)$/, '').trim();
   if (!text || pronoun.test(text)) return undefined;
   const onBase = text.match(new RegExp(`^(?:the )?runner (?:on|at|from) ${base}$`));
   if (onBase) return { base: baseWords[onBase[1]!]! };
@@ -73,7 +73,8 @@ function withMention<T extends Spoken>(spoken: T, key: 'batter' | 'runner' | 'pi
 }
 
 /** Words after "Soto hits …" that aren't the batter, so "Soto hits a double" or "hits it to left" is never read as a hit by pitch. */
-const notABatter = 'a|an|the|it|one|that|this|another|his|into|to|up|down|over|through|back|and|for|deep|hard|safely|home|first|second|third|left|right|center|short|again|by|with|off|on|in|out|looking|swinging';
+const notABatter = 'a|an|the|it|one|that|this|another|his|into|to|up|down|over|through|back|and|for|deep|hard|safely|home|first|second|third|left|right|center|short|again|by|with|off|on|in|out|looking|swinging'
+  + '|line|liner|fly|pop|popup|ground|grounder|foul|bunt|bloop|blooper|gapper|shot|rocket|bomb|dinger|homer|single|double|triple';
 /** The batter in a call that names the pitcher: a pronoun, a jersey number, or a name of one or two words. */
 export const batterWords = `the (?:batter|kid|hitter)|that kid|number \\d{1,2}|#\\d{1,2}|\\d{1,2}|(?!(?:${notABatter})\\b)[a-z']+(?: (?!(?:${notABatter})\\b)[a-z']+)?`;
 
@@ -117,14 +118,15 @@ const outTrajectory: [RegExp, Extract<Spoken, { kind: 'out' }>['trajectory']][] 
 ];
 const outVerb = 'grounds out|ground out|grounded out|groundout|flies out|fly out|flied out|flyout|lines out|line out|lined out|lineout|pops out|pop out|popped out|pops up|pop up|popup|popped up';
 
-const cheers = "run|go|let's go|lets go|come on|nice|nice job|good|good job|good eye|nice eye|good cut|yes|yeah|yay|wow|great|hustle|get it|throw it|all the way|keep going|stay|back|way to go|attaboy|atta boy|atta girl|attagirl|oh no|oh man|ouch|ooh|oof|woo|woohoo|you got this";
+/** Cheers left out before a call, as in "come on Soto walks". Single words that can be a surname, like "Good", aren't among them. */
+const leadingCheers = "go|let's go|lets go|come on|way to go|yes|yeah|yay|wow|oh no|oh man|ouch|ooh|oof|woo|woohoo|attaboy|atta boy|atta girl|attagirl|you got this";
+const cheers = `${leadingCheers}|run|nice|nice job|good|good job|good eye|nice eye|good cut|great|hustle|get it|throw it|all the way|keep going|stay|back`;
 const crowd = new RegExp(`^(?:(?:${cheers})(?: |$))+$`);
-/** Cheering before a call, as in "come on Soto walks". Single words that can be a surname, like "Good", aren't left out. */
-const cheering = /^(?:(?:go|let's go|lets go|come on|way to go|yes|yeah|yay|wow|oh no|oh man|ouch|ooh|oof|woo|woohoo|attaboy|atta boy|atta girl|attagirl|you got this) )+/;
+const cheering = new RegExp(`^(?:(?:${leadingCheers}) )+`);
 /** Cheering someone on by name, as in "go Soto" or "let's go Ruiz": a name alone after it is no call. */
 const cheeringOn = /^(?:go|let's go|lets go|come on) [a-z']+(?: [a-z']+)?$/;
 
-/** Reads one clause, or returns null when the local grammar doesn't know it. Cheering before the call is left out. */
+/** Reads one call, or returns null when the local grammar doesn't know it. Cheering before the call is left out. */
 function clause(text: string): Spoken | 'crowd' | null {
   if (crowd.test(text)) return 'crowd';
   const cheer = text.match(cheering);

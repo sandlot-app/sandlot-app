@@ -15,7 +15,7 @@ export type Issue =
   /** The pitcher named isn't the one in the game. `named` is null when the name matched nobody in the field. */
   | { kind: 'wrong_pitcher'; pitching: PlayerRef | null; named: PlayerRef | null; heard: string }
   /** Someone named in a fielding role, like the pitcher, who is batting this half. */
-  | { kind: 'batting'; player: PlayerRef }
+  | { kind: 'is_batting'; player: PlayerRef }
   | { kind: 'not_on_base'; player: PlayerRef }
   | { kind: 'no_runner'; base: Base | null }
   | { kind: 'not_strike_three'; strike: number }
@@ -32,6 +32,7 @@ export type Resolution =
 
 const batting = (state: GameState): TeamSide => state.half === 'top' ? 'away' : 'home';
 const fielding = (state: GameState): TeamSide => state.half === 'top' ? 'home' : 'away';
+const dueUp = (state: GameState): PlayerRef | undefined => state.lineups[batting(state)][state.nextBatter[batting(state)]]?.player;
 
 export function stateAfter(game: PressGame, commands: Command[]): GameState | null {
   const result = commands.length ? applyGroup(game.setup, game.events, commands) : replay(game.setup, game.events);
@@ -98,7 +99,7 @@ function batterFor(game: PressGame, state: GameState, who: Mention | undefined, 
   return samePlayer(named.player, due) ? due : { kind: 'wrong_batter', due, named: named.player, clause };
 }
 
-/** Checks the pitcher a clause names against the one in the game. Only a pitcher named by role or pronoun goes unchecked. */
+/** Checks the pitcher a call names against the one in the game. Only a pitcher named by role or pronoun goes unchecked. */
 function pitcherIssue(game: PressGame, state: GameState, who: Mention | undefined): Issue | null {
   if (!who) return null;
   const pitching = state.pitchers[fielding(state)] ?? null;
@@ -107,7 +108,7 @@ function pitcherIssue(game: PressGame, state: GameState, who: Mention | undefine
   if (pitching && found.some((entry) => samePlayer(entry.player, pitching))) return null;
   const inField = found.find((entry) => entry.side === fielding(state));
   if (inField) return { kind: 'wrong_pitcher', pitching, named: inField.player, heard };
-  if (found[0]) return { kind: 'batting', player: found[0].player };
+  if (found[0]) return { kind: 'is_batting', player: found[0].player };
   return { kind: 'wrong_pitcher', pitching, named: null, heard };
 }
 
@@ -167,9 +168,9 @@ function runnerMoves(game: PressGame, state: GameState, event: 'stolen_base' | '
  * after he's hit, or "Soto scores" after his home run. A runner a hit left in place isn't one: saying where they are
  * is recorded on the hit, so they don't count as a runner held.
  */
-function repeats(prior: GameState, now: GameState, context: Command[], runner: PlayerRef, to: Target): boolean {
+function putThere(prior: GameState, now: GameState, context: Command[], runner: PlayerRef, to: Target): boolean {
   const play = context.find((command) => command.kind === 'ball_in_play');
-  const due = prior.lineups[batting(prior)][prior.nextBatter[batting(prior)]]?.player;
+  const due = dueUp(prior);
   const wasBatting = due !== undefined && samePlayer(due, runner);
   if (to !== 'home') return baseOf(now, runner) === to && !(play && baseOf(prior, runner) === to);
   if (play?.kind === 'ball_in_play') {
@@ -179,20 +180,21 @@ function repeats(prior: GameState, now: GameState, context: Command[], runner: P
   if (context.some((command) => command.kind === 'runner' && samePlayer(command.runner, runner))) {
     return context.some((command) => command.kind === 'runner' && samePlayer(command.runner, runner) && command.to === 'home');
   }
-  // A walk or hit batter with the bases loaded forces the runner on third home.
-  return context.every((command) => command.kind === 'pitch') && baseOf(prior, runner) === 3 && baseOf(now, runner) === null;
+  // A walk or hit batter with the bases loaded puts the batter on first and forces the runner on third home.
+  return context.every((command) => command.kind === 'pitch') && due !== undefined && baseOf(now, due) === 1
+    && baseOf(prior, runner) === 3 && baseOf(now, runner) === null;
 }
 
-/** Everyone the call could mean who the play just named already put at `to`. */
-function repeated(game: PressGame, prior: GameState, now: GameState, context: Command[], who: Mention | undefined, to: Target): PlayerRef[] {
+/** Everyone the call could mean whom the play just named already put at `to`, so the call is absorbed into that play. */
+function absorbed(game: PressGame, prior: GameState, now: GameState, context: Command[], who: Mention | undefined, to: Target): PlayerRef[] {
   const side = batting(prior);
-  const due = prior.lineups[side][prior.nextBatter[side]]?.player;
+  const due = dueUp(prior);
   const involved = [...(due ? [due] : []), ...runnersOn(prior).map(({ player }) => player)];
   const named = !who ? involved
     : who.player ? involved.filter((player) => samePlayer(player, who.player!))
     : who.base ? involved.filter((player) => baseOf(prior, player) === who.base)
     : involved.filter((player) => matches(game.roster, who, side).some((entry) => samePlayer(entry.player, player)));
-  return named.filter((player) => repeats(prior, now, context, player, to));
+  return named.filter((player) => putThere(prior, now, context, player, to));
 }
 
 /** A runner's destination on the play just named: it edits that play rather than adding a new one, or adds nothing when it only repeats it. */
@@ -203,7 +205,7 @@ function destination(game: PressGame, draft: Draft, who: Mention | undefined, to
   const prior = stateAfter(game, draft.commands.slice(0, start));
   if (!prior) return { kind: 'issue', issue: { kind: 'needs_how' } };
   const now = stateAfter(game, draft.commands);
-  if (now && repeated(game, prior, now, context, who, to).length) return { kind: 'options', options: [context], replaceFrom: start };
+  if (now && absorbed(game, prior, now, context, who, to).length) return { kind: 'options', options: [context], replaceFrom: start };
   const play = context.find((command) => command.kind === 'ball_in_play');
   const runnerEvent = context.find((command) => command.kind === 'runner');
   if (!play && !runnerEvent) return { kind: 'issue', issue: { kind: 'needs_how' } };

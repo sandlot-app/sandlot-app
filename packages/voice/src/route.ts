@@ -36,24 +36,21 @@ export function rejectMessage(code: RejectCode): string {
   }
 }
 
-/** A name as heard, capitalized for a message: "ramirez" reads "Ramirez", and "number 23" stays as it is. */
-const spoken = (heard: string) => heard.replace(/\b(?!number\b)[a-z]/g, (letter) => letter.toUpperCase());
-
 function issueMessage(game: PressGame, issue: Issue): string {
   switch (issue.kind) {
     case 'wrong_side': return `${nameOf(game.roster, issue.player)} is in the field this half.`;
-    case 'batting': return `${nameOf(game.roster, issue.player)} is batting this half.`;
-    case 'wrong_pitcher': {
-      const named = issue.named ? nameOf(game.roster, issue.named) : spoken(issue.heard);
-      return issue.pitching ? `${nameOf(game.roster, issue.pitching)} is pitching, not ${named}.` : `${named} isn't pitching.`;
-    }
     case 'not_on_base': return `${nameOf(game.roster, issue.player)} isn't on base.`;
     case 'no_runner': return issue.base ? `No runner on ${baseName[issue.base]}.` : 'No runners on base.';
     case 'not_strike_three': return `That would be strike ${issue.strike}, not strike three.`;
     case 'not_ball_four': return `That would be ball ${issue.ball}, not ball four.`;
     case 'needs_how': return 'Say how the runner moved, like "wild pitch, runner scores".';
-    case 'who_is': return `Who is ${spoken(issue.heard)}?`;
+    case 'who_is': return `Who is ${issue.heard.replace(/\b(?!number\b)[a-z]/g, (letter) => letter.toUpperCase())}?`;
     case 'wrong_batter': return `${nameOf(game.roster, issue.due)} is up, not ${nameOf(game.roster, issue.named)}.`;
+    case 'is_batting': return `${nameOf(game.roster, issue.player)} is batting this half.`;
+    case 'wrong_pitcher': {
+      const named = issue.named ? nameOf(game.roster, issue.named) : issue.heard.replace(/\b(?!number\b)[a-z]/g, (letter) => letter.toUpperCase());
+      return issue.pitching ? `${nameOf(game.roster, issue.pitching)} is pitching, not ${named}.` : `${named} isn't pitching.`;
+    }
   }
 }
 
