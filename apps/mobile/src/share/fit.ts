@@ -12,19 +12,22 @@ export function heavyWidth(text: string): number {
   return [...text].reduce((sum, letter) => sum + (wide.has(letter) ? 1.0 : narrow.has(letter) ? 0.4 : digits.has(letter) ? 0.66 : 0.78), 0);
 }
 
+const smallest = 12;
+
 /**
  * A last name sized to its column: a long one breaks after its hyphen or first space (Oberhauser- / Wettstein), and the
  * longest line sets the size, from 60 down to `floor`. iOS won't shrink one long word to fit, it breaks it, so the size is
- * chosen here. A name with nowhere to break goes below the floor instead of breaking mid-word. The line is 1.3 times the
- * size, so a second mark stacked above a circumflex (the tilde in Nguyễn) isn't clipped.
+ * chosen here. A name with nowhere to break goes below the floor instead of breaking mid-word, but never below 12. The
+ * line is as tall as the size, as in Figma. iOS draws taller marks above the line, so the padding on top keeps a second
+ * mark stacked above a circumflex (the tilde in Nguyễn) from being clipped.
  */
-export function fitLastName(name: string, column: number, floor: number): { text: string; style: { fontSize: number; lineHeight: number } } {
+export function fitLastName(name: string, column: number, floor: number): { text: string; style: { fontSize: number; lineHeight: number; paddingTop: number } } {
   const upperName = upper(name);
   const at = upperName.indexOf('-') >= 0 ? upperName.indexOf('-') + 1 : upperName.indexOf(' ');
   const text = heavyWidth(upperName) * 60 > column && at > 0
     ? `${upperName.slice(0, at).trimEnd()}\n${upperName.slice(at).trimStart()}` : upperName;
   const longest = Math.max(...text.split('\n').map(heavyWidth));
   const fits = Math.min(60, Math.floor(column / longest));
-  const fontSize = at > 0 ? Math.max(floor, fits) : fits;
-  return { text, style: { fontSize, lineHeight: Math.round(fontSize * 1.3) } };
+  const fontSize = Math.max(at > 0 ? floor : smallest, fits);
+  return { text, style: { fontSize, lineHeight: fontSize, paddingTop: Math.round(fontSize * 0.2) } };
 }

@@ -159,7 +159,7 @@ test('a strikeout that ends the half is still a finished plate appearance', asyn
 test('a long last name breaks after its hyphen and sizes to its column, and a short one stays at 60', async () => {
   const { fitLastName, heavyWidth } = await import('../src/share/fit.ts');
   const ruiz = fitLastName('Ruiz', 240, 26);
-  assert.deepEqual(ruiz, { text: 'RUIZ', style: { fontSize: 60, lineHeight: 78 } });
+  assert.deepEqual(ruiz, { text: 'RUIZ', style: { fontSize: 60, lineHeight: 60, paddingTop: 12 } });
   const long = fitLastName('Oberhauser-Wettstein', 240, 26);
   assert.equal(long.text, 'OBERHAUSER-\nWETTSTEIN');
   assert.ok(heavyWidth('OBERHAUSER-') * long.style.fontSize <= 240, 'the longest line fits the column');
@@ -170,13 +170,15 @@ test('a long last name breaks after its hyphen and sizes to its column, and a sh
   assert.equal(fitLastName('Nguyễn', 240, 26).text, 'NGUYỄN');
 });
 
-test('display names leave room above the caps for stacked accents, and one long word shrinks instead of breaking', async () => {
+test('display names keep Figma\'s line and pad above it for stacked accents, and one long word shrinks instead of breaking', async () => {
   const { fitLastName, heavyWidth } = await import('../src/share/fit.ts');
   for (const [name, column, floor] of [['Nguyễn', 240, 26], ['Oberhauser-Wettstein', 160, 18], ['Ruiz', 240, 26]] as const) {
     const { style } = fitLastName(name, column, floor);
-    assert.ok(style.lineHeight >= style.fontSize * 1.25, `${name}: line height ${style.lineHeight} for ${style.fontSize} pt leaves no room for ễ`);
+    assert.equal(style.lineHeight, style.fontSize, `${name}: the line matches Figma`);
+    assert.ok(style.paddingTop >= style.fontSize * 0.19, `${name}: ${style.paddingTop} pt above ${style.fontSize} pt leaves no room for ễ`);
   }
   const word = fitLastName('Wolfeschlegelsteinhausen', 240, 26);
   assert.equal(word.text, 'WOLFESCHLEGELSTEINHAUSEN', 'no hyphen or space, so no break');
   assert.ok(heavyWidth(word.text) * word.style.fontSize <= 240, 'it shrinks below the floor rather than break mid-word');
+  assert.equal(fitLastName('Wolfeschlegelsteinhausenbergerdorff', 160, 18).style.fontSize, 12, 'but never below 12 pt');
 });

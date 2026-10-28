@@ -39,16 +39,23 @@ export async function copyImage(capture: Capture): Promise<string> {
   return 'Copied. Paste it into your story.';
 }
 
+// Android files handed to the share sheet, kept until the next share, when the target app is long done with them.
+// view-shot also clears its leftovers when the app starts.
+let shared: string[] = [];
+
 /** Opens the phone's share sheet with one capture. */
 export async function shareSheet(capture: Capture): Promise<string | null> {
   if (!(await Sharing.isAvailableAsync())) return 'Sharing isn’t available on this phone.';
+  shared.forEach(releaseCapture);
+  shared = [];
   const uri = await captureRef(capture.view, { ...options(capture), result: 'tmpfile' });
   try {
     await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png' });
   } finally {
     // iOS settles once the sheet closes. Android can settle as soon as the chooser hands off, before the target app has
-    // read the file, so there it stays in the app's cache, which the system clears.
+    // read the file, so there it waits for the next share.
     if (Platform.OS === 'ios') releaseCapture(uri);
+    else shared.push(uri);
   }
   return null;
 }
