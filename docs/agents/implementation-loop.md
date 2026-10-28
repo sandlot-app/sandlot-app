@@ -20,14 +20,15 @@ How an agent takes one ticket from the issue tracker to a pull request. It adds 
      - A phone app test: `node --experimental-strip-types --test test/play-log.test.ts` in `apps/mobile`.
      - An engine test: `pnpm --filter @sandlot/engine exec vitest run <test file>`.
    - **GitHub runs the full checks.** Push, and let CI run `pnpm verify`, the bundle and the web build on Linux. You don't need to run them on your machine first.
-     - CI passing on the exact head commit is still the merge gate.
+     - Every CI check passing on the exact head commit is still the merge gate: `verify` always, and `Backend` when the change touches `supabase/`, `packages/engine/` or `packages/voice/`.
      - You may push while a local test is failing, as long as the PR says which test and why.
      - Never ask Christian to merge while CI is red.
    - **Screen tickets:** for every screen you touched, put the app screenshot (the Mac simulator for phone tickets, otherwise the web build at 393 px wide) next to the Figma frame at the same size, and upload the pairs to the ticket's [proof release](#proof-release). Check them element by element before review.
    - **Phone tickets:** add the Maestro flow for the ticket's user path under `.claude/skills/verify-sandlot-mobile`. On the Mac, run it yourself with that skill:
-     - Run both simulators at the same time: `sandlot-verify-38` (iPhone 17 Pro) and `sandlot-verify-se` (iPhone SE). Give each run its own `SANDLOT_SIM_NAME` and `SANDLOT_METRO_PORT`, for example port 8091 for `sandlot-verify-38` and 8092 for `sandlot-verify-se`. The "Both simulators at once" part of the skill's `SKILL.md` shows the commands.
+     - Run both simulators at the same time: `sandlot-verify-38` (iPhone 17 Pro) and `sandlot-verify-se` (iPhone SE). Give each run its own `SANDLOT_SIM_NAME`, `SANDLOT_METRO_PORT` and `SANDLOT_DEVICE_TYPE`, for example port 8091 for `sandlot-verify-38` and 8092 for `sandlot-verify-se`. The "Both simulators at once" part of the skill's `SKILL.md` shows the commands.
      - Each run keeps its `launch`, `doctor`, `drive` and `cleanup` inside **one** shell command, so its dev server stays alive for the whole run, and records its own screen with `xcrun simctl io <simulator> recordVideo` while the flow drives.
-     - Commit only the passing run's `RESULT.txt` and `maestro.log` to `docs/verification/<number>/`. Git ignores everything else in that folder.
+     - These names and ports are for one ticket's check at a time. A second ticket checking at the same time uses its own simulator names and ports, such as 8093 and 8094.
+     - Commit one `RESULT.txt` and one `maestro.log` to `docs/verification/<number>/`, holding the passing runs from both simulators. The skill's "Committing both runs" part shows how. Git ignores everything else in that folder.
      - Upload `final.png`, the screenshots, the video and any other evidence to the ticket's [proof release](#proof-release).
      - Comment on the PR with `RESULT.txt`, the commit, the simulator and iOS version, and the release link.
      - If app code changes after a passing run, run the check again.
@@ -58,7 +59,7 @@ gh release upload proof-<number> <files> --clobber
 ## Done means all of these
 
 - Every acceptance check in the ticket passes, and the ticket's "Not in this ticket" list is untouched.
-- CI passes on the PR's head commit: `pnpm verify`, the bundle and the web build. For phone tickets, the phone app's typecheck and lint passed on your machine too, including `npx expo lint`.
+- Every CI check passes on the PR's head commit: `verify` (`pnpm verify`, the bundle and the web build), and `Backend` when it runs. For phone tickets, the phone app's typecheck and lint passed on your machine too, including `npx expo lint`.
 - Screens match their Figma frames in layout, spacing, size, weight, color, components and wording. The only allowed differences are the platform's own typeface and controls the milestone hides on purpose.
 - Colors, spacing and radii come from `@sandlot/tokens`. No raw values.
 - Phone tickets: the Maestro flow passed on the Mac, on both `sandlot-verify-38` and `sandlot-verify-se`, for the app code being merged, with `RESULT.txt` and `maestro.log` in `docs/verification/<number>/`, the screenshots and video in the `proof-<number>` release, and both linked on the PR. A run on the PC alone doesn't count.
@@ -99,7 +100,7 @@ Christian authorized agents on 2026-10-25 to review, fix and merge their own tic
    - **Medium:** a visible size or spacing difference.
    - **Low:** anything smaller.
    High and medium block the merge like any other finding. A screen ticket with no screenshot pairs doesn't pass.
-6. **Phone tickets have their Mac proof.** The Maestro flow passed on the Mac for the app code being merged, whether you ran it or Christian did, with `RESULT.txt` and `maestro.log` in `docs/verification/<number>/`, the screenshots and video in the `proof-<number>` release, and both linked on the PR. The independent review looks at that evidence.
+6. **Phone tickets have their Mac proof.** The Maestro flow passed on the Mac, on both `sandlot-verify-38` and `sandlot-verify-se`, for the app code being merged, whether you ran it or Christian did, with `RESULT.txt` and `maestro.log` in `docs/verification/<number>/`, the screenshots and video in the `proof-<number>` release, and both linked on the PR. The independent review looks at that evidence.
 
 To merge, mark the PR ready, then squash-merge it pinned to the reviewed commit (`gh pr merge <n> --squash --match-head-commit <sha>`). Never enable auto-merge, use an admin override, or force-push. After merging, check that `main`'s CI run passes. If it fails, stop merging and report it.
 

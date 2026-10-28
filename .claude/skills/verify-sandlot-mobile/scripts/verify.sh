@@ -9,7 +9,7 @@ SIM_NAME="${SANDLOT_SIM_NAME:-sandlot-verify}"
 PORT="${SANDLOT_METRO_PORT:-8091}"
 RUN="$ROOT/.verify/run/$SIM_NAME"
 EVIDENCE_ROOT="$ROOT/.verify/evidence"
-DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro"
+DEVICE_TYPE="com.apple.CoreSimulator.SimDeviceType.${SANDLOT_DEVICE_TYPE:-iPhone-17-Pro}"
 EXPO_GO_ID="host.exp.Exponent"
 APP_URL="exp://localhost:$PORT?__expo_disable_fab=1&__expo_disable_auto_launch=1&__expo_disable_onboarding=1"
 MAESTRO="${MAESTRO:-$HOME/.maestro/bin/maestro}"
@@ -37,6 +37,15 @@ for devices in json.load(sys.stdin)["devices"].values():
     for d in devices:
         if d["udid"] == sys.argv[1]:
             print(d["state"]); sys.exit()' "$1"
+}
+
+sim_device_type() {
+  xcrun simctl list devices -j | python3 -c '
+import json, sys
+for devices in json.load(sys.stdin)["devices"].values():
+    for d in devices:
+        if d["udid"] == sys.argv[1]:
+            print(d["deviceTypeIdentifier"].rsplit(".", 1)[-1]); sys.exit()' "$1"
 }
 
 latest_ios_runtime() {
@@ -88,6 +97,10 @@ cmd_launch() {
     log "creating simulator $SIM_NAME"
     udid=$(xcrun simctl create "$SIM_NAME" "$DEVICE_TYPE" "$(latest_ios_runtime)")
   fi
+  # A named phone must be that phone, so an iPhone 17 Pro never passes as SE proof.
+  if [ -n "${SANDLOT_DEVICE_TYPE:-}" ] && [ "$(sim_device_type "$udid")" != "$SANDLOT_DEVICE_TYPE" ]; then
+    die "simulator $SIM_NAME is an $(sim_device_type "$udid"), not an $SANDLOT_DEVICE_TYPE. Delete it or pick another SANDLOT_SIM_NAME."
+  fi
   # Own the simulator only if this run booted it, so cleanup never shuts down or deletes a
   # simulator another worktree's run is driving under the same name.
   if [ "$(sim_state "$udid")" != "Booted" ]; then
@@ -134,6 +147,7 @@ cmd_doctor() {
   check() { if eval "$2"; then printf 'ok    %s\n' "$1"; else printf 'FAIL  %s\n' "$1"; ok=0; fi; }
   udid=$(sim_udid || true)
   check "simulator $SIM_NAME exists" '[ -n "$udid" ]'
+  [ -z "${SANDLOT_DEVICE_TYPE:-}" ] || check "simulator $SIM_NAME is an $SANDLOT_DEVICE_TYPE" '[ -n "$udid" ] && [ "$(sim_device_type "$udid")" = "$SANDLOT_DEVICE_TYPE" ]'
   check "simulator $SIM_NAME is booted" '[ -n "$udid" ] && [ "$(sim_state "$udid")" = "Booted" ]'
   check "Expo Go is installed on $SIM_NAME" '[ -n "$udid" ] && expo_go_installed "$udid"'
   pid=$(listener_pid || true)
@@ -146,7 +160,7 @@ cmd_doctor() {
 }
 
 new_evidence_dir() {
-  local dir="$EVIDENCE_ROOT/$(date -u +%Y%m%dT%H%M%SZ)-$1"
+  local dir="$EVIDENCE_ROOT/$(date -u +%Y%m%dT%H%M%SZ)-$SIM_NAME-$1"
   mkdir -p "$dir"
   echo "$dir" >"$RUN/last-evidence"
   echo "$dir"
@@ -166,7 +180,7 @@ cmd_drive() {
   "$MAESTRO" --device "$udid" hierarchy >"$dir/hierarchy.json" 2>/dev/null || true
   xcrun simctl io "$udid" screenshot "$dir/final.png" >/dev/null 2>&1 || true
   cp "$RUN/metro.log" "$dir/metro.log" 2>/dev/null || true
-  { echo "flow: $name"; echo "result: $([ $status = 0 ] && echo PASS || echo FAIL)"; echo "commit: $(git -C "$ROOT" rev-parse HEAD)"; echo "simulator: $SIM_NAME ($udid)"; } >"$dir/RESULT.txt"
+  { echo "flow: $name"; echo "result: $([ $status = 0 ] && echo PASS || echo FAIL)"; echo "commit: $(git -C "$ROOT" rev-parse HEAD)"; echo "simulator: $SIM_NAME ($udid)"; echo "device: $(sim_device_type "$udid")"; } >"$dir/RESULT.txt"
   cat "$dir/RESULT.txt"
   echo "evidence: $dir"
   return $status
