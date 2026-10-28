@@ -31,7 +31,6 @@ Assert that "1 picked", id: share-picked-count is visible... COMPLETED
 Tap on id: share-copy... COMPLETED
 Assert that "Copied. Paste it into your story." is visible... COMPLETED
 Take screenshot 04-copied-one... COMPLETED
-
 == flow: acceptance-70-worst simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB) 
 Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
  > Flow acceptance-70-worst
@@ -88,7 +87,6 @@ Assert that "3 picked", id: share-picked-count is visible... COMPLETED
 Take screenshot worst-accent-03-bottom... COMPLETED
 Tap on id: share-save... COMPLETED
 Assert that "Saved 3 to Photos." is visible... COMPLETED
-
 == flow: acceptance-70 simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2) 
 Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
  > Flow acceptance-70
@@ -122,7 +120,6 @@ Assert that "1 picked", id: share-picked-count is visible... COMPLETED
 Tap on id: share-copy... COMPLETED
 Assert that "Copied. Paste it into your story." is visible... COMPLETED
 Take screenshot 04-copied-one... COMPLETED
-
 == flow: acceptance-70-worst simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2) 
 Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
  > Flow acceptance-70-worst
@@ -179,4 +176,3 @@ Assert that "3 picked", id: share-picked-count is visible... COMPLETED
 Take screenshot worst-accent-03-bottom... COMPLETED
 Tap on id: share-save... COMPLETED
 Assert that "Saved 3 to Photos." is visible... COMPLETED
-
