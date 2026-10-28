@@ -268,6 +268,19 @@ The phone gives each request its own timeout, about 25 seconds, because a clip g
 - Anonymous sign-in has CAPTCHA or rate limits turned on. A test checks that an anonymous user cannot read a private game.
 - A reinstall of Expo Go creates a new anonymous user. Before each rehearsal, rerun the seed script and reset the demo game.
 
+## Public games and team names (proposed)
+
+Proposed in [ADR 0005](adr/0005-kids-video-never-goes-on-the-public-link.md) and [ADR 0006](adr/0006-team-names-and-jersey-numbers-live-in-the-server-roster.md). It changes nothing above until Christian and Kevin both sign off. It is built after the demo. Table and column names are Kevin's.
+
+- Every game starts private. Only the scoring team's admin can make it public. Either team's admin can make it private again at any time, and the next snapshot or Realtime message the page asks for stops coming.
+- A game has a setting that says its footage needs no consent. Only the service role can set it, and only the demo game has it.
+- A recording is allowed only on a game with that setting until playback is signed. After that, any game can have one, but the public link plays video only for a game with that setting. `get_snapshot` and the `recordings` row give a public viewer no playback ID for any other game.
+- Each game keeps a copy of its two team names and every rostered player's jersey number from when it was set up. A later roster change doesn't change an old game. A player may have no number, and two players on one team may share one.
+- The team admin keeps the team's roster of names and numbers. For an opponent not on Sandlot, the scorer enters the team name and jersey numbers at setup, and never names.
+- A public viewer reads team names and jersey numbers through a view with no name column. Names never go in any row a public viewer can read, including `games`, whose whole row every live page viewer receives.
+- Events, snapshots and Realtime messages still carry player IDs only. The engine never sees names or numbers.
+- Once games carry their names and numbers, the live page drops its copy of the demo roster.
+
 ## Demo scope
 
 The demo meets every milestone 6 check in Kevin's design, with these changes:

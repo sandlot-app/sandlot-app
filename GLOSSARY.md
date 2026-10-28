@@ -84,6 +84,10 @@ _Avoid_: Curfew, game clock, drop-dead time
 Anyone who has joined a team through its invite link, whether or not they have claimed a child.
 _Avoid_: Fan, follower, team family
 
+**Public game**:
+A game its team admin has opened to anyone with its public link. Every game starts private. A public game shows its score, plays and field, never video of children.
+_Avoid_: Shared game, open game
+
 **Public viewer**:
 Someone watching a game through its public link without being a team member. They see jersey numbers and positions, never children's names.
 _Avoid_: Guest, anonymous user, fan
