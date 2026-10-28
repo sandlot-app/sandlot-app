@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { applyGroup } from '@sandlot/engine';
-import type { Command, Event, GroupId } from '@sandlot/engine';
+import type { Command, GroupId } from '@sandlot/engine';
 import { route } from '../src/route.ts';
 import { echoMismatch } from '../src/echo.ts';
 import { gameWith, player, press, said } from './game.ts';
@@ -30,63 +30,6 @@ describe('routing a press (spec section 3)', () => {
   it('E1: "scratch that" and "undo" undo the last play', () => {
     expect(press(start, 'scratch that')).toEqual({ kind: 'undo' });
     expect(press(start, 'Undo.')).toEqual({ kind: 'undo' });
-  });
-
-  it('a press that starts "no", "actually", "that was" or "undo that" with a call fixes the last Play, after a preview', () => {
-    const game = said(['Soto singles']);
-    const double = press(game, 'No, that was a double');
-    expect(double).toMatchObject({
-      kind: 'fix', was: { readBack: 'J. Soto singles' }, options: [{ readBack: 'J. Soto doubles' }], calls: ['a double'],
-    });
-    expect(double.kind === 'fix' && double.options[0]!.commands[1]).toMatchObject({ kind: 'ball_in_play', outcome: 'double' });
-    expect(press(game, 'actually he tripled to right')).toMatchObject({ kind: 'fix', options: [{ readBack: 'J. Soto triples to right' }] });
-    expect(press(game, 'That was a home run')).toMatchObject({ kind: 'fix', options: [{ readBack: 'J. Soto homers' }] });
-    expect(press(game, 'undo that, double')).toMatchObject({ kind: 'fix', options: [{ readBack: 'J. Soto doubles' }] });
-  });
-
-  it('"No 17" and "No. 23" are jersey numbers, and with no play yet a lead-in is read as part of a new call', () => {
-    const game = said(['ball']);
-    expect(press(game, 'No 17 singles')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto singles' } });
-    expect(press(game, 'No. 23 singles')).not.toMatchObject({ kind: 'fix' });
-    expect(press(game, 'No twenty three singles')).not.toMatchObject({ kind: 'fix' });
-    expect(press(game, 'No seventeen singles')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto singles' } });
-    expect(press(game, 'No. 17 singles')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto singles' } });
-    expect(press(start, 'actually ball')).toMatchObject({ kind: 'save', reading: { readBack: 'Ball → count 1–0' } });
-    expect(press(start, 'that was a ball')).not.toMatchObject({ kind: 'reject' });
-    expect(press(game, 'Actually, foul')).toMatchObject({ kind: 'fix', options: [{ readBack: 'Foul → count 0–1' }] });
-  });
-
-  it('a voice fix is read against the game before the last Play, and asks when the new call is unclear', () => {
-    const game = said(['ball', 'ball', 'ball', 'strike looking']);
-    expect(press(game, 'actually ball four')).toMatchObject({
-      kind: 'fix', was: { readBack: 'Strike looking → count 3–1' }, options: [{ readBack: 'J. Soto walks' }],
-    });
-    const strike = press(said(['ball']), 'no, strike');
-    expect(strike).toMatchObject({ kind: 'fix', prompt: 'Looking or swinging?', was: { readBack: 'Ball → count 1–0' } });
-    expect(strike.kind === 'fix' && strike.options.map((option) => option.readBack)).toEqual(['Strike looking → count 0–1', 'Strike swinging → count 0–1']);
-  });
-
-  it('a voice fix the game can\'t take says why', () => {
-    expect(press(said(['Soto singles']), 'no, he walked')).toEqual({ kind: 'reject', message: 'That would be ball 1, not ball four.' });
-  });
-
-  it('a voice fix that changes nothing, of a fix, or that isn\'t a play says so instead of offering a card', () => {
-    const game = said(['Soto singles']);
-    expect(press(game, 'that was a single')).toEqual({ kind: 'reject', message: 'That\'s already the last play.' });
-    expect(press(game, 'no, come on!')).toEqual({ kind: 'no_play', question: false });
-    expect(press(game, 'nope, a double')).toMatchObject({ kind: 'unknown_phrase' });
-    const fixed = gameWith([[{ kind: 'pitch', result: 'ball' }]]);
-    const target = fixed.events.at(-1)!.group;
-    const correction = { ...fixed.events.at(-1)!, id: 'event-fix', seq: fixed.events.length + 1, group: 'play-fix',
-      command: { kind: 'correct', target, replacement: [{ kind: 'pitch', result: 'foul' }] } } as Event;
-    expect(press({ ...fixed, events: [...fixed.events, correction] }, 'no, strike looking')).toEqual({
-      kind: 'reject', message: 'The last play is already a fix. Undo it, then say the play again.',
-    });
-  });
-
-  it('a voice fix names the Play it replaces, so the app can ask the engine to correct that one', () => {
-    const game = said(['Soto singles']);
-    expect(press(game, 'no, a double')).toMatchObject({ kind: 'fix', target: game.events.at(-1)!.group });
   });
 
   it('a press read by the parser model keeps each call\'s words as said', () => {

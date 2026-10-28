@@ -14,8 +14,7 @@ const cases: Case[] = readdirSync(folder).filter((file) => file.endsWith('.jsonl
 function matches(decision: Decision, expected: Case['expect']): boolean {
   if (decision.kind !== expected.kind) return false;
   if (expected.rest !== undefined && (decision.kind !== 'partial' || !matches(decision.rest, expected.rest))) return false;
-  const shown = decision.kind === 'save' || decision.kind === 'confirm' || decision.kind === 'partial' ? decision.reading.readBack
-    : decision.kind === 'fix' ? decision.options[0]?.readBack : undefined;
+  const shown = decision.kind === 'save' || decision.kind === 'confirm' || decision.kind === 'partial' ? decision.reading.readBack : undefined;
   if (expected.readBack !== undefined && shown !== expected.readBack) return false;
   if (expected.prompt !== undefined && (decision.kind !== 'ask' || decision.prompt !== expected.prompt)) return false;
   if (expected.message !== undefined && !('message' in decision && decision.message === expected.message)) return false;

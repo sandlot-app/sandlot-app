@@ -13,11 +13,6 @@
 {"id":"one-card-complex-then-fails","said":["Soto singles"],"transcript":"Darcy singles to right, steals home","expect":{"kind":"reject","message":"Couldn't record \"steals home\": no runner on third. Nothing was saved."}}
 {"id":"all-clear-complex-confirms","said":["Soto singles"],"transcript":"ball, Darcy singles to right","expect":{"kind":"confirm","readBack":"Ball → count 1–0 · L. Darcy singles to right, J. Soto to 2nd"}}
 {"id":"all-clear-saves","said":[],"transcript":"ball, strike swinging, foul","expect":{"kind":"save","readBack":"Ball → count 1–0 · Strike swinging → count 1–1 · Foul → count 1–2"}}
-{"id":"fix-no-that-was","said":["Soto singles"],"transcript":"No, that was a double","expect":{"kind":"fix","readBack":"J. Soto doubles"}}
-{"id":"fix-actually","said":["ball","ball","ball","strike looking"],"transcript":"actually ball four","expect":{"kind":"fix","readBack":"J. Soto walks"}}
-{"id":"fix-undo-that","said":["Soto singles"],"transcript":"undo that, he doubled to left","expect":{"kind":"fix","readBack":"J. Soto doubles to left"}}
-{"id":"no-play-yet-reads-new","said":[],"transcript":"actually ball","expect":{"kind":"save","readBack":"Ball → count 1–0"}}
-{"id":"number-not-no","said":["ball"],"transcript":"No 17 singles","expect":{"kind":"save","readBack":"J. Soto singles"}}
 {"id":"mid-press-no-drops-call","said":[],"transcript":"ball, ball, no, strike","expect":{"kind":"partial","readBack":"Ball → count 1–0","rest":{"kind":"ask","prompt":"Looking or swinging?"}}}
 {"id":"undo-alone","said":["Soto singles"],"transcript":"undo that","expect":{"kind":"undo"}}
 {"id":"undo-mixed-in","said":["Soto singles"],"transcript":"ball, undo","expect":{"kind":"unknown_phrase","message":"Didn't understand \"ball, undo\". Tap to score."}}
@@ -25,5 +20,3 @@
 {"id":"unreadable-then-never-mind","said":[],"transcript":"ball, ball, never mind","expect":{"kind":"unknown_phrase"}}
 {"id":"unreadable-then-correction","said":[],"transcript":"ball, no wait, he tagged and took two","expect":{"kind":"unknown_phrase"}}
 {"id":"partial-unclear-then-fails","said":[],"transcript":"ball, strike, steals home","expect":{"kind":"partial","readBack":"Ball → count 1–0","rest":{"kind":"ask","prompt":"Couldn't record \"steals home\": no runner on third. Looking or swinging?"}}}
-{"id":"number-words-not-no","said":["ball"],"transcript":"No twenty three singles","expect":{"kind":"ask","prompt":"Who is number 23?"}}
-{"id":"number-word-not-no","said":["ball"],"transcript":"No seventeen singles","expect":{"kind":"save","readBack":"J. Soto singles"}}

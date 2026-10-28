@@ -1,4 +1,4 @@
-import type { Base, Command, GroupId, PlayerRef, Position, TeamSide } from '@sandlot/engine';
+import type { Base, Command, PlayerRef, Position, TeamSide } from '@sandlot/engine';
 
 /** A player the scorer can name. The app passes these in with each press; they never reach events, stats or logs. */
 export type RosterEntry = { player: PlayerRef; side: TeamSide; number: string; name: string };
@@ -58,9 +58,4 @@ export type Decision =
    * The clear calls before the first unclear one save as the press's Play, and `rest` is the one card for the others,
    * checked against the game after `reading` (ADR 0006). `calls` holds the words of the calls `rest` holds.
    */
-  | { kind: 'partial'; reading: Reading; rest: Extract<Decision, { kind: 'ask' | 'confirm' | 'reject' }>; calls: string[] }
-  /**
-   * A Fix of the last Play, the group `target`: nothing changes until the scorer taps one of `options`, each a whole
-   * replacement for `was`.
-   */
-  | { kind: 'fix'; target: GroupId; was: Reading; options: Reading[]; prompt?: string; calls: string[] };
+  | { kind: 'partial'; reading: Reading; rest: Extract<Decision, { kind: 'ask' | 'confirm' | 'reject' }>; calls: string[] };

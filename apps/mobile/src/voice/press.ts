@@ -1,4 +1,4 @@
-import { isEmptyTranscript, parsePhrase, readOnPhone, type ParseResult } from '@sandlot/voice';
+import { isEmptyTranscript, parsePhrase, type ParseResult } from '@sandlot/voice';
 import { Clip, SAMPLE_RATE, toBase64 } from './pcm.ts';
 import { liveTimeouts, openLive, type Live, type LiveTimeouts, type OpenSocket } from './realtime.ts';
 import type { ParseContext, Session, VoiceApi, VoiceFailure } from './voice-api.ts';
@@ -81,8 +81,7 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
   });
 
   async function heard(transcript: string) {
-    // A fix of the last Play is read without its lead-in, so "no, that was a double" needs no voice-parse.
-    const local = readOnPhone(transcript);
+    const local = parsePhrase(transcript);
     if (isEmptyTranscript(transcript) || local.kind !== 'unclear') return emit({ kind: 'heard', transcript, parsed: local });
     const result = await deps.api.parse({ transcript, context: input.context });
     // When voice-parse can't help, route() still says "Didn't understand" and points to the buttons.

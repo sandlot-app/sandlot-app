@@ -228,87 +228,9 @@ function readUpTo(press: Press): Decision | null {
   return null;
 }
 
-const fixStarts = 'no|actually|that was|undo that';
-const fixStart = new RegExp(`^\\s*(?:${fixStarts})\\b`, 'i');
-/** "No 17", "No. 23" and "No twenty three" are how speech-to-text writes a jersey number, so a "no" before a number isn't a fix. */
-const jerseyNumber = /^\s*no\.?\s*(?:\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b)/i;
-/** The starts, and the words that tend to follow them: "no wait, it was a double". */
-const fixLead = new RegExp(`^[\\s,.;:!-]*(?:(?:${fixStarts}|wait|it was|that's|it's|make (?:that|it)|i mean|sorry)\\b[\\s,.;:!-]*)*`, 'i');
-
-/** "No 17" or "No seventeen" said as "number 17", so the phone's reader takes it as a jersey number. */
-const asNumber = (transcript: string) => jerseyNumber.test(transcript) ? transcript.replace(/^\s*no\.?\s*/i, 'number ') : transcript;
-
-/** How the phone's reader reads a press: a fix without its lead-in, and "No 17" as a jersey number. */
-export function readOnPhone(transcript: string): ParseResult {
-  return parsePhrase(fixWords(transcript) ?? asNumber(transcript));
-}
-
-/**
- * The calls of a press that fixes the last Play ("no, that was a double", "actually ball four", "undo that, double"),
- * or null when the press doesn't start like a fix. The phone's reader reads them with the lead-in taken off.
- */
-export function fixWords(transcript: string): string | null {
-  if (!fixStart.test(transcript) || jerseyNumber.test(transcript)) return null;
-  const words = transcript.replace(fixLead, '').trim();
-  return words && !isEmptyTranscript(words) ? words : null;
-}
-
-const playCommands = new Set<Command['kind']>(['pitch', 'ball_in_play', 'runner', 'batter_out']);
-
-/** The latest play not undone, and the events before it. `fixed` means it's a Fix itself, which a voice fix doesn't replace. */
-function lastPlay(events: Event[]): { play: Event[]; before: Event[] } | 'fixed' | null {
-  const groups: Event[][] = [];
-  for (const event of events) {
-    const group = groups.at(-1);
-    if (group?.[0]!.group === event.group) group.push(event);
-    else groups.push([event]);
-  }
-  const active: Event[][] = [];
-  for (const group of groups) {
-    if (group[0]!.command.kind === 'undo') active.pop();
-    else active.push(group);
-  }
-  const play = active.at(-1);
-  if (play?.[0]!.command.kind === 'correct') return 'fixed';
-  if (!play?.every((event) => playCommands.has(event.command.kind))) return null;
-  return { play, before: events.slice(0, events.indexOf(play[0]!)) };
-}
-
-/**
- * A Fix of the last Play: its new calls are read against the game before it, and nothing saves until the scorer taps.
- * Null when there's no play yet, so the lead-in is read as part of a new call ("actually, ball").
- */
-function fix(press: Press, words: string, parsed: ParseResult): Decision | null {
-  const local = parsePhrase(words);
-  if (local.kind === 'not_a_command') return { kind: 'no_play', question: local.question };
-  const read = local.kind === 'plays' ? local : parsed.kind === 'plays' && parsed.model ? parsed : null;
-  if (!read || read.plays.some((play) => play.kind === 'undo')) {
-    return { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
-  }
-  const last = lastPlay(press.events);
-  if (last === 'fixed') return { kind: 'reject', message: 'The last play is already a fix. Undo it, then say the play again.' };
-  if (!last) return null;
-  const before = withEvents(press, last.before);
-  const was = reading(before, last.play.map((event) => event.command));
-  const target = last.play[0]!.group;
-  const calls = read.parts.map((part) => asSaid(words, part));
-  const replacement = whole(before, read);
-  const options = replacement.kind === 'save' || replacement.kind === 'confirm' ? [replacement.reading]
-    : replacement.kind === 'ask' ? replacement.options : null;
-  if (!options) return replacement.kind === 'reject' ? { kind: 'reject', message: replacement.message } : replacement;
-  const changed = options.filter((option) => JSON.stringify(option.commands) !== JSON.stringify(was.commands));
-  if (!changed.length) return { kind: 'reject', message: "That's already the last play." };
-  return replacement.kind === 'ask'
-    ? { kind: 'fix', target, was, options: changed, prompt: replacement.prompt, calls }
-    : { kind: 'fix', target, was, options: changed, calls };
-}
-
 /** Routes one press, in the spec's section 3 order. The first match wins. */
-export function route(press: Press, parsed: ParseResult = readOnPhone(press.transcript)): Decision {
+export function route(press: Press, parsed: ParseResult = parsePhrase(press.transcript)): Decision {
   if (isEmptyTranscript(press.transcript)) return { kind: 'didnt_catch' };
-  const words = fixWords(press.transcript);
-  const fixed = words ? fix(press, words, parsed) : null;
-  if (fixed) return fixed;
   if (parsed.kind === 'not_a_command') return { kind: 'no_play', question: parsed.question };
   if (parsed.kind === 'unclear') return readUpTo(press) ?? { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
   if (parsed.plays.some((play) => play.kind === 'undo')) {

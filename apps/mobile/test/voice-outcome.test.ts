@@ -89,16 +89,3 @@ test('a choice keeps every clause, and shows the whole read-back when two short 
   assert.deepEqual(choiceLabels([reading('Hit by pitch → J. Soto to 1st')]), ['Hit by pitch → J. Soto to 1st'], 'only the count is dropped');
   assert.deepEqual(choiceLabels([reading('Ball → count 3–0'), reading('Ball → count 2–0')]), ['Ball → count 3–0', 'Ball → count 2–0']);
 });
-
-test('a voice fix previews the change in one tap: "Change single to double?"', async () => {
-  const { session, game } = await started();
-  const saved = await session.record({ kind: 'ball_in_play', at: '2026-10-26T17:01:00.000Z', expectedRevision: game.revision, outcome: 'single', trajectory: null, fielders: [], advances: [] });
-  if (saved.kind !== 'saved') throw new Error('The single must save');
-  const result = outcome(said(saved.game, 'No, that was a double'), heard('No, that was a double'));
-  assert.equal(result.kind, 'choose');
-  if (result.kind !== 'choose') return;
-  assert.equal(result.heading, 'Change single to double?');
-  assert.deepEqual(choiceLabels(result.choices), ['J. Soto doubles']);
-  assert.equal(result.note, 'Was: J. Soto singles. Tap to fix it, or use the buttons below. Nothing is changed yet.');
-  assert.equal(result.dropped, 'Fix not saved: a double');
-});

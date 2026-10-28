@@ -3,7 +3,6 @@ import type { Decision, PressGame, Reading, RosterEntry } from '@sandlot/voice';
 import type { VoiceCard } from '../../scorer-ui';
 import { demoSetup } from '../scoring/demo-game.ts';
 import { playerDisplay } from '../scoring/demo-roster.ts';
-import { playLabel } from '../scoring/play-label.ts';
 import type { SavedGame } from '../scoring/offline-game.ts';
 import type { PressInput } from './press.ts';
 import type { VoiceFailure } from './voice-api.ts';
@@ -28,13 +27,6 @@ export type Outcome =
 const unsure = 'Tap one, or use the buttons below. Nothing is saved yet.';
 const capital = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
 const notSaved = (calls: string[]) => `${calls.length} ${calls.length === 1 ? 'call' : 'calls'} not saved: ${capital(calls.join(', '))}`;
-
-/** "Change single to double?", or a plainer heading when the two plays have the same name. */
-function fixHeading(was: Reading, now: Reading[]): string {
-  const before = playLabel(was.commands);
-  const after = now.length === 1 ? playLabel(now[0]!.commands) : before;
-  return before === after ? 'Fix the last play?' : `Change ${before.toLowerCase()} to ${after.toLowerCase()}?`;
-}
 
 type Cardable = Extract<Decision, { kind: 'ask' | 'confirm' }> | (Extract<Decision, { kind: 'reject' }> & { savePart: Reading });
 
@@ -70,11 +62,6 @@ export function outcome(decision: Decision, heard: { transcript: string; calls: 
           : { kind: 'message', message: `${saved}. ${rest.message}` },
       };
     }
-    case 'fix': return {
-      kind: 'choose', heading: fixHeading(decision.was, decision.options), words: heard.transcript, choices: decision.options,
-      note: `${decision.prompt ? `${decision.prompt} ` : ''}Was: ${choiceLabels([decision.was])[0]}. Tap to fix it, or use the buttons below. Nothing is changed yet.`,
-      dropped: `Fix not saved: ${decision.calls.join(', ')}`,
-    };
     case 'didnt_catch': return { kind: 'message', message: "Didn't catch that. Hold and try again, or tap to score." };
     case 'no_play': return { kind: 'message', message: "That wasn't a play, so nothing was saved." };
     case 'unknown_phrase': return { kind: 'message', message: decision.message };
@@ -83,8 +70,6 @@ export function outcome(decision: Decision, heard: { transcript: string; calls: 
 
 export const lostMessage = "The last voice play didn't save. Say it again or tap to score.";
 export const unsavedMessage = "That voice play didn't save. Say it again or tap to score.";
-export const unfixedMessage = "That fix didn't save. Undo the play and say it again, or tap to score.";
-export const fixNotReadyMessage = "Fixing a play by voice isn't ready yet. Tap Undo, then say the play again.";
 
 export function failureMessage(failure: VoiceFailure): string {
   switch (failure) {

@@ -1,5 +1,5 @@
 appId: host.exp.Exponent
-# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="ball, ball, strike|ball|no, strike looking". See features/voice-scoring.md.
+# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="ball, ball, strike|ball". See features/voice-scoring.md.
 ---
 - runFlow:
     when:
@@ -65,22 +65,6 @@ appId: host.exp.Exponent
     text: "1 call not saved: Strike"
 - assertVisible: "Undo · Ball"
 - takeScreenshot: voice-dropped
-
-# 3. "no, strike looking" would fix the last Play. The engine doesn't apply `correct` yet (#84's PR), so the app asks
-# it first and shows one line instead of a preview it couldn't save. Nothing changes.
-- longPressOn:
-    id: "voice-bar"
-- extendedWaitUntil:
-    visible:
-      id: "voice-message"
-      text: "Fixing a play by voice isn't ready yet. Tap Undo, then say the play again."
-    timeout: 15000
-- assertNotVisible:
-    id: "voice-card"
-- assertVisible:
-    id: "waiting-plays"
-    text: ".* ${output.waiting + 2} plays? saved on this phone"
-- takeScreenshot: voice-fix-not-ready
 
 # Put the game back: undo both voice plays.
 - tapOn:

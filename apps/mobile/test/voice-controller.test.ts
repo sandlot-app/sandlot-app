@@ -260,18 +260,6 @@ test('ADR 0006: when the rest can\'t be recorded, the clear calls still save and
   assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Ball saved. Couldn\'t record "walk": that would be ball 2, not ball four.' });
 });
 
-test('a voice fix asks the engine first, so while it can\'t correct a play it says so and changes nothing', async () => {
-  const { groups, hold, recorded, views } = await scorer();
-  (await hold())('ball');
-  await settle();
-  (await hold())('no, strike looking');
-  await settle();
-  // The engine answers `correct` with not_implemented today, so no preview is offered for a fix that can't save.
-  assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Fixing a play by voice isn\'t ready yet. Tap Undo, then say the play again.' });
-  assert.deepEqual(groups(), [[ball]]);
-  assert.equal(recorded.length, 1, 'nothing was sent for the fix');
-});
-
 test('the line for a dropped card stays when the next press has a line of its own', async () => {
   const { hold, views } = await scorer();
   (await hold())('ball, ball, strike');

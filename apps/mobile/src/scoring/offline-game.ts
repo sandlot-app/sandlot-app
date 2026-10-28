@@ -42,9 +42,7 @@ export type DemoAction =
       event: 'steal' | 'wild_pitch' | 'passed_ball' | 'pickoff';
       moves: { runner: PlayerRef; to: Destination }[] }
   /** A reading the scorer said, as route() proposed it. The engine checks it like any other play (rule 6). */
-  | { kind: 'voice'; at: string; expectedRevision: number; commands: Command[] }
-  /** A spoken Fix: `commands` replace the play `target`, through the engine's `correct` command. It must be the last play. */
-  | { kind: 'fix'; at: string; expectedRevision: number; target: GroupId; commands: Command[] };
+  | { kind: 'voice'; at: string; expectedRevision: number; commands: Command[] };
 
 export type SavedGame = {
   id: GameId;
@@ -467,19 +465,14 @@ export async function openOfflineGame(
                     ? move.to === 'out' ? 'caught_stealing' : 'stolen_base'
                     : action.event }));
               }
-              else if (action.kind === 'voice' || action.kind === 'fix') {
-                // A spoken press or Fix records plays only. Lineups, substitutions and undo have their own controls.
+              else if (action.kind === 'voice') {
+                // A spoken press records plays only. Lineups, substitutions, corrections and undo have their own controls.
                 const plays: Command['kind'][] = ['pitch', 'ball_in_play', 'runner', 'batter_out'];
                 if (!action.commands.length || action.commands.some((command) => !plays.includes(command.kind))) {
                   result = { kind: 'rejected', code: 'not_implemented' };
                   return;
                 }
-                if (action.kind === 'fix' && action.target !== undoTarget(current!.groups, current!.row.bootstrap_group)) {
-                  // The preview checked this play, so a fix never replaces another one.
-                  result = { kind: 'stale', game: current!.game };
-                  return;
-                }
-                commands = action.kind === 'fix' ? [{ kind: 'correct', target: action.target, replacement: action.commands }] : action.commands;
+                commands = action.commands;
               }
               else {
                 const target = undoTarget(
@@ -528,7 +521,7 @@ export async function openOfflineGame(
                 seq: (current?.events.length ?? 0) + index + 1,
                 group: savedGroup,
                 lockEpoch,
-                source: action.kind === 'voice' || action.kind === 'fix' ? 'voice' : 'tap',
+                source: action.kind === 'voice' ? 'voice' : 'tap',
                 at,
                 command,
               }));
