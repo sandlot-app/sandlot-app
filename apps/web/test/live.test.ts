@@ -53,7 +53,7 @@ describe('liveReducer', () => {
 
     expect(next.revision).toBe(events.at(-1)!.seq);
     expect(next.events).toEqual(events);
-    expect(next.plays).toHaveLength(12);
+    expect(next.plays).toHaveLength(9);
     expect(next.state).toMatchObject({ half: 'bottom', outs: 0 });
   });
 
@@ -82,7 +82,7 @@ describe('liveReducer', () => {
     });
 
     expect(game.state).toEqual(cached);
-    expect(game.plays).toHaveLength(12);
+    expect(game.plays).toHaveLength(9);
     expect(game.plays.every((play) => play.scoreAfter === null)).toBe(true);
   });
 

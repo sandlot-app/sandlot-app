@@ -54,11 +54,21 @@ function CountDots({ label, total, filled, kind }: { label: string; total: numbe
   );
 }
 
-export const CONNECTION_TEXT: Record<Exclude<ConnectionStatus, 'not_found'>, string> = {
+type Connection = Exclude<ConnectionStatus, 'not_found'>;
+
+const CONNECTION_TEXT: Record<Exclude<Connection, 'live'>, string> = {
   connecting: 'Connecting',
-  live: 'Live',
   reconnecting: 'Reconnecting',
 };
+
+export type StatusPill = { text: string; kind: Connection | 'connected' | 'final' };
+
+/** Live only once the game is under way, so a family who opens the page before the first pitch doesn't think they're missing it. */
+export function statusPill(status: GameState['status'] | null, connection: Connection): StatusPill {
+  if (status === 'final') return { text: 'Final', kind: 'final' };
+  if (connection !== 'live') return { text: CONNECTION_TEXT[connection], kind: connection };
+  return status === 'in_progress' ? { text: 'Live', kind: 'live' } : { text: 'Connected', kind: 'connected' };
+}
 
 function summary(state: GameState, teams: Roster['teams']): string {
   const score = `${teams.away.name} ${state.score.away}, ${teams.home.name} ${state.score.home}`;
@@ -73,8 +83,9 @@ function summary(state: GameState, teams: Roster['teams']): string {
 export function Scoreboard({ state, teams, connection }: {
   state: GameState;
   teams: Roster['teams'];
-  connection: Exclude<ConnectionStatus, 'not_found'>;
+  connection: Connection;
 }) {
+  const pill = statusPill(state.status, connection);
   const playing = state.status === 'in_progress';
   const batting: TeamSide | null = playing ? (state.half === 'top' ? 'away' : 'home') : null;
   const team = (side: TeamSide) => (
@@ -113,8 +124,8 @@ export function Scoreboard({ state, teams, connection }: {
         ) : (
           <span />
         )}
-        <p className={`status-pill ${state.status === 'final' ? 'final' : connection}`} role="status">
-          {state.status === 'final' ? 'Final' : CONNECTION_TEXT[connection]}
+        <p className={`status-pill ${pill.kind}`} role="status">
+          {pill.text}
         </p>
       </div>
     </section>

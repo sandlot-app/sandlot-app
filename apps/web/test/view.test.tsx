@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { initialLiveGame, liveReducer } from '../src/live.ts';
 import { LiveView, type Tab } from '../src/LiveView.tsx';
-import { sampleEvents, snapshot } from './helpers.ts';
+import { sampleEvents, snapshot, withPlay } from './helpers.ts';
 
 const render = (events: ReturnType<typeof sampleEvents>, status: 'live' | 'reconnecting' = 'live', tab: Tab = 'field') => {
   const loaded = liveReducer(initialLiveGame, { type: 'snapshot', snapshot: snapshot(events) });
@@ -28,6 +28,15 @@ describe('LiveView', () => {
     expect(html).toContain('0 outs · runner on 2nd');
   });
 
+  it('says Connected, not Live, before the game starts', () => {
+    const lineups = sampleEvents().filter((event) => event.command.kind === 'game' && event.command.control.kind === 'lineup_set');
+    const html = render(lineups);
+
+    expect(html).toContain('Not started');
+    expect(html).toContain('class="status-pill connected" role="status">Connected');
+    expect(html).not.toContain('>Live<');
+  });
+
   it('shows the reconnecting indicator', () => {
     expect(render(sampleEvents(), 'reconnecting')).toContain('Reconnecting');
   });
@@ -43,7 +52,8 @@ describe('LiveView', () => {
   });
 
   it('plays the recording under the live score and offers a clip of every play', () => {
-    const loaded = liveReducer(initialLiveGame, { type: 'snapshot', snapshot: snapshot(sampleEvents()) });
+    const endedByHand = withPlay(sampleEvents(), 'end-half', { kind: 'game', control: { kind: 'end_half', reason: 'manual' } });
+    const loaded = liveReducer(initialLiveGame, { type: 'snapshot', snapshot: snapshot(endedByHand) });
     const withVideo = liveReducer(loaded, { type: 'recording', recording: { playbackId: 'abc123', clockOffsetMs: 0 } });
     const video = renderToStaticMarkup(<LiveView game={withVideo} initialTab="video" />);
     const plays = renderToStaticMarkup(<LiveView game={withVideo} initialTab="plays" />);

@@ -356,6 +356,7 @@ button {
   background: var(--color-status-reconnecting);
 }
 
+.status-pill.connected,
 .status-pill.final {
   background: var(--color-surface-glass);
 }
@@ -373,10 +374,6 @@ button {
   font-size: var(--text-caption-size);
   font-weight: 600;
   line-height: var(--text-caption-line-height);
-}
-
-.connection.live {
-  color: var(--color-status-live);
 }
 
 /* Tabs, Figma 35:385. */

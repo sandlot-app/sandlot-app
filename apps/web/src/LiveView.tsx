@@ -3,7 +3,7 @@ import emblem from './assets/logo-emblem.svg';
 import { clipUrl, streamUrl } from './clips.ts';
 import { Field } from './components/Field.tsx';
 import { PlayList, playInning } from './components/PlayList.tsx';
-import { CONNECTION_TEXT, inningText, Scoreboard } from './components/Scoreboard.tsx';
+import { inningText, Scoreboard, statusPill } from './components/Scoreboard.tsx';
 import { StreamCard, type StreamView } from './components/StreamCard.tsx';
 import type { ConnectionStatus, LiveGame } from './live.ts';
 import type { Play } from './plays.ts';
@@ -39,9 +39,10 @@ export type Tab = (typeof TABS)[number]['id'];
 
 /** Before there is a scoreboard to show it, the connection shows on its own. */
 function Connection({ status }: { status: Exclude<ConnectionStatus, 'not_found'> }) {
+  const { text, kind } = statusPill(null, status);
   return (
-    <p className={`connection ${status}`} role="status">
-      {CONNECTION_TEXT[status]}
+    <p className={`connection ${kind}`} role="status">
+      {text}
     </p>
   );
 }

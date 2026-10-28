@@ -238,6 +238,10 @@ function replayEachGroup(pins: Pins, events: Event[], groups: Group[]): Replayed
   return { setup, initial: initialState(setup), after };
 }
 
+/** Bookkeeping a family doesn't need to read: the lineups and the start, and undos, whose undone play is already gone. */
+const bookkeeping = (command: Command): boolean =>
+  command.kind === 'undo' || (command.kind === 'game' && (command.control.kind === 'lineup_set' || command.control.kind === 'start'));
+
 function undoTarget(group: Group): GroupId | null {
   const first = group.commands[0];
   return first?.kind === 'undo' ? first.target : null;
@@ -313,7 +317,7 @@ export function buildTimeline(pins: Pins, events: Event[], serverState: GameStat
   const { label } = rosterFor(pins.setup);
   const undone = new Set(groups.flatMap((group) => undoTarget(group) ?? []));
   const plays = groups.flatMap((group, index): Play[] => {
-    if (undone.has(group.id)) return [];
+    if (undone.has(group.id) || group.commands.every(bookkeeping)) return [];
     const before = replayed ? (index === 0 ? replayed.initial : replayed.after[index - 1]) : undefined;
     const after = replayed?.after[index];
     const contexts = replayed && before && after ? commandContexts(replayed, label, events, group, before, after) : [];

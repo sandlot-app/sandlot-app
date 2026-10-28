@@ -21,11 +21,23 @@ describe('buildTimeline', () => {
     const { plays } = buildTimeline(pins(), sampleEvents(), null);
     const byText = (text: string) => plays.find((play) => play.text === text)?.onField;
 
-    expect(byText('Lineup set (away)')).toBe(false);
-    expect(byText('Game started')).toBe(false);
     expect(byText('Ball')).toBe(true);
     expect(byText('#17 singles to left (LF)')).toBe(true);
     expect(byText('#17 steals 2nd')).toBe(true);
+  });
+
+  it('leaves out the lineups, the start and every undo, which a family has no use for', () => {
+    const struckOut = withPlay(sampleEvents(), 'strike', pitch('called_strike'));
+    const undoes = [1, 2, 3].reduce(
+      (sofar, n) => withPlay(withPlay(sofar, `ball-${n}`, pitch('ball')), `undo-${n}`, { kind: 'undo', target: `ball-${n}` as GroupId }),
+      struckOut,
+    );
+
+    const texts = buildTimeline(pins(), undoes, null).plays.map((play) => play.text);
+
+    expect(texts[0]).toBe('Ball');
+    expect(texts.at(-1)).toBe('Strike looking');
+    expect(texts.filter((text) => /Undo|Lineup set|Game started/.test(text))).toEqual([]);
   });
 
   it('records the outs and runners after each play, and three outs when a play ends the half', () => {
@@ -57,9 +69,6 @@ describe('buildTimeline', () => {
     const { plays, state } = buildTimeline(pins(), sampleEvents(), null);
 
     expect(plays.map((play) => play.text)).toEqual([
-      'Lineup set (away)',
-      'Lineup set (home)',
-      'Game started',
       'Ball',
       'Strike looking',
       '#17 singles to left (LF)',
@@ -86,7 +95,7 @@ describe('buildTimeline', () => {
 
     const afterUndo = buildTimeline(pins(), undone, null);
     expect(afterUndo.plays.map((play) => play.group)).not.toContain(homeRunGroup);
-    expect(afterUndo.plays.at(-1)).toMatchObject({ text: 'Undo', scoreAfter: { away: 0, home: 0 } });
+    expect(afterUndo.plays.at(-1)).toMatchObject({ text: '#5 flies out to center (CF)', scoreAfter: { away: 0, home: 0 } });
     expect(afterUndo.state).toMatchObject({ score: { away: 0, home: 0 } });
   });
 
@@ -97,7 +106,7 @@ describe('buildTimeline', () => {
     const { plays, state } = buildTimeline(pins({ engineVersion: '0.0.1' }), events, cached);
 
     expect(state).toBe(cached);
-    expect(plays).toHaveLength(12);
+    expect(plays).toHaveLength(9);
     expect(plays.map((play) => play.text)).toContain('Strike swinging');
     expect(plays.every((play) => play.scoreAfter === null && play.inning === null && play.half === null)).toBe(true);
   });
