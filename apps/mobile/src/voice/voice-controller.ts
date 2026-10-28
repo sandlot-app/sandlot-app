@@ -147,6 +147,15 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
       publish();
       void save(picked.commands, pressed);
     },
+    /**
+     * The phone's mic is ready, such as after the scorer allowed it in Settings, so a "can't use the microphone" line
+     * is stale. It goes, and nothing else does: not another line, and not a press that is listening or on a card.
+     */
+    micReady() {
+      if (listening || live || choosing || message !== failureMessage('microphone')) return;
+      message = null;
+      publish();
+    },
     /** A tap on the scorer buttons takes over from voice, including a press that's still being read. */
     dismiss() {
       stop();

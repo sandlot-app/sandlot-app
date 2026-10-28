@@ -114,6 +114,32 @@ test('a press begins with the second before the touch, then goes on with the liv
   assert.deepEqual(audioSent(sockets[0]!), [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]);
 });
 
+test('live audio that arrives while a press is still starting waits behind the second before the touch', async () => {
+  const { warm, hearFor } = await scorer();
+  warm.warm(true);
+  await tick();
+  hearFor(1, 2);
+  const received: number[] = [];
+  const started = warm.mic.start((bytes) => received.push(bytes[0]!));
+  hearFor(3, 1);
+  await started;
+  hearFor(4, 1);
+  assert.deepEqual(received, [1, 2, 3, 4]);
+});
+
+test('live audio that arrives while a press opens the mic itself is kept for that press, in order', async () => {
+  const { source, warm, hearFor } = await scorer();
+  let answer: () => void = () => {};
+  source.gate = new Promise((resolve) => { answer = resolve; });
+  const received: number[] = [];
+  const started = warm.mic.start((bytes) => received.push(bytes[0]!));
+  await tick();
+  answer();
+  await started;
+  hearFor(1, 2);
+  assert.deepEqual(received, [1, 2]);
+});
+
 test('nothing is sent while the mic is only warm: no session, no socket, no parse', async () => {
   const { warm, api, sessions, sockets, hearFor } = await scorer();
   warm.warm(true);
@@ -176,6 +202,39 @@ test('saying no when iOS asks leaves the bar pointing to Settings', async () => 
   assert.deepEqual(statuses, ['explain', 'refused']);
 });
 
+test('a press during the first-open line asks iOS itself, and the line\'s timer then does nothing', async () => {
+  let pass: () => void = () => {};
+  const { warm, source, statuses, controller, views } = await scorer({
+    permission: 'undetermined', answer: 'denied', wait: () => new Promise((resolve) => { pass = resolve; }),
+  });
+  warm.warm(true);
+  await tick();
+  controller.start();
+  await tick();
+  assert.equal(source.asked, 1, 'the touch asked iOS');
+  assert.equal(views.at(-1)?.message, 'Sandlot can’t use the microphone. Allow it in Settings, or tap to score.');
+  pass();
+  await tick();
+  assert.equal(source.opened, 1, 'the timer did not open the stream a second time');
+  assert.deepEqual(statuses, ['explain', 'refused']);
+});
+
+test('a press during the first-open line that the scorer allows leaves the mic ready, opened once', async () => {
+  let pass: () => void = () => {};
+  const { warm, source, statuses, controller, views } = await scorer({
+    permission: 'undetermined', wait: () => new Promise((resolve) => { pass = resolve; }),
+  });
+  warm.warm(true);
+  await tick();
+  controller.start();
+  await tick();
+  assert.equal(views.at(-1)?.listening, true);
+  pass();
+  await tick();
+  assert.equal(source.opened, 1);
+  assert.deepEqual(statuses, ['explain', 'ready']);
+});
+
 test('coming back from Settings with the mic turned on makes it ready again', async () => {
   const { warm, source, statuses } = await scorer({ permission: 'denied' });
   warm.warm(true);
@@ -185,6 +244,40 @@ test('coming back from Settings with the mic turned on makes it ready again', as
   warm.warm(true);
   await tick();
   assert.deepEqual(statuses, ['refused', 'off', 'ready']);
+});
+
+const cantUseMic = 'Sandlot can’t use the microphone. Allow it in Settings, or tap to score.';
+
+test('allowing the mic in Settings clears the "can\'t use the microphone" line once the mic is ready', async () => {
+  const { warm, source, controller, views } = await scorer({ permission: 'denied' });
+  warm.warm(true);
+  await tick();
+  controller.start();
+  await tick();
+  assert.equal(views.at(-1)?.message, cantUseMic);
+  warm.warm(false);
+  source.permissionNow = 'granted';
+  warm.warm(true);
+  await tick();
+  controller.micReady();
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+});
+
+test('the mic being ready clears only that line, and leaves a press that is listening alone', async () => {
+  const other = await pressHearingNothing({ parse: { ok: true, value: { transcript: '', parsed: null } } });
+  assert.equal(other.views.at(-1)?.message, didntCatch);
+  other.controller.micReady();
+  assert.equal(other.views.at(-1)?.message, didntCatch, 'a different line stays');
+
+  const listening = await scorer();
+  listening.warm.warm(true);
+  await tick();
+  listening.controller.start();
+  await tick();
+  const before = listening.views.at(-1);
+  listening.controller.micReady();
+  assert.deepEqual(listening.views.at(-1), before);
+  assert.equal(before?.listening, true);
 });
 
 test('without the warm mic (Android until its device check passes) a press opens the mic on touch-down and closes it on release', async () => {

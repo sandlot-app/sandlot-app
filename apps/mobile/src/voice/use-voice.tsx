@@ -22,6 +22,9 @@ export function useVoice(game: SavedGame | null, record: (action: DemoAction) =>
     controller.current?.dispose();
     controller.current = null;
   }, [voice]);
+  // The mic coming back (allowed in Settings, say) clears a stale "can't use the microphone" line. The controller exists
+  // only once a press has been made, and only a press can leave that line.
+  useEffect(() => { if (mic === 'ready') controller.current?.micReady(); }, [mic]);
   // Made on the first touch, from event handlers only.
   const current = () => controller.current ??= createVoiceController({
     voice: latest.current.voice,

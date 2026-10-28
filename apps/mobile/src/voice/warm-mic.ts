@@ -46,7 +46,10 @@ export function createWarmMic({ source, now, wait, onStatus }: WarmMicDeps) {
   let ring: Heard[] = [];
   let ringBytes = 0;
   let lastHeard = 0;
+  /** The open press, once it has the second before the touch. */
   let press: OnChunk | null = null;
+  /** A press that is starting: what the mic hears meanwhile waits here, so it goes after that second, in order. */
+  let starting: Heard[] | null = null;
   let opening: Promise<OpenResult> | null = null;
   let status: MicStatus = 'off';
   /** Counts each time the screen turns the warm mic on or off, so an attempt that was overtaken stops. */
@@ -64,6 +67,7 @@ export function createWarmMic({ source, now, wait, onStatus }: WarmMicDeps) {
 
   function hear(bytes: Uint8Array, rate: number) {
     lastHeard = now();
+    if (starting) return void starting.push({ bytes, rate, at: lastHeard });
     if (press) return press(bytes, rate);
     ring.push({ bytes, rate, at: lastHeard });
     ringBytes += bytes.length;
@@ -86,7 +90,7 @@ export function createWarmMic({ source, now, wait, onStatus }: WarmMicDeps) {
 
   /** The stream stays on only for the screen or for a press that is using it. */
   function settle() {
-    if (running && !wanted && !press) closeStream();
+    if (running && !wanted && !press && !starting) closeStream();
   }
 
   function ensureOpen(): Promise<OpenResult> {
@@ -107,14 +111,18 @@ export function createWarmMic({ source, now, wait, onStatus }: WarmMicDeps) {
   const mic: Mic = {
     async start(onChunk) {
       const mine = ++pressTurn;
-      press = onChunk;
+      // A press takes over from any warm-mic attempt still waiting, such as the first-open line's timer, so the mic
+      // is asked for once.
+      screenTurn += 1;
+      // From here on what the mic hears belongs to this press, behind the second before the touch.
+      starting = [];
       if (running && now() - lastHeard > staleMs) closeStream();
       if (!running) {
         // No warm mic, so this press starts the mic on touch-down: Android, a refused or busy mic, or a stream that
         // was interrupted.
         const result = await ensureOpen();
         if (result !== 'started') {
-          if (mine === pressTurn) press = null;
+          if (mine === pressTurn) starting = null;
           setStatus(result === 'refused' ? 'refused' : 'busy');
           return false;
         }
@@ -125,12 +133,17 @@ export function createWarmMic({ source, now, wait, onStatus }: WarmMicDeps) {
       forget();
       // After a microtask, so the press has its handle before the first audio arrives.
       await Promise.resolve();
-      for (const heard of fresh) if (press === onChunk) onChunk(heard.bytes, heard.rate);
+      if (mine !== pressTurn) return true;
+      press = onChunk;
+      const live = starting ?? [];
+      starting = null;
+      for (const heard of [...fresh, ...live]) onChunk(heard.bytes, heard.rate);
       return true;
     },
     stop() {
       pressTurn += 1;
       press = null;
+      starting = null;
       forget();
       settle();
     },
