@@ -49,6 +49,8 @@ describe('routing a press (spec section 3)', () => {
     expect(press(game, 'No 17 singles')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto singles' } });
     expect(press(game, 'No. 23 singles')).not.toMatchObject({ kind: 'fix' });
     expect(press(game, 'No twenty three singles')).not.toMatchObject({ kind: 'fix' });
+    expect(press(game, 'No seventeen singles')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto singles' } });
+    expect(press(game, 'No. 17 singles')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto singles' } });
     expect(press(start, 'actually ball')).toMatchObject({ kind: 'save', reading: { readBack: 'Ball → count 1–0' } });
     expect(press(start, 'that was a ball')).not.toMatchObject({ kind: 'reject' });
     expect(press(game, 'Actually, foul')).toMatchObject({ kind: 'fix', options: [{ readBack: 'Foul → count 0–1' }] });

@@ -26,3 +26,4 @@
 {"id":"unreadable-then-correction","said":[],"transcript":"ball, no wait, he tagged and took two","expect":{"kind":"unknown_phrase"}}
 {"id":"partial-unclear-then-fails","said":[],"transcript":"ball, strike, steals home","expect":{"kind":"partial","readBack":"Ball → count 1–0","rest":{"kind":"ask","prompt":"Couldn't record \"steals home\": no runner on third. Looking or swinging?"}}}
 {"id":"number-words-not-no","said":["ball"],"transcript":"No twenty three singles","expect":{"kind":"ask","prompt":"Who is number 23?"}}
+{"id":"number-word-not-no","said":["ball"],"transcript":"No seventeen singles","expect":{"kind":"save","readBack":"J. Soto singles"}}

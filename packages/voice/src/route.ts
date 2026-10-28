@@ -235,6 +235,14 @@ const jerseyNumber = /^\s*no\.?\s*(?:\d|(?:one|two|three|four|five|six|seven|eig
 /** The starts, and the words that tend to follow them: "no wait, it was a double". */
 const fixLead = new RegExp(`^[\\s,.;:!-]*(?:(?:${fixStarts}|wait|it was|that's|it's|make (?:that|it)|i mean|sorry)\\b[\\s,.;:!-]*)*`, 'i');
 
+/** "No 17" or "No seventeen" said as "number 17", so the phone's reader takes it as a jersey number. */
+const asNumber = (transcript: string) => jerseyNumber.test(transcript) ? transcript.replace(/^\s*no\.?\s*/i, 'number ') : transcript;
+
+/** How the phone's reader reads a press: a fix without its lead-in, and "No 17" as a jersey number. */
+export function readOnPhone(transcript: string): ParseResult {
+  return parsePhrase(fixWords(transcript) ?? asNumber(transcript));
+}
+
 /**
  * The calls of a press that fixes the last Play ("no, that was a double", "actually ball four", "undo that, double"),
  * or null when the press doesn't start like a fix. The phone's reader reads them with the lead-in taken off.
@@ -296,7 +304,7 @@ function fix(press: Press, words: string, parsed: ParseResult): Decision | null 
 }
 
 /** Routes one press, in the spec's section 3 order. The first match wins. */
-export function route(press: Press, parsed: ParseResult = parsePhrase(press.transcript)): Decision {
+export function route(press: Press, parsed: ParseResult = readOnPhone(press.transcript)): Decision {
   if (isEmptyTranscript(press.transcript)) return { kind: 'didnt_catch' };
   const words = fixWords(press.transcript);
   const fixed = words ? fix(press, words, parsed) : null;
