@@ -1,6 +1,8 @@
 import { tokens } from '@sandlot/tokens';
-import { useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Switch, Text, useWindowDimensions, View } from 'react-native';
+import { BlurView } from 'expo-blur';
+import * as Haptics from 'expo-haptics';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AccessibilityInfo, Platform, Pressable, ScrollView, Switch, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { createStyles } from '../../style';
@@ -48,6 +50,24 @@ function Scaled({ scale, children }: { scale: number; children: React.ReactNode 
   </View>;
 }
 
+/** iOS's Reduce Transparency setting, so the frosted tray can turn solid. */
+function useReduceTransparency(): boolean {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceTransparencyEnabled().then(setReduce).catch(() => {});
+    const subscription = AccessibilityInfo.addEventListener('reduceTransparencyChanged', setReduce);
+    return () => subscription.remove();
+  }, []);
+  return reduce;
+}
+
+/** A light tick on the same press that picks or unpicks a tile. */
+function pickFeedback(on: boolean) {
+  const done = Platform.OS === 'ios' ? Haptics.selectionAsync()
+    : Haptics.performAndroidHapticsAsync(on ? Haptics.AndroidHaptics.Toggle_On : Haptics.AndroidHaptics.Toggle_Off);
+  done.catch(() => {});
+}
+
 function Destination({ label, icon, disabled, onPress, testID }:
   { label: string; icon: React.ReactNode; disabled: boolean; onPress: () => void; testID: string }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ disabled }} disabled={disabled}
@@ -65,6 +85,10 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const views = useRef<Partial<Record<ShareKind, Capture['view']>>>({});
+  // A frosted tray the grid scrolls under (iOS), solid with Reduce Transparency. Android stays solid: Expo's blur there
+  // needs the grid wrapped in a blur target and still mostly draws a plain see-through layer.
+  const reduceTransparency = useReduceTransparency();
+  const frosted = Platform.OS === 'ios' && !reduceTransparency;
   const { bottom } = useSafeAreaInsets();
   const heights = useRef<Partial<Record<ShareKind, number>>>({});
   const [trayHeight, setTrayHeight] = useState(240);
@@ -80,6 +104,7 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
   const trayRoom = useMemo(() => ({ width: '100%' as const, height: trayHeight + sizes['space/4'] }), [trayHeight]);
 
   const toggle = (kind: ShareKind) => {
+    pickFeedback(!picked.includes(kind));
     setMessage(null);
     setPicked((now) => (now.includes(kind) ? now.filter((item) => item !== kind) : kinds.map((item) => item.kind).filter((item) => item === kind || now.includes(item))));
   };
@@ -145,7 +170,10 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
       })}
       <View style={trayRoom} />
     </ScrollView>
-    <View style={styles.tray} onLayout={(event) => setTrayHeight(event.nativeEvent.layout.height)}>
+    <View style={[styles.tray, !frosted && styles.traySolid]} onLayout={(event) => setTrayHeight(event.nativeEvent.layout.height)}>
+      {frosted ? <View style={styles.trayClip} pointerEvents="none">
+        <BlurView tint="systemChromeMaterialLight" intensity={80} style={styles.fill} />
+      </View> : null}
       <View style={styles.trayRow}>
         <View style={styles.inks} accessibilityRole="radiogroup">
           {(['white', 'black'] as const).map((option) => <Pressable key={option} accessibilityRole="radio" accessibilityState={{ selected: ink === option }}
@@ -213,9 +241,12 @@ const styles = createStyles({
   markOn: { backgroundColor: colors['action/primary'], borderWidth: 2, borderColor: colors['surface/card'] },
   markOffDark: { borderWidth: 2, borderColor: colors['scoreboard/text'], opacity: 0.8 },
   markOffLight: { borderWidth: 2, borderColor: colors['text/primary'], opacity: 0.8 },
-  tray: { position: 'absolute', left: 0, right: 0, bottom: 0, backgroundColor: colors['surface/page'], borderTopLeftRadius: sizes['radius/xl'],
+  tray: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: sizes['radius/xl'],
     borderTopRightRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/4'], gap: sizes['space/3'],
     shadowColor: colors['text/primary'], shadowOpacity: 0.08, shadowRadius: sizes['radius/lg'], shadowOffset: { width: 0, height: -6 } },
+  traySolid: { backgroundColor: colors['surface/page'] },
+  trayClip: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, borderTopLeftRadius: sizes['radius/xl'], borderTopRightRadius: sizes['radius/xl'],
+    overflow: 'hidden' },
   trayRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', rowGap: sizes['space/2'] },
   inks: { flexDirection: 'row', gap: sizes['space/2'] },
   inkChip: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'], minHeight: sizes['tap/min'], paddingHorizontal: sizes['space/3'],
