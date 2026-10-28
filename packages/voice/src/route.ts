@@ -194,30 +194,36 @@ const callStarts = (parsed: Plays) =>
  * asks about the calls it can, and says why the others aren't on it.
  */
 function firstOfRest(game: Press, rest: Plays, message: string): Extract<Decision, { kind: 'ask' | 'reject' }> {
-  const why = message.slice(0, -nothingSaved.length);
+  const failed = message.slice(0, -nothingSaved.length);
   for (const end of callStarts(rest).slice(1).reverse()) {
     const head = whole(game, slice(rest, 0, end), true);
+    // The call that failed is named already. Any after it are on no card, so the scorer hears about them too.
+    const after = rest.parts.slice(end + 1).map((words) => asSaid(game.transcript, words));
+    const why = after.length ? `${failed} Not saved either: ${after.join(', ')}.` : failed;
     if (head.kind === 'ask') return { kind: 'ask', prompt: `${why} ${head.prompt}`, options: head.options };
     if (head.kind === 'save' || head.kind === 'confirm') return { kind: 'ask', prompt: why, options: [head.reading] };
   }
-  return { kind: 'reject', message: why };
+  return { kind: 'reject', message: failed };
 }
 
-const takesBack = /^(?:no|nope|wait|sorry|actually|i mean|make that|scratch that|undo|cancel that|take that back)\b/i;
+/** Words that can take back what came before them. Anywhere in a press that can't be read whole, they keep anything from saving. */
+const takesBack = /\b(?:no|nope|wait|undo|scratch|cancel|take (?:that|it) back|never ?mind|forget|actually|i mean|sorry|make (?:that|it)|that was|instead|not|oops|whoops)\b/i;
 
 /**
- * ADR 0006 for a press with a call nobody can read: the calls the phone's reader reads before it save, when they make
- * one clear Play, and the rest is lost with a line saying so. Words after them that might take them back save nothing.
+ * A press with a call nobody can read: the calls the phone's reader reads before it go on the press's one card, since
+ * words it can't read might take them back or finish the same play. Nothing saves until the scorer taps.
  */
 function readUpTo(press: Press): Decision | null {
+  if (takesBack.test(press.transcript)) return null;
   const pieces = press.transcript.split(/([,;.]| and then | then )/i);
   for (let end = Math.ceil(pieces.length / 2) - 1; end >= 1; end--) {
     const read = parsePhrase(pieces.slice(0, 2 * end - 1).join(''));
     if (read.kind !== 'plays') continue;
     const lost = pieces.slice(2 * end).join('').trim().replace(/[,;.\s]+$/, '');
-    if (!lost || takesBack.test(lost)) return null;
+    if (!lost || read.plays.some((play) => play.kind === 'undo')) return null;
     const decision = whole(press, read, true);
-    return decision.kind === 'save' ? { kind: 'partial', reading: decision.reading, rest: { kind: 'reject', message: `Didn't understand "${lost}".` }, calls: [lost] } : null;
+    return decision.kind === 'save' || decision.kind === 'confirm'
+      ? { kind: 'reject', message: `Didn't understand "${lost}".`, savePart: decision.reading } : null;
   }
   return null;
 }

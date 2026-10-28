@@ -180,15 +180,16 @@ describe('routing a press (spec section 3)', () => {
     });
   });
 
-  it('ADR 0006: a call nobody can read loses only itself and the calls after it', () => {
+  it('a call nobody can read puts the calls before it on one card, since the words after them might take them back', () => {
     expect(press(start, 'ball, ball, zorp')).toEqual({
-      kind: 'partial',
-      reading: { commands: [ball, ball], readBack: 'Ball → count 1–0 · Ball → count 2–0' },
-      rest: { kind: 'reject', message: 'Didn\'t understand "zorp".' },
-      calls: ['zorp'],
+      kind: 'reject',
+      message: 'Didn\'t understand "zorp".',
+      savePart: { commands: [ball, ball], readBack: 'Ball → count 1–0 · Ball → count 2–0' },
     });
-    expect(press(start, 'ball, no, zorp'), 'a correction after the clear calls might take them back').toMatchObject({ kind: 'unknown_phrase' });
-    expect(press(start, 'zorp, ball')).toMatchObject({ kind: 'unknown_phrase' });
+    for (const transcript of ['ball, no, zorp', 'ball, ball, no, zorp', 'ball, ball, undo, zorp', 'ball, ball, never mind', 'ball, ball, zorp, no',
+      'ball, ball, uh no wait zorp', 'ball, ball, that was a strike, zorp', 'zorp, ball']) {
+      expect(press(start, transcript), transcript).toMatchObject({ kind: 'unknown_phrase' });
+    }
   });
 
   it('ADR 0006: when the rest starts unclear and then fails, the one card asks about the start and says why the end is missing', () => {
@@ -199,6 +200,9 @@ describe('routing a press (spec section 3)', () => {
     });
     expect(decision.kind === 'partial' && decision.rest.kind === 'ask' && decision.rest.options.map((option) => option.readBack))
       .toEqual(['Strike looking → count 1–1', 'Strike swinging → count 1–1']);
+    expect(press(start, 'ball, strike, steals home, ball')).toMatchObject({
+      kind: 'partial', rest: { kind: 'ask', prompt: 'Couldn\'t record "steals home": no runner on third. Not saved either: ball. Looking or swinging?' },
+    });
     expect(press(start, 'ball, ball, Ramirez singles, runner scores')).toMatchObject({
       kind: 'partial', rest: { kind: 'reject', message: 'Couldn\'t record "Ramirez singles": who is Ramirez?' },
     });
