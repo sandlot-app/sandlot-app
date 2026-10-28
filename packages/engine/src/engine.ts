@@ -490,6 +490,7 @@ function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball
     if (!game.bases[base]) break;
     forceThrough = base;
   }
+  const forcedBeforePlay = forceThrough;
   let totalOuts: number = game.outs;
   let thirdOutPreventsRuns = false;
   const hitRecorded = ['single', 'double', 'ground_rule_double', 'triple', 'home_run'].includes(command.outcome);
@@ -507,10 +508,17 @@ function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball
     .filter(({ to }) => to === 'home')
     .sort((a, b) => b.from - a.from)
     .map(({ runner }) => runner.player);
-  // OBR 9.04(a)(1) credits runs the batter's action scores, unaided by an error; 9.04(b)(1) none on a force double play.
-  // OBR 9.04(a)(3)'s RBI on an error is the scorer's judgment, so the engine never gives it.
-  const batterDrivesThemIn = command.outcome !== 'error' &&
-    !(command.outcome === 'double_play' && destinations.some(({ outType }) => outType === 'force'));
+  // OBR 9.04(b)(1): no RBI on a force double play, nor on a reverse-force one, where a grounder forces the batter out
+  // at first and then a runner whose force that removed is tagged. On a fly ball the batter's out is the catch, which
+  // removes no force.
+  const reverseForce = (command.trajectory === 'ground' || command.trajectory === 'bunt') &&
+    destinations.some(({ outType }) => outType === 'batter_before_first') &&
+    destinations.some(({ from, outType }) => outType === 'non_force' && from !== 0 && from <= forcedBeforePlay);
+  const forceDoublePlay = command.outcome === 'double_play' &&
+    (destinations.some(({ outType }) => outType === 'force') || reverseForce);
+  // OBR 9.04(a)(1) credits runs the batter's action scores, unaided by an error. OBR 9.04(a)(3)'s RBI on an error is the
+  // scorer's judgment, so the engine never gives it.
+  const batterDrivesThemIn = command.outcome !== 'error' && !forceDoublePlay;
   return { bases, scorers, batterDrivesThemIn, totalOuts };
 }
 

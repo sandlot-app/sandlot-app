@@ -1,0 +1,27 @@
+name: A run that scores on a reverse-force double play counts for the runner but is no one's RBI
+cite: Official Baseball Rules 9.04(b)(1), and Definitions of Terms, Reverse Force Double Play, for the batter forced out
+  at first and the runner from first then tagged,
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter: { home: 0, away: 0 }
+  bases:
+    1: { player: { kind: opponent, id: away-8 }, chargedTo: { kind: player, id: home-1 } }
+    3: { player: { kind: opponent, id: away-9 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: double_play
+      trajectory: ground
+      fielders: [2B, 1B, SS]
+      advances:
+        - { runner: { kind: opponent, id: away-1 }, to: out, outType: batter_before_first }
+        - { runner: { kind: opponent, id: away-8 }, to: out, outType: non_force }
+        - { runner: { kind: opponent, id: away-9 }, to: home }
+then:
+  outs: 2
+  score: { home: 0, away: 1 }
+batting:
+  away-1: { plateAppearances: 1, atBats: 1, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 0, runsBattedIn: 0 }
+  away-9: { plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 1, runsBattedIn: 0 }
