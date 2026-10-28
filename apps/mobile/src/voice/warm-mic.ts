@@ -27,17 +27,18 @@ export type WarmMicDeps = {
   /** Resolves after `ms`. */
   wait(ms: number): Promise<void>;
   onStatus?(status: MicStatus): void;
-  /** How much audio before the touch a press starts with. */
-  preRollMs?: number;
-  /** How long the first-open line stays up before iOS asks. */
-  explainMs?: number;
-  /** A stream that has gone this long without audio is treated as interrupted, and the next press opens it again. */
-  staleMs?: number;
 };
+
+/** How much audio before the touch a press starts with. */
+const preRollMs = 1000;
+/** How long the first-open line stays up before iOS asks. */
+const explainMs = 4000;
+/** A stream that has gone this long without audio is treated as interrupted, and the next press opens it again. */
+const staleMs = 1500;
 
 type Heard = { bytes: Uint8Array; rate: number; at: number };
 
-export function createWarmMic({ source, now, wait, onStatus, preRollMs = 1000, explainMs = 4000, staleMs = 1500 }: WarmMicDeps) {
+export function createWarmMic({ source, now, wait, onStatus }: WarmMicDeps) {
   const maxBytes = Math.round(SAMPLE_RATE * 2 * preRollMs / 1000);
   /** The scoring screen is open and in the foreground, so the mic stays on between presses. */
   let wanted = false;
@@ -137,7 +138,6 @@ export function createWarmMic({ source, now, wait, onStatus, preRollMs = 1000, e
 
   return {
     mic,
-    status: () => status,
     /** The scoring screen is open and in the foreground (true), or it was left, locked or switched away from (false). */
     warm(on: boolean) {
       wanted = on;

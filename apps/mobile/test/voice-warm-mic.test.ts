@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { openOfflineGame, type DemoAction, type SavedGame } from '../src/scoring/offline-game.ts';
-import { barLabel, type MicStatus } from '../src/voice/mic-status.ts';
+import { barView, type MicStatus } from '../src/voice/mic-status.ts';
 import { SAMPLE_RATE } from '../src/voice/pcm.ts';
 import { createVoiceController, type VoiceView } from '../src/voice/voice-controller.ts';
 import { createWarmMic, type AudioSource, type Permission } from '../src/voice/warm-mic.ts';
@@ -143,7 +143,6 @@ test('a refused mic: the bar says to turn it on in Settings, a press says why it
   warm.warm(true);
   await tick();
   assert.deepEqual(statuses, ['refused']);
-  assert.equal(barLabel('refused', false), 'Turn on the mic in Settings');
   controller.start();
   await tick();
   assert.equal(views.at(-1)?.message, 'Sandlot can’t use the microphone. Allow it in Settings, or tap to score.');
@@ -225,7 +224,6 @@ test('another app holding the mic: the bar points to tap scoring, and the next p
   warm.warm(true);
   await tick();
   assert.deepEqual(statuses, ['busy']);
-  assert.equal(barLabel('busy', false), 'Mic busy · tap to score');
   controller.start();
   await tick();
   assert.equal(views.at(-1)?.listening, false, 'the press says the mic can\'t be used');
@@ -302,13 +300,15 @@ test('"Didn\'t catch that" shows only when the recording is blank too', async ()
 });
 
 test('the idle bar says what the mic is doing, and "Listening" wins while a press is open', () => {
-  assert.deepEqual((['off', 'explain', 'ready', 'refused', 'busy'] as const).map((mic) => barLabel(mic, false)), [
+  const idle = (['off', 'explain', 'ready', 'refused', 'busy'] as const).map((mic) => barView(mic, false));
+  assert.deepEqual(idle.map((view) => view.label), [
     'Hold to score by voice',
     'Hold to score by voice',
     'Mic ready',
     'Turn on the mic in Settings',
     'Mic busy · tap to score',
   ]);
-  assert.equal(barLabel('ready', true), 'Listening…');
-  assert.equal(barLabel('refused', true), 'Listening…');
+  assert.deepEqual(idle.map((view) => view.lines), [1, 1, 1, 2, 2], 'the two long lines get room on a narrow phone');
+  assert.equal(idle[2]!.accessibilityLabel, 'Mic ready. Hold to score by voice', 'a screen reader still hears how to use the bar');
+  for (const mic of ['ready', 'refused', 'busy'] as const) assert.equal(barView(mic, true).label, 'Listening…');
 });

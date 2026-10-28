@@ -10,7 +10,7 @@ import { useVoiceDeps } from './voice-service';
  * while the screen shows something other than the field and the bar, such as the plays tab, so the warm mic is off there
  * too: it listens only while the scorer could use it.
  */
-export function useVoice(game: SavedGame | null, record: (action: DemoAction) => Promise<boolean>, onField = true) {
+export function useVoice(game: SavedGame | null, record: (action: DemoAction) => Promise<boolean>, onField: boolean) {
   const focused = useIsFocused();
   const { voice, mic } = useVoiceDeps(focused && onField && game !== null && game.state.status !== 'final');
   const [view, setView] = useState<VoiceView>({ listening: false, card: null, message: null });

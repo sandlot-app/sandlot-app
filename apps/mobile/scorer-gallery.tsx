@@ -2,7 +2,7 @@ import { tokens } from '@sandlot/tokens';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { PitchButton, PlayerChip, PrimaryButton, ScorerBar, Sheet, SheetHeader, SheetSection, VoiceBar, type Pitch, type SyncState } from './scorer-ui';
-import type { MicStatus } from './src/voice/mic-status.ts';
+import { barView, type MicStatus } from './src/voice/mic-status.ts';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -66,7 +66,7 @@ export default function ScorerGallery({ onExit }: { onExit: () => void }) {
         <ScorerBar sync={{ status: 'saving', lastPlay: 'Strike' }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} voice={voiceBar} testID="gallery-scorer-bar-saving" />
         <ScorerBar sync={{ status: 'offline', lastPlay: 'Ball', waiting: 3 }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} voice={voiceBar} testID="gallery-scorer-bar-offline" />
         <Text style={styles.heading}>Voice bar and the mic</Text>
-        <Text style={styles.caption}>Idle bar: Mic ready · Turn on the mic in Settings · Mic busy</Text>
+        <Text style={styles.caption}>{(['ready', 'refused', 'busy'] as const).map((mic) => barView(mic, false).label).join(' · ')}</Text>
         {(['ready', 'refused', 'busy'] as const).map((mic) => <ScorerBar key={mic} sync={saved} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')}
           voice={voiceBarFor(mic)} testID={`gallery-scorer-bar-mic-${mic}`} />)}
         <Text style={styles.heading}>Disabled pitch buttons</Text>

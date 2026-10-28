@@ -19,14 +19,21 @@ export type VoiceSetup = { voice: VoiceDeps | null; mic: MicStatus };
 /** The one line that explains the warm mic before iOS asks for the microphone. */
 export const explainLine = "Sandlot listens only while you're on this screen, and only sends what you say after you press.";
 
-/** The voice bar's words. Listening wins over whatever the mic was doing before the press. */
-export function barLabel(mic: MicStatus, listening: boolean): string {
-  if (listening) return 'Listening…';
+/** What the voice bar shows and says. Listening wins over whatever the mic was doing before the press. */
+export type BarView = { label: string; accessibilityLabel: string; lines: 1 | 2 };
+
+const hold = 'Hold to score by voice';
+const settings = 'Turn on the mic in Settings';
+const busy = 'Mic busy · tap to score';
+
+export function barView(mic: MicStatus, listening: boolean): BarView {
+  if (listening) return { label: 'Listening…', accessibilityLabel: 'Listening', lines: 1 };
   switch (mic) {
-    case 'ready': return 'Mic ready';
-    case 'refused': return 'Turn on the mic in Settings';
-    case 'busy': return 'Mic busy · tap to score';
+    case 'ready': return { label: 'Mic ready', accessibilityLabel: `Mic ready. ${hold}`, lines: 1 };
+    // These two don't fit one line on a narrow phone.
+    case 'refused': return { label: settings, accessibilityLabel: settings, lines: 2 };
+    case 'busy': return { label: busy, accessibilityLabel: busy, lines: 2 };
     case 'off':
-    case 'explain': return 'Hold to score by voice';
+    case 'explain': return { label: hold, accessibilityLabel: hold, lines: 1 };
   }
 }

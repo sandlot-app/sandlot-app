@@ -2,7 +2,7 @@ import { tokens } from '@sandlot/tokens';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Image, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { MicIcon, MoreHorizontalIcon } from './src/components/icons.tsx';
-import { barLabel, type MicStatus } from './src/voice/mic-status.ts';
+import { barView, type MicStatus } from './src/voice/mic-status.ts';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -256,15 +256,13 @@ export function VoiceBar({ listening, mic = 'off', disabled = false, onStart, on
       onPanResponderTerminate: cancel,
     });
   }, [scale]);
-  const label = barLabel(mic, listening);
-  // These two don't fit one line on a narrow phone.
-  const long = !listening && (mic === 'refused' || mic === 'busy');
-  return <Animated.View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={listening ? 'Listening' : mic === 'ready' ? 'Mic ready. Hold to score by voice' : label}
+  const { label, accessibilityLabel, lines } = barView(mic, listening);
+  return <Animated.View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={accessibilityLabel}
     accessibilityState={{ disabled, busy: listening }} onLayout={(event) => { size.current = event.nativeEvent.layout; }}
     style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, pressTransform(scale)]} testID={testID}>
     {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
     {/* Larger system text shrinks the label to fit the bar, down to 80%, instead of cutting it off. */}
-    <Text style={styles.voiceLabel} numberOfLines={long ? 2 : 1} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+    <Text style={styles.voiceLabel} numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
   </Animated.View>;
 }
 
