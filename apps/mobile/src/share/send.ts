@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { PixelRatio } from 'react-native';
+import { PixelRatio, Platform } from 'react-native';
 import { captureRef, releaseCapture } from 'react-native-view-shot';
 
 // Turns the picked stickers and card into PNGs and sends them where the family chose. Files get the library's own
@@ -46,7 +46,9 @@ export async function shareSheet(capture: Capture): Promise<string | null> {
   try {
     await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png' });
   } finally {
-    releaseCapture(uri);
+    // iOS settles once the sheet closes. Android can settle as soon as the chooser hands off, before the target app has
+    // read the file, so there it stays in the app's cache, which the system clears.
+    if (Platform.OS === 'ios') releaseCapture(uri);
   }
   return null;
 }

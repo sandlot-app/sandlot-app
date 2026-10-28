@@ -15,7 +15,8 @@ export function heavyWidth(text: string): number {
 /**
  * A last name sized to its column: a long one breaks after its hyphen or first space (Oberhauser- / Wettstein), and the
  * longest line sets the size, from 60 down to `floor`. iOS won't shrink one long word to fit, it breaks it, so the size is
- * chosen here.
+ * chosen here. A name with nowhere to break goes below the floor instead of breaking mid-word. The line is 1.3 times the
+ * size, so a second mark stacked above a circumflex (the tilde in Nguyễn) isn't clipped.
  */
 export function fitLastName(name: string, column: number, floor: number): { text: string; style: { fontSize: number; lineHeight: number } } {
   const upperName = upper(name);
@@ -23,6 +24,7 @@ export function fitLastName(name: string, column: number, floor: number): { text
   const text = heavyWidth(upperName) * 60 > column && at > 0
     ? `${upperName.slice(0, at).trimEnd()}\n${upperName.slice(at).trimStart()}` : upperName;
   const longest = Math.max(...text.split('\n').map(heavyWidth));
-  const fontSize = Math.max(floor, Math.min(60, Math.floor(column / longest)));
-  return { text, style: { fontSize, lineHeight: Math.round(fontSize * 1.1) } };
+  const fits = Math.min(60, Math.floor(column / longest));
+  const fontSize = at > 0 ? Math.max(floor, fits) : fits;
+  return { text, style: { fontSize, lineHeight: Math.round(fontSize * 1.3) } };
 }

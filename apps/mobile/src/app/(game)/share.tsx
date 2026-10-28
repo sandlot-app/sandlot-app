@@ -16,7 +16,7 @@ export default function ShareRoute() {
   const { game } = useLocalSearchParams<{ game?: string }>();
   const { games } = useOfflineGame();
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
-  const sample = game ? sampleShares[game] : undefined;
+  const sample = game && Object.hasOwn(sampleShares, game) ? sampleShares[game] : undefined;
   // Keyed by game, so opening the picker for another game starts fresh: name off, Poster picked.
   if (sample) return __DEV__ ? <ShareScreen key={game} share={sample} onClose={close} /> : <Redirect href="/" />;
   const saved = game === 'synced' ? games.synced : games.local;
