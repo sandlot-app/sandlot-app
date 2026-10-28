@@ -19,8 +19,20 @@ The official scorer's record of a game. Everything written about the game comes 
 _Avoid_: Hawks scorebook, team scorebook
 
 **Play**:
-Everything one scorer action records: one tap action or one voice press. Undo reverses a whole play, and the sync badge counts plays.
+Everything one scorer action records: one tap action or one Press. Undo reverses a whole play, and the sync badge counts plays.
 _Avoid_: Group (in conversation), action, entry
+
+**Press**:
+One tap or hold of the voice bar, from when the mic opens until it ends. A press records one Play, however many calls it holds.
+_Avoid_: Recording, utterance, voice command
+
+**Call**:
+One thing the scorer says happened, such as "ball" or "Ruiz singles". A press can hold several calls.
+_Avoid_: Clause, piece, play (for a single call)
+
+**Warm mic**:
+The scoring screen's microphone listening on the phone only, so a press keeps the moment before the scorer's touch. What it hears leaves the phone only once a press starts.
+_Avoid_: Always-on mic, open mic, hands-free
 
 **Event**:
 One recorded command inside a play, stored in order in the game's log and never changed.

@@ -89,7 +89,7 @@ type GameState = {
 };
 ```
 
-- Events are never edited or deleted. Undo and fixes are new events that target a group, so one undo reverses everything one press recorded.
+- Events are never edited or deleted. Undo and fixes are new events that target a group, so one undo reverses everything a press saved on its own. Answering a voice "Not sure" card is a tap, so it records its own play ([ADR 0006](adr/0006-a-press-saves-its-clear-calls-and-asks-about-the-rest.md)).
 - Game state is always computed from the events. The stored copy on the server is a cache that can be rebuilt.
 - Events and stats refer to players by ID. Names live in one table, which keeps privacy rules in one place.
 - IDs are branded types, so an event ID can never be passed where a group ID belongs.
@@ -103,7 +103,7 @@ The engine is the critical path. Voice, stats, corrections and the family view a
 
 | Function | What it does |
 | --- | --- |
-| `apply`, `applyGroup` | Accept or reject one command, or a whole press, all or nothing |
+| `apply`, `applyGroup` | Accept or reject one command, or a whole play, all or nothing |
 | `replay` | Build the game from its events |
 | `candidates` | List every legal reading of an unclear play, such as "runner scores" with two runners on |
 | `classify` | Decide whether a play saves instantly, needs a confirm, or needs a hit-or-error call |
@@ -169,13 +169,13 @@ The September plan wanted SQLite encryption on the phone because it holds kids' 
 
 Voice is the main reason a team would switch, and also the biggest unknown, so a throwaway prototype tests it before the app depends on it. The rule from September stays: the AI proposes a play, and only the engine decides whether it is legal.
 
-1. The scorer holds the mic button. The phone records immediately, before any connection opens, so no words are lost.
+1. The scorer taps or holds the mic button. The mic stays warm on the scoring screen and keeps the second before the touch, so no words are lost ([ADR 0005](adr/0005-the-mic-stays-warm-on-the-scoring-screen.md)).
 2. Speech goes to a transcription service. September's plan chose OpenAI's gpt-live-transcribe, and the prototype confirms that choice or replaces it.
 3. A small parser on the phone handles common phrases like "ball", "steals second" or "fly out to center" with no AI. Anything else goes to an AI parser, which returns candidate commands.
-4. The engine checks the commands and classifies the play. A simple legal play saves instantly, with a spoken-word banner and undo. An unclear, complex or misheard play shows a confirm card or buttons.
+4. The engine checks the commands and classifies the play. A simple legal play saves instantly, with a spoken-word banner and undo. An unclear, complex or misheard play shows a confirm card or buttons. When a press holds several calls and one isn't clear, the clear calls before it save, and only the rest gets a card ([ADR 0006](adr/0006-a-press-saves-its-clear-calls-and-asks-about-the-rest.md)).
 5. Any failure falls back to tap scoring in one step.
 
-Taps record pitches and voice records plays. That split keeps voice cheap, at about 4 cents a game by September's estimate, and puts voice where it saves the most taps.
+Voice can record pitches too, so a parent can say "ball, strike" the way they would out loud. That costs more than September's estimate of about 4 cents a game, which assumed taps for pitches. The targets are under 25 cents for a game with plays by voice and pitches by tap, and under 40 cents when every pitch is said ([#78](https://github.com/sandlot-app/sandlot-app/issues/78)).
 
 **What the prototype must prove.** Record 100 or more spoken plays over game video with crowd noise playing. Voice goes ahead only if all of these hold:
 
@@ -183,7 +183,7 @@ Taps record pitches and voice records plays. That split keeps voice cheap, at ab
 - [ ] No wrong play would have saved without a confirm
 - [ ] 90% of simple plays show a result within 1.5 seconds of release
 - [ ] 90% of complex plays show a result within 2.5 seconds
-- [ ] Measured cost per game is under 25 cents
+- [ ] Measured cost per game is under 25 cents with plays by voice and pitches by tap, and under 40 cents when every pitch is said
 
 The prototype is thrown away. Its recorded test set and the on-phone phrase parser carry into the real app. September's voice edge-case spec carries over unchanged, apart from deferring parent flags.
 
