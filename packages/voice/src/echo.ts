@@ -1,5 +1,5 @@
 import type { Command } from '@sandlot/engine';
-import { batterWords } from './parse.ts';
+import { battedBall, batterWords } from './parse.ts';
 
 type Outcome = 'ball' | 'strike' | 'foul' | 'hbp' | 'single' | 'double' | 'triple' | 'homer' | 'ground' | 'fly' | 'line' | 'popup'
   | 'error' | 'steal' | 'caught_stealing' | 'pickoff' | 'wild_pitch' | 'passed_ball';
@@ -9,8 +9,8 @@ const synonyms: [Outcome, RegExp][] = [
   ['ball', /(?<!(?:ground|fly|foul|passed|line|pop) )\bball\b(?! four)|\b(?:walk|walks|walked|ball four|base on balls)\b/],
   ['strike', /\bstrike\b(?! out)|\b(?:strikes out|struck out|strikeout|strike out|punched out|rung up|looking|swinging|swing and a miss|swing and miss|swings and misses)\b/],
   ['foul', /\bfoul(?:ed)?\b/],
-  // "Soto hits Ruiz" and "plunks him" name a hit by pitch; "hits a double" and "base hit" don't.
-  ['hbp', new RegExp(`\\b(?:hit by (?:a |the )?pitch|hbp|plunked|plunks|beaned|beans|hit batter)\\b|(?<!base )\\bhits? (?:${batterWords})\\b`)],
+  // "Soto hits Ruiz" and "plunks him" name a hit by pitch; "hits a double", "hits sharp grounder" and "base hit" don't.
+  ['hbp', new RegExp(`\\b(?:hit by (?:a |the )?pitch|hbp|plunked|plunks|beaned|beans|hit batter)\\b|(?<!base )\\bhits? (?:${batterWords})\\b(?! (?:${battedBall})\\b)`)],
   ['single', /\b(?:single|singles|singled|base hit)\b/],
   ['double', /\b(?:double|doubles|doubled)\b/],
   ['triple', /\b(?:triple|triples|tripled)\b/],

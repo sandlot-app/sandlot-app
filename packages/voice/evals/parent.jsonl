@@ -65,3 +65,10 @@
 {"id":"hits-a-batted-ball-is-not-hbp","said":[],"transcript":"he hits line drive to left","expect":{"kind":"unknown_phrase"}}
 {"id":"hits-fly-ball-is-not-hbp","said":[],"transcript":"Soto hits fly ball","expect":{"kind":"unknown_phrase"}}
 {"id":"hits-homer","said":[],"transcript":"Soto hits homer","expect":{"kind":"save","readBack":"J. Soto homers"}}
+{"id":"pitcher-and-the-pitcher","said":[],"transcript":"and the pitcher hits him","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"pitcher-bare-pitcher","said":[],"transcript":"pitcher plunks him","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"pitcher-hits-this-kid","said":[],"transcript":"Nguyen hits this kid","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"pitcher-walks-that-batter","said":["ball","ball","ball"],"transcript":"Nguyen walks that batter","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"initial-with-a-period","said":[],"transcript":"Nguyen hits J. Soto","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"hits-homer-no-name","said":[],"transcript":"hits homer","expect":{"kind":"save","readBack":"J. Soto homers"}}
+{"id":"hits-slow-roller-is-not-hbp","said":[],"transcript":"Soto hits slow roller","expect":{"kind":"unknown_phrase"}}

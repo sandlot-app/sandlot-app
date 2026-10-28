@@ -29,6 +29,14 @@ describe('talks like a parent (spec #78, "Reading")', () => {
     expect(press(gameWith([]), 'Soto singles, Darcy takes first')).toMatchObject({ kind: 'reject' });
   });
 
+  it('a runner who was already on that base before the play is never absorbed', () => {
+    // Soto on 3rd, Darcy on 2nd, first base open: the hit by pitch didn't move Darcy, so "Darcy takes second" isn't a repeat.
+    expect(press(said(['Soto triples', 'Darcy doubles']), 'Nguyen hits Vance, Darcy takes second')).toMatchObject({ kind: 'reject' });
+    // Soto on 3rd, Darcy on 1st: "he takes third" is Darcy moving up again, not Soto staying put.
+    const steal = press(said(['Soto triples', 'Darcy singles']), 'Darcy steals second, he takes third');
+    expect(steal.kind === 'save' && steal.reading.readBack).not.toBe('L. Darcy steals 2nd');
+  });
+
   it('a pitcher named by role or pronoun is whoever is pitching', () => {
     for (const transcript of ['the pitcher hits him', 'he plunks him', 'their pitcher beans the batter']) {
       expect(press(gameWith([]), transcript)).toMatchObject({ kind: 'save', reading: { readBack: 'Hit by pitch → J. Soto to 1st' } });

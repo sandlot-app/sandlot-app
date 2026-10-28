@@ -164,15 +164,15 @@ function runnerMoves(game: PressGame, state: GameState, event: 'stolen_base' | '
 }
 
 /**
- * True when the play just named already put `runner` at `to`, so a call saying so only repeats it: "Ruiz takes first"
- * after he's hit, or "Soto scores" after his home run. A runner a hit left in place isn't one: saying where they are
- * is recorded on the hit, so they don't count as a runner held.
+ * True when the play just named moved `runner` to `to`, so a call saying so only repeats it: "Ruiz takes first" after
+ * he's hit, or "Soto scores" after his home run. A runner already on `to` before the play isn't one: on a hit, saying
+ * where they are is recorded on the hit, so they don't count as a runner held.
  */
 function putThere(prior: GameState, now: GameState, context: Command[], runner: PlayerRef, to: Target): boolean {
   const play = context.find((command) => command.kind === 'ball_in_play');
   const due = dueUp(prior);
   const wasBatting = due !== undefined && samePlayer(due, runner);
-  if (to !== 'home') return baseOf(now, runner) === to && !(play && baseOf(prior, runner) === to);
+  if (to !== 'home') return baseOf(now, runner) === to && baseOf(prior, runner) !== to;
   if (play?.kind === 'ball_in_play') {
     const own = play.advances.find((advance) => samePlayer(advance.runner, runner));
     return own ? own.to === 'home' : wasBatting && play.outcome === 'home_run';

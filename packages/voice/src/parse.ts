@@ -15,7 +15,8 @@ function numbersAsDigits(text: string): string {
 }
 
 function normalize(transcript: string): string {
-  return numbersAsDigits(transcript.toLowerCase().replace(/[’`]/g, "'"))
+  // "J. Soto" keeps its initial rather than splitting into two calls at the period ("K." stays a strikeout).
+  return numbersAsDigits(transcript.toLowerCase().replace(/[’`]/g, "'").replace(/\b([a-jl-z])\. (?=[a-z])/g, '$1 '))
     .replace(/[^a-z0-9#,;.' -]/g, ' ')
     .replace(/\b(um+|uh+|er+|hmm+|okay|ok)\b/g, ' ')
     .replace(/\s+/g, ' ')
@@ -58,7 +59,7 @@ const pronoun = /^(?:(?:the|that|this) )?(?:runner|batter|hitter|kid)$|^(?:he|sh
 
 /** Who a clause names, from the words around its verb. */
 function mention(words: string | undefined): Mention | undefined {
-  const text = words?.replace(leadIn, '').replace(/ (?:got|gets|was|is|has been|hits|hit|hits a|hit a)$/, '').trim();
+  const text = words?.replace(leadIn, '').replace(/(?:^| )(?:got|gets|was|is|has been|hits|hit|hits a|hit a)$/, '').trim();
   if (!text || pronoun.test(text)) return undefined;
   const onBase = text.match(new RegExp(`^(?:the )?runner (?:on|at|from) ${base}$`));
   if (onBase) return { base: baseWords[onBase[1]!]! };
@@ -68,15 +69,19 @@ function mention(words: string | undefined): Mention | undefined {
 }
 
 function withMention<T extends Spoken>(spoken: T, key: 'batter' | 'runner' | 'pitcher', words: string | undefined): T {
-  const who = key === 'pitcher' && words && /^(?:the|our|their) pitcher$/.test(words) ? undefined : mention(words);
+  const pitcher = key === 'pitcher' && /^(?:(?:the|that|this|our|their) )?pitcher$/.test(words?.replace(leadIn, '').trim() ?? '');
+  const who = pitcher ? undefined : mention(words);
   return who ? { ...spoken, [key]: who } : spoken;
 }
 
+/** Words for a batted ball, as in "Soto hits a slow roller". */
+export const battedBall = 'line|liner|fly|pop|popup|ground|grounder|foul|bunt|bloop|blooper|gapper|shot|rocket|bomb|dinger|homer|single|double|triple'
+  + '|roller|chopper|dribbler|bouncer|nubber|squibber|blast|bullet|ball|drive';
 /** Words after "Soto hits …" that aren't the batter, so "Soto hits a double" or "hits it to left" is never read as a hit by pitch. */
 const notABatter = 'a|an|the|it|one|that|this|another|his|into|to|up|down|over|through|back|and|for|deep|hard|safely|home|first|second|third|left|right|center|short|again|by|with|off|on|in|out|looking|swinging'
-  + '|line|liner|fly|pop|popup|ground|grounder|foul|bunt|bloop|blooper|gapper|shot|rocket|bomb|dinger|homer|single|double|triple';
+  + `|${battedBall}`;
 /** The batter in a call that names the pitcher: a pronoun, a jersey number, or a name of one or two words. */
-export const batterWords = `the (?:batter|kid|hitter)|that kid|number \\d{1,2}|#\\d{1,2}|\\d{1,2}|(?!(?:${notABatter})\\b)[a-z']+(?: (?!(?:${notABatter})\\b)[a-z']+)?`;
+export const batterWords = `(?:the|that|this) (?:batter|kid|hitter)|number \\d{1,2}|#\\d{1,2}|\\d{1,2}|(?!(?:${notABatter})\\b)[a-z']+(?: (?!(?:${notABatter})\\b)[a-z']+)?`;
 
 /** Calls that name the pitcher and the batter: "Soto hits Ruiz", "Soto plunks him", "Nguyen walks him", "Soto strikes him out". */
 function pitcherCall(text: string): Spoken | null {
