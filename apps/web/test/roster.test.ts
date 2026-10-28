@@ -16,7 +16,7 @@ describe('rosterFor', () => {
     expect(roster.label('home-1')).toBe('#15');
   });
 
-  it('calls any other game Away and Home and leaves its players unnumbered in sentences', () => {
+  it('calls any other game Away and Home and gives its players no number', () => {
     const roster = rosterFor({
       roster: {
         away: [{ kind: 'opponent', id: 'opp-a' as OpponentId }],
@@ -28,8 +28,9 @@ describe('rosterFor', () => {
     });
 
     expect(roster.teams).toMatchObject({ away: { name: 'Away' }, home: { name: 'Home' } });
+    expect(roster.numbered).toBe(false);
     expect(roster.label('home-1')).toBe('home-1');
-    expect(roster.number('p-2')).toBe('2');
+    expect(roster.number('p-2')).toBe('–');
   });
 
   it('is built from numbers only: the page never imports the phone app or its demo names', () => {

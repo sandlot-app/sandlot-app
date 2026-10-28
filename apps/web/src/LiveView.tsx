@@ -142,7 +142,11 @@ export function LiveView({ game, initialTab = 'field' }: { game: LiveGame; initi
         <Connection status={game.status} />
       )}
       <Tabs tabs={tabs} tab={tab} onSelect={setTab} />
-      {tab !== 'video' && <p className="banner card">Public link · Names are hidden, so players show by jersey number.</p>}
+      {tab !== 'video' && (
+        <p className="banner card">
+          {roster.numbered ? 'Public link · Names are hidden, so players show by jersey number.' : 'Public link · Names are hidden.'}
+        </p>
+      )}
       <div id="tab-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
         {panel()}
       </div>

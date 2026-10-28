@@ -48,7 +48,7 @@ export function Field({ state, roster }: { state: GameState; roster: Roster }) {
   const batter = playing ? state.lineups[batting][state.nextBatter[batting]]?.player : undefined;
   const runners = ([1, 2, 3] as const).filter((base) => state.bases[base]);
   const description = playing
-    ? `${batter ? `Number ${jersey(batter.id)} batting, ` : ''}${runnersText(runners)}.`
+    ? `${batter && roster.numbered ? `Number ${jersey(batter.id)} batting, ` : ''}${runnersText(runners)}.`
     : 'No one on the field.';
   return (
     <section className="field" aria-label="Field">

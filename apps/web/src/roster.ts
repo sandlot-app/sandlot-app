@@ -3,7 +3,9 @@ import type { GameSetup, TeamSide } from '@sandlot/engine';
 /** How the page names a game's teams and players. Public, so players go by number and never by name. */
 export type Roster = {
   teams: Record<TeamSide, { name: string; short: string }>;
-  /** The number on a player's chip. */
+  /** Whether the page knows the players' jersey numbers. */
+  numbered: boolean;
+  /** The number on a player's chip, or a dash when the page doesn't know it. */
   number: (playerId: string) => string;
   /** How a sentence names a player: "#17", or the ID when the page has no number for them. */
   label: (playerId: string) => string;
@@ -38,19 +40,17 @@ const SIDES: Roster['teams'] = { home: { name: 'Home', short: 'HOM' }, away: { n
 
 /**
  * The demo game's names and numbers when every player in the game is a demo player. Any other game is Away and Home,
- * with players by ID in sentences and by their place in the roster on a chip.
+ * with players by ID in sentences and a dash on a chip, since a made-up number would read as a jersey number.
  */
 export function rosterFor(setup: Pick<GameSetup, 'roster'>): Roster {
   const players = [...setup.roster.away, ...setup.roster.home];
   if (players.length > 0 && players.every((player) => Object.hasOwn(DEMO_JERSEYS, player.id))) {
     return {
       teams: DEMO_TEAMS,
+      numbered: true,
       number: (id) => (Object.hasOwn(DEMO_JERSEYS, id) ? DEMO_JERSEYS[id]! : id),
       label: (id) => (Object.hasOwn(DEMO_JERSEYS, id) ? `#${DEMO_JERSEYS[id]}` : id),
     };
   }
-  const order = new Map<string, string>(
-    (['away', 'home'] as const).flatMap((side) => setup.roster[side].map((player, index) => [player.id, String(index + 1)] as const)),
-  );
-  return { teams: SIDES, number: (id) => order.get(id) ?? '?', label: (id) => id };
+  return { teams: SIDES, numbered: false, number: () => '–', label: (id) => id };
 }
