@@ -2,6 +2,8 @@ import type { GameState, PlayerRef, TeamSide } from '@sandlot/engine';
 
 // Display names for the demo game, from the design's sample game. They stay in presentation:
 // events, stats and logs refer to players by ID only.
+// The family live page keeps its own copy of these team names and jersey numbers, without the names, in
+// apps/web/src/roster.ts (PR #73). Rename or renumber a demo player in both places.
 
 export const demoTeams: Record<TeamSide, { name: string; short: string }> = {
   home: { name: 'Hawks', short: 'HAW' },

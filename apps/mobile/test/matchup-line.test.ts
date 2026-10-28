@@ -7,7 +7,7 @@ import { openOfflineGame } from '../src/scoring/offline-game.ts';
 import { connect } from './database.ts';
 
 const line = (partial: Partial<BattingLine>): BattingLine => ({
-  plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, ...partial,
+  plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 0, runsBattedIn: 0, ...partial,
 });
 
 test('a batter who has not batted yet is first up', () => {

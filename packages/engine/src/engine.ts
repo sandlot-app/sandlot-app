@@ -102,7 +102,7 @@ export function battingLines(setup: GameSetup, events: Event[]): Record<string, 
 
 /** `battingLines` from a given state instead of the start. Fixtures use it to begin mid-game; the app and server never do. */
 export function battingLinesFrom(setup: GameSetup, from: GameState, events: Event[]): Record<string, BattingLine> {
-  const standing: { id: GroupId; state: GameState; ended: PlateAppearance[] }[] = [];
+  const standing: { id: GroupId; state: GameState; tally: PlayTally }[] = [];
   for (const play of plays(events)) {
     const [first] = play.commands;
     if (first?.kind === 'undo') {
@@ -110,16 +110,18 @@ export function battingLinesFrom(setup: GameSetup, from: GameState, events: Even
       standing.pop();
       continue;
     }
-    const ended: PlateAppearance[] = [];
-    const result = applyPlay(setup, standing.at(-1)?.state ?? from, play.commands, ended);
+    const tally: PlayTally = { appearances: [], runs: [] };
+    const result = applyPlay(setup, standing.at(-1)?.state ?? from, play.commands, tally);
     if (!result.ok) break;
-    standing.push({ id: play.id, state: result.state, ended });
+    standing.push({ id: play.id, state: result.state, tally });
   }
   const lines: Record<string, BattingLine> = {};
-  for (const { batter, result } of standing.flatMap((play) => play.ended)) {
-    const line = lines[batter.id] ??= {
-      plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0,
-    };
+  const lineFor = (player: PlayerRef) => lines[player.id] ??= {
+    plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0,
+    runs: 0, runsBattedIn: 0,
+  };
+  for (const { batter, result } of standing.flatMap((play) => play.tally.appearances)) {
+    const line = lineFor(batter);
     line.plateAppearances += 1;
     if (!notAtBats.has(result)) line.atBats += 1;
     if (hits.has(result)) line.hits += 1;
@@ -130,20 +132,27 @@ export function battingLinesFrom(setup: GameSetup, from: GameState, events: Even
     if (result === 'hit_by_pitch') line.hitByPitch += 1;
     if (result === 'strikeout') line.strikeouts += 1;
   }
+  for (const { runner, battedInBy } of standing.flatMap((play) => play.tally.runs)) {
+    lineFor(runner).runs += 1;
+    if (battedInBy) lineFor(battedInBy).runsBattedIn += 1;
+  }
   return lines;
 }
 
 type PlateAppearance = { batter: PlayerRef; result: PlateAppearanceResult };
+/** A run that counted, and the batter credited with driving it in, if any (OBR 9.04). */
+type ScoredRun = { runner: PlayerRef; battedInBy: PlayerRef | null };
+type PlayTally = { appearances: PlateAppearance[]; runs: ScoredRun[] };
 
 // OBR 9.02(a)(1): no time at bat for a sacrifice, a walk or a hit by pitch. OBR 9.05(a): the safe hits.
 const notAtBats = new Set<PlateAppearanceResult>(['walk', 'hit_by_pitch', 'sacrifice_fly', 'sacrifice_bunt']);
 const hits = new Set<PlateAppearanceResult>(['single', 'double', 'ground_rule_double', 'triple', 'home_run']);
 
 /**
- * Where `endAtBat` notes each finished plate appearance, for the working copy of one play that `battingLines` applies.
- * Keyed by that copy, so a replay that isn't counting lines notes nothing.
+ * Where `endAtBat` and `scoreRun` note each finished plate appearance and run, for the working copy of one play that
+ * `battingLines` applies. Keyed by that copy, so a replay that isn't counting lines notes nothing.
  */
-const endedAppearances = new WeakMap<GameState, PlateAppearance[]>();
+const tallies = new WeakMap<GameState, PlayTally>();
 
 type StoredPlay = { id: GroupId; commands: Command[] };
 
@@ -192,10 +201,10 @@ function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending
   return pending ? next(pending) : { ok: true, state };
 }
 
-function applyPlay(setup: GameSetup, state: GameState, commands: Command[], ended?: PlateAppearance[]): ApplyResult {
+function applyPlay(setup: GameSetup, state: GameState, commands: Command[], tally?: PlayTally): ApplyResult {
   // Commands change this copy in place. A rejection throws the copy away, so nothing from the play is kept.
   const game = copy(state);
-  if (ended) endedAppearances.set(game, ended);
+  if (tally) tallies.set(game, tally);
   game.alerts = [];
   let needsOutcome = false;
   for (const step of steps(commands)) {
@@ -286,16 +295,25 @@ function changePitcher(setup: GameSetup, game: GameState, side: TeamSide, incomi
 function moveRunners(setup: GameSetup, game: GameState, commands: RunnerCommand[]): RejectCode | null {
   const outs = game.outs + commands.filter(({ to }) => to === 'out').length;
   if (outs > 3) return 'too_many_outs';
+  // Lead runner first, so a walk-off that stops at the winning run credits the runner who crossed first.
+  const baseOf = (runner: PlayerRef) => ([3, 2, 1] as const).find((base) => {
+    const player = game.bases[base]?.player;
+    return player !== undefined && samePlayer(player, runner);
+  }) ?? 0;
+  const scorers = commands
+    .filter(({ to }) => to === 'home')
+    .map(({ runner }) => runner)
+    .sort((a, b) => baseOf(b) - baseOf(a));
   for (const command of commands) {
     const code = moveRunner(setup, game, command);
     if (code) return code;
   }
   // A runner event never makes a force out, so its runs count even when the play makes the third out (OBR 5.08(a)).
-  const scored = commands.filter(({ to }) => to === 'home').length;
   const runs = game.half === 'bottom' && game.inning >= setup.rules.innings
-    ? Math.min(scored, game.score.away - game.score.home + 1)
-    : scored;
-  for (let run = 0; run < runs; run++) scoreRun(game);
+    ? Math.min(scorers.length, game.score.away - game.score.home + 1)
+    : scorers.length;
+  // OBR 9.04(a)(1) credits only runs the batter's action scores, so a run on a steal, wild pitch, passed ball or error is no one's RBI.
+  for (const runner of scorers.slice(0, runs)) scoreRun(game, runner, null);
   if (outs === 3) endHalf(setup, game);
   else game.outs = outs as GameState['outs'];
   return null;
@@ -410,7 +428,8 @@ type PlannedAdvance = { from: 0 | Base; runner: Runner } & (
   | { to: 'out'; outType: OutType }
 );
 
-type BallInPlayPlan = { bases: GameState['bases']; runs: number; totalOuts: number };
+/** `scorers` lists the runners who score, lead runner first, so a walk-off that stops at the winning run keeps the right one. */
+type BallInPlayPlan = { bases: GameState['bases']; scorers: PlayerRef[]; batterDrivesThemIn: boolean; totalOuts: number };
 
 function ballInPlay(setup: GameSetup, game: GameState, command: Extract<Command, { kind: 'ball_in_play' }>): RejectCode | null {
   if (!setup.rules.bunting && (command.trajectory === 'bunt' || command.outcome === 'sacrifice_bunt')) return 'bunting_not_allowed';
@@ -418,9 +437,10 @@ function ballInPlay(setup: GameSetup, game: GameState, command: Extract<Command,
   if (typeof plan === 'string') return plan;
   game.bases = plan.bases;
   const runs = game.half === 'bottom' && game.inning >= setup.rules.innings && command.outcome !== 'home_run'
-    ? Math.min(plan.runs, game.score.away - game.score.home + 1)
-    : plan.runs;
-  for (let run = 0; run < runs; run++) scoreRun(game);
+    ? Math.min(plan.scorers.length, game.score.away - game.score.home + 1)
+    : plan.scorers.length;
+  const batter = batterUp(game);
+  for (const runner of plan.scorers.slice(0, runs)) scoreRun(game, runner, plan.batterDrivesThemIn ? batter : null);
   endAtBat(setup, game, command.outcome);
   if (plan.totalOuts >= 3) endHalf(setup, game);
   else game.outs = plan.totalOuts as GameState['outs'];
@@ -483,8 +503,15 @@ function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball
     if (totalOuts === 3) thirdOutPreventsRuns = outType !== 'non_force';
     forceThrough = Math.min(forceThrough, from - 1);
   }
-  const runs = thirdOutPreventsRuns ? 0 : destinations.filter(({ to }) => to === 'home').length;
-  return { bases, runs, totalOuts };
+  const scorers = thirdOutPreventsRuns ? [] : destinations
+    .filter(({ to }) => to === 'home')
+    .sort((a, b) => b.from - a.from)
+    .map(({ runner }) => runner.player);
+  // OBR 9.04(a)(1) credits runs the batter's action scores, unaided by an error; 9.04(b)(1) none on a force double play.
+  // OBR 9.04(a)(3)'s RBI on an error is the scorer's judgment, so the engine never gives it.
+  const batterDrivesThemIn = command.outcome !== 'error' &&
+    !(command.outcome === 'double_play' && destinations.some(({ outType }) => outType === 'force'));
+  return { bases, scorers, batterDrivesThemIn, totalOuts };
 }
 
 function samePlayer(a: PlayerRef, b: PlayerRef): boolean {
@@ -496,7 +523,8 @@ function awardFirst(setup: GameSetup, game: GameState, pitcher: PlayerRef, resul
   const { bases } = game;
   if (bases[1]) {
     if (bases[2]) {
-      if (bases[3]) scoreRun(game);
+      // OBR 9.04(a)(2): a run forced in by the batter reaching first counts as the batter's RBI.
+      if (bases[3]) scoreRun(game, bases[3].player, batterUp(game));
       bases[3] = bases[2];
     }
     bases[2] = bases[1];
@@ -515,7 +543,7 @@ function batterOut(setup: GameSetup, game: GameState) {
 }
 
 function endAtBat(setup: GameSetup, game: GameState, result: PlateAppearanceResult) {
-  endedAppearances.get(game)?.push({ batter: batterUp(game), result });
+  tallies.get(game)?.appearances.push({ batter: batterUp(game), result });
   const side = batting(game);
   game.nextBatter[side] = (game.nextBatter[side] + 1) % game.lineups[side].length;
   game.count = { ...setup.rules.startingCount, pitches: 0 };
@@ -543,9 +571,10 @@ function endHalf(setup: GameSetup, game: GameState) {
   }
 }
 
-function scoreRun(game: GameState) {
+function scoreRun(game: GameState, runner: PlayerRef, battedInBy: PlayerRef | null) {
   game.score[batting(game)] += 1;
   game.runsThisHalf += 1;
+  tallies.get(game)?.runs.push({ runner, battedInBy });
 }
 
 function batting(game: GameState): TeamSide {

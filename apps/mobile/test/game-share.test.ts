@@ -34,9 +34,9 @@ const names = { first: 'Javier', last: 'Ruiz', number: '6' };
 const context = { team: 'Hawks', division: 'Mustang' };
 
 test('the stat line shows AB and H, then up to two of 2B, 3B, HR and BB above zero, and never K', () => {
-  const line = { plateAppearances: 4, atBats: 3, hits: 2, doubles: 1, triples: 0, homeRuns: 1, walks: 1, hitByPitch: 0, strikeouts: 1 };
+  const line = { plateAppearances: 4, atBats: 3, hits: 2, doubles: 1, triples: 0, homeRuns: 1, walks: 1, hitByPitch: 0, strikeouts: 1, runs: 0, runsBattedIn: 0 };
   assert.deepEqual(statCells(line), [{ label: 'AB', value: 3 }, { label: 'H', value: 2 }, { label: '2B', value: 1 }, { label: 'HR', value: 1 }]);
-  const quiet = { plateAppearances: 3, atBats: 3, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 3 };
+  const quiet = { plateAppearances: 3, atBats: 3, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 3, runs: 0, runsBattedIn: 0 };
   assert.deepEqual(statCells(quiet), [{ label: 'AB', value: 3 }, { label: 'H', value: 0 }]);
   assert.equal(gameLine(quiet), '0 FOR 3');
   assert.equal(gameLine({ ...quiet, hits: 2, doubles: 1, walks: 2 }), '2 FOR 3 · DOUBLE · 2 WALKS');

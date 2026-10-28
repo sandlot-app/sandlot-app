@@ -1,0 +1,28 @@
+name: When a walk-off single stops at the winning run, the run goes to the lead runner and the RBI to the batter
+cite: Official Baseball Rules 7.01(e)(3) and 9.06(f) for the winning run, 9.02(a)(2) and (4), and 9.04(a)(1),
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: bottom
+  score: { home: 3, away: 3 }
+  nextBatter: { home: 0, away: 0 }
+  bases:
+    2: { player: { kind: player, id: home-8 }, chargedTo: { kind: opponent, id: away-1 } }
+    3: { player: { kind: player, id: home-9 }, chargedTo: { kind: opponent, id: away-1 } }
+when:
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: single
+      trajectory: line
+      fielders: [LF]
+      advances:
+        - { runner: { kind: player, id: home-8 }, to: home }
+        - { runner: { kind: player, id: home-9 }, to: home }
+then:
+  status: final
+  score: { home: 4, away: 3 }
+batting:
+  home-1: { plateAppearances: 1, atBats: 1, hits: 1, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 0, runsBattedIn: 1 }
+  home-9: { plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 1, runsBattedIn: 0 }
