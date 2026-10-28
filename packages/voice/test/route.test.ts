@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyGroup } from '@sandlot/engine';
-import type { Command, GroupId } from '@sandlot/engine';
+import type { Command, Event, GroupId } from '@sandlot/engine';
+import { route } from '../src/route.ts';
 import { echoMismatch } from '../src/echo.ts';
 import { gameWith, player, press, said } from './game.ts';
 
@@ -56,6 +57,32 @@ describe('routing a press (spec section 3)', () => {
   it('a voice fix the game can\'t take says why, and with no play yet there\'s nothing to fix', () => {
     expect(press(said(['Soto singles']), 'no, he walked')).toEqual({ kind: 'reject', message: 'That would be ball 1, not ball four.' });
     expect(press(start, 'no, that was a double')).toEqual({ kind: 'reject', message: 'There\'s no play to fix yet.' });
+  });
+
+  it('a voice fix that changes nothing, of a fix, or that isn\'t a play says so instead of offering a card', () => {
+    const game = said(['Soto singles']);
+    expect(press(game, 'that was a single')).toEqual({ kind: 'reject', message: 'That\'s already the last play.' });
+    expect(press(game, 'no, come on!')).toEqual({ kind: 'no_play', question: false });
+    expect(press(game, 'nope, a double')).toMatchObject({ kind: 'unknown_phrase' });
+    const fixed = gameWith([[{ kind: 'pitch', result: 'ball' }]]);
+    const target = fixed.events.at(-1)!.group;
+    const correction = { ...fixed.events.at(-1)!, id: 'event-fix', seq: fixed.events.length + 1, group: 'play-fix',
+      command: { kind: 'correct', target, replacement: [{ kind: 'pitch', result: 'foul' }] } } as Event;
+    expect(press({ ...fixed, events: [...fixed.events, correction] }, 'no, strike looking')).toEqual({
+      kind: 'reject', message: 'The last play is already a fix. Undo it, then say the play again.',
+    });
+  });
+
+  it('a voice fix names the Play it replaces, so the app can ask the engine to correct that one', () => {
+    const game = said(['Soto singles']);
+    expect(press(game, 'no, a double')).toMatchObject({ kind: 'fix', target: game.events.at(-1)!.group });
+  });
+
+  it('a press read by the parser model keeps each call\'s words as said', () => {
+    const plays = { kind: 'plays', model: true, plays: [{ kind: 'pitch', result: 'ball' }, { kind: 'hit', bases: 1, batter: { name: 'ramirez' } }],
+      parts: ['Ball', 'Ramirez singles'] } as const;
+    expect(route({ ...start, transcript: 'Ball, uh, Ramirez singles', at: 10_000 }, { ...plays, plays: [...plays.plays], parts: [...plays.parts] }))
+      .toMatchObject({ kind: 'partial', calls: ['Ramirez singles'] });
   });
 
   it('"undo" alone still undoes, and "undo" among other calls still isn\'t understood', () => {

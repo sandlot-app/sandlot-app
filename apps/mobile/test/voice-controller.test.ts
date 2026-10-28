@@ -260,32 +260,23 @@ test('ADR 0006: when the rest can\'t be recorded, the clear calls still save and
   assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Ball saved. Couldn\'t record "walk": that would be ball 2, not ball four.' });
 });
 
-test('a voice fix of the last Play shows a preview, and sends the Fix only after the tap', async () => {
-  const { controller, game, groups, hold, recorded, views } = await scorer();
+test('a voice fix asks the engine first, so while it can\'t correct a play it says so and changes nothing', async () => {
+  const { groups, hold, recorded, views } = await scorer();
   (await hold())('ball');
   await settle();
-  const revision = game().revision;
   (await hold())('no, strike looking');
   await settle();
-  const card = views.at(-1)?.card;
-  assert.equal(card?.kind, 'choose');
-  if (card?.kind !== 'choose') return;
-  assert.equal(card.heading, 'Change ball to strike?');
-  assert.deepEqual(card.choices, ['Strike looking']);
-  assert.deepEqual(groups(), [[ball]], 'nothing changes before the tap');
-  assert.equal(recorded.length, 1);
-
-  controller.choose(0);
-  await settle();
-  assert.deepEqual(recorded.at(-1), { kind: 'fix', at: '2026-10-26T17:01:00.000Z', expectedRevision: revision, commands: [{ kind: 'pitch', result: 'called_strike' }] });
+  // The engine answers `correct` with not_implemented today, so no preview is offered for a fix that can't save.
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Fixing a play by voice isn\'t ready yet. Tap Undo, then say the play again.' });
+  assert.deepEqual(groups(), [[ball]]);
+  assert.equal(recorded.length, 1, 'nothing was sent for the fix');
 });
 
-test('a dropped voice fix says the fix wasn\'t saved', async () => {
-  const { controller, hold, views } = await scorer();
-  (await hold())('ball');
+test('the line for a dropped card stays when the next press has a line of its own', async () => {
+  const { hold, views } = await scorer();
+  (await hold())('ball, ball, strike');
   await settle();
-  (await hold())('no, strike looking');
+  (await hold())('zorp the flibber');
   await settle();
-  controller.dismiss();
-  assert.equal(views.at(-1)?.message, 'Fix not saved: strike looking');
+  assert.equal(views.at(-1)?.message, '1 call not saved: Strike. Didn\'t understand "zorp the flibber". Tap to score.');
 });

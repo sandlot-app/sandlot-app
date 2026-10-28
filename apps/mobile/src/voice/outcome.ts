@@ -1,5 +1,6 @@
-import type { Command, TeamSide } from '@sandlot/engine';
-import type { Decision, PressGame, Reading, RosterEntry } from '@sandlot/voice';
+import { applyGroup } from '@sandlot/engine';
+import type { Command, RejectCode, TeamSide } from '@sandlot/engine';
+import { rejectMessage, type Decision, type PressGame, type Reading, type RosterEntry } from '@sandlot/voice';
 import type { VoiceCard } from '../../scorer-ui';
 import { demoSetup } from '../scoring/demo-game.ts';
 import { playerDisplay } from '../scoring/demo-roster.ts';
@@ -38,33 +39,42 @@ function fixHeading(was: Reading, now: Reading[]): string {
   return before === after ? 'Fix the last play?' : `Change ${before.toLowerCase()} to ${after.toLowerCase()}?`;
 }
 
+type Cardable = Extract<Decision, { kind: 'ask' | 'confirm' }> | (Extract<Decision, { kind: 'reject' }> & { savePart: Reading });
+
+/** The one card for a press. `saved` names the clear calls a partial save already saved, so the card says which Play Undo takes back (ADR 0006). */
+function card(decision: Cardable, words: string, dropped: string, saved?: string): Card {
+  const kept = saved ? `${saved}, and Undo takes back just that.` : '';
+  const make = (heading: string, choices: Reading[], note: string): Card => ({ kind: 'choose', heading, words, choices, note, dropped });
+  switch (decision.kind) {
+    case 'ask': return make('Not sure — which one?', decision.options, `${decision.prompt} ${saved ? `${kept} Tap one, or use the buttons below.` : unsure}`);
+    case 'confirm': return make('Check this play', [decision.reading], saved ? `${kept} Tap to save the rest, or use the buttons below.` : unsure);
+    case 'reject': return make('Save part of it?', [decision.savePart], saved ? `${saved}. ${decision.message}` : decision.message);
+  }
+}
+
 /** `heard` is the press as said: its whole transcript, and the words of each call in it. */
 export function outcome(decision: Decision, heard: { transcript: string; calls: string[] }): Outcome {
-  const words = heard.transcript;
   switch (decision.kind) {
     case 'save': return { kind: 'save', commands: decision.reading.commands };
     case 'undo': return { kind: 'undo' };
-    case 'ask': return { kind: 'choose', heading: 'Not sure — which one?', words, choices: decision.options, note: `${decision.prompt} ${unsure}`, dropped: notSaved(heard.calls) };
-    case 'confirm': return { kind: 'choose', heading: 'Check this play', words, choices: [decision.reading], note: unsure, dropped: notSaved(heard.calls) };
+    case 'ask':
+    case 'confirm': return card(decision, heard.transcript, notSaved(heard.calls));
     case 'reject': return decision.savePart
-      ? { kind: 'choose', heading: 'Save part of it?', words, choices: [decision.savePart], note: decision.message, dropped: notSaved(heard.calls) }
+      ? card({ ...decision, savePart: decision.savePart }, heard.transcript, notSaved(heard.calls))
       : { kind: 'message', message: decision.message };
     case 'partial': {
       const { rest, calls } = decision;
       const saved = `${choiceLabels([decision.reading])[0]} saved`;
-      const card = (heading: string, choices: Reading[], note: string): Card => ({ kind: 'choose', heading, words: calls.join(', '), choices, note, dropped: notSaved(calls) });
-      const kept = `${saved}, and Undo takes back just that.`;
       return {
         kind: 'partial',
         commands: decision.reading.commands,
-        rest: rest.kind === 'ask' ? card('Not sure — which one?', rest.options, `${rest.prompt} ${kept} Tap one, or use the buttons below.`)
-          : rest.kind === 'confirm' ? card('Check this play', [rest.reading], `${kept} Tap to save the rest, or use the buttons below.`)
-          : rest.savePart ? card('Save part of it?', [rest.savePart], `${saved}. ${rest.message}`)
+        rest: rest.kind !== 'reject' ? card(rest, calls.join(', '), notSaved(calls), saved)
+          : rest.savePart ? card({ ...rest, savePart: rest.savePart }, calls.join(', '), notSaved(calls), saved)
           : { kind: 'message', message: `${saved}. ${rest.message}` },
       };
     }
     case 'fix': return {
-      kind: 'choose', heading: fixHeading(decision.was, decision.options), words, choices: decision.options, fix: true,
+      kind: 'choose', heading: fixHeading(decision.was, decision.options), words: heard.transcript, choices: decision.options, fix: true,
       note: `${decision.prompt ? `${decision.prompt} ` : ''}Was: ${choiceLabels([decision.was])[0]}. Tap to fix it, or use the buttons below. Nothing is changed yet.`,
       dropped: `Fix not saved: ${decision.calls.join(', ')}`,
     };
@@ -74,9 +84,24 @@ export function outcome(decision: Decision, heard: { transcript: string; calls: 
   }
 }
 
+/**
+ * Asks the engine whether it can correct the last Play with any of a fix's choices, before the scorer sees a preview
+ * (rule 6). Returns the line to show instead, or null when the fix can be offered.
+ */
+export function fixRefused(game: SavedGame, decision: Extract<Decision, { kind: 'fix' }>): string | null {
+  let code: RejectCode | null = null;
+  for (const option of decision.options) {
+    const result = applyGroup(demoSetup, game.events, [{ kind: 'correct', target: decision.target, replacement: option.commands }]);
+    if (result.ok) return null;
+    code = result.code;
+  }
+  return code === 'not_implemented' ? fixNotReadyMessage : code ? rejectMessage(code) : null;
+}
+
 export const lostMessage = "The last voice play didn't save. Say it again or tap to score.";
 export const unsavedMessage = "That voice play didn't save. Say it again or tap to score.";
 export const unfixedMessage = "That fix didn't save. Undo the play and say it again, or tap to score.";
+export const fixNotReadyMessage = "Fixing a play by voice isn't ready yet. Tap Undo, then say the play again.";
 
 export function failureMessage(failure: VoiceFailure): string {
   switch (failure) {

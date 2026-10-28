@@ -66,30 +66,21 @@ appId: host.exp.Exponent
 - assertVisible: "Undo · Ball"
 - takeScreenshot: voice-dropped
 
-# 3. "no, strike looking" fixes the last Play: a one-tap preview, and nothing changes before the tap.
+# 3. "no, strike looking" would fix the last Play. The engine doesn't apply `correct` yet (#84's PR), so the app asks
+# it first and shows one line instead of a preview it couldn't save. Nothing changes.
 - longPressOn:
     id: "voice-bar"
 - extendedWaitUntil:
     visible:
-      id: "voice-status"
-      text: "Change ball to strike?"
+      id: "voice-message"
+      text: "Fixing a play by voice isn't ready yet. Tap Undo, then say the play again."
     timeout: 15000
-- assertVisible:
-    id: "voice-choice-0"
-    text: "Strike looking"
+- assertNotVisible:
+    id: "voice-card"
 - assertVisible:
     id: "waiting-plays"
     text: ".* ${output.waiting + 2} plays? saved on this phone"
-- takeScreenshot: voice-fix-preview
-- tapOn:
-    id: "voice-choice-0"
-# The engine doesn't apply `correct` yet (#84's PR), so the tap ends in this line and the game stays as it was.
-- extendedWaitUntil:
-    visible:
-      id: "voice-message"
-      text: "That fix didn't save. Undo the play and say it again, or tap to score."
-    timeout: 15000
-- takeScreenshot: voice-fix-tapped
+- takeScreenshot: voice-fix-not-ready
 
 # Put the game back: undo both voice plays.
 - tapOn:

@@ -64,15 +64,15 @@ const lowerFirst = (game: PressGame, text: string) => {
 
 /** A call's words as the transcript has them, since the phone's reader lowercases them and drops what isn't a word. */
 function asSaid(transcript: string, words: string): string {
-  const pattern = words.split(/[^a-z0-9]+/).filter(Boolean).join('[^a-z0-9]+');
+  const pattern = words.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean).join('[^a-z0-9]+');
   return (pattern && transcript.match(new RegExp(pattern, 'i'))?.[0]) || words;
 }
 
 /**
- * "Couldn't record 'steals third': no runner on second. Nothing was saved." with the earlier clauses on the press's
- * one card, for when they can't save on their own (ADR 0006).
+ * "Couldn't record 'steals third': no runner on second. Nothing was saved." with the earlier calls on the press's one
+ * card, for when they can't save on their own (ADR 0006).
  */
-function partial(game: PressGame, parts: string[], clause: number, before: Command[], reason: string): Decision {
+function cantRecord(game: PressGame, parts: string[], clause: number, before: Command[], reason: string): Decision {
   if (clause > 0 && legal(game, before)) {
     return { kind: 'reject', message: `Couldn't record "${parts[clause]}": ${lowerFirst(game, reason)}. Nothing was saved.`, savePart: reading(game, before) };
   }
@@ -98,7 +98,7 @@ function failure(game: PressGame, parts: string[], draft: Draft): Decision {
   for (const [clause, start] of draft.starts.entries()) {
     const end = draft.starts[clause + 1] ?? draft.commands.length;
     const result = applyGroup(game.setup, game.events, draft.commands.slice(0, end));
-    if (!result.ok) return partial(game, parts, clause, draft.commands.slice(0, start), rejectMessage(result.code));
+    if (!result.ok) return cantRecord(game, parts, clause, draft.commands.slice(0, start), rejectMessage(result.code));
   }
   return { kind: 'reject', message: "That play can't be recorded right now." };
 }
@@ -108,12 +108,16 @@ type Plays = Extract<ParseResult, { kind: 'plays' }>;
 const slice = (parsed: Plays, from: number, to?: number): Plays =>
   ({ ...parsed, plays: parsed.plays.slice(from, to), parts: parsed.parts.slice(from, to) });
 
+/** The same press on another version of the game, with no earlier play to compare against and no confirm setting. */
+const withEvents = (press: Press, events: Event[]): Press =>
+  ({ setup: press.setup, roster: press.roster, transcript: press.transcript, at: press.at, events });
+
 /** The game as it stands once `commands` save, so the calls after them are read against it. */
-function after(press: Press, commands: Command[]): Press {
+function onceSaved(press: Press, commands: Command[]): Press {
   const last = press.events.at(-1)!;
   const saved = commands.map((command, index) =>
     ({ ...last, id: `${last.id}+${index + 1}`, seq: last.seq + index + 1, group: `${last.group}+press`, command }) as Event);
-  return { setup: press.setup, roster: press.roster, transcript: press.transcript, at: press.at, events: [...press.events, ...saved] };
+  return withEvents(press, [...press.events, ...saved]);
 }
 
 /**
@@ -130,7 +134,7 @@ function whole(press: Press, parsed: Plays, part = false): Decision {
       const options = players.flatMap((player) => readingsFor(press, choose(parsed.plays, issue.clause, player)));
       if (options.length) return { kind: 'ask', prompt: issueMessage(press, issue), options };
     }
-    return partial(press, parsed.parts, resolved.clause, resolved.before, issueMessage(press, issue));
+    return cantRecord(press, parsed.parts, resolved.clause, resolved.before, issueMessage(press, issue));
   }
   const drafts = distinct(resolved.drafts.filter((draft) => legal(press, draft.commands)));
   if (!drafts.length) return failure(press, parsed.parts, resolved.drafts[0]!);
@@ -167,7 +171,7 @@ function split(press: Press, parsed: Plays, full: Decision): Decision {
   }
   if (clear?.decision.kind !== 'save') return full;
   const saved = clear.decision.reading;
-  const rest = whole(after(press, saved.commands), slice(parsed, clear.end), true);
+  const rest = whole(onceSaved(press, saved.commands), slice(parsed, clear.end), true);
   const calls = parsed.parts.slice(clear.end).map((words) => asSaid(press.transcript, words));
   if (rest.kind === 'reject') {
     const message = rest.savePart ? rest.message : `Couldn't record "${calls[0]}": ${lowerFirst(press, rest.message)}.`;
@@ -176,8 +180,10 @@ function split(press: Press, parsed: Plays, full: Decision): Decision {
   return rest.kind === 'ask' || rest.kind === 'confirm' ? { kind: 'partial', reading: saved, rest, calls } : full;
 }
 
-const fixStart = /^\s*(?:no|nope|actually|that was|undo that)\b/i;
-const fixLead = /^[\s,.;:!-]*(?:(?:no|nope|wait|actually|that was|it was|that's|it's|make (?:that|it)|i mean|sorry|undo that)\b[\s,.;:!-]*)*/i;
+const fixStarts = 'no|actually|that was|undo that';
+const fixStart = new RegExp(`^\\s*(?:${fixStarts})\\b`, 'i');
+/** The starts, and the words that tend to follow them: "no wait, it was a double". */
+const fixLead = new RegExp(`^[\\s,.;:!-]*(?:(?:${fixStarts}|wait|it was|that's|it's|make (?:that|it)|i mean|sorry)\\b[\\s,.;:!-]*)*`, 'i');
 
 /**
  * The calls of a press that fixes the last Play ("no, that was a double", "actually ball four", "undo that, double"),
@@ -191,8 +197,8 @@ export function fixWords(transcript: string): string | null {
 
 const playCommands = new Set<Command['kind']>(['pitch', 'ball_in_play', 'runner', 'batter_out']);
 
-/** The latest play not undone, and the events before it, when it's a play a voice fix can replace. */
-function lastPlay(events: Event[]): { play: Event[]; before: Event[] } | null {
+/** The latest play not undone, and the events before it. `fixed` means it's a Fix itself, which a voice fix doesn't replace. */
+function lastPlay(events: Event[]): { play: Event[]; before: Event[] } | 'fixed' | null {
   const groups: Event[][] = [];
   for (const event of events) {
     const group = groups.at(-1);
@@ -205,6 +211,7 @@ function lastPlay(events: Event[]): { play: Event[]; before: Event[] } | null {
     else active.push(group);
   }
   const play = active.at(-1);
+  if (play?.[0]!.command.kind === 'correct') return 'fixed';
   if (!play?.every((event) => playCommands.has(event.command.kind))) return null;
   return { play, before: events.slice(0, events.indexOf(play[0]!)) };
 }
@@ -212,23 +219,27 @@ function lastPlay(events: Event[]): { play: Event[]; before: Event[] } | null {
 /** A Fix of the last Play: its new calls are read against the game before it, and nothing saves until the scorer taps. */
 function fix(press: Press, words: string, parsed: ParseResult): Decision {
   const local = parsePhrase(words);
+  if (local.kind === 'not_a_command') return { kind: 'no_play', question: local.question };
   const read = local.kind === 'plays' ? local : parsed.kind === 'plays' && parsed.model ? parsed : null;
   if (!read || read.plays.some((play) => play.kind === 'undo')) {
     return { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
   }
   const last = lastPlay(press.events);
+  if (last === 'fixed') return { kind: 'reject', message: 'The last play is already a fix. Undo it, then say the play again.' };
   if (!last) return { kind: 'reject', message: "There's no play to fix yet." };
-  const before: Press = { setup: press.setup, roster: press.roster, transcript: press.transcript, at: press.at, events: last.before };
+  const before = withEvents(press, last.before);
   const was = reading(before, last.play.map((event) => event.command));
+  const target = last.play[0]!.group;
   const calls = read.parts.map((part) => asSaid(words, part));
   const replacement = whole(before, read);
-  switch (replacement.kind) {
-    case 'save':
-    case 'confirm': return { kind: 'fix', was, options: [replacement.reading], calls };
-    case 'ask': return { kind: 'fix', was, options: replacement.options, prompt: replacement.prompt, calls };
-    case 'reject': return { kind: 'reject', message: replacement.message };
-    default: return replacement;
-  }
+  const options = replacement.kind === 'save' || replacement.kind === 'confirm' ? [replacement.reading]
+    : replacement.kind === 'ask' ? replacement.options : null;
+  if (!options) return replacement.kind === 'reject' ? { kind: 'reject', message: replacement.message } : replacement;
+  const changed = options.filter((option) => JSON.stringify(option.commands) !== JSON.stringify(was.commands));
+  if (!changed.length) return { kind: 'reject', message: "That's already the last play." };
+  return replacement.kind === 'ask'
+    ? { kind: 'fix', target, was, options: changed, prompt: replacement.prompt, calls }
+    : { kind: 'fix', target, was, options: changed, calls };
 }
 
 /** Routes one press, in the spec's section 3 order. The first match wins. */

@@ -2,7 +2,9 @@ import type { Command } from '@sandlot/engine';
 import { route, type ParseResult, type Reading } from '@sandlot/voice';
 import type { VoiceCard } from '../../scorer-ui';
 import type { DemoAction, SavedGame } from '../scoring/offline-game.ts';
-import { choiceLabels, failureMessage, liveCard, lostMessage, outcome, pressGame, pressInput, unfixedMessage, unsavedMessage, type Card } from './outcome.ts';
+import {
+  choiceLabels, failureMessage, fixRefused, liveCard, lostMessage, outcome, pressGame, pressInput, unfixedMessage, unsavedMessage, type Card,
+} from './outcome.ts';
 import { startPress, type PressHandle, type VoiceDeps } from './press.ts';
 
 // The scoring screen's voice state, kept out of React so tests can drive it: the Transcript Card while a press is
@@ -74,7 +76,7 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
     publish();
   }
 
-  const choose = (card: Card, from: Promise<Pressed | null>): Choosing => ({
+  const choosingFor = (card: Card, from: Promise<Pressed | null>): Choosing => ({
     card: { kind: 'choose', heading: card.heading, words: card.words, choices: choiceLabels(card.choices), note: card.note },
     readings: card.choices, from, dropped: card.dropped, fix: card.fix ?? false,
   });
@@ -126,26 +128,29 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
       // This press's own result replaces any earlier line, such as the one saying the last press was lost. The line for
       // a card this press dropped stays until the scorer moves on again, so a lost call gets noticed.
       message = unanswered;
+      const say = (line: string) => { message = unanswered ? `${unanswered}. ${line}` : line; };
       if (update.kind === 'failed') {
-        message = failureMessage(update.failure);
+        say(failureMessage(update.failure));
         return publish();
       }
       const calls = update.parsed.kind === 'plays' ? update.parsed.parts : [update.transcript];
-      const result = outcome(routed(update.transcript, update.parsed), { transcript: update.transcript, calls });
+      const decision = routed(update.transcript, update.parsed);
+      const refusal = decision.kind === 'fix' ? fixRefused(game() ?? current, decision) : null;
+      const result = refusal ? { kind: 'message' as const, message: refusal } : outcome(decision, { transcript: update.transcript, calls });
       if (result.kind === 'save') void save(result.commands, from);
       else if (result.kind === 'undo') {
         previous = undefined;
         // Pinned like a save, so an undo said before another save never takes that save back.
         const mine = turn;
         void record({ kind: 'undo', expectedRevision: from.revision }).then((undone) => { if (!undone) refused(mine); });
-      } else if (result.kind === 'message') message = result.message;
-      else if (result.kind === 'choose') choosing = choose(result, Promise.resolve(from));
+      } else if (result.kind === 'message') say(result.message);
+      else if (result.kind === 'choose') choosing = choosingFor(result, Promise.resolve(from));
       else {
         // ADR 0006: the clear calls save now as the press's Play. Their card, if any, answers on the game after them.
         const saved = save(result.commands, from);
-        if (result.rest.kind === 'message') message = result.rest.message;
+        if (result.rest.kind === 'message') say(result.rest.message);
         else {
-          const card = choose(result.rest, saved);
+          const card = choosingFor(result.rest, saved);
           choosing = card;
           void saved.then((after) => {
             if (after || choosing !== card) return;
