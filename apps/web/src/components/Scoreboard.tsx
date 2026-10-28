@@ -2,7 +2,7 @@ import type { Base, GameState, TeamSide } from '@sandlot/engine';
 import bat from '../assets/bat.svg';
 import glove from '../assets/glove.svg';
 import type { ConnectionStatus } from '../live.ts';
-import { TEAM_NAMES, TEAM_SHORT_NAMES } from '../roster.ts';
+import type { Roster } from '../roster.ts';
 
 export function inningText(state: GameState): string {
   switch (state.status) {
@@ -54,14 +54,14 @@ function CountDots({ label, total, filled, kind }: { label: string; total: numbe
   );
 }
 
-const STATUS_TEXT: Record<Exclude<ConnectionStatus, 'not_found'>, string> = {
+export const CONNECTION_TEXT: Record<Exclude<ConnectionStatus, 'not_found'>, string> = {
   connecting: 'Connecting',
   live: 'Live',
   reconnecting: 'Reconnecting',
 };
 
-function summary(state: GameState): string {
-  const score = `${TEAM_NAMES.away} ${state.score.away}, ${TEAM_NAMES.home} ${state.score.home}`;
+function summary(state: GameState, teams: Roster['teams']): string {
+  const score = `${teams.away.name} ${state.score.away}, ${teams.home.name} ${state.score.home}`;
   if (state.status !== 'in_progress') return `${score}. ${inningText(state)}.`;
   const runners = BASES.filter((base) => state.bases[base]).sort();
   return (
@@ -70,15 +70,19 @@ function summary(state: GameState): string {
   );
 }
 
-export function Scoreboard({ state, connection }: { state: GameState; connection: Exclude<ConnectionStatus, 'not_found'> }) {
+export function Scoreboard({ state, teams, connection }: {
+  state: GameState;
+  teams: Roster['teams'];
+  connection: Exclude<ConnectionStatus, 'not_found'>;
+}) {
   const playing = state.status === 'in_progress';
   const batting: TeamSide | null = playing ? (state.half === 'top' ? 'away' : 'home') : null;
   const team = (side: TeamSide) => (
     <div className={`side ${side}`}>
       <div className="side-name">
         {side === 'away' && batting && <RoleBadge batting={batting === 'away'} />}
-        <span className="team-name">{TEAM_NAMES[side]}</span>
-        <span className="team-short">{TEAM_SHORT_NAMES[side]}</span>
+        <span className="team-name">{teams[side].name}</span>
+        <span className="team-short">{teams[side].short}</span>
         {side === 'home' && batting && <RoleBadge batting={batting === 'home'} />}
       </div>
       <span className="team-score">{state.score[side]}</span>
@@ -88,7 +92,7 @@ export function Scoreboard({ state, connection }: { state: GameState; connection
   return (
     <section className="scoreboard" aria-label="Score">
       <p className="sr-only" aria-live="polite">
-        {summary(state)}
+        {summary(state, teams)}
       </p>
       <div className="scoreboard-main" aria-hidden="true">
         {team('away')}
@@ -110,7 +114,7 @@ export function Scoreboard({ state, connection }: { state: GameState; connection
           <span />
         )}
         <p className={`status-pill ${state.status === 'final' ? 'final' : connection}`} role="status">
-          {state.status === 'final' ? 'Final' : STATUS_TEXT[connection]}
+          {state.status === 'final' ? 'Final' : CONNECTION_TEXT[connection]}
         </p>
       </div>
     </section>

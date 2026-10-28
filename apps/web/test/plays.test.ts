@@ -37,6 +37,22 @@ describe('buildTimeline', () => {
     expect(byText('#5 flies out to center (CF)')).toEqual({ outs: 3, runners: [] });
   });
 
+  it('counts the out that ends the game as the third out, though the game stays in that half', () => {
+    const oneInning = pins({ rules: { ...pins().rules, innings: 1, timeLimit: null } });
+    const { plays: timeline, state } = buildTimeline(oneInning, plays(sampleEvents(), flyOut, flyOut, flyOut), null);
+
+    expect(state).toMatchObject({ status: 'final', inning: 1, half: 'bottom' });
+    expect(timeline.at(-1)?.situation).toEqual({ outs: 3, runners: [] });
+  });
+
+  it('keeps the outs and runners of a walk-off, which ends the game without ending the half by outs', () => {
+    const oneInning = pins({ rules: { ...pins().rules, innings: 1, timeLimit: null } });
+    const { plays: timeline, state } = buildTimeline(oneInning, plays(sampleEvents(), flyOut, homeRun), null);
+
+    expect(state).toMatchObject({ status: 'final', score: { away: 0, home: 1 } });
+    expect(timeline.at(-1)?.situation).toEqual({ outs: 1, runners: [] });
+  });
+
   it('describes each play of the sample half-inning and ends in the bottom of the 1st', () => {
     const { plays, state } = buildTimeline(pins(), sampleEvents(), null);
 

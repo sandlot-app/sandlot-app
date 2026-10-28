@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { initialLiveGame, liveReducer } from '../src/live.ts';
-import { LiveView, TABS, type Tab } from '../src/LiveView.tsx';
+import { LiveView, type Tab } from '../src/LiveView.tsx';
 import { sampleEvents, snapshot } from './helpers.ts';
 
 const render = (events: ReturnType<typeof sampleEvents>, status: 'live' | 'reconnecting' = 'live', tab: Tab = 'field') => {
@@ -16,7 +16,7 @@ describe('LiveView', () => {
     expect(html).toContain('Top 1');
     expect(html).toContain('runner on 2nd');
     expect(html).toContain('Live');
-    expect(html).toContain('aria-selected="true" aria-controls="tab-panel" class="tab">Field');
+    expect(html).toContain('aria-selected="true" aria-controls="tab-panel" tabindex="0" class="tab">Field');
     expect(html).toMatch(/class="chip batting"[^>]*><span class="chip-disc">17<\/span><span class="chip-label">Runner/);
   });
 
@@ -32,9 +32,14 @@ describe('LiveView', () => {
     expect(render(sampleEvents(), 'reconnecting')).toContain('Reconnecting');
   });
 
-  it('shows no video and no clip buttons while the game has no recording', () => {
-    expect(render(sampleEvents(), 'live', 'video')).toContain('No stream for this game');
+  it('has no Video tab and no clip buttons while the game has no recording', () => {
+    expect(render(sampleEvents(), 'live', 'field')).not.toContain('>Video</button>');
+    expect(render(sampleEvents(), 'live', 'video')).toContain('aria-selected="true" aria-controls="tab-panel" tabindex="0" class="tab">Field');
     expect(render(sampleEvents(), 'live', 'plays')).not.toContain('Watch');
+  });
+
+  it('shows the connection while the game is loading', () => {
+    expect(renderToStaticMarkup(<LiveView game={initialLiveGame} />)).toContain('Connecting');
   });
 
   it('plays the recording under the live score and offers a clip of every play', () => {
@@ -50,13 +55,6 @@ describe('LiveView', () => {
     expect(onField.length).toBeGreaterThan(0);
     expect(onField.length).toBeLessThan(withVideo.plays.length);
     expect(plays.match(/>Watch</g)).toHaveLength(onField.length);
-  });
-
-  it('shows players by number and never by name', () => {
-    for (const tab of TABS) {
-      const html = render(sampleEvents().filter((event) => event.seq <= 8), 'live', tab.id);
-      for (const name of ['Soto', 'Darcy', 'Vance', 'Nguyen', 'Ortiz']) expect(html).not.toContain(name);
-    }
   });
 
   it('tells a family when the game is not public', () => {

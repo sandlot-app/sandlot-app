@@ -1,7 +1,7 @@
 import type { Half } from '@sandlot/engine';
 import baseball from '../assets/baseball.svg';
 import type { Play, Score } from '../plays.ts';
-import { TEAM_NAMES } from '../roster.ts';
+import type { Roster } from '../roster.ts';
 import { runnersText } from './Scoreboard.tsx';
 
 export function playInning(play: Play): string | null {
@@ -52,8 +52,13 @@ function scored(play: Play, previous: Play | undefined): boolean {
   return total(play.scoreAfter) > (previous?.scoreAfter ? total(previous.scoreAfter) : 0);
 }
 
-function PlayRow({ play, previous, onWatch }: { play: Play; previous: Play | undefined; onWatch: ((play: Play) => void) | undefined }) {
-  const out = isOut(play, previous);
+function PlayRow({ play, previous, teams, onWatch }: {
+  play: Play;
+  previous: Play | undefined;
+  teams: Roster['teams'];
+  onWatch: ((play: Play) => void) | undefined;
+}) {
+  const out = play.onField && isOut(play, previous);
   const scoring = scored(play, previous);
   const detail = play.onField ? situationText(play) : null;
   return (
@@ -68,7 +73,7 @@ function PlayRow({ play, previous, onWatch }: { play: Play; previous: Play | und
       <span className="play-right">
         {scoring && play.scoreAfter && (
           <span className="score-pill">
-            {TEAM_NAMES.away} {play.scoreAfter.away}, {TEAM_NAMES.home} {play.scoreAfter.home}
+            {teams.away.name} {play.scoreAfter.away}, {teams.home.name} {play.scoreAfter.home}
           </span>
         )}
         {onWatch && play.onField && (
@@ -82,7 +87,12 @@ function PlayRow({ play, previous, onWatch }: { play: Play; previous: Play | und
 }
 
 /** Half-innings newest first, the current one open. With `onWatch`, each play on the field offers its clip. */
-export function PlayList({ plays, live, onWatch }: { plays: Play[]; live: boolean; onWatch?: ((play: Play) => void) | undefined }) {
+export function PlayList({ plays, teams, live, onWatch }: {
+  plays: Play[];
+  teams: Roster['teams'];
+  live: boolean;
+  onWatch?: ((play: Play) => void) | undefined;
+}) {
   if (plays.length === 0) return <p className="empty card">No plays yet.</p>;
   const previous = new Map(plays.map((play, index) => [play.group, plays[index - 1]]));
   return (
@@ -94,12 +104,12 @@ export function PlayList({ plays, live, onWatch }: { plays: Play[]; live: boolea
             <summary>
               {live && index === 0 && <span className="live-dot" aria-hidden="true" />}
               <span className="half-title">{half.title}</span>
-              {half.half && <span className="half-batting">· {TEAM_NAMES[half.half === 'top' ? 'away' : 'home']} batting</span>}
+              {half.half && <span className="half-batting">· {teams[half.half === 'top' ? 'away' : 'home'].name} batting</span>}
               {half.runs !== null && <span className="half-runs">{half.runs} R</span>}
             </summary>
             <ol>
               {[...half.plays].reverse().map((play) => (
-                <PlayRow key={play.group} play={play} previous={previous.get(play.group)} onWatch={onWatch} />
+                <PlayRow key={play.group} play={play} previous={previous.get(play.group)} teams={teams} onWatch={onWatch} />
               ))}
             </ol>
           </details>

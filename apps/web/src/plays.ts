@@ -19,7 +19,7 @@ import type {
   Timestamp,
   Trajectory,
 } from '@sandlot/engine';
-import { playerLabel } from './roster.ts';
+import { rosterFor, type Roster } from './roster.ts';
 import type { Pins } from './snapshot.ts';
 
 export type Score = GameState['score'];
@@ -137,7 +137,7 @@ function fielderText(fielders: Position[]): string {
   return rest.length === 0 ? ` to ${POSITION_NAME[first]} (${first})` : `, ${fielders.join(' to ')}`;
 }
 
-function substitutionText(side: TeamSide, change: Substitution): string {
+function substitutionText(side: TeamSide, change: Substitution, playerLabel: Roster['label']): string {
   switch (change.kind) {
     case 'pinch_hitter':
       return `${playerLabel(change.in.id)} pinch hits for ${playerLabel(change.out.id)}`;
@@ -167,7 +167,7 @@ function controlText(control: GameControl): string {
   }
 }
 
-function commandText(command: Command, { batter, endsAtBat }: CommandContext): string {
+function commandText(command: Command, { batter, endsAtBat }: CommandContext, playerLabel: Roster['label']): string {
   const who = batter ?? 'Batter';
   switch (command.kind) {
     case 'pitch': {
@@ -181,7 +181,7 @@ function commandText(command: Command, { batter, endsAtBat }: CommandContext): s
     case 'batter_out':
       return `${who} ${BATTER_OUT_TEXT[command.reason]}`;
     case 'substitution':
-      return substitutionText(command.side, command.change);
+      return substitutionText(command.side, command.change, playerLabel);
     case 'game':
       return controlText(command.control);
     case 'undo':
@@ -192,18 +192,18 @@ function commandText(command: Command, { batter, endsAtBat }: CommandContext): s
 }
 
 /** The pitch that precedes a ball in play adds nothing to what the ball in play says. */
-function groupText(commands: Command[], contexts: CommandContext[]): string {
+function groupText(commands: Command[], contexts: CommandContext[], playerLabel: Roster['label']): string {
   const hasBallInPlay = commands.some((command) => command.kind === 'ball_in_play');
   return commands
     .flatMap((command, i) =>
-      hasBallInPlay && command.kind === 'pitch' && command.result === 'in_play' ? [] : [commandText(command, contexts[i] ?? NO_CONTEXT)],
+      hasBallInPlay && command.kind === 'pitch' && command.result === 'in_play' ? [] : [commandText(command, contexts[i] ?? NO_CONTEXT, playerLabel)],
     )
     .join('. ');
 }
 
-function safeGroupText(commands: Command[], contexts: CommandContext[]): string {
+function safeGroupText(commands: Command[], contexts: CommandContext[], playerLabel: Roster['label']): string {
   try {
-    return groupText(commands, contexts) || 'Play';
+    return groupText(commands, contexts, playerLabel) || 'Play';
   } catch {
     // A game recorded by a newer version can hold commands this page has no wording for.
     return 'Play';
@@ -247,12 +247,18 @@ const battingSide = (half: Half): TeamSide => (half === 'top' ? 'away' : 'home')
 
 const BASES: Base[] = [1, 2, 3];
 
+/** A game that ends on its last out stays in the same half, so the engine's reset of that half's runs tells it apart from a walk-off. */
+function endedHalf(before: GameState, after: GameState): boolean {
+  if (after.half !== before.half || after.inning !== before.inning) return true;
+  return before.status === 'in_progress' && after.status === 'final' && after.runsThisHalf === 0 && after.outs === 0;
+}
+
 function situationAfter(before: GameState, after: GameState): Situation {
-  if (after.half !== before.half || after.inning !== before.inning) return { outs: 3, runners: [] };
+  if (endedHalf(before, after)) return { outs: 3, runners: [] };
   return { outs: after.outs, runners: BASES.filter((base) => after.bases[base]) };
 }
 
-function batterUp(state: GameState): string | null {
+function batterUp(state: GameState, playerLabel: Roster['label']): string | null {
   const side = battingSide(state.half);
   const batter = state.lineups[side][state.nextBatter[side]]?.player;
   return batter ? playerLabel(batter.id) : null;
@@ -270,6 +276,7 @@ function atBatEnded(before: GameState, after: GameState): boolean {
  */
 function commandContexts(
   { setup }: Replayed,
+  playerLabel: Roster['label'],
   events: Event[],
   group: Group,
   before: GameState,
@@ -286,7 +293,7 @@ function commandContexts(
   };
   let state = before;
   return group.commands.map((_, i) => {
-    const batter = batterUp(state);
+    const batter = batterUp(state, playerLabel);
     const next = stateThrough(i);
     if (!next) return { batter, endsAtBat: false };
     const endsAtBat = atBatEnded(state, next);
@@ -303,17 +310,18 @@ function commandContexts(
 export function buildTimeline(pins: Pins, events: Event[], serverState: GameState | null): Timeline {
   const groups = splitGroups(events);
   const replayed = replayEachGroup(pins, events, groups);
+  const { label } = rosterFor(pins.setup);
   const undone = new Set(groups.flatMap((group) => undoTarget(group) ?? []));
   const plays = groups.flatMap((group, index): Play[] => {
     if (undone.has(group.id)) return [];
     const before = replayed ? (index === 0 ? replayed.initial : replayed.after[index - 1]) : undefined;
     const after = replayed?.after[index];
-    const contexts = replayed && before && after ? commandContexts(replayed, events, group, before, after) : [];
+    const contexts = replayed && before && after ? commandContexts(replayed, label, events, group, before, after) : [];
     return [
       {
         group: group.id,
         at: group.at,
-        text: safeGroupText(group.commands, contexts),
+        text: safeGroupText(group.commands, contexts, label),
         scoreAfter: after ? after.score : null,
         inning: before ? before.inning : null,
         half: before ? before.half : null,

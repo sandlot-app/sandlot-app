@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Score } from '../plays.ts';
-import { TEAM_NAMES } from '../roster.ts';
+import type { Roster } from '../roster.ts';
 
 /**
  * Plays an HLS stream. Safari plays HLS itself, and every other browser loads hls.js only when a game has video, so
@@ -51,15 +51,15 @@ const ERROR_TEXT: Record<StreamView['kind'], string> = {
   clip: 'This clip can’t play. A clip is ready about 15 seconds after its play, and only plays after the video started have one.',
 };
 
-function scoreText(score: Score | null, inning: string | null): string {
-  const parts = [score && `${TEAM_NAMES.away} ${score.away}, ${TEAM_NAMES.home} ${score.home}`, inning];
+function scoreText(teams: Roster['teams'], score: Score | null, inning: string | null): string {
+  const parts = [score && `${teams.away.name} ${score.away}, ${teams.home.name} ${score.home}`, inning];
   return parts.filter(Boolean).join(' · ');
 }
 
-export function StreamCard({ view, onBackToLive }: { view: StreamView; onBackToLive: () => void }) {
+export function StreamCard({ view, teams, onBackToLive }: { view: StreamView; teams: Roster['teams']; onBackToLive: () => void }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const onError = useCallback(() => setFailedSrc(view.src), [view.src]);
-  const score = scoreText(view.score, view.inning);
+  const score = scoreText(teams, view.score, view.inning);
 
   return (
     <section className="stream" aria-label="Video">
@@ -78,7 +78,7 @@ export function StreamCard({ view, onBackToLive }: { view: StreamView; onBackToL
           <span className={`stream-badge ${view.kind}`}>{view.kind === 'live' ? 'Live' : 'Clip'}</span>
         </div>
         <div className="stream-info">
-          <p className="stream-title">{view.kind === 'live' ? `${TEAM_NAMES.away} vs. ${TEAM_NAMES.home}` : view.text}</p>
+          <p className="stream-title">{view.kind === 'live' ? `${teams.away.name} vs. ${teams.home.name}` : view.text}</p>
           <p className="stream-score">
             {view.kind === 'live' ? <span className="stream-live">Live</span> : 'After the play'}
             {score && ` · ${score}`}
@@ -92,22 +92,6 @@ export function StreamCard({ view, onBackToLive }: { view: StreamView; onBackToL
       ) : (
         <p className="stream-caption">The stream can run a few seconds behind the score.</p>
       )}
-    </section>
-  );
-}
-
-/** The Video tab of a game nobody streams. */
-export function NoStream() {
-  return (
-    <section className="no-stream" aria-label="Video">
-      <span className="no-stream-icon" aria-hidden="true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
-          <rect x="3" y="6" width="13" height="12" rx="2.5" />
-          <path d="m16 10.5 5-3v9l-5-3z" />
-        </svg>
-      </span>
-      <p className="no-stream-title">No stream for this game</p>
-      <p className="no-stream-text">The score and plays still update live.</p>
     </section>
   );
 }

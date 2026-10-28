@@ -2,7 +2,7 @@ import type { Base, GameState, Position } from '@sandlot/engine';
 import type { CSSProperties } from 'react';
 import bat from '../assets/bat.svg';
 import surface from '../assets/field-surface.svg';
-import { jersey } from '../roster.ts';
+import type { Roster } from '../roster.ts';
 import { runnersText } from './Scoreboard.tsx';
 
 // Figma Field (21:264) is 361 × 390. Each spot is a chip disc's center x and the chip's top y, as in
@@ -40,7 +40,8 @@ function Chip({ spot, number, label, role }: { spot: { x: number; y: number }; n
 }
 
 /** The fielding team at their positions, and the batter and runners, by jersey number. */
-export function Field({ state }: { state: GameState }) {
+export function Field({ state, roster }: { state: GameState; roster: Roster }) {
+  const jersey = roster.number;
   const batting = state.half === 'top' ? 'away' : 'home';
   const fielding = state.half === 'top' ? 'home' : 'away';
   const playing = state.status === 'in_progress';

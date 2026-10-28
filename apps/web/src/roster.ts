@@ -1,12 +1,19 @@
-import type { TeamSide } from '@sandlot/engine';
+import type { GameSetup, TeamSide } from '@sandlot/engine';
 
-// The demo game's teams and jersey numbers, the same as apps/mobile/src/scoring/demo-roster.ts. Games don't store
-// team names or numbers yet. This page is public, so it shows numbers and never names.
+/** How the page names a game's teams and players. Public, so players go by number and never by name. */
+export type Roster = {
+  teams: Record<TeamSide, { name: string; short: string }>;
+  /** The number on a player's chip. */
+  number: (playerId: string) => string;
+  /** How a sentence names a player: "#17", or the ID when the page has no number for them. */
+  label: (playerId: string) => string;
+};
 
-export const TEAM_NAMES: Record<TeamSide, string> = { home: 'Hawks', away: 'Marlins' };
-export const TEAM_SHORT_NAMES: Record<TeamSide, string> = { home: 'HAW', away: 'MAR' };
+// Games don't store team names or jersey numbers yet. The demo game's come from
+// apps/mobile/src/scoring/demo-roster.ts, numbers only.
+const DEMO_TEAMS: Roster['teams'] = { home: { name: 'Hawks', short: 'HAW' }, away: { name: 'Marlins', short: 'MAR' } };
 
-const JERSEYS: Record<string, string> = {
+const DEMO_JERSEYS: Readonly<Record<string, string>> = {
   'home-1': '15',
   'home-2': '12',
   'home-3': '24',
@@ -27,13 +34,23 @@ const JERSEYS: Record<string, string> = {
   'away-9': '21',
 };
 
-/** A player's jersey number, or their ID when the page doesn't know it. */
-export function jersey(playerId: string): string {
-  return JERSEYS[playerId] ?? playerId;
-}
+const SIDES: Roster['teams'] = { home: { name: 'Home', short: 'HOM' }, away: { name: 'Away', short: 'AWY' } };
 
-/** How a sentence names a player: "#17". */
-export function playerLabel(playerId: string): string {
-  const number = JERSEYS[playerId];
-  return number ? `#${number}` : playerId;
+/**
+ * The demo game's names and numbers when every player in the game is a demo player. Any other game is Away and Home,
+ * with players by ID in sentences and by their place in the roster on a chip.
+ */
+export function rosterFor(setup: Pick<GameSetup, 'roster'>): Roster {
+  const players = [...setup.roster.away, ...setup.roster.home];
+  if (players.length > 0 && players.every((player) => Object.hasOwn(DEMO_JERSEYS, player.id))) {
+    return {
+      teams: DEMO_TEAMS,
+      number: (id) => (Object.hasOwn(DEMO_JERSEYS, id) ? DEMO_JERSEYS[id]! : id),
+      label: (id) => (Object.hasOwn(DEMO_JERSEYS, id) ? `#${DEMO_JERSEYS[id]}` : id),
+    };
+  }
+  const order = new Map<string, string>(
+    (['away', 'home'] as const).flatMap((side) => setup.roster[side].map((player, index) => [player.id, String(index + 1)] as const)),
+  );
+  return { teams: SIDES, number: (id) => order.get(id) ?? '?', label: (id) => id };
 }

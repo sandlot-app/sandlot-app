@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, type KeyboardEvent } from 'react';
 import emblem from './assets/logo-emblem.svg';
 import { clipUrl, streamUrl } from './clips.ts';
 import { Field } from './components/Field.tsx';
 import { PlayList, playInning } from './components/PlayList.tsx';
-import { inningText, Scoreboard } from './components/Scoreboard.tsx';
-import { NoStream, StreamCard, type StreamView } from './components/StreamCard.tsx';
-import type { LiveGame } from './live.ts';
+import { CONNECTION_TEXT, inningText, Scoreboard } from './components/Scoreboard.tsx';
+import { StreamCard, type StreamView } from './components/StreamCard.tsx';
+import type { ConnectionStatus, LiveGame } from './live.ts';
 import type { Play } from './plays.ts';
+import { rosterFor } from './roster.ts';
 
 function Logo() {
   return (
@@ -36,6 +37,15 @@ export const TABS = [
 
 export type Tab = (typeof TABS)[number]['id'];
 
+/** Before there is a scoreboard to show it, the connection shows on its own. */
+function Connection({ status }: { status: Exclude<ConnectionStatus, 'not_found'> }) {
+  return (
+    <p className={`connection ${status}`} role="status">
+      {CONNECTION_TEXT[status]}
+    </p>
+  );
+}
+
 /** The live stream, or the clip of the play a family picked. Null when the game has no recording or hasn't started. */
 function streamView(game: LiveGame, watching: Play | null): StreamView | null {
   if (!game.recording) return null;
@@ -47,10 +57,23 @@ function streamView(game: LiveGame, watching: Play | null): StreamView | null {
   return { kind: 'live', src: streamUrl(game.recording.playbackId), score: game.state.score, inning: inningText(game.state) };
 }
 
-function Tabs({ tab, onSelect }: { tab: Tab; onSelect: (tab: Tab) => void }) {
+const ARROW_STEP: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1 };
+
+/** WAI-ARIA tabs: one Tab stop, arrow keys and Home and End move between tabs. */
+function Tabs({ tabs, tab, onSelect }: { tabs: readonly (typeof TABS)[number][]; tab: Tab; onSelect: (tab: Tab) => void }) {
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const index = tabs.findIndex(({ id }) => id === tab);
+    const step = ARROW_STEP[event.key];
+    const next =
+      step !== undefined ? tabs[(index + step + tabs.length) % tabs.length] : event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs.at(-1) : undefined;
+    if (!next) return;
+    event.preventDefault();
+    onSelect(next.id);
+    document.getElementById(`tab-${next.id}`)?.focus();
+  };
   return (
-    <div className="tabs" role="tablist" aria-label="Game views">
-      {TABS.map(({ id, label }) => (
+    <div className="tabs" role="tablist" aria-label="Game views" onKeyDown={onKeyDown}>
+      {tabs.map(({ id, label }) => (
         <button
           key={id}
           type="button"
@@ -58,6 +81,7 @@ function Tabs({ tab, onSelect }: { tab: Tab; onSelect: (tab: Tab) => void }) {
           id={`tab-${id}`}
           aria-selected={tab === id}
           aria-controls="tab-panel"
+          tabIndex={tab === id ? 0 : -1}
           className="tab"
           onClick={() => onSelect(id)}
         >
@@ -69,10 +93,23 @@ function Tabs({ tab, onSelect }: { tab: Tab; onSelect: (tab: Tab) => void }) {
 }
 
 export function LiveView({ game, initialTab = 'field' }: { game: LiveGame; initialTab?: Tab }) {
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const [chosen, setTab] = useState<Tab>(initialTab);
   const [watching, setWatching] = useState<Play | null>(null);
   if (game.status === 'not_found') return <Message>Game not found or not public.</Message>;
+  if (game.pins === null) {
+    return (
+      <main className="page">
+        <Logo />
+        <Connection status={game.status} />
+        <p className="message card">Loading the game.</p>
+      </main>
+    );
+  }
+  const roster = rosterFor(game.pins.setup);
   const view = streamView(game, watching);
+  // Only a game with a recording has a Video tab, the same rule the page had before tabs (#42).
+  const tabs = game.recording ? TABS : TABS.filter(({ id }) => id !== 'video');
+  const tab = tabs.some(({ id }) => id === chosen) ? chosen : 'field';
   const watch = (play: Play) => {
     setWatching(play);
     setTab('video');
@@ -82,28 +119,33 @@ export function LiveView({ game, initialTab = 'field' }: { game: LiveGame; initi
     if (!game.state) return <p className="message card">Waiting for the game to start.</p>;
     switch (tab) {
       case 'field':
-        return <Field state={game.state} />;
+        return <Field state={game.state} roster={roster} />;
       case 'video':
-        return view ? <StreamCard view={view} onBackToLive={() => setWatching(null)} /> : <NoStream />;
+        return view && <StreamCard view={view} teams={roster.teams} onBackToLive={() => setWatching(null)} />;
       case 'plays':
-        return <PlayList plays={game.plays} live={game.state.status === 'in_progress'} onWatch={game.recording ? watch : undefined} />;
+        return (
+          <PlayList
+            plays={game.plays}
+            teams={roster.teams}
+            live={game.state.status === 'in_progress'}
+            onWatch={game.recording ? watch : undefined}
+          />
+        );
     }
   };
   return (
     <main className="page">
       <Logo />
-      {game.pins === null ? (
-        <p className="message card">Loading the game.</p>
+      {game.state ? (
+        <Scoreboard state={game.state} teams={roster.teams} connection={game.status} />
       ) : (
-        <>
-          {game.state && <Scoreboard state={game.state} connection={game.status} />}
-          <Tabs tab={tab} onSelect={setTab} />
-          <p className="banner card">Public link · Names are hidden, so players show by jersey number.</p>
-          <div id="tab-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
-            {panel()}
-          </div>
-        </>
+        <Connection status={game.status} />
       )}
+      <Tabs tabs={tabs} tab={tab} onSelect={setTab} />
+      {tab !== 'video' && <p className="banner card">Public link · Names are hidden, so players show by jersey number.</p>}
+      <div id="tab-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
+        {panel()}
+      </div>
     </main>
   );
 }
