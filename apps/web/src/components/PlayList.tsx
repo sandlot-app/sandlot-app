@@ -1,40 +1,120 @@
-import type { Play } from '../plays.ts';
+import type { Half } from '@sandlot/engine';
+import baseball from '../assets/baseball.svg';
+import type { Play, Score } from '../plays.ts';
+import type { Roster } from '../roster.ts';
+import { runnersText } from './Scoreboard.tsx';
 
 export function playInning(play: Play): string | null {
   if (play.inning === null || play.half === null) return null;
   return `${play.half === 'top' ? 'Top' : 'Bottom'} ${play.inning}`;
 }
 
-function detail(play: Play): string | null {
-  const inning = playInning(play);
-  if (inning === null) return null;
-  return play.scoreAfter ? `${inning} · Away ${play.scoreAfter.away}, Home ${play.scoreAfter.home}` : inning;
+/** One half-inning's plays, oldest first, with the runs the batting team scored in it. */
+type HalfInning = { key: string; title: string; half: Half | null; plays: Play[]; runs: number | null };
+
+const total = (score: Score) => score.away + score.home;
+
+function halfInnings(plays: Play[]): HalfInning[] {
+  const halves: HalfInning[] = [];
+  let scoreBefore: Score | null = { away: 0, home: 0 };
+  let start: Score | null = scoreBefore;
+  for (const play of plays) {
+    const title = playInning(play) ?? 'Plays';
+    let last = halves.at(-1);
+    if (!last || last.title !== title) {
+      start = scoreBefore;
+      last = { key: `${title}-${play.group}`, title, half: play.half, plays: [], runs: null };
+      halves.push(last);
+    }
+    last.plays.push(play);
+    last.runs = start && play.scoreAfter ? total(play.scoreAfter) - total(start) : null;
+    scoreBefore = play.scoreAfter;
+  }
+  return halves;
+}
+
+function situationText(play: Play): string | null {
+  if (!play.situation) return null;
+  const { outs, runners } = play.situation;
+  const outText = `${outs} out${outs === 1 ? '' : 's'}`;
+  return outs === 3 || runners.length === 0 ? outText : `${outText} · ${runnersText(runners)}`;
+}
+
+function isOut(play: Play, previous: Play | undefined): boolean {
+  if (!play.situation) return false;
+  const sameHalf = previous && previous.inning === play.inning && previous.half === play.half;
+  const outsBefore = sameHalf && previous.situation && previous.situation.outs < 3 ? previous.situation.outs : 0;
+  return play.situation.outs > outsBefore;
 }
 
 function scored(play: Play, previous: Play | undefined): boolean {
-  if (!play.scoreAfter || !previous?.scoreAfter) return false;
-  return play.scoreAfter.away + play.scoreAfter.home > previous.scoreAfter.away + previous.scoreAfter.home;
+  if (!play.scoreAfter) return false;
+  return total(play.scoreAfter) > (previous?.scoreAfter ? total(previous.scoreAfter) : 0);
 }
 
-/** Newest first. With `onWatch`, each play on the field offers its clip from the game's recording. */
-export function PlayList({ plays, onWatch }: { plays: Play[]; onWatch?: ((play: Play) => void) | undefined }) {
-  if (plays.length === 0) return <p className="empty">No plays yet.</p>;
+function PlayRow({ play, previous, teams, onWatch }: {
+  play: Play;
+  previous: Play | undefined;
+  teams: Roster['teams'];
+  onWatch: ((play: Play) => void) | undefined;
+}) {
+  const out = play.onField && isOut(play, previous);
+  const scoring = scored(play, previous);
+  const detail = play.onField ? situationText(play) : null;
   return (
-    <ol className="plays" aria-label="Play by play">
-      {plays
-        .map((play, index) => ({ play, scoring: scored(play, plays[index - 1]) }))
+    <li className={scoring ? 'play scored' : 'play'}>
+      <span className={out ? 'play-icon out' : play.onField ? 'play-icon ball' : 'play-icon note'} aria-hidden="true">
+        {!out && play.onField && <img src={baseball} alt="" />}
+      </span>
+      <span className="play-body">
+        <span className="play-text">{play.text}</span>
+        {detail && <span className="play-detail">{detail}</span>}
+      </span>
+      <span className="play-right">
+        {scoring && play.scoreAfter && (
+          <span className="score-pill">
+            {teams.away.name} {play.scoreAfter.away}, {teams.home.name} {play.scoreAfter.home}
+          </span>
+        )}
+        {onWatch && play.onField && (
+          <button type="button" className="play-watch" onClick={() => onWatch(play)}>
+            Watch
+          </button>
+        )}
+      </span>
+    </li>
+  );
+}
+
+/** Half-innings newest first, the current one open. With `onWatch`, each play on the field offers its clip. */
+export function PlayList({ plays, teams, live, onWatch }: {
+  plays: Play[];
+  teams: Roster['teams'];
+  live: boolean;
+  onWatch?: ((play: Play) => void) | undefined;
+}) {
+  if (plays.length === 0) return <p className="empty card">No plays yet.</p>;
+  const previous = new Map(plays.map((play, index) => [play.group, plays[index - 1]]));
+  return (
+    <div className="plays" aria-label="Play by play">
+      {halfInnings(plays)
         .reverse()
-        .map(({ play, scoring }) => (
-          <li key={play.group} className={scoring ? 'play scored' : 'play'}>
-            <span className="play-text">{play.text}</span>
-            {detail(play) && <span className="play-detail">{detail(play)}</span>}
-            {onWatch && play.onField && (
-              <button type="button" className="play-watch" onClick={() => onWatch(play)}>
-                Watch
-              </button>
-            )}
-          </li>
+        .map((half, index) => (
+          <details key={half.key} className="half card" open={index === 0}>
+            <summary>
+              {live && index === 0 && <span className="live-dot" aria-hidden="true" />}
+              <span className="half-title">{half.title}</span>
+              {half.half && <span className="half-batting">· {teams[half.half === 'top' ? 'away' : 'home'].name} batting</span>}
+              {half.runs !== null && <span className="half-runs">{half.runs} R</span>}
+            </summary>
+            <ol>
+              {[...half.plays].reverse().map((play) => (
+                <PlayRow key={play.group} play={play} previous={previous.get(play.group)} teams={teams} onWatch={onWatch} />
+              ))}
+            </ol>
+          </details>
         ))}
-    </ol>
+      <p className="hint">Tap an inning to open or close it</p>
+    </div>
   );
 }

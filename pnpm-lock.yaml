@@ -114,6 +114,9 @@ importers:
       '@sandlot/engine':
         specifier: workspace:*
         version: link:../../packages/engine
+      '@sandlot/tokens':
+        specifier: workspace:*
+        version: link:../../packages/tokens
       '@supabase/supabase-js':
         specifier: 2.117.3
         version: 2.117.3

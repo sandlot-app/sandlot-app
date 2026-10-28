@@ -13,7 +13,7 @@ describe('liveReducer', () => {
 
     expect(game.revision).toBe(8);
     expect(game.events).toHaveLength(8);
-    expect(game.plays.at(-1)?.text).toBe('away-1 steals 2nd');
+    expect(game.plays.at(-1)?.text).toBe('#17 steals 2nd');
     expect(game.state).toMatchObject({ inning: 1, half: 'top', outs: 0, bases: { 2: { player: { id: 'away-1' } } } });
     expect(game.status).toBe('connecting');
   });
@@ -53,7 +53,7 @@ describe('liveReducer', () => {
 
     expect(next.revision).toBe(events.at(-1)!.seq);
     expect(next.events).toEqual(events);
-    expect(next.plays).toHaveLength(12);
+    expect(next.plays).toHaveLength(9);
     expect(next.state).toMatchObject({ half: 'bottom', outs: 0 });
   });
 
@@ -82,7 +82,7 @@ describe('liveReducer', () => {
     });
 
     expect(game.state).toEqual(cached);
-    expect(game.plays).toHaveLength(12);
+    expect(game.plays).toHaveLength(9);
     expect(game.plays.every((play) => play.scoreAfter === null)).toBe(true);
   });
 

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Score } from '../plays.ts';
+import type { Roster } from '../roster.ts';
 
 /**
  * Plays an HLS stream. Safari plays HLS itself, and every other browser loads hls.js only when a game has video, so
@@ -50,36 +51,44 @@ const ERROR_TEXT: Record<StreamView['kind'], string> = {
   clip: 'This clip can’t play. A clip is ready about 15 seconds after its play, and only plays after the video started have one.',
 };
 
-export function StreamCard({ view, onBackToLive }: { view: StreamView; onBackToLive: () => void }) {
+function scoreText(teams: Roster['teams'], score: Score | null, inning: string | null): string {
+  const parts = [score && `${teams.away.name} ${score.away}, ${teams.home.name} ${score.home}`, inning];
+  return parts.filter(Boolean).join(' · ');
+}
+
+export function StreamCard({ view, teams, onBackToLive }: { view: StreamView; teams: Roster['teams']; onBackToLive: () => void }) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const onError = useCallback(() => setFailedSrc(view.src), [view.src]);
+  const score = scoreText(teams, view.score, view.inning);
 
   return (
-    <section id="video" className="stream" aria-label="Video">
-      <div className="stream-frame">
-        {failedSrc === view.src ? (
-          <div className="stream-error">
-            <p>{ERROR_TEXT[view.kind]}</p>
-            <button type="button" onClick={() => setFailedSrc(null)}>
-              Try again
-            </button>
-          </div>
-        ) : (
-          <HlsVideo src={view.src} onError={onError} />
-        )}
-        <p className="stream-score">
-          {view.score && `Away ${view.score.away} · Home ${view.score.home}`}
-          {view.score && view.inning && ' · '}
-          {view.inning}
-        </p>
+    <section className="stream" aria-label="Video">
+      <div className="stream-card card">
+        <div className="stream-frame">
+          {failedSrc === view.src ? (
+            <div className="stream-error">
+              <p>{ERROR_TEXT[view.kind]}</p>
+              <button type="button" onClick={() => setFailedSrc(null)}>
+                Try again
+              </button>
+            </div>
+          ) : (
+            <HlsVideo src={view.src} onError={onError} />
+          )}
+          <span className={`stream-badge ${view.kind}`}>{view.kind === 'live' ? 'Live' : 'Clip'}</span>
+        </div>
+        <div className="stream-info">
+          <p className="stream-title">{view.kind === 'live' ? `${teams.away.name} vs. ${teams.home.name}` : view.text}</p>
+          <p className="stream-score">
+            {view.kind === 'live' ? <span className="stream-live">Live</span> : 'After the play'}
+            {score && ` · ${score}`}
+          </p>
+        </div>
       </div>
       {view.kind === 'clip' ? (
-        <div className="stream-clip">
-          <p className="stream-caption">{view.text}</p>
-          <button type="button" className="stream-back" onClick={onBackToLive}>
-            Back to live
-          </button>
-        </div>
+        <button type="button" className="stream-back" onClick={onBackToLive}>
+          Back to live
+        </button>
       ) : (
         <p className="stream-caption">The stream can run a few seconds behind the score.</p>
       )}
