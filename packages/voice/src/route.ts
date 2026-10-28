@@ -230,8 +230,8 @@ function readUpTo(press: Press): Decision | null {
 
 const fixStarts = 'no|actually|that was|undo that';
 const fixStart = new RegExp(`^\\s*(?:${fixStarts})\\b`, 'i');
-/** "No 17" and "No. 23" are how speech-to-text writes a jersey number, so a "no" before a number isn't a fix. */
-const jerseyNumber = /^\s*no\.?\s*\d/i;
+/** "No 17", "No. 23" and "No twenty three" are how speech-to-text writes a jersey number, so a "no" before a number isn't a fix. */
+const jerseyNumber = /^\s*no\.?\s*(?:\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)\b)/i;
 /** The starts, and the words that tend to follow them: "no wait, it was a double". */
 const fixLead = new RegExp(`^[\\s,.;:!-]*(?:(?:${fixStarts}|wait|it was|that's|it's|make (?:that|it)|i mean|sorry)\\b[\\s,.;:!-]*)*`, 'i');
 
