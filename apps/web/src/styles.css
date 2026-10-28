@@ -773,3 +773,54 @@ button {
 .stream-error p {
   margin: 0;
 }
+
+/* Filming-day tools. Plain on purpose: only Kevin sees them. */
+
+.calibrate {
+  padding-top: var(--space-4);
+  font-size: var(--text-body-regular-size);
+}
+
+.calibrate p,
+.calibrate-title {
+  margin: 0;
+}
+
+.calibrate .stream-video {
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.calibrate-sql {
+  margin: 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  background: var(--color-surface-card);
+  border-radius: var(--radius-md);
+  font-size: var(--text-caption-size);
+}
+
+.play-timer {
+  position: fixed;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  left: var(--space-2);
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-card);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.2);
+  font-size: var(--text-caption-size);
+}
+
+.play-timer p,
+.play-timer ol {
+  margin: 0;
+}
+
+.play-timer ol {
+  padding-left: var(--space-4);
+}
