@@ -824,3 +824,8 @@ button {
 .play-timer ol {
   padding-left: var(--space-4);
 }
+
+/* Room under the last play, so the timer panel never covers it. */
+body:has(.play-timer) .page {
+  padding-bottom: 180px;
+}

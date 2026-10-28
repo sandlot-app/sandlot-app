@@ -26,7 +26,7 @@ export function Calibrate({ game, gameId }: { game: LiveGame; gameId: string }) 
 
   const mark = () => {
     const clapMs = clock.current?.() ?? null;
-    if (clapMs === null) return setProblem('This video carries no clock, so the offset can’t be read from it.');
+    if (clapMs === null) return setProblem('The video hasn’t loaded yet, or it carries no clock. Play it for a moment, pause on the clap and try again.');
     setProblem(null);
     setOffset(clockOffsetMs(clapMs, play.at));
   };
