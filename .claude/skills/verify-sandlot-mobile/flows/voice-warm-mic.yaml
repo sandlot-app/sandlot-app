@@ -1,0 +1,84 @@
+appId: host.exp.Exponent
+# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="strike swinging" EXPO_PUBLIC_VOICE_STUB_MIC=granted.
+# See features/voice-scoring.md.
+---
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+    timeout: 15000
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
+
+# 1. The scoring screen opens with the warm mic listening, so the idle bar says so.
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+      text: "Mic ready.*"
+    timeout: 15000
+- assertNotVisible:
+    id: "voice-message"
+- takeScreenshot: mic-ready
+
+# 2. A press saves a play, and the bar goes back to "Mic ready" because the screen is still open.
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
+    timeout: 15000
+- assertVisible:
+    id: "voice-bar"
+    text: "Mic ready.*"
+- takeScreenshot: mic-ready-after-press
+
+# 3. The plays tab has no voice bar, so the warm mic stops there and comes back on the field.
+- tapOn:
+    id: "tab-plays"
+- extendedWaitUntil:
+    visible:
+      id: "plays-content"
+    timeout: 15000
+- assertNotVisible:
+    id: "voice-bar"
+- tapOn:
+    id: "tab-field"
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+      text: "Mic ready.*"
+    timeout: 15000
+
+# Put the game back: undo the voice play.
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
+    timeout: 15000
