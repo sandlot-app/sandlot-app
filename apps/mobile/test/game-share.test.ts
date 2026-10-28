@@ -1,3 +1,4 @@
+process.env.TZ = 'America/Los_Angeles'; // shortDate and seasonOf read the phone's time zone.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
@@ -94,4 +95,77 @@ test('an undone hit doesn’t count, and a child with no plate appearance gets n
   assert.equal(share.bestPlay, null);
   const nobody = gameShare({ events: game.events, state: game.state, player: player('home-9'), side: 'home', names, ...context });
   assert.equal(nobody, null);
+});
+
+test('appearances read walks, hit by pitches and strikeouts, and agree with battingLines for the same events', async () => {
+  const { appearances } = await import('../src/scoring/play-log.ts');
+  const { battingLines } = await import('@sandlot/engine');
+  const { demoSetup } = await import('../src/scoring/demo-game.ts');
+  const s = await scorer();
+  const balls = async (count: number) => { for (let pitch = 0; pitch < count; pitch += 1) await s.save({ kind: 'pitch', result: 'ball' }); };
+  await s.strikeouts(3); // top 1
+  await s.strikeouts(3); // bottom 1: home-1 to home-3
+  await s.strikeouts(3); // top 2
+  await s.strikeouts(2); // home-4, home-5
+  await balls(4); // Javier walks
+  await s.strikeouts(1); // home-7, the half's third out
+  await s.strikeouts(3); // top 3
+  await s.strikeouts(3); // bottom 3: home-8, home-9, home-1
+  await s.strikeouts(3); // top 4
+  await s.strikeouts(2); // home-2, home-3
+  await balls(4); // home-4 walks
+  await balls(4); // home-5 walks
+  await s.save({ kind: 'pitch', result: 'hit_by_pitch' }); // Javier, bases loaded
+  await s.strikeouts(1); // home-7
+  const game = s.game();
+  const found = appearances(game.events, javier);
+  assert.deepEqual(found.map((item) => [item.result, item.inning]), [['walk', 2], ['hit_by_pitch', 4]]);
+  const line = battingLines(demoSetup, game.events)[javier.id]!;
+  assert.equal(line.walks, found.filter((item) => item.result === 'walk').length);
+  assert.equal(line.hitByPitch, found.filter((item) => item.result === 'hit_by_pitch').length);
+  assert.equal(line.plateAppearances, found.length);
+  assert.equal(bestPlay(found), 'Walked in the 2nd.');
+});
+
+test('a strikeout that ends the half is still a finished plate appearance', async () => {
+  const { appearances } = await import('../src/scoring/play-log.ts');
+  const { battingLines } = await import('@sandlot/engine');
+  const { demoSetup } = await import('../src/scoring/demo-game.ts');
+  const s = await scorer();
+  await s.strikeouts(3); // top 1
+  await s.strikeouts(3); // bottom 1: home-1 to home-3
+  await s.strikeouts(3); // top 2
+  await s.strikeouts(2); // home-4, home-5
+  await s.save((game) => ({ kind: 'ball_in_play', at, expectedRevision: game.revision, outcome: 'single', trajectory: null, fielders: ['LF'], advances: [] }));
+  await s.strikeouts(1); // home-7 ends bottom 2
+  await s.strikeouts(3); // top 3
+  await s.strikeouts(3); // home-8, home-9, home-1
+  await s.strikeouts(3); // top 4
+  await s.strikeouts(3); // home-2 to home-4
+  await s.strikeouts(3); // top 5
+  await s.strikeouts(1); // home-5
+  await s.strikeouts(1); // Javier
+  const game = s.game();
+  const found = appearances(game.events, javier);
+  assert.deepEqual(found.map((item) => item.result), ['single', 'strikeout']);
+  const line = battingLines(demoSetup, game.events)[javier.id]!;
+  assert.equal(line.strikeouts, 1);
+  assert.equal(line.plateAppearances, found.length);
+  const share = gameShare({ events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
+  assert.deepEqual(share?.stats, [{ label: 'AB', value: 2 }, { label: 'H', value: 1 }]);
+  assert.equal(share?.gameLine, '1 FOR 2');
+});
+
+test('a long last name breaks after its hyphen and sizes to its column, and a short one stays at 60', async () => {
+  const { fitLastName, heavyWidth } = await import('../src/share/fit.ts');
+  const ruiz = fitLastName('Ruiz', 240, 26);
+  assert.deepEqual(ruiz, { text: 'RUIZ', style: { fontSize: 60, lineHeight: 66 } });
+  const long = fitLastName('Oberhauser-Wettstein', 240, 26);
+  assert.equal(long.text, 'OBERHAUSER-\nWETTSTEIN');
+  assert.ok(heavyWidth('OBERHAUSER-') * long.style.fontSize <= 240, 'the longest line fits the column');
+  assert.ok(long.style.fontSize >= 26);
+  const card = fitLastName('Oberhauser-Wettstein', 160, 18);
+  assert.ok(heavyWidth('OBERHAUSER-') * card.style.fontSize <= 160 || card.style.fontSize === 18);
+  assert.equal(fitLastName('Lamorinda Thunderbolts', 160, 18).text, 'LAMORINDA\nTHUNDERBOLTS');
+  assert.equal(fitLastName('Nguyễn', 240, 26).text, 'NGUYỄN');
 });

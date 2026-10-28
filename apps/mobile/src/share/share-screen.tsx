@@ -67,6 +67,7 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
   const views = useRef<Partial<Record<ShareKind, Capture['view']>>>({});
   const { bottom } = useSafeAreaInsets();
   const heights = useRef<Partial<Record<ShareKind, number>>>({});
+  const [trayHeight, setTrayHeight] = useState(240);
 
   const tileWidth = Math.floor((Math.min(width, 430) - sizes['space/4'] * 2 - 13) / 2);
   const tile = useMemo(() => ({ width: tileWidth, height: Math.round(tileWidth * 16 / 9) }), [tileWidth]);
@@ -74,6 +75,9 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
   const topGap = useMemo(() => ({ height: Math.round(tile.height * 0.23) }), [tile.height]);
   const homeGap = useMemo(() => ({ height: Math.max(bottom, sizes['space/4']) }), [bottom]);
   const cardScale = tileWidth * 0.79 / 360;
+  // The grid scrolls under the tray, so its last row needs room for the tray as it's laid out: taller on a small
+  // phone, where the name switch wraps, and with larger text.
+  const trayRoom = useMemo(() => ({ width: '100%' as const, height: trayHeight + sizes['space/4'] }), [trayHeight]);
 
   const toggle = (kind: ShareKind) => {
     setMessage(null);
@@ -84,11 +88,16 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
     const height = heights.current[kind];
     return view && height ? [{ view, height }] : [];
   });
-  const send = async (action: (items: Capture[]) => Promise<string | null>) => {
+  const send = async (action: (items: [Capture, ...Capture[]]) => Promise<string | null>) => {
+    const items = captures();
+    if (items.length === 0 || items.length !== picked.length) {
+      setMessage('Still getting the stickers ready. Try again.');
+      return;
+    }
     setBusy(true);
     setMessage(null);
     try {
-      setMessage(await action(captures()));
+      setMessage(await action(items as [Capture, ...Capture[]]));
     } catch {
       setMessage('That didn’t work. Try again.');
     } finally {
@@ -119,7 +128,7 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
         const shows = `${showName ? `${share.first} ${share.last}` : share.team}, number ${share.number}`;
         return <Pressable key={kind} accessibilityRole="checkbox"
           accessibilityLabel={`${kind === 'card' ? 'Stat card' : `${label[0]}${label.slice(1).toLowerCase()} sticker`}, ${shows}`}
-          accessibilityState={{ checked: on }} testID={`share-tile-${kind}`} onPress={() => toggle(kind)}
+          accessibilityState={{ checked: on }} testID={`share-tile-${kind}`} disabled={busy} onPress={() => toggle(kind)}
           style={({ pressed }) => [styles.tile, tile, on && styles.tileOn, ink === 'black' && !on && styles.tileLight, pressed && styles.tilePressed]}>
           <Checkerboard ink={ink} />
           <View style={[styles.tileStage, place === 'bottom' && styles.stageBottom, place === 'top' && styles.stageTop]}>
@@ -134,13 +143,13 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
           </View>
         </Pressable>;
       })}
-      <View style={styles.trayRoom} />
+      <View style={trayRoom} />
     </ScrollView>
-    <View style={styles.tray}>
+    <View style={styles.tray} onLayout={(event) => setTrayHeight(event.nativeEvent.layout.height)}>
       <View style={styles.trayRow}>
         <View style={styles.inks} accessibilityRole="radiogroup">
           {(['white', 'black'] as const).map((option) => <Pressable key={option} accessibilityRole="radio" accessibilityState={{ selected: ink === option }}
-            testID={`share-ink-${option}`} onPress={() => setInk(option)}
+            testID={`share-ink-${option}`} disabled={busy} onPress={() => setInk(option)}
             style={({ pressed }) => [styles.inkChip, ink === option && styles.inkChipOn, pressed && styles.pressed]}>
             <View style={[styles.swatch, option === 'white' ? styles.swatchWhite : styles.swatchBlack]} />
             <Text style={styles.inkLabel}>{option === 'white' ? 'White' : 'Black'}</Text>
@@ -148,17 +157,17 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
         </View>
         <View style={styles.nameSwitch}>
           <Text style={styles.inkLabel}>Show name</Text>
-          <Switch value={showName} onValueChange={(value) => { setShowName(value); setMessage(null); }} testID="share-show-name"
+          <Switch value={showName} disabled={busy} onValueChange={(value) => { setShowName(value); setMessage(null); }} testID="share-show-name"
             accessibilityLabel={`Show ${share.first}’s name`} trackColor={{ true: colors['action/primary'], false: colors['border/subtle'] }} />
         </View>
       </View>
       <View style={styles.destinations}>
         <Destination label="Copy" testID="share-copy" disabled={!single || busy} icon={<CopyIcon color={colors['text/primary']} size={26} />}
-          onPress={() => send(([capture]) => copyImage(capture!))} />
+          onPress={() => send(([capture]) => copyImage(capture))} />
         <Destination label="Save" testID="share-save" disabled={picked.length === 0 || busy} icon={<DownloadIcon color={colors['text/primary']} size={26} />}
           onPress={() => send(saveToPhotos)} />
         <Destination label="More" testID="share-more" disabled={!single || busy} icon={<ShareIcon color={colors['text/primary']} size={26} />}
-          onPress={() => send(([capture]) => shareSheet(capture!))} />
+          onPress={() => send(([capture]) => shareSheet(capture))} />
       </View>
       {hint ? <Text style={styles.hint} accessibilityLiveRegion="polite" testID="share-hint">{hint}</Text> : null}
       <View style={homeGap} />
@@ -187,7 +196,6 @@ const styles = createStyles({
   headerSpacer: { width: sizes['tap/min'] },
   grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: sizes['space/3'], rowGap: sizes['space/3'],
     paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/2'] },
-  trayRoom: { width: '100%', height: 220 },
   fill: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   tile: { borderRadius: sizes['radius/lg'], overflow: 'hidden' },
   tileOn: { borderWidth: 3, borderColor: colors['action/primary'] },

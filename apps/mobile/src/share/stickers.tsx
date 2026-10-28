@@ -4,6 +4,7 @@ import { Text, View } from 'react-native';
 import Svg, { Defs, Mask, Path, Rect, Text as SvgText } from 'react-native-svg';
 import { createStyles } from '../../style';
 import type { GameShare } from './game-share.ts';
+import { fitLastName, heavyWidth } from './fit.ts';
 import { Wordmark } from './wordmark.tsx';
 
 // The stat stickers (Figma Stat Sticker 232:13833) and the stat card (Stat Card 223:13847), at their 360-point export
@@ -42,8 +43,10 @@ function OutlineText({ text, size, width, height, x, anchor, color, halo, stroke
 }
 
 /** A big jersey number as an outline. */
+const outlinedWidth = (text: string, size: number, stroke: number) => Math.ceil(heavyWidth(text) * size) + stroke * 4;
+
 function Outlined({ text, size, ink, stroke }: { text: string; size: number; ink: Ink | 'card'; stroke: number }) {
-  const width = Math.ceil(text.length * size * 0.66) + stroke * 4;
+  const width = outlinedWidth(text, size, stroke);
   return <OutlineText text={text} size={size} width={width} height={Math.ceil(size * 0.84)} x={stroke * 2} anchor="start" stroke={stroke}
     color={ink === 'card' ? colors['scoreboard/text'] : inkColor(ink)} halo={ink === 'card' ? null : haloColor(ink)} />;
 }
@@ -52,15 +55,15 @@ const twoDigits = (share: GameShare) => share.number.length > 1;
 
 export function Poster({ share, ink, showName }: ImageProps) {
   const s = ink === 'white' ? white : black;
+  const numberSize = twoDigits(share) ? 76 : 112;
+  const last = fitLastName(showName ? share.last : share.team, 360 - outlinedWidth(share.number, numberSize, 2) - 12, 26);
   return <View style={styles.poster} collapsable={false}>
-    {showName ? <Text style={[styles.team, s.text]}>{upper(share.team)}</Text> : null}
+    {showName ? <Text style={[styles.team, s.text]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{upper(share.team)}</Text> : null}
     <View style={styles.posterPlayer}>
-      <Outlined text={share.number} size={twoDigits(share) ? 76 : 112} ink={ink} stroke={2} />
+      <Outlined text={share.number} size={numberSize} ink={ink} stroke={2} />
       <View style={styles.posterName}>
         {showName ? <Text style={[styles.first, s.text]}>{upper(share.first)}</Text> : null}
-        <Text style={[styles.posterLast, s.text]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={32 / 60}>
-          {upper(showName ? share.last : share.team)}
-        </Text>
+        <Text style={[styles.posterLast, s.text, last.style]} numberOfLines={2}>{last.text}</Text>
       </View>
     </View>
     <View style={[styles.posterStats, s.rule]}>
@@ -110,7 +113,7 @@ export function Jersey({ share, ink, showName }: ImageProps) {
 export function Team({ share, ink, showName }: ImageProps) {
   const s = ink === 'white' ? white : black;
   const name = upper(share.team);
-  const size = Math.min(112, Math.floor(352 / (name.length * 0.8)));
+  const size = Math.min(112, Math.floor(348 / heavyWidth(name)));
   return <View style={styles.teamSticker} collapsable={false}>
     <OutlineText text={name} size={size} width={360} height={Math.ceil(size * 0.9)} x={180} anchor="middle" stroke={2}
       color={inkColor(ink)} halo={haloColor(ink)} />
@@ -123,6 +126,7 @@ export function Team({ share, ink, showName }: ImageProps) {
 
 /** The finished 360 × 450 card, exported at 3x as 1080 × 1350. */
 export function StatCard({ share, showName }: Omit<ImageProps, 'ink'>) {
+  const last = fitLastName(showName ? share.last : share.team, 160, 18);
   return <View style={styles.card} collapsable={false}>
     <View style={styles.cardVisual}>
       <View style={twoDigits(share) ? styles.cardNumberTwo : styles.cardNumber}>
@@ -140,9 +144,7 @@ export function StatCard({ share, showName }: Omit<ImageProps, 'ink'>) {
       </View>
       <View style={styles.cardName}>
         {showName ? <Text style={styles.cardFirst}>{upper(share.first)}</Text> : null}
-        <Text style={styles.cardLast} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={20 / 60}>
-          {upper(showName ? share.last : share.team)}
-        </Text>
+        <Text style={[styles.cardLast, last.style]} numberOfLines={2}>{last.text}</Text>
         <Text style={styles.cardMuted}>{[`#${share.number}`, share.position].filter(Boolean).join(' · ')}</Text>
       </View>
       <View style={styles.cardRows}>
@@ -188,7 +190,7 @@ const styles = createStyles({
   posterPlayer: { flexDirection: 'row', alignItems: 'flex-end', gap: sizes['space/3'] },
   posterName: { flex: 1 },
   first: { ...textStyles['Player/Name'], textTransform: 'uppercase' },
-  posterLast: { ...display, fontSize: 60, lineHeight: 60, letterSpacing: -1.8 },
+  posterLast: { ...display, fontSize: 60, lineHeight: 66, letterSpacing: -1.8 },
   posterStats: { flexDirection: 'row', borderTopWidth: 2, paddingTop: sizes['space/2'] },
   posterCell: { width: 90 },
   posterValue: { ...textStyles['Score/Numeral'] },
@@ -199,7 +201,7 @@ const styles = createStyles({
   lowerThird: { width: 360, flexDirection: 'row', alignItems: 'center', gap: sizes['space/3'] },
   lowerRule: { width: 2, height: 52 },
   lowerStack: { flex: 1, gap: sizes['space/1'] },
-  lowerName: { ...display, fontSize: 24, lineHeight: 26, letterSpacing: -0.48 },
+  lowerName: { ...display, fontSize: 24, lineHeight: 30, letterSpacing: -0.48 },
   // Jersey
   jersey: { width: 360, alignItems: 'center' },
   jerseyName: { ...display, fontSize: 44, lineHeight: 48, letterSpacing: 5.3, textAlign: 'center' },
@@ -222,7 +224,7 @@ const styles = createStyles({
   cardMuted: { ...textStyles['Label/Caps'], color: colors['scoreboard/text-muted'], textTransform: 'uppercase' },
   cardName: { gap: sizes['space/1'] },
   cardFirst: { ...textStyles['Player/Name'], color: colors['scoreboard/text'], textTransform: 'uppercase' },
-  cardLast: { ...display, fontSize: 60, lineHeight: 60, letterSpacing: -1.8, color: colors['scoreboard/text'] },
+  cardLast: { ...display, fontSize: 60, lineHeight: 66, letterSpacing: -1.8, color: colors['scoreboard/text'] },
   cardRows: { gap: sizes['space/1'] },
   cardRow: { flexDirection: 'row', height: 30, gap: sizes['space/1'] },
   cardLabelPill: { width: 52, borderRadius: sizes['radius/sm'], backgroundColor: colors['count/well'], alignItems: 'center', justifyContent: 'center' },

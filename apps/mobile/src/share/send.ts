@@ -2,7 +2,7 @@ import * as Clipboard from 'expo-clipboard';
 import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { PixelRatio } from 'react-native';
-import { captureRef } from 'react-native-view-shot';
+import { captureRef, releaseCapture } from 'react-native-view-shot';
 
 // Turns the picked stickers and card into PNGs and sends them where the family chose. Files get the library's own
 // random names, so a child's name never lands in a file name. Nothing is uploaded by Sandlot.
@@ -22,7 +22,14 @@ const options = (capture: Capture) => {
 export async function saveToPhotos(captures: Capture[]): Promise<string> {
   const permission = await requestPermissionsAsync(true);
   if (!permission.granted) return 'Photos access is off. Turn it on in Settings to save.';
-  for (const capture of captures) await Asset.create(await captureRef(capture.view, { ...options(capture), result: 'tmpfile' }));
+  for (const capture of captures) {
+    const uri = await captureRef(capture.view, { ...options(capture), result: 'tmpfile' });
+    try {
+      await Asset.create(uri);
+    } finally {
+      releaseCapture(uri);
+    }
+  }
   return captures.length === 1 ? 'Saved to Photos.' : `Saved ${captures.length} to Photos.`;
 }
 
@@ -36,6 +43,10 @@ export async function copyImage(capture: Capture): Promise<string> {
 export async function shareSheet(capture: Capture): Promise<string | null> {
   if (!(await Sharing.isAvailableAsync())) return 'Sharing isn’t available on this phone.';
   const uri = await captureRef(capture.view, { ...options(capture), result: 'tmpfile' });
-  await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png' });
+  try {
+    await Sharing.shareAsync(uri, { mimeType: 'image/png', UTI: 'public.png' });
+  } finally {
+    releaseCapture(uri);
+  }
   return null;
 }
