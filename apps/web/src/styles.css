@@ -1,13 +1,10 @@
+@import '@sandlot/tokens/css';
+
 :root {
   color-scheme: light;
-  --ink: #0b0b0b;
-  --muted: #3d3d3d;
-  --paper: #ffffff;
-  --panel: #f1f1ee;
-  --line: #0b0b0b;
-  --accent: #b42318;
-  --live: #0a6b2e;
-  --warn: #8a4b00;
+  /* Figma's raised and recessed dots and bases. */
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 0.35), inset 0 -1px 1px rgb(0 0 0 / 0.18), inset 0 1px 1px rgb(255 255 255 / 0.45);
+  --shadow-well: inset 0 1px 2px rgb(0 0 0 / 0.5);
 }
 
 * {
@@ -16,227 +13,666 @@
 
 body {
   margin: 0;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--color-surface-page);
+  color: var(--color-text-primary);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 18px;
-  line-height: 1.35;
+  font-size: var(--text-body-regular-size);
+  line-height: var(--text-body-regular-line-height);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .page {
-  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 480px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 0 var(--space-4) 40px;
+}
+
+.card {
+  background: var(--color-surface-card);
+  border-radius: var(--radius-xl);
 }
 
 .top {
   display: flex;
+  justify-content: center;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  height: 48px;
+  margin-top: var(--space-2);
 }
 
-.top h1 {
+.logo {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
   margin: 0;
-  font-size: 1.1rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--color-scoreboard-bg);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: normal;
+  letter-spacing: -0.96px;
 }
 
-.status {
+.logo-emblem {
+  width: 22.4px;
+  height: 22.4px;
+  margin-top: 5.5px;
+}
+
+.message,
+.banner {
   margin: 0;
-  padding: 4px 12px;
-  border: 2px solid currentColor;
-  border-radius: 999px;
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
-.status::before {
-  content: '';
-  display: inline-block;
-  width: 0.6em;
-  height: 0.6em;
-  margin-right: 0.5em;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.status.live {
-  color: var(--live);
-}
-
-.status.connecting,
-.status.reconnecting {
-  color: var(--warn);
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line-height);
 }
 
 .message {
-  margin: 32px 0;
-  font-size: 1.2rem;
-  font-weight: 600;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  font-size: var(--text-body-regular-size);
 }
+
+/* Scoreboard, Figma 24:268. */
 
 .scoreboard {
-  background: var(--panel);
-  border: 2px solid var(--line);
-  border-radius: 12px;
-  padding: 12px 16px;
-}
-
-.inning {
-  margin: 0 0 4px;
-  font-size: 1.1rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.team {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 2px 0;
-  color: var(--muted);
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 20px 14px;
+  border: 1px solid var(--color-border-glass);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.08) 0%, rgb(255 255 255 / 0) 60%), var(--color-scoreboard-bg);
+  color: var(--color-scoreboard-text);
 }
 
-.team.batting {
-  color: var(--ink);
+.scoreboard-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.team-name {
-  font-size: 1.6rem;
-  font-weight: 700;
+.side {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
 }
 
-.team.batting .team-name::after {
-  content: ' \25C0';
-  font-size: 0.8em;
+.side.home {
+  align-items: flex-end;
+}
+
+.side-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: 26px;
+}
+
+.side.home .side-name {
+  justify-content: flex-end;
+}
+
+.team-name,
+.team-short {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-scoreboard-text-muted);
+  font-size: var(--text-score-team-size);
+  font-weight: var(--text-score-team-weight);
+  line-height: var(--text-score-team-line-height);
+  letter-spacing: var(--text-score-team-letter-spacing);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.side.home .team-name,
+.side.home .team-short {
+  text-align: right;
+}
+
+.team-short {
+  display: none;
+}
+
+/* Figma's phone is 393 wide. On narrower phones the full names would be cut, so the scoreboard uses the short ones. */
+@media (max-width: 359px) {
+  .team-name {
+    display: none;
+  }
+
+  .team-short {
+    display: block;
+  }
 }
 
 .team-score {
-  font-size: 4rem;
-  font-weight: 800;
+  font-size: var(--text-score-numeral-size);
+  font-weight: var(--text-score-numeral-weight);
+  line-height: var(--text-score-numeral-line-height);
+  letter-spacing: var(--text-score-numeral-letter-spacing);
   font-variant-numeric: tabular-nums;
-  line-height: 1.05;
 }
 
-.situation {
+.side-label,
+.count-label {
+  color: var(--color-scoreboard-text-muted);
+  font-size: var(--text-label-caps-size);
+  font-weight: var(--text-label-caps-weight);
+  line-height: var(--text-label-caps-line-height);
+  letter-spacing: var(--text-label-caps-letter-spacing);
+  text-transform: uppercase;
+}
+
+.side-label {
+  opacity: 0.7;
+}
+
+.role-badge {
   display: flex;
+  flex: none;
   align-items: center;
-  gap: 16px;
-  margin: 16px 0;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  overflow: hidden;
+  border: 1px solid var(--color-border-glass);
+  border-radius: 13px;
+  background: var(--color-surface-glass);
 }
 
-.diamond {
-  flex: 0 0 55%;
-  max-width: 260px;
-  height: auto;
+/* Each artwork keeps its own box, shadow included, around Figma's 16 glove and 20 × 5 bat. */
+.role-glove {
+  width: 16.07px;
+  height: 17.21px;
+  margin: 1.2px 0 0 -0.07px;
 }
 
-.diamond .infield {
-  fill: #e6efe2;
-  stroke: var(--line);
-  stroke-width: 3;
+.role-bat {
+  width: 22.06px;
+  height: 6.19px;
+  transform: rotate(-35deg);
 }
 
-.diamond .base {
-  fill: var(--paper);
-  stroke: var(--line);
-  stroke-width: 4;
+.game-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.diamond .base.occupied {
-  fill: var(--accent);
+.inning {
+  font-size: var(--text-body-strong-size);
+  font-weight: var(--text-body-strong-weight);
+  line-height: var(--text-body-strong-line-height);
+  white-space: nowrap;
 }
 
-.diamond .plate {
-  fill: var(--paper);
-  stroke: var(--line);
-  stroke-width: 3;
+/* Figma Mini Diamond (3:62): 16 bases with 3.5 corners, turned 45° in a 56 × 40 box. */
+.mini-diamond {
+  position: relative;
+  width: 56px;
+  height: 40px;
 }
 
-.count {
-  flex: 1;
-  margin: 0;
+.mini-base {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--color-border-well);
+  border-radius: 3.5px;
+  background: var(--color-count-well);
+  box-shadow: var(--shadow-well);
+  transform: rotate(45deg);
 }
 
-.count div {
+.mini-base.on {
+  border: none;
+  background: var(--color-diamond-occupied);
+  box-shadow: var(--shadow-raised);
+}
+
+.mini-base.base-2 {
+  left: 20px;
+  top: 4px;
+}
+
+.mini-base.base-3 {
+  left: 4px;
+  top: 20px;
+}
+
+.mini-base.base-1 {
+  left: 36px;
+  top: 20px;
+}
+
+.hairline {
+  height: 1px;
+  background: var(--color-border-glass);
+}
+
+.scoreboard-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 0;
-  border-bottom: 1px solid var(--muted);
+  min-height: 26px;
 }
 
-.count dt {
-  font-size: 1rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.count dd {
+.count {
   display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.count-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.count-label {
+  margin-right: 2px;
+}
+
+.dot {
+  width: var(--dot-size);
+  height: var(--dot-size);
+  border: 1.5px solid var(--color-border-well);
+  border-radius: var(--radius-full);
+  background: var(--color-count-well);
+  box-shadow: var(--shadow-well);
+}
+
+.dot.ball,
+.dot.strike,
+.dot.out {
+  border: none;
+  box-shadow: var(--shadow-raised);
+}
+
+.dot.ball {
+  background: var(--color-count-ball);
+}
+
+.dot.strike {
+  background: var(--color-count-strike);
+}
+
+.dot.out {
+  background: var(--color-count-out);
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
   gap: 6px;
   margin: 0;
-  font-size: 2rem;
-  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-status-live);
+  font-size: var(--text-status-label-size);
+  font-weight: var(--text-status-label-weight);
+  line-height: var(--text-status-label-line-height);
+  letter-spacing: var(--text-status-label-letter-spacing);
+  text-transform: uppercase;
+}
+
+.status-pill::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+
+.status-pill.reconnecting,
+.status-pill.connecting {
+  background: var(--color-status-reconnecting);
+}
+
+.status-pill.final {
+  background: var(--color-surface-glass);
+}
+
+.status-pill.final::before {
+  display: none;
+}
+
+/* Tabs, Figma 35:385. */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-card);
+}
+
+.tab {
+  flex: 1;
+  height: 36px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: var(--text-tab-size);
+  font-weight: var(--text-tab-weight);
+  line-height: var(--text-tab-line-height);
+  letter-spacing: var(--text-tab-letter-spacing);
+}
+
+.tab[aria-selected='true'] {
+  background: var(--color-scoreboard-bg);
+  color: var(--color-scoreboard-text);
+  filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.18));
+}
+
+/* Field, Figma 21:264. */
+
+.field {
+  position: relative;
+  aspect-ratio: 361 / 390;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--color-field-grass);
+}
+
+/* The surface artwork is 600 square, set 119.5 left of the field's edge. */
+.field-surface {
+  position: absolute;
+  left: calc(-119.5 / 361 * 100%);
+  top: 0;
+  width: calc(600 / 361 * 100%);
+}
+
+.chip {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  width: 74px;
+  transform: translateX(-50%);
+}
+
+.chip-disc {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--chip-size);
+  height: var(--chip-size);
+  border: var(--chip-outline-width) solid var(--color-chip-outline);
+  border-radius: var(--radius-full);
+  background: var(--color-chip-fielding-bg);
+  color: var(--color-chip-fielding-text);
+  font-size: var(--text-chip-number-size);
+  font-weight: var(--text-chip-number-weight);
+  line-height: var(--text-chip-number-line-height);
   font-variant-numeric: tabular-nums;
 }
 
-.lamp {
-  width: 20px;
-  height: 20px;
-  border: 3px solid var(--line);
-  border-radius: 50%;
+.chip.batting .chip-disc,
+.chip.batter .chip-disc {
+  background: var(--color-chip-batting-bg);
+  color: var(--color-chip-batting-text);
 }
 
-.lamp.out {
-  background: var(--accent);
-  border-color: var(--accent);
+.chip.batter .chip-disc {
+  width: var(--chip-batter-size);
+  height: var(--chip-batter-size);
 }
+
+.chip-bat {
+  position: absolute;
+  left: 25px;
+  top: 7px;
+  width: 30.45px;
+  height: 8.54px;
+  transform: rotate(-50deg);
+}
+
+.chip-label {
+  color: var(--color-chip-label-text);
+  font-size: var(--text-chip-name-size);
+  font-weight: var(--text-chip-name-weight);
+  line-height: var(--text-chip-name-line-height);
+  letter-spacing: var(--text-chip-name-letter-spacing);
+  text-shadow: 0 1px var(--radius-sm) var(--color-chip-label-halo);
+  white-space: nowrap;
+}
+
+/* Plays, Figma 119:6489. */
 
 .plays {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.half {
+  padding: 2px var(--space-4) var(--space-1);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.half summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-3) 0;
+  list-style: none;
+  cursor: pointer;
+}
+
+.half summary::-webkit-details-marker {
+  display: none;
+}
+
+.half summary::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  margin: 0 6px 3px;
+  border: solid var(--color-text-tertiary);
+  border-width: 0 1.6px 1.6px 0;
+  transform: rotate(-45deg);
+}
+
+.half[open] summary::after {
+  margin-bottom: 6px;
+  transform: rotate(45deg);
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-status-live);
+}
+
+.half-title {
+  font-weight: var(--text-body-strong-weight);
+}
+
+.half-batting {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.half-runs,
+.hint {
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line-height);
+}
+
+.half-runs {
+  margin-left: auto;
+}
+
+.half ol {
   margin: 0;
   padding: 0;
+  border-top: 1px solid var(--color-border-subtle);
   list-style: none;
 }
 
 .play {
   display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.play + .play {
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.play-icon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-page);
+}
+
+.play-icon img {
+  width: 23.1px;
+  height: 23.1px;
+  margin-top: 2.6px;
+}
+
+.play-icon.out {
+  background: none;
+}
+
+.play-icon.out::before,
+.play-icon.note::before {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: var(--color-count-out);
+}
+
+.play-icon.note::before {
+  width: 8px;
+  height: 8px;
+  background: var(--color-text-tertiary);
+}
+
+.play-body {
+  display: flex;
+  flex: 1;
   flex-direction: column;
-  padding: 10px 0 10px 12px;
-  border-bottom: 1px solid #c9c9c4;
-  border-left: 6px solid transparent;
+  gap: 2px;
+  min-width: 0;
 }
 
-.play.scored {
-  border-left-color: var(--accent);
-}
-
-.play-text {
-  font-size: 1.15rem;
-  font-weight: 700;
+.play.scored .play-text {
+  font-weight: var(--text-body-strong-weight);
 }
 
 .play-detail {
-  color: var(--muted);
-  font-size: 0.9rem;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line-height);
+}
+
+.play-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.score-pill {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-page);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption-size);
+  font-weight: 600;
+  line-height: var(--text-caption-line-height);
+  white-space: nowrap;
+}
+
+.play-watch,
+.stream-back,
+.stream-error button {
+  padding: 4px var(--space-3);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--color-action-soft);
+  color: var(--color-action-primary);
+  font-size: var(--text-caption-size);
+  font-weight: 600;
+  line-height: var(--text-caption-line-height);
+}
+
+.hint {
+  margin: 0;
+  text-align: center;
 }
 
 .empty {
-  color: var(--muted);
+  margin: 0;
+  padding: var(--space-6) var(--space-4);
+  color: var(--color-text-secondary);
+  text-align: center;
 }
 
+/* Video, Figma 101:4996 and 101:5162. */
+
 .stream {
-  margin: 16px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.stream-card {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
 }
 
 .stream-frame {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: var(--ink);
+  background: #000;
 }
 
 .stream-video {
@@ -245,21 +681,64 @@ body {
   height: 100%;
 }
 
-.stream-score {
+.stream-badge {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: var(--space-3);
+  left: var(--space-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  background: var(--color-status-live);
+  color: var(--color-scoreboard-text);
+  font-size: var(--text-status-label-size);
+  font-weight: var(--text-status-label-weight);
+  line-height: var(--text-status-label-line-height);
+  letter-spacing: var(--text-status-label-letter-spacing);
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.stream-badge.live::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+
+.stream-badge.clip {
+  background: var(--color-scoreboard-bg);
+}
+
+.stream-info {
+  padding: var(--space-3) var(--space-4) 14px;
+}
+
+.stream-title {
   margin: 0;
-  padding: 4px 8px;
-  background: rgb(11 11 11 / 0.8);
-  color: var(--paper);
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: var(--text-body-strong-weight);
+}
+
+.stream-score {
+  margin: 2px 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line-height);
   font-variant-numeric: tabular-nums;
 }
 
-.stream-score:empty {
-  display: none;
+.stream-live {
+  color: var(--color-status-live);
+}
+
+.stream-caption {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line-height);
+  text-align: center;
 }
 
 .stream-error {
@@ -267,10 +746,12 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   height: 100%;
-  padding: 16px;
-  color: var(--paper);
+  padding: var(--space-4);
+  color: var(--color-scoreboard-text);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line-height);
   text-align: center;
 }
 
@@ -278,39 +759,36 @@ body {
   margin: 0;
 }
 
-.stream-caption {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 0.9rem;
+.no-stream {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px var(--space-6) 32px;
+  border: 1.5px dashed var(--color-border-subtle);
+  border-radius: var(--radius-xl);
   text-align: center;
 }
 
-.stream-clip {
+.no-stream-icon {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-card);
+  color: var(--color-text-secondary);
 }
 
-.stream-clip .stream-caption {
-  text-align: left;
-  color: var(--ink);
-  font-weight: 700;
+.no-stream-title {
+  margin: 0;
+  font-weight: var(--text-body-strong-weight);
 }
 
-.stream button,
-.play-watch {
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border: 2px solid var(--line);
-  background: var(--paper);
-  color: var(--ink);
-  cursor: pointer;
-}
-
-.play-watch {
-  align-self: flex-start;
-  margin-top: 6px;
+.no-stream-text {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption-size);
+  line-height: var(--text-caption-line-height);
 }

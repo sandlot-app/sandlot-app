@@ -1,6 +1,7 @@
 import { applyGroup, ENGINE_VERSION, EVENT_SCHEMA_VERSION, initialState } from '@sandlot/engine';
 import type {
   BallInPlayOutcome,
+  Base,
   BatterOutReason,
   Command,
   Destination,
@@ -18,9 +19,13 @@ import type {
   Timestamp,
   Trajectory,
 } from '@sandlot/engine';
+import { playerLabel } from './roster.ts';
 import type { Pins } from './snapshot.ts';
 
 export type Score = GameState['score'];
+
+/** Outs and occupied bases right after a play. Three outs means the play ended the half-inning. */
+export type Situation = { outs: 0 | 1 | 2 | 3; runners: Base[] };
 
 /** One scorer action, as the family reads it. Position and score are null when this page cannot replay the game. */
 export type Play = {
@@ -30,6 +35,7 @@ export type Play = {
   scoreAfter: Score | null;
   inning: number | null;
   half: Half | null;
+  situation: Situation | null;
   /** Whether something happened on the field that a camera could catch, unlike a lineup or an inning change. */
   onField: boolean;
 };
@@ -134,17 +140,17 @@ function fielderText(fielders: Position[]): string {
 function substitutionText(side: TeamSide, change: Substitution): string {
   switch (change.kind) {
     case 'pinch_hitter':
-      return `${change.in.id} pinch hits for ${change.out.id}`;
+      return `${playerLabel(change.in.id)} pinch hits for ${playerLabel(change.out.id)}`;
     case 'pinch_runner':
-      return `${change.in.id} pinch runs for ${change.out.id}`;
+      return `${playerLabel(change.in.id)} pinch runs for ${playerLabel(change.out.id)}`;
     case 'courtesy_runner':
-      return `${change.in.id} runs for ${change.out.id}`;
+      return `${playerLabel(change.in.id)} runs for ${playerLabel(change.out.id)}`;
     case 'defensive':
-      return `${change.in.id} enters at ${change.position}`;
+      return `${playerLabel(change.in.id)} enters at ${change.position}`;
     case 'pitching_change':
-      return `${change.in.id} now pitching (${side})`;
+      return `${playerLabel(change.in.id)} now pitching (${side})`;
     case 'late_arrival':
-      return `${change.in.id} added to the lineup (${side})`;
+      return `${playerLabel(change.in.id)} added to the lineup (${side})`;
   }
 }
 
@@ -171,7 +177,7 @@ function commandText(command: Command, { batter, endsAtBat }: CommandContext): s
     case 'ball_in_play':
       return `${who} ${BALL_IN_PLAY_TEXT[command.outcome](command.trajectory)}${fielderText(command.fielders)}`;
     case 'runner':
-      return RUNNER_TEXT[command.event](command.runner.id, command.to);
+      return RUNNER_TEXT[command.event](playerLabel(command.runner.id), command.to);
     case 'batter_out':
       return `${who} ${BATTER_OUT_TEXT[command.reason]}`;
     case 'substitution':
@@ -239,9 +245,17 @@ function undoTarget(group: Group): GroupId | null {
 
 const battingSide = (half: Half): TeamSide => (half === 'top' ? 'away' : 'home');
 
+const BASES: Base[] = [1, 2, 3];
+
+function situationAfter(before: GameState, after: GameState): Situation {
+  if (after.half !== before.half || after.inning !== before.inning) return { outs: 3, runners: [] };
+  return { outs: after.outs, runners: BASES.filter((base) => after.bases[base]) };
+}
+
 function batterUp(state: GameState): string | null {
   const side = battingSide(state.half);
-  return state.lineups[side][state.nextBatter[side]]?.player.id ?? null;
+  const batter = state.lineups[side][state.nextBatter[side]]?.player;
+  return batter ? playerLabel(batter.id) : null;
 }
 
 /** The count also resets when a runner makes the third out or the half ends, so only a new batter means the at-bat ended. */
@@ -303,6 +317,7 @@ export function buildTimeline(pins: Pins, events: Event[], serverState: GameStat
         scoreAfter: after ? after.score : null,
         inning: before ? before.inning : null,
         half: before ? before.half : null,
+        situation: before && after ? situationAfter(before, after) : null,
         onField: group.commands.some((command) => ON_FIELD.has(command.kind)),
       },
     ];

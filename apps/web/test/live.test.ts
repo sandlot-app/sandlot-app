@@ -13,7 +13,7 @@ describe('liveReducer', () => {
 
     expect(game.revision).toBe(8);
     expect(game.events).toHaveLength(8);
-    expect(game.plays.at(-1)?.text).toBe('away-1 steals 2nd');
+    expect(game.plays.at(-1)?.text).toBe('#17 steals 2nd');
     expect(game.state).toMatchObject({ inning: 1, half: 'top', outs: 0, bases: { 2: { player: { id: 'away-1' } } } });
     expect(game.status).toBe('connecting');
   });

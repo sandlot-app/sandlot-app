@@ -24,8 +24,17 @@ describe('buildTimeline', () => {
     expect(byText('Lineup set (away)')).toBe(false);
     expect(byText('Game started')).toBe(false);
     expect(byText('Ball')).toBe(true);
-    expect(byText('away-1 singles to left (LF)')).toBe(true);
-    expect(byText('away-1 steals 2nd')).toBe(true);
+    expect(byText('#17 singles to left (LF)')).toBe(true);
+    expect(byText('#17 steals 2nd')).toBe(true);
+  });
+
+  it('records the outs and runners after each play, and three outs when a play ends the half', () => {
+    const { plays } = buildTimeline(pins(), sampleEvents(), null);
+    const byText = (text: string) => plays.find((play) => play.text === text)?.situation;
+
+    expect(byText('#17 singles to left (LF)')).toEqual({ outs: 0, runners: [1] });
+    expect(byText('#17 steals 2nd')).toEqual({ outs: 0, runners: [2] });
+    expect(byText('#5 flies out to center (CF)')).toEqual({ outs: 3, runners: [] });
   });
 
   it('describes each play of the sample half-inning and ends in the bottom of the 1st', () => {
@@ -37,13 +46,13 @@ describe('buildTimeline', () => {
       'Game started',
       'Ball',
       'Strike looking',
-      'away-1 singles to left (LF)',
-      'away-1 steals 2nd',
+      '#17 singles to left (LF)',
+      '#17 steals 2nd',
       'Strike looking',
       'Strike swinging',
-      'away-2 strikes out swinging',
-      'away-3 grounds out, 2B to 1B',
-      'away-4 flies out to center (CF)',
+      '#3 strikes out swinging',
+      '#8 grounds out, 2B to 1B',
+      '#5 flies out to center (CF)',
     ]);
     expect(plays.every((play) => play.scoreAfter?.away === 0 && play.scoreAfter.home === 0)).toBe(true);
     expect(plays.at(-1)).toMatchObject({ inning: 1, half: 'top' });
@@ -56,7 +65,7 @@ describe('buildTimeline', () => {
     const undone = withPlay(scored, 'undo-home-run', { kind: 'undo', target: homeRunGroup });
 
     const afterRun = buildTimeline(pins(), scored, null);
-    expect(afterRun.plays.at(-1)).toMatchObject({ text: 'home-1 hits a home run to center (CF)', scoreAfter: { away: 0, home: 1 }, inning: 1, half: 'bottom' });
+    expect(afterRun.plays.at(-1)).toMatchObject({ text: '#15 hits a home run to center (CF)', scoreAfter: { away: 0, home: 1 }, inning: 1, half: 'bottom' });
     expect(afterRun.state).toMatchObject({ score: { away: 0, home: 1 } });
 
     const afterUndo = buildTimeline(pins(), undone, null);
@@ -88,7 +97,7 @@ describe('buildTimeline', () => {
     const { plays, state } = buildTimeline(pins(), events, cached);
 
     expect(state).toBe(cached);
-    expect(plays.at(-1)).toMatchObject({ text: 'away-5 pinch hits for away-4', scoreAfter: null });
+    expect(plays.at(-1)).toMatchObject({ text: '#11 pinch hits for #5', scoreAfter: null });
   });
 
   it('names a play it has no wording for instead of failing', () => {
@@ -105,14 +114,14 @@ describe('buildTimeline', () => {
 
     const { plays: timeline, state } = buildTimeline(pins(), events, null);
 
-    expect(timeline.slice(-4).map((play) => play.text)).toEqual(['Ball', 'Ball', 'Ball', 'Ball four, home-1 walks']);
+    expect(timeline.slice(-4).map((play) => play.text)).toEqual(['Ball', 'Ball', 'Ball', 'Ball four, #15 walks']);
     expect(state?.bases[1]?.player).toEqual(homePlayer(1));
   });
 
   it('announces the walk once when all four balls are saved as one play', () => {
     const events = plays(sampleEvents(), [pitch('ball'), pitch('ball'), pitch('ball'), pitch('ball')]);
 
-    expect(buildTimeline(pins(), events, null).plays.at(-1)?.text).toBe('Ball. Ball. Ball. Ball four, home-1 walks');
+    expect(buildTimeline(pins(), events, null).plays.at(-1)?.text).toBe('Ball. Ball. Ball. Ball four, #15 walks');
   });
 
   it('names each batter in a play that spans two at-bats', () => {
@@ -127,14 +136,14 @@ describe('buildTimeline', () => {
 
     const { plays: timeline, state } = buildTimeline(pins(), events, null);
 
-    expect(timeline.at(-1)?.text).toBe('Ball. Ball. Ball. Ball four, home-1 walks. home-2 singles to left (LF)');
+    expect(timeline.at(-1)?.text).toBe('Ball. Ball. Ball. Ball four, #15 walks. #12 singles to left (LF)');
     expect(state?.bases).toMatchObject({ 1: { player: homePlayer(2) }, 2: { player: homePlayer(1) } });
   });
 
   it('announces a strikeout once when all three strikes are saved as one play', () => {
     const events = plays(sampleEvents(), [pitch('called_strike'), pitch('swinging_strike'), pitch('called_strike')]);
 
-    expect(buildTimeline(pins(), events, null).plays.at(-1)?.text).toBe('Strike looking. Strike swinging. home-1 strikes out looking');
+    expect(buildTimeline(pins(), events, null).plays.at(-1)?.text).toBe('Strike looking. Strike swinging. #15 strikes out looking');
   });
 
   it('calls a pitch a plain ball when a runner makes the third out on the same play', () => {
@@ -145,7 +154,7 @@ describe('buildTimeline', () => {
 
     const { plays: timeline, state } = buildTimeline(pins(), events, null);
 
-    expect(timeline.at(-1)?.text).toBe('Ball. home-3 is caught stealing');
+    expect(timeline.at(-1)?.text).toBe('Ball. #24 is caught stealing');
     expect(state).toMatchObject({ inning: 2, half: 'top', outs: 0 });
   });
 
