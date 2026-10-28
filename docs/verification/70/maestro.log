@@ -7,9 +7,7 @@ Assert that "Start demo game|Continue scoring" is visible... COMPLETED
 Wait for animation to end within 5000 ms... COMPLETED
 Tap on id: open-share-sample... COMPLETED
 Run flow when "Share Javier’s game" is not visible...
-  Wait for animation to end within 3000 ms... COMPLETED
-  Tap on id: open-share-sample... COMPLETED
-Run flow when "Share Javier’s game" is not visible... COMPLETED
+Run flow when "Share Javier’s game" is not visible... SKIPPED
 Assert that "Share Javier’s game" is visible... COMPLETED
 Assert that "1 picked", id: share-picked-count is visible... COMPLETED
 Assert that "Poster sticker, Hawks, number 6" is visible... COMPLETED
@@ -60,6 +58,8 @@ Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
 Tap on id: share-tile-card... COMPLETED
 Assert that "5 picked", id: share-picked-count is visible... COMPLETED
 Take screenshot worst-long-04-name-on-bottom... COMPLETED
@@ -77,6 +77,8 @@ Take screenshot worst-accent-01-top... COMPLETED
 Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Take screenshot worst-accent-02-middle... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
 Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
@@ -127,7 +129,7 @@ Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
 Run flow when id: share-close is visible...
   Tap on id: share-close... COMPLETED
 Run flow when id: share-close is visible... COMPLETED
-Open exp://localhost:8091/--/share?game=worst-long... COMPLETED
+Open exp://localhost:8092/--/share?game=worst-long... COMPLETED
 Assert that "Share Christopher’s game" is visible... COMPLETED
 Assert that "Poster sticker, Lamorinda Thunderbolts, number 88" is visible... COMPLETED
 Assert that ".*Oberhauser.*" is not visible... COMPLETED
@@ -147,6 +149,8 @@ Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
 Tap on id: share-tile-card... COMPLETED
 Assert that "5 picked", id: share-picked-count is visible... COMPLETED
 Take screenshot worst-long-04-name-on-bottom... COMPLETED
@@ -155,7 +159,7 @@ Run flow when "Allow Full Access|Allow|OK" is visible...
 Run flow when "Allow Full Access|Allow|OK" is visible... SKIPPED
 Assert that "Saved 5 to Photos." is visible... COMPLETED
 Take screenshot worst-long-05-saved... COMPLETED
-Open exp://localhost:8091/--/share?game=worst-accent... COMPLETED
+Open exp://localhost:8092/--/share?game=worst-accent... COMPLETED
 Assert that "Share Đặng’s game" is visible... COMPLETED
 Tap on id: share-show-name... COMPLETED
 Assert that "Poster sticker, Đặng Nguyễn, number 0" is visible... COMPLETED
@@ -164,6 +168,8 @@ Take screenshot worst-accent-01-top... COMPLETED
 Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Take screenshot worst-accent-02-middle... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
 Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
 Wait for animation to end within 3000 ms... COMPLETED
 Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
