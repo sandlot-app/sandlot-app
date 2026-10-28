@@ -1,9 +1,11 @@
-import type { Command } from '@sandlot/engine';
-import { route, type ParseResult, type Reading } from '@sandlot/voice';
+import { applyGroup } from '@sandlot/engine';
+import type { Command, GroupId, RejectCode } from '@sandlot/engine';
+import { rejectMessage, route, type Decision, type ParseResult, type Reading } from '@sandlot/voice';
 import type { VoiceCard } from '../../scorer-ui';
+import { demoSetup } from '../scoring/demo-game.ts';
 import type { DemoAction, SavedGame } from '../scoring/offline-game.ts';
 import {
-  choiceLabels, failureMessage, fixRefused, liveCard, lostMessage, outcome, pressGame, pressInput, unfixedMessage, unsavedMessage, type Card,
+  choiceLabels, failureMessage, fixNotReadyMessage, liveCard, lostMessage, outcome, pressGame, pressInput, unfixedMessage, unsavedMessage, type Card,
 } from './outcome.ts';
 import { startPress, type PressHandle, type VoiceDeps } from './press.ts';
 
@@ -27,8 +29,25 @@ export type VoiceControllerDeps = {
 
 /** What one press saves against: when it started, and the game it started on. */
 type Pressed = { at: number; revision: number };
-/** `from` is the game an answer saves against: after a partial save, the game once the clear calls saved, or null if they didn't. */
-type Choosing = { card: Extract<VoiceCard, { kind: 'choose' }>; readings: Reading[]; from: Promise<Pressed | null>; dropped: string; fix: boolean };
+/**
+ * `from` is the game an answer saves against: after a partial save, the game once the clear calls saved, or null if they
+ * didn't. `fixes` is the Play a Fix card's answer replaces.
+ */
+type Choosing = { card: Extract<VoiceCard, { kind: 'choose' }>; readings: Reading[]; from: Promise<Pressed | null>; dropped: string; fixes: GroupId | null };
+
+/**
+ * Asks the engine whether it can correct the last Play with any of a fix's choices, before the scorer sees a preview
+ * (rule 6). Returns the line to show instead, or null when the fix can be offered.
+ */
+function fixRefused(game: SavedGame, decision: Extract<Decision, { kind: 'fix' }>): string | null {
+  let code: RejectCode | null = null;
+  for (const option of decision.options) {
+    const result = applyGroup(demoSetup, game.events, [{ kind: 'correct', target: decision.target, replacement: option.commands }]);
+    if (result.ok) return null;
+    code = result.code;
+  }
+  return code === 'not_implemented' ? fixNotReadyMessage : code ? rejectMessage(code) : null;
+}
 
 export function createVoiceController({ voice, game, record, now, onChange }: VoiceControllerDeps) {
   let listening = false;
@@ -62,9 +81,9 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
   }
 
   /** A Fix replaces the last Play, and is pinned like a save so it never replaces a play saved after its press began. */
-  async function fix(commands: Command[], from: Pressed) {
+  async function fix(target: GroupId, commands: Command[], from: Pressed) {
     const mine = turn;
-    const fixed = await record({ kind: 'fix', at: new Date(from.at).toISOString(), expectedRevision: from.revision, commands });
+    const fixed = await record({ kind: 'fix', at: new Date(from.at).toISOString(), expectedRevision: from.revision, target, commands });
     previous = undefined;
     if (!fixed) refused(mine, unfixedMessage);
   }
@@ -76,9 +95,9 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
     publish();
   }
 
-  const choosingFor = (card: Card, from: Promise<Pressed | null>): Choosing => ({
+  const choosingFor = (card: Card, from: Promise<Pressed | null>, fixes: GroupId | null = null): Choosing => ({
     card: { kind: 'choose', heading: card.heading, words: card.words, choices: choiceLabels(card.choices), note: card.note },
-    readings: card.choices, from, dropped: card.dropped, fix: card.fix ?? false,
+    readings: card.choices, from, dropped: card.dropped, fixes,
   });
 
   /** Drops the card on screen, if any, and returns the line saying what it held. */
@@ -144,7 +163,7 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
         const mine = turn;
         void record({ kind: 'undo', expectedRevision: from.revision }).then((undone) => { if (!undone) refused(mine); });
       } else if (result.kind === 'message') say(result.message);
-      else if (result.kind === 'choose') choosing = choosingFor(result, Promise.resolve(from));
+      else if (result.kind === 'choose') choosing = choosingFor(result, Promise.resolve(from), decision.kind === 'fix' ? decision.target : null);
       else {
         // ADR 0006: the clear calls save now as the press's Play. Their card, if any, answers on the game after them.
         const saved = save(result.commands, from);
@@ -152,8 +171,8 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
         else {
           const card = choosingFor(result.rest, saved);
           choosing = card;
-          void saved.then((after) => {
-            if (after || choosing !== card) return;
+          void saved.then((next) => {
+            if (next || choosing !== card) return;
             choosing = null;
             publish();
           });
@@ -192,7 +211,7 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
       publish();
       void current.from.then((from) => {
         if (!from) return;
-        if (current.fix) void fix(picked.commands, from);
+        if (current.fixes) void fix(current.fixes, picked.commands, from);
         else void save(picked.commands, from);
       });
     },

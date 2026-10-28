@@ -19,8 +19,8 @@ const runnerLabels: Partial<Record<RunnerEvent, string>> = {
   pickoff: 'Pickoff',
 };
 
-/** A play's calls: an in-play pitch with its ball in play, a run of one runner event, or one command. */
-function calls(commands: Command[]): Command[][] {
+/** A play's calls, each as its commands: an in-play pitch with its ball in play, a run of one runner event, or one command. */
+function units(commands: Command[]): Command[][] {
   const result: Command[][] = [];
   for (const command of commands) {
     const call = result.at(-1);
@@ -51,5 +51,5 @@ function callLabel(commands: Command[]): string {
  * each is named ("Ball · Ball"), and Undo says exactly what it takes back.
  */
 export function playLabel(commands: Command[]): string {
-  return calls(commands).map(callLabel).join(' · ') || 'Play';
+  return units(commands).map(callLabel).join(' · ') || 'Play';
 }

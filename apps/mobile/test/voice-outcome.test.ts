@@ -100,6 +100,5 @@ test('a voice fix previews the change in one tap: "Change single to double?"', a
   assert.equal(result.heading, 'Change single to double?');
   assert.deepEqual(choiceLabels(result.choices), ['J. Soto doubles']);
   assert.equal(result.note, 'Was: J. Soto singles. Tap to fix it, or use the buttons below. Nothing is changed yet.');
-  assert.equal(result.fix, true);
   assert.equal(result.dropped, 'Fix not saved: a double');
 });

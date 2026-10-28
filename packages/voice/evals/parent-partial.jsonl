@@ -19,3 +19,6 @@
 {"id":"fix-nothing-yet","said":[],"transcript":"no, that was a single","expect":{"kind":"reject","message":"There's no play to fix yet."}}
 {"id":"undo-alone","said":["Soto singles"],"transcript":"undo that","expect":{"kind":"undo"}}
 {"id":"undo-mixed-in","said":["Soto singles"],"transcript":"ball, undo","expect":{"kind":"unknown_phrase","message":"Didn't understand \"ball, undo\". Tap to score."}}
+{"id":"partial-unreadable-call","said":[],"transcript":"Ball, ball, the kid did the thing","expect":{"kind":"partial","readBack":"Ball → count 1–0 · Ball → count 2–0","rest":{"kind":"reject","message":"Didn't understand \"the kid did the thing\"."}}}
+{"id":"unreadable-then-correction","said":[],"transcript":"ball, no wait, he tagged and took two","expect":{"kind":"unknown_phrase"}}
+{"id":"partial-unclear-then-fails","said":[],"transcript":"ball, strike, steals home","expect":{"kind":"partial","readBack":"Ball → count 1–0","rest":{"kind":"ask","prompt":"Couldn't record \"steals home\": no runner on third. Looking or swinging?"}}}

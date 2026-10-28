@@ -1,6 +1,5 @@
-import { applyGroup } from '@sandlot/engine';
-import type { Command, RejectCode, TeamSide } from '@sandlot/engine';
-import { rejectMessage, type Decision, type PressGame, type Reading, type RosterEntry } from '@sandlot/voice';
+import type { Command, TeamSide } from '@sandlot/engine';
+import type { Decision, PressGame, Reading, RosterEntry } from '@sandlot/voice';
 import type { VoiceCard } from '../../scorer-ui';
 import { demoSetup } from '../scoring/demo-game.ts';
 import { playerDisplay } from '../scoring/demo-roster.ts';
@@ -16,8 +15,6 @@ export type Card = {
   kind: 'choose'; heading: string; words: string; choices: Reading[]; note: string;
   /** The line left when the next press or tap drops the card, so a lost call gets noticed. */
   dropped: string;
-  /** The choices replace the last Play rather than adding one. */
-  fix?: true;
 };
 
 export type Outcome =
@@ -74,7 +71,7 @@ export function outcome(decision: Decision, heard: { transcript: string; calls: 
       };
     }
     case 'fix': return {
-      kind: 'choose', heading: fixHeading(decision.was, decision.options), words: heard.transcript, choices: decision.options, fix: true,
+      kind: 'choose', heading: fixHeading(decision.was, decision.options), words: heard.transcript, choices: decision.options,
       note: `${decision.prompt ? `${decision.prompt} ` : ''}Was: ${choiceLabels([decision.was])[0]}. Tap to fix it, or use the buttons below. Nothing is changed yet.`,
       dropped: `Fix not saved: ${decision.calls.join(', ')}`,
     };
@@ -82,20 +79,6 @@ export function outcome(decision: Decision, heard: { transcript: string; calls: 
     case 'no_play': return { kind: 'message', message: "That wasn't a play, so nothing was saved." };
     case 'unknown_phrase': return { kind: 'message', message: decision.message };
   }
-}
-
-/**
- * Asks the engine whether it can correct the last Play with any of a fix's choices, before the scorer sees a preview
- * (rule 6). Returns the line to show instead, or null when the fix can be offered.
- */
-export function fixRefused(game: SavedGame, decision: Extract<Decision, { kind: 'fix' }>): string | null {
-  let code: RejectCode | null = null;
-  for (const option of decision.options) {
-    const result = applyGroup(demoSetup, game.events, [{ kind: 'correct', target: decision.target, replacement: option.commands }]);
-    if (result.ok) return null;
-    code = result.code;
-  }
-  return code === 'not_implemented' ? fixNotReadyMessage : code ? rejectMessage(code) : null;
 }
 
 export const lostMessage = "The last voice play didn't save. Say it again or tap to score.";

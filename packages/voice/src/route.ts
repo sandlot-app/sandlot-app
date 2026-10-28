@@ -68,13 +68,18 @@ function asSaid(transcript: string, words: string): string {
   return (pattern && transcript.match(new RegExp(pattern, 'i'))?.[0]) || words;
 }
 
+/** Ends a sentence, unless it already ends in "?" or "!". */
+const sentence = (text: string) => /[?!]$/.test(text) ? text : `${text}.`;
+const couldnt = (game: PressGame, words: string, reason: string) => `Couldn't record "${words}": ${sentence(lowerFirst(game, reason))}`;
+const nothingSaved = ' Nothing was saved.';
+
 /**
  * "Couldn't record 'steals third': no runner on second. Nothing was saved." with the earlier calls on the press's one
  * card, for when they can't save on their own (ADR 0006).
  */
 function cantRecord(game: PressGame, parts: string[], clause: number, before: Command[], reason: string): Decision {
   if (clause > 0 && legal(game, before)) {
-    return { kind: 'reject', message: `Couldn't record "${parts[clause]}": ${lowerFirst(game, reason)}. Nothing was saved.`, savePart: reading(game, before) };
+    return { kind: 'reject', message: `${couldnt(game, parts[clause]!, reason)}${nothingSaved}`, savePart: reading(game, before) };
   }
   return { kind: 'reject', message: reason };
 }
@@ -162,22 +167,59 @@ function whole(press: Press, parsed: Plays, part = false): Decision {
  */
 function split(press: Press, parsed: Plays, full: Decision): Decision {
   if (full.kind !== 'ask' && full.kind !== 'reject') return full;
-  const starts = parsed.plays.flatMap((play, index) => index > 0 && (play.kind === 'moves' || play.kind === 'scores') ? [] : [index]);
   let clear: { end: number; decision: Decision } | null = null;
-  for (const end of starts.slice(1)) {
+  for (const end of callStarts(parsed).slice(1)) {
     const decision = whole(press, slice(parsed, 0, end), true);
     if (decision.kind !== 'save' && decision.kind !== 'confirm') break;
     clear = { end, decision };
   }
   if (clear?.decision.kind !== 'save') return full;
   const saved = clear.decision.reading;
-  const rest = whole(onceSaved(press, saved.commands), slice(parsed, clear.end), true);
+  const after = onceSaved(press, saved.commands);
+  const others = slice(parsed, clear.end);
+  const rest = whole(after, others, true);
   const calls = parsed.parts.slice(clear.end).map((words) => asSaid(press.transcript, words));
   if (rest.kind === 'reject') {
-    const message = rest.savePart ? rest.message : `Couldn't record "${calls[0]}": ${lowerFirst(press, rest.message)}.`;
-    return { kind: 'partial', reading: saved, rest: { ...rest, message }, calls };
+    return { kind: 'partial', reading: saved, rest: rest.savePart ? firstOfRest(after, others, rest.message) : { kind: 'reject', message: couldnt(press, calls[0]!, rest.message) }, calls };
   }
   return rest.kind === 'ask' || rest.kind === 'confirm' ? { kind: 'partial', reading: saved, rest, calls } : full;
+}
+
+/** Where each call starts. A runner's move belongs to the play before it, so it never starts one. */
+const callStarts = (parsed: Plays) =>
+  parsed.plays.flatMap((play, index) => index > 0 && (play.kind === 'moves' || play.kind === 'scores') ? [] : [index]);
+
+/**
+ * The rest of a split press starts with a call that needs a card and later has one that can't be recorded. The one card
+ * asks about the calls it can, and says why the others aren't on it.
+ */
+function firstOfRest(game: Press, rest: Plays, message: string): Extract<Decision, { kind: 'ask' | 'reject' }> {
+  const why = message.slice(0, -nothingSaved.length);
+  for (const end of callStarts(rest).slice(1).reverse()) {
+    const head = whole(game, slice(rest, 0, end), true);
+    if (head.kind === 'ask') return { kind: 'ask', prompt: `${why} ${head.prompt}`, options: head.options };
+    if (head.kind === 'save' || head.kind === 'confirm') return { kind: 'ask', prompt: why, options: [head.reading] };
+  }
+  return { kind: 'reject', message: why };
+}
+
+const takesBack = /^(?:no|nope|wait|sorry|actually|i mean|make that|scratch that|undo|cancel that|take that back)\b/i;
+
+/**
+ * ADR 0006 for a press with a call nobody can read: the calls the phone's reader reads before it save, when they make
+ * one clear Play, and the rest is lost with a line saying so. Words after them that might take them back save nothing.
+ */
+function readUpTo(press: Press): Decision | null {
+  const pieces = press.transcript.split(/([,;.]| and then | then )/i);
+  for (let end = Math.ceil(pieces.length / 2) - 1; end >= 1; end--) {
+    const read = parsePhrase(pieces.slice(0, 2 * end - 1).join(''));
+    if (read.kind !== 'plays') continue;
+    const lost = pieces.slice(2 * end).join('').trim().replace(/[,;.\s]+$/, '');
+    if (!lost || takesBack.test(lost)) return null;
+    const decision = whole(press, read, true);
+    return decision.kind === 'save' ? { kind: 'partial', reading: decision.reading, rest: { kind: 'reject', message: `Didn't understand "${lost}".` }, calls: [lost] } : null;
+  }
+  return null;
 }
 
 const fixStarts = 'no|actually|that was|undo that';
@@ -248,7 +290,7 @@ export function route(press: Press, parsed: ParseResult = parsePhrase(press.tran
   const words = fixWords(press.transcript);
   if (words) return fix(press, words, parsed);
   if (parsed.kind === 'not_a_command') return { kind: 'no_play', question: parsed.question };
-  if (parsed.kind === 'unclear') return { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
+  if (parsed.kind === 'unclear') return readUpTo(press) ?? { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
   if (parsed.plays.some((play) => play.kind === 'undo')) {
     return parsed.plays.length === 1 ? { kind: 'undo' } : { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
   }

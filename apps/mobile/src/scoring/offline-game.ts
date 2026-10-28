@@ -43,8 +43,8 @@ export type DemoAction =
       moves: { runner: PlayerRef; to: Destination }[] }
   /** A reading the scorer said, as route() proposed it. The engine checks it like any other play (rule 6). */
   | { kind: 'voice'; at: string; expectedRevision: number; commands: Command[] }
-  /** A spoken Fix: `commands` replace the last play, through the engine's `correct` command. */
-  | { kind: 'fix'; at: string; expectedRevision: number; commands: Command[] };
+  /** A spoken Fix: `commands` replace the play `target`, through the engine's `correct` command. It must be the last play. */
+  | { kind: 'fix'; at: string; expectedRevision: number; target: GroupId; commands: Command[] };
 
 export type SavedGame = {
   id: GameId;
@@ -474,12 +474,12 @@ export async function openOfflineGame(
                   result = { kind: 'rejected', code: 'not_implemented' };
                   return;
                 }
-                const target = action.kind === 'fix' ? undoTarget(current!.groups, current!.row.bootstrap_group) : null;
-                if (action.kind === 'fix' && !target) {
-                  result = { kind: 'rejected', code: 'nothing_to_undo' };
+                if (action.kind === 'fix' && action.target !== undoTarget(current!.groups, current!.row.bootstrap_group)) {
+                  // The preview checked this play, so a fix never replaces another one.
+                  result = { kind: 'stale', game: current!.game };
                   return;
                 }
-                commands = target ? [{ kind: 'correct', target, replacement: action.commands }] : action.commands;
+                commands = action.kind === 'fix' ? [{ kind: 'correct', target: action.target, replacement: action.commands }] : action.commands;
               }
               else {
                 const target = undoTarget(
