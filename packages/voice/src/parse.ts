@@ -53,10 +53,13 @@ function fielder(words: string | undefined): Position | undefined {
 /** Words people say before a call that aren't a name: "that's ball four", "big strikeout", "and it's a single". */
 const leadIn = /^(?:(?:and|then|so|oh|ouch|wow|whoa|okay|big|nice|great|huge|that's|thats|that is|it's|its|it is|there's|theres|there is|what a|a|an)(?: |$))+/;
 
-/** Who a clause names, from the words before its verb. */
+/** Words that mean whoever the call is about, rather than naming someone. */
+const pronoun = /^(?:(?:the|that|this) )?(?:runner|batter|hitter|kid)$|^(?:he|she|they|him|her|them|it)(?:'s|'re)?$/;
+
+/** Who a clause names, from the words around its verb. */
 function mention(words: string | undefined): Mention | undefined {
   const text = words?.replace(leadIn, '').replace(/ (?:got|gets|was|is|has been)$/, '').trim();
-  if (!text || /^(?:the )?(?:runner|batter|hitter|he|she|they|it)$/.test(text)) return undefined;
+  if (!text || pronoun.test(text)) return undefined;
   const onBase = text.match(new RegExp(`^(?:the )?runner (?:on|at|from) ${base}$`));
   if (onBase) return { base: baseWords[onBase[1]!]! };
   const number = text.match(/^(?:number |#)?(\d{1,2})$/);
@@ -64,9 +67,29 @@ function mention(words: string | undefined): Mention | undefined {
   return { name: text };
 }
 
-function withMention<T extends Spoken>(spoken: T, key: 'batter' | 'runner', words: string | undefined): T {
-  const who = mention(words);
+function withMention<T extends Spoken>(spoken: T, key: 'batter' | 'runner' | 'pitcher', words: string | undefined): T {
+  const who = key === 'pitcher' && words && /^(?:the|our|their) pitcher$/.test(words) ? undefined : mention(words);
   return who ? { ...spoken, [key]: who } : spoken;
+}
+
+/** Words after "Soto hits …" that aren't the batter, so "Soto hits a double" or "hits it to left" is never read as a hit by pitch. */
+const notABatter = 'a|an|the|it|one|that|this|another|his|into|to|up|down|over|through|back|and|for|deep|hard|safely|home|first|second|third|left|right|center|short|again|by|with|off|on|in|out|looking|swinging';
+/** The batter in a call that names the pitcher: a pronoun, a jersey number, or a name of one or two words. */
+export const batterWords = `the (?:batter|kid|hitter)|that kid|number \\d{1,2}|#\\d{1,2}|\\d{1,2}|(?!(?:${notABatter})\\b)[a-z']+(?: (?!(?:${notABatter})\\b)[a-z']+)?`;
+
+/** Calls that name the pitcher and the batter: "Soto hits Ruiz", "Soto plunks him", "Nguyen walks him", "Soto strikes him out". */
+function pitcherCall(text: string): Spoken | null {
+  let match = text.match(new RegExp(`^(.+?) (?:hits|hit|plunks|plunked|beans|beaned) (${batterWords})(?: with (?:a|the) pitch)?$`));
+  if (match) return withMention(withMention({ kind: 'pitch', result: 'hit_by_pitch' }, 'pitcher', match[1]), 'batter', match[2]);
+  match = text.match(new RegExp(`^(.+?) (?:walks|walked) (${batterWords})$`));
+  if (match) return withMention(withMention({ kind: 'walk' }, 'pitcher', match[1]), 'batter', match[2]);
+  match = text.match(new RegExp(`^(.+?) (?:strikes out|struck out|punches out|punched out|rings up|rang up) (${batterWords})(?: (looking|swinging))?$`))
+    ?? text.match(new RegExp(`^(.+?) (?:strikes|struck|punches|punched|rings|rang) (${batterWords}) (?:out|up)(?: (looking|swinging))?$`));
+  if (match) {
+    const strikeout: Spoken = match[3] ? { kind: 'strikeout', looking: match[3] === 'looking' } : { kind: 'strikeout' };
+    return withMention(withMention(strikeout, 'pitcher', match[1]), 'batter', match[2]);
+  }
+  return null;
 }
 
 const pitchPhrases: [RegExp, Extract<Spoken, { kind: 'pitch' }>['result']][] = [
@@ -94,12 +117,23 @@ const outTrajectory: [RegExp, Extract<Spoken, { kind: 'out' }>['trajectory']][] 
 ];
 const outVerb = 'grounds out|ground out|grounded out|groundout|flies out|fly out|flied out|flyout|lines out|line out|lined out|lineout|pops out|pop out|popped out|pops up|pop up|popup|popped up';
 
-const crowd = /^(?:(?:run|go|let's go|lets go|come on|nice|nice job|good|good job|yes|yeah|wow|great|hustle|get it|throw it|all the way|keep going|stay|back)(?: |$))+$/;
+const cheers = "run|go|let's go|lets go|come on|nice|nice job|good|good job|good eye|nice eye|good cut|yes|yeah|yay|wow|great|hustle|get it|throw it|all the way|keep going|stay|back|way to go|attaboy|atta boy|atta girl|attagirl|oh no|oh man|ouch|ooh|oof|woo|woohoo|you got this";
+const crowd = new RegExp(`^(?:(?:${cheers})(?: |$))+$`);
+/** Cheering before a call, as in "come on Soto walks". Single words that can be a surname, like "Good", aren't left out. */
+const cheering = /^(?:(?:go|let's go|lets go|come on|way to go|yes|yeah|yay|wow|oh no|oh man|ouch|ooh|oof|woo|woohoo|attaboy|atta boy|atta girl|attagirl|you got this) )+/;
+/** Cheering someone on by name, as in "go Soto" or "let's go Ruiz": a name alone after it is no call. */
+const cheeringOn = /^(?:go|let's go|lets go|come on) [a-z']+(?: [a-z']+)?$/;
 
-/** Reads one clause, or returns null when the local grammar doesn't know it. */
+/** Reads one clause, or returns null when the local grammar doesn't know it. Cheering before the call is left out. */
 function clause(text: string): Spoken | 'crowd' | null {
-  if (/^(?:undo|undo that|scratch that|take that back|cancel that)$/.test(text)) return { kind: 'undo' };
   if (crowd.test(text)) return 'crowd';
+  const cheer = text.match(cheering);
+  const read = (cheer && call(text.slice(cheer[0].length))) || call(text);
+  return read ?? (cheeringOn.test(text) ? 'crowd' : null);
+}
+
+function call(text: string): Spoken | null {
+  if (/^(?:undo|undo that|scratch that|take that back|cancel that)$/.test(text)) return { kind: 'undo' };
   for (const [pattern, result] of pitchPhrases) if (pattern.test(text)) return { kind: 'pitch', result };
   let match = text.match(/^(?:(.+?) )?(?:hit by (?:a |the )?pitch|hbp|hit batter|plunked|gets hit)$/);
   if (match) return withMention({ kind: 'pitch', result: 'hit_by_pitch' }, 'batter', match[1]);
@@ -147,18 +181,19 @@ function clause(text: string): Spoken | 'crowd' | null {
   if (match) {
     const event = match[1] === 'wild pitch' ? 'wild_pitch' : 'passed_ball';
     if (!match[2]) return { kind: 'advance', event };
-    const moved = clause(match[2]);
-    if (moved && moved !== 'crowd' && (moved.kind === 'moves' || moved.kind === 'scores')) {
+    const moved = call(match[2]);
+    if (moved && (moved.kind === 'moves' || moved.kind === 'scores')) {
       const to: Target = moved.kind === 'moves' ? moved.to : 'home';
       return moved.runner ? { kind: 'advance', event, runner: moved.runner, to } : { kind: 'advance', event, to };
     }
     return null;
   }
-  match = text.match(new RegExp(`^(?:(.+?) )?(?:to|goes to|takes|advances to|moves to|moves up to|over to|on to) ${base}$`));
+  match = text.match(new RegExp(`^(?:(.+?) )?(?:to|goes to|takes|advances to|moves to|moves up to|over to|on to|jogs to|trots to|heads to|stays at|stays on|holds at|holds) ${base}$`))
+    ?? text.match(new RegExp(`^(.+?)(?:'s| is) (?:on|at) ${base}$`));
   if (match && match[1]) return withMention({ kind: 'moves', to: baseWords[match[2]!]! }, 'runner', match[1]);
   match = text.match(/^(?:(.+?) )?(?:scores|scored|comes home|comes in|crosses|crosses the plate|run scores|scoring)$/);
   if (match) return withMention({ kind: 'scores' }, 'runner', match[1]);
-  return null;
+  return pitcherCall(text);
 }
 
 /** "Wild pitch, runner scores" is one runner move: the second clause says who moved, so the first isn't asked about on its own. */

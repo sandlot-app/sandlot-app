@@ -1,0 +1,63 @@
+{"id":"pitcher-hits-takes-first","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"Soto hits Ruiz, Ruiz takes first","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"pitcher-hits","said":[],"transcript":"Nguyen hits Soto","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"pitcher-plunks-him","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"Soto plunks him","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"pitcher-hit-him-with-a-pitch","said":[],"transcript":"Nguyen hit him with a pitch","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"pitcher-the-pitcher-plunks-the-kid","said":[],"transcript":"the pitcher plunks the kid","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"pitcher-beans-her","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"oh no, Soto beans her","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"pitcher-walks-him","said":["ball","ball","ball"],"transcript":"Nguyen walks him","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"pitcher-strikes-him-out","said":["strike looking","strike looking"],"transcript":"Nguyen strikes him out swinging","expect":{"kind":"save","readBack":"J. Soto strikes out swinging"}}
+{"id":"pitcher-strikes-out-named","said":["strike looking","strike looking"],"transcript":"Nguyen struck out Soto looking","expect":{"kind":"save","readBack":"J. Soto strikes out looking"}}
+{"id":"pitcher-punches-him-out-asks","said":["strike looking","strike looking"],"transcript":"Nguyen punches him out","expect":{"kind":"ask","prompt":"Looking or swinging?"}}
+{"id":"pronoun-he-walks","said":["ball","ball","ball"],"transcript":"he walks","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"pronoun-she-singles","said":[],"transcript":"she singles to left","expect":{"kind":"save","readBack":"J. Soto singles to left"}}
+{"id":"pronoun-they-strike-out","said":["strike looking","strike looking"],"transcript":"they strike out swinging","expect":{"kind":"save","readBack":"J. Soto strikes out swinging"}}
+{"id":"pronoun-the-kid-doubles","said":[],"transcript":"the kid doubles to center","expect":{"kind":"save","readBack":"J. Soto doubles to center"}}
+{"id":"pronoun-the-batter-flies-out","said":[],"transcript":"the batter flies out to right","expect":{"kind":"save","readBack":"J. Soto flies out to right"}}
+{"id":"pronoun-hes-safe-on-an-error","said":[],"transcript":"he's safe on an error by the shortstop","expect":{"kind":"confirm","readBack":"J. Soto reaches on an error by the shortstop"}}
+{"id":"pronoun-he-steals","said":["Soto singles"],"transcript":"he steals second","expect":{"kind":"save","readBack":"J. Soto steals 2nd"}}
+{"id":"pronoun-the-kid-steals","said":["Soto singles"],"transcript":"the kid steals","expect":{"kind":"save","readBack":"J. Soto steals 2nd"}}
+{"id":"pronoun-she-scores-wild-pitch","said":["Soto triples"],"transcript":"wild pitch, she scores","expect":{"kind":"save","readBack":"Wild pitch: J. Soto scores"}}
+{"id":"pronoun-runner-in-same-press","said":[],"transcript":"Soto singles, he steals second","expect":{"kind":"save","readBack":"J. Soto singles · J. Soto steals 2nd"}}
+{"id":"number-pitcher","said":[],"transcript":"number fifteen hits Soto","expect":{"kind":"save","readBack":"Hit by pitch → J. Soto to 1st"}}
+{"id":"number-pitcher-and-batter","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"17 hits number 6","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"number-batter-walks","said":["ball","ball","ball"],"transcript":"number seventeen walks","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"number-runner-steals","said":["Soto singles"],"transcript":"#17 steals second","expect":{"kind":"save","readBack":"J. Soto steals 2nd"}}
+{"id":"number-runner-scores","said":["Soto triples"],"transcript":"wild pitch, number 17 scores","expect":{"kind":"save","readBack":"Wild pitch: J. Soto scores"}}
+{"id":"crowd-come-on-walks","said":["ball","ball","ball"],"transcript":"come on, Soto walks!","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"crowd-come-on-no-comma","said":["ball","ball","ball"],"transcript":"come on Soto walks","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"crowd-lets-go-ball-four","said":["ball","ball","ball"],"transcript":"let's go ball four","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"crowd-good-eye-ball","said":[],"transcript":"good eye, ball","expect":{"kind":"save","readBack":"Ball → count 1–0"}}
+{"id":"crowd-way-to-go-single","said":[],"transcript":"way to go! Soto singles","expect":{"kind":"save","readBack":"J. Soto singles"}}
+{"id":"crowd-yeah-steal-lets-go","said":["Soto singles"],"transcript":"yeah, Soto steals second, let's go","expect":{"kind":"save","readBack":"J. Soto steals 2nd"}}
+{"id":"crowd-cheer-a-name","said":[],"transcript":"Go Soto!","expect":{"kind":"no_play"}}
+{"id":"crowd-lets-go-name","said":[],"transcript":"let's go Ruiz","expect":{"kind":"no_play"}}
+{"id":"crowd-only","said":[],"transcript":"attaboy, way to go","expect":{"kind":"no_play"}}
+{"id":"absorbed-he-takes-first","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"Soto hits Ruiz, he takes first","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"absorbed-walk-takes-first","said":["ball","ball","ball"],"transcript":"ball four, Soto jogs to first","expect":{"kind":"save","readBack":"J. Soto walks"}}
+{"id":"absorbed-forced-runner","said":["Soto singles","ball","ball","ball"],"transcript":"ball four, Soto to second","expect":{"kind":"confirm","readBack":"L. Darcy walks, J. Soto to 2nd"}}
+{"id":"absorbed-batter-on-a-hit","said":[],"transcript":"Soto singles, Soto takes first","expect":{"kind":"save","readBack":"J. Soto singles"}}
+{"id":"absorbed-hes-on-second","said":[],"transcript":"Soto doubles, he's on second","expect":{"kind":"save","readBack":"J. Soto doubles"}}
+{"id":"absorbed-homer-scores","said":[],"transcript":"Soto homers, he scores","expect":{"kind":"save","readBack":"J. Soto homers"}}
+{"id":"absorbed-forced-in","said":["Soto singles","Darcy singles","Vance singles","ball","ball","ball"],"transcript":"ball four, Soto scores","expect":{"kind":"confirm","readBack":"N. Cole walks, J. Soto scores, L. Darcy to 3rd, C. Vance to 2nd"}}
+{"id":"held-runner-asks","said":["Soto doubles"],"transcript":"Darcy singles","expect":{"kind":"confirm","readBack":"L. Darcy singles, J. Soto holds 2nd"}}
+{"id":"held-runner-stated","said":["Soto doubles"],"transcript":"Darcy singles, Soto stays at second","expect":{"kind":"save","readBack":"L. Darcy singles"}}
+{"id":"out-at-second-is-not-a-runner-call","said":["Soto singles"],"transcript":"Darcy grounds out, Soto thrown out at second","expect":{"kind":"unknown_phrase"}}
+{"id":"role-pitcher-is-batting","said":[],"transcript":"Soto hits Ruiz","expect":{"kind":"reject","message":"J. Soto is batting this half."}}
+{"id":"role-pitcher-is-batting-bottom","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"Nguyen hits Ruiz","expect":{"kind":"reject","message":"T. Nguyen is batting this half."}}
+{"id":"role-pitcher-is-another-fielder","said":[],"transcript":"Ortiz hits Soto","expect":{"kind":"reject","message":"T. Nguyen is pitching, not M. Ortiz."}}
+{"id":"role-pitcher-number-another-fielder","said":[],"transcript":"number 12 plunks him","expect":{"kind":"reject","message":"T. Nguyen is pitching, not M. Ortiz."}}
+{"id":"role-pitcher-unknown-name","said":[],"transcript":"Ramirez hits Soto","expect":{"kind":"reject","message":"T. Nguyen is pitching, not Ramirez."}}
+{"id":"role-pitcher-unknown-number","said":[],"transcript":"number 99 hits him","expect":{"kind":"reject","message":"T. Nguyen is pitching, not number 99."}}
+{"id":"role-pitcher-walks-wrong","said":["ball","ball","ball"],"transcript":"Ortiz walks him","expect":{"kind":"reject","message":"T. Nguyen is pitching, not M. Ortiz."}}
+{"id":"role-batter-not-up","said":[],"transcript":"Nguyen hits Darcy","expect":{"kind":"ask","prompt":"J. Soto is up, not L. Darcy."}}
+{"id":"role-batter-in-the-field","said":[],"transcript":"Nguyen hits Moss","expect":{"kind":"reject","message":"K. Moss is in the field this half."}}
+{"id":"role-batter-unknown","said":["ball","ball","ball"],"transcript":"Nguyen walks Ramirez","expect":{"kind":"ask","prompt":"Who is Ramirez?"}}
+{"id":"role-runner-not-on-base","said":["Soto singles"],"transcript":"Darcy steals second","expect":{"kind":"reject","message":"L. Darcy isn't on base."}}
+{"id":"role-runner-wrong-base","said":["Soto singles"],"transcript":"the runner on second steals third","expect":{"kind":"reject","message":"No runner on second."}}
+{"id":"role-runner-number-in-the-field","said":["Soto singles"],"transcript":"number 15 steals second","expect":{"kind":"ask","prompt":"Who is number 15?"}}
+{"id":"same-hbp-plunked-past","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"Soto plunked Ruiz","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"same-hbp-ouch","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"ouch, Soto hit Ruiz","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"same-hbp-got-plunked","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"Ruiz got plunked, he takes first","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"same-hbp-plain","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"hit by pitch, Ruiz to first","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"same-hbp-the-batter","said":["Soto flies out","Darcy flies out","Vance flies out","Nguyen flies out","Ortiz flies out","Park homers","Bell homers","Kindle homers"],"transcript":"Soto hit the batter","expect":{"kind":"save","readBack":"Hit by pitch → J. Ruiz to 1st"}}
+{"id":"crowd-word-can-be-a-name","said":[],"transcript":"Good singles","expect":{"kind":"ask","prompt":"Who is Good?"}}

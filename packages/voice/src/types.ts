@@ -3,17 +3,20 @@ import type { Base, Command, PlayerRef, Position, TeamSide } from '@sandlot/engi
 /** A player the scorer can name. The app passes these in with each press; they never reach events, stats or logs. */
 export type RosterEntry = { player: PlayerRef; side: TeamSide; number: string; name: string };
 
-/** How a clause names a player: by name, jersey number or base, or not at all. `player` is set once a "Who is …?" button picks one. */
+/**
+ * How a clause names a player: by name, jersey number or base, or not at all. `player` is set once a "Who is …?" button picks one.
+ * A pronoun ("he", "the kid", "the runner") is no mention: the call is about whoever its role points to.
+ */
 export type Mention = { name?: string; number?: string; base?: Base; player?: PlayerRef };
 
 export type Target = Base | 'home';
 
 /** What one clause of a press says, before it's tied to the players on the field. */
 export type Spoken =
-  /** `batter` is set only when a name came with it, like "Moss hit by pitch". */
-  | { kind: 'pitch'; result: 'ball' | 'strike' | 'called_strike' | 'swinging_strike' | 'foul' | 'foul_tip' | 'hit_by_pitch'; batter?: Mention }
-  | { kind: 'strikeout'; looking?: boolean; batter?: Mention }
-  | { kind: 'walk'; batter?: Mention }
+  /** `batter` is set only when a name came with it, like "Moss hit by pitch". `pitcher` likewise, like "Soto hits Ruiz". */
+  | { kind: 'pitch'; result: 'ball' | 'strike' | 'called_strike' | 'swinging_strike' | 'foul' | 'foul_tip' | 'hit_by_pitch'; batter?: Mention; pitcher?: Mention }
+  | { kind: 'strikeout'; looking?: boolean; batter?: Mention; pitcher?: Mention }
+  | { kind: 'walk'; batter?: Mention; pitcher?: Mention }
   | { kind: 'hit'; bases: 1 | 2 | 3 | 4; batter?: Mention; fielder?: Position }
   | { kind: 'out'; trajectory: 'ground' | 'fly' | 'line' | 'popup'; batter?: Mention; fielder?: Position }
   | { kind: 'error'; batter?: Mention; fielder?: Position }
