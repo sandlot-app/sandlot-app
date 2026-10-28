@@ -29,7 +29,10 @@ const upper = (value: string) => value.toLocaleUpperCase();
 function OutlineText({ text, size, width, height, x, anchor, color, halo, stroke }:
   { text: string; size: number; width: number; height: number; x: number; anchor: 'start' | 'middle'; color: string; halo: string | null; stroke: number }) {
   const id = `outline${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
-  const glyph = { x, y: size * 0.78, fontSize: size, fontWeight: '900' as const, textAnchor: anchor };
+  // The outline sits outside the letters, so the drawing is padded by the stroke on every side, or it clips at the top.
+  const pad = stroke * 2;
+  const glyph = { x, y: pad + size * 0.78, fontSize: size, fontWeight: '900' as const, textAnchor: anchor };
+  height += pad * 2;
   return <Svg width={width} height={height}>
     <Defs>
       <Mask id={id} maskUnits="userSpaceOnUse" x={0} y={0} width={width} height={height}>
