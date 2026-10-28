@@ -199,6 +199,10 @@ export type BattingLine = {
   walks: number;
   hitByPitch: number;
   strikeouts: number;
+  /** Times the player crossed home as a runner (OBR 9.02(a)(2)). */
+  runs: number;
+  /** Runs credited to the batter's plate appearances (OBR 9.04). */
+  runsBattedIn: number;
 };
 
 export type GameState = {

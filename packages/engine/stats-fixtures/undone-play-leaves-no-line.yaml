@@ -1,5 +1,5 @@
 name: Scratching a play takes its plate appearance off the batter's line
-cite: Sandlot whole-play undo contract, docs/contract.md Undo; at-bats and hits from Official Baseball Rules 9.02(a)(1)
+cite: Sandlot whole-play undo contract, docs/contract.md Undo; at-bats, hits, runs and RBI from Official Baseball Rules 9.02(a)(2) and (4), 9.04, 9.02(a)(1)
   and 9.05(a)(1), https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
 preset: moraga-mustang-first-half
 started: true
@@ -14,4 +14,4 @@ then:
   score: { home: 0, away: 0 }
   nextBatter: { home: 0, away: 1 }
 batting:
-  away-1: { plateAppearances: 1, atBats: 1, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0 }
+  away-1: { plateAppearances: 1, atBats: 1, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 0, runsBattedIn: 0 }
