@@ -48,8 +48,10 @@ function callLabel(commands: Command[]): string {
 
 /**
  * Names a saved play in a few words, as the Undo pill and sync line show it. A spoken press can hold several calls, so
- * each is named ("Ball · Ball"), and Undo says exactly what it takes back.
+ * the first two are named and the rest counted ("Ball · Foul +2"), and Undo says what it takes back in one short line.
  */
 export function playLabel(commands: Command[]): string {
-  return units(commands).map(callLabel).join(' · ') || 'Play';
+  const labels = units(commands).map(callLabel);
+  const named = labels.slice(0, 2).join(' · ') || 'Play';
+  return labels.length > 2 ? `${named} +${labels.length - 2}` : named;
 }

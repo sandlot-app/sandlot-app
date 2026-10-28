@@ -280,3 +280,42 @@ test('the line for a dropped card stays when the next press has a line of its ow
   await settle();
   assert.equal(views.at(-1)?.message, '1 call not saved: Strike. Didn\'t understand "zorp the flibber". Tap to score.');
 });
+
+test('a long press names its first two calls and counts the rest, so the Undo and sync labels stay short', async () => {
+  const { game, hold } = await scorer();
+  (await hold())('ball, foul, foul, ball');
+  await settle();
+  assert.equal(playLabel(game().lastPlay!), 'Ball · Foul +2');
+});
+
+test('ADR 0006: an answer tapped before the clear calls finish saving waits for them, then saves on the game after them', async () => {
+  let answer: (saved: boolean) => void = () => {};
+  const { controller, hold, recorded } = await scorer(true, new Promise((resolve) => { answer = resolve; }));
+  (await hold())('ball, ball, strike');
+  await settle();
+  const clear = recorded.at(-1);
+  assert.equal(clear?.kind, 'voice');
+  controller.choose(1);
+  await settle();
+  assert.equal(recorded.length, 1, 'the answer waits while the clear calls are still saving');
+  answer(true);
+  await settle();
+  assert.deepEqual(recorded.at(-1), {
+    kind: 'voice', at: '2026-10-26T17:01:00.000Z', commands: [{ kind: 'pitch', result: 'swinging_strike' }],
+    expectedRevision: (clear as { expectedRevision: number }).expectedRevision + 2,
+  });
+});
+
+test('ADR 0006: when the clear calls are refused, their card goes too, so nothing is answered on a game that moved', async () => {
+  let answer: (saved: boolean) => void = () => {};
+  const { controller, hold, recorded, views } = await scorer(true, new Promise((resolve) => { answer = resolve; }));
+  (await hold())('ball, ball, strike');
+  await settle();
+  assert.equal(views.at(-1)?.card?.kind, 'choose');
+  answer(false);
+  await settle();
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: unsaved });
+  controller.choose(0);
+  await settle();
+  assert.equal(recorded.length, 1, 'a dropped card can\'t be answered');
+});

@@ -44,6 +44,15 @@ describe('routing a press (spec section 3)', () => {
     expect(press(game, 'undo that, double')).toMatchObject({ kind: 'fix', options: [{ readBack: 'J. Soto doubles' }] });
   });
 
+  it('"No 17" and "No. 23" are jersey numbers, and with no play yet a lead-in is read as part of a new call', () => {
+    const game = said(['ball']);
+    expect(press(game, 'No 17 singles')).toMatchObject({ kind: 'save', reading: { readBack: 'J. Soto singles' } });
+    expect(press(game, 'No. 23 singles')).not.toMatchObject({ kind: 'fix' });
+    expect(press(start, 'actually ball')).toMatchObject({ kind: 'save', reading: { readBack: 'Ball → count 1–0' } });
+    expect(press(start, 'that was a ball')).not.toMatchObject({ kind: 'reject' });
+    expect(press(game, 'Actually, foul')).toMatchObject({ kind: 'fix', options: [{ readBack: 'Foul → count 0–1' }] });
+  });
+
   it('a voice fix is read against the game before the last Play, and asks when the new call is unclear', () => {
     const game = said(['ball', 'ball', 'ball', 'strike looking']);
     expect(press(game, 'actually ball four')).toMatchObject({
@@ -54,9 +63,8 @@ describe('routing a press (spec section 3)', () => {
     expect(strike.kind === 'fix' && strike.options.map((option) => option.readBack)).toEqual(['Strike looking → count 0–1', 'Strike swinging → count 0–1']);
   });
 
-  it('a voice fix the game can\'t take says why, and with no play yet there\'s nothing to fix', () => {
+  it('a voice fix the game can\'t take says why', () => {
     expect(press(said(['Soto singles']), 'no, he walked')).toEqual({ kind: 'reject', message: 'That would be ball 1, not ball four.' });
-    expect(press(start, 'no, that was a double')).toEqual({ kind: 'reject', message: 'There\'s no play to fix yet.' });
   });
 
   it('a voice fix that changes nothing, of a fix, or that isn\'t a play says so instead of offering a card', () => {

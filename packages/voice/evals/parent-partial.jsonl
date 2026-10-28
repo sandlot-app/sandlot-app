@@ -16,7 +16,9 @@
 {"id":"fix-no-that-was","said":["Soto singles"],"transcript":"No, that was a double","expect":{"kind":"fix","readBack":"J. Soto doubles"}}
 {"id":"fix-actually","said":["ball","ball","ball","strike looking"],"transcript":"actually ball four","expect":{"kind":"fix","readBack":"J. Soto walks"}}
 {"id":"fix-undo-that","said":["Soto singles"],"transcript":"undo that, he doubled to left","expect":{"kind":"fix","readBack":"J. Soto doubles to left"}}
-{"id":"fix-nothing-yet","said":[],"transcript":"no, that was a single","expect":{"kind":"reject","message":"There's no play to fix yet."}}
+{"id":"no-play-yet-reads-new","said":[],"transcript":"actually ball","expect":{"kind":"save","readBack":"Ball → count 1–0"}}
+{"id":"number-not-no","said":["ball"],"transcript":"No 17 singles","expect":{"kind":"save","readBack":"J. Soto singles"}}
+{"id":"mid-press-no-drops-call","said":[],"transcript":"ball, ball, no, strike","expect":{"kind":"partial","readBack":"Ball → count 1–0","rest":{"kind":"ask","prompt":"Looking or swinging?"}}}
 {"id":"undo-alone","said":["Soto singles"],"transcript":"undo that","expect":{"kind":"undo"}}
 {"id":"undo-mixed-in","said":["Soto singles"],"transcript":"ball, undo","expect":{"kind":"unknown_phrase","message":"Didn't understand \"ball, undo\". Tap to score."}}
 {"id":"unreadable-call-one-card","said":[],"transcript":"Ball, ball, the kid did the thing","expect":{"kind":"reject","message":"Didn't understand \"the kid did the thing\"."}}
