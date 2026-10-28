@@ -47,6 +47,23 @@ test('a press streams the audio from before the socket opened first, shows live 
   assert.equal(socket.closed, true, 'the socket closes on release, so the session stops costing money');
 });
 
+test('a voice fix ("no, that was a double") is read on the phone, without voice-parse', async () => {
+  const mic = fakeMic();
+  const socket = fakeSocket();
+  const api = fakeApi();
+  const { press, done } = run(mic, api, socket);
+  await tick();
+  socket.open();
+  mic.push([1, 0]);
+  press.release();
+  await tick();
+  socket.server({ type: 'conversation.item.input_audio_transcription.completed', item_id: 'item_1', transcript: 'No, that was a double.' });
+  const result = await done;
+  assert.equal(result.kind === 'heard' && result.transcript, 'No, that was a double.');
+  assert.equal(result.kind === 'heard' && result.parsed.kind, 'plays');
+  assert.equal(api.parsed.length, 0);
+});
+
 test('words the phone grammar can\'t read go to voice-parse as text, and its parse is what the press heard', async () => {
   const mic = fakeMic();
   const socket = fakeSocket();

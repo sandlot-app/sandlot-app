@@ -49,7 +49,15 @@ export type Decision =
   | { kind: 'no_play'; question: boolean }
   | { kind: 'unknown_phrase'; message: string }
   | { kind: 'undo' }
+  /** `savePart` is the one card for a press whose clear calls need a check of their own (ADR 0006). */
   | { kind: 'reject'; message: string; savePart?: Reading }
   | { kind: 'ask'; prompt: string; options: Reading[] }
   | { kind: 'confirm'; reading: Reading; reasons: ConfirmReason[] }
-  | { kind: 'save'; reading: Reading };
+  | { kind: 'save'; reading: Reading }
+  /**
+   * The clear calls before the first unclear one save as the press's Play, and `rest` is the one card for the others,
+   * checked against the game after `reading` (ADR 0006). `calls` holds the words of the calls `rest` holds.
+   */
+  | { kind: 'partial'; reading: Reading; rest: Extract<Decision, { kind: 'ask' | 'confirm' | 'reject' }>; calls: string[] }
+  /** A Fix of the last Play: nothing changes until the scorer taps one of `options`, each a whole replacement for `was`. */
+  | { kind: 'fix'; was: Reading; options: Reading[]; prompt?: string; calls: string[] };

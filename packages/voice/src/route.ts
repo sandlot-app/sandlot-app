@@ -1,7 +1,7 @@
 import { applyGroup } from '@sandlot/engine';
-import type { Command, PlayerRef, RejectCode } from '@sandlot/engine';
+import type { Command, Event, PlayerRef, RejectCode } from '@sandlot/engine';
 import { classify } from './classify.ts';
-import { echoMismatch } from './echo.ts';
+import { echoMismatch, unsaid } from './echo.ts';
 import { heldRunners, readBack } from './explain.ts';
 import { isEmptyTranscript, parsePhrase } from './parse.ts';
 import { nameOf } from './players.ts';
@@ -56,12 +56,25 @@ const legal = (game: PressGame, commands: Command[]) =>
 /** Drops readings that record the same commands as an earlier one, so no two buttons do the same thing. */
 const distinct = (drafts: Draft[]) => drafts.filter((draft, index) =>
   drafts.findIndex((other) => JSON.stringify(other.commands) === JSON.stringify(draft.commands)) === index);
-const lowerFirst = (text: string) => text.charAt(0).toLowerCase() + text.slice(1).replace(/\.$/, '');
+/** "No runner on second." reads "no runner on second" after a colon. A message that opens with a player's name keeps it. */
+const lowerFirst = (game: PressGame, text: string) => {
+  const trimmed = text.replace(/\.$/, '');
+  return game.roster.some((entry) => trimmed.startsWith(entry.name)) ? trimmed : trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+};
 
-/** "Couldn't record 'steals third': no runner on second. Nothing was saved." with the earlier clauses offered on their own (B6). */
+/** A call's words as the transcript has them, since the phone's reader lowercases them and drops what isn't a word. */
+function asSaid(transcript: string, words: string): string {
+  const pattern = words.split(/[^a-z0-9]+/).filter(Boolean).join('[^a-z0-9]+');
+  return (pattern && transcript.match(new RegExp(pattern, 'i'))?.[0]) || words;
+}
+
+/**
+ * "Couldn't record 'steals third': no runner on second. Nothing was saved." with the earlier clauses on the press's
+ * one card, for when they can't save on their own (ADR 0006).
+ */
 function partial(game: PressGame, parts: string[], clause: number, before: Command[], reason: string): Decision {
   if (clause > 0 && legal(game, before)) {
-    return { kind: 'reject', message: `Couldn't record "${parts[clause]}": ${lowerFirst(reason)}. Nothing was saved.`, savePart: reading(game, before) };
+    return { kind: 'reject', message: `Couldn't record "${parts[clause]}": ${lowerFirst(game, reason)}. Nothing was saved.`, savePart: reading(game, before) };
   }
   return { kind: 'reject', message: reason };
 }
@@ -90,14 +103,25 @@ function failure(game: PressGame, parts: string[], draft: Draft): Decision {
   return { kind: 'reject', message: "That play can't be recorded right now." };
 }
 
-/** Routes one press, in the spec's section 3 order. The first match wins. */
-export function route(press: Press, parsed: ParseResult = parsePhrase(press.transcript)): Decision {
-  if (isEmptyTranscript(press.transcript)) return { kind: 'didnt_catch' };
-  if (parsed.kind === 'not_a_command') return { kind: 'no_play', question: parsed.question };
-  if (parsed.kind === 'unclear') return { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
-  if (parsed.plays.some((play) => play.kind === 'undo')) {
-    return parsed.plays.length === 1 ? { kind: 'undo' } : { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
-  }
+type Plays = Extract<ParseResult, { kind: 'plays' }>;
+
+const slice = (parsed: Plays, from: number, to?: number): Plays =>
+  ({ ...parsed, plays: parsed.plays.slice(from, to), parts: parsed.parts.slice(from, to) });
+
+/** The game as it stands once `commands` save, so the calls after them are read against it. */
+function after(press: Press, commands: Command[]): Press {
+  const last = press.events.at(-1)!;
+  const saved = commands.map((command, index) =>
+    ({ ...last, id: `${last.id}+${index + 1}`, seq: last.seq + index + 1, group: `${last.group}+press`, command }) as Event);
+  return { setup: press.setup, roster: press.roster, transcript: press.transcript, at: press.at, events: [...press.events, ...saved] };
+}
+
+/**
+ * Reads a press as one Play, with no split. `part` marks the calls on one side of a split: the parser model's words for
+ * them can't be checked against the whole transcript, which holds the other calls too, so only what they record must
+ * have been said.
+ */
+function whole(press: Press, parsed: Plays, part = false): Decision {
   const resolved = resolve(press, parsed.plays);
   if (resolved.kind === 'issue') {
     const { issue } = resolved;
@@ -119,9 +143,103 @@ export function route(press: Press, parsed: ParseResult = parsePhrase(press.tran
   const reasons: ConfirmReason[] = [];
   if (classify(before, after, commands) === 'complex') reasons.push('complex');
   if (heldRunners(press, commands).length) reasons.push('runner_held');
-  if (echoMismatch(parsed.model ? press.transcript : parsed.parts.join(', '), commands)) reasons.push('echo');
+  const misheard = parsed.model && part ? unsaid(press.transcript, commands) : echoMismatch(parsed.model ? press.transcript : parsed.parts.join(', '), commands);
+  if (misheard) reasons.push('echo');
   if (press.previous && press.at - press.previous.at <= 3000 && JSON.stringify(press.previous.commands) === JSON.stringify(commands)) reasons.push('duplicate');
   if (press.confirmEverything) reasons.push('confirm_everything');
   const result = reading(press, commands);
   return reasons.length ? { kind: 'confirm', reading: result, reasons } : { kind: 'save', reading: result };
+}
+
+/**
+ * ADR 0006: when a press has no one reading, the clear calls before the first unclear one save as its Play, and only the
+ * rest goes on one card. A runner's move belongs to the play before it, so a split never falls between them. When the
+ * clear calls would need a card of their own, the whole press keeps its one card instead.
+ */
+function split(press: Press, parsed: Plays, full: Decision): Decision {
+  if (full.kind !== 'ask' && full.kind !== 'reject') return full;
+  const starts = parsed.plays.flatMap((play, index) => index > 0 && (play.kind === 'moves' || play.kind === 'scores') ? [] : [index]);
+  let clear: { end: number; decision: Decision } | null = null;
+  for (const end of starts.slice(1)) {
+    const decision = whole(press, slice(parsed, 0, end), true);
+    if (decision.kind !== 'save' && decision.kind !== 'confirm') break;
+    clear = { end, decision };
+  }
+  if (clear?.decision.kind !== 'save') return full;
+  const saved = clear.decision.reading;
+  const rest = whole(after(press, saved.commands), slice(parsed, clear.end), true);
+  const calls = parsed.parts.slice(clear.end).map((words) => asSaid(press.transcript, words));
+  if (rest.kind === 'reject') {
+    const message = rest.savePart ? rest.message : `Couldn't record "${calls[0]}": ${lowerFirst(press, rest.message)}.`;
+    return { kind: 'partial', reading: saved, rest: { ...rest, message }, calls };
+  }
+  return rest.kind === 'ask' || rest.kind === 'confirm' ? { kind: 'partial', reading: saved, rest, calls } : full;
+}
+
+const fixStart = /^\s*(?:no|nope|actually|that was|undo that)\b/i;
+const fixLead = /^[\s,.;:!-]*(?:(?:no|nope|wait|actually|that was|it was|that's|it's|make (?:that|it)|i mean|sorry|undo that)\b[\s,.;:!-]*)*/i;
+
+/**
+ * The calls of a press that fixes the last Play ("no, that was a double", "actually ball four", "undo that, double"),
+ * or null when the press doesn't start like a fix. The phone's reader reads them with the lead-in taken off.
+ */
+export function fixWords(transcript: string): string | null {
+  if (!fixStart.test(transcript)) return null;
+  const words = transcript.replace(fixLead, '').trim();
+  return words && !isEmptyTranscript(words) ? words : null;
+}
+
+const playCommands = new Set<Command['kind']>(['pitch', 'ball_in_play', 'runner', 'batter_out']);
+
+/** The latest play not undone, and the events before it, when it's a play a voice fix can replace. */
+function lastPlay(events: Event[]): { play: Event[]; before: Event[] } | null {
+  const groups: Event[][] = [];
+  for (const event of events) {
+    const group = groups.at(-1);
+    if (group?.[0]!.group === event.group) group.push(event);
+    else groups.push([event]);
+  }
+  const active: Event[][] = [];
+  for (const group of groups) {
+    if (group[0]!.command.kind === 'undo') active.pop();
+    else active.push(group);
+  }
+  const play = active.at(-1);
+  if (!play?.every((event) => playCommands.has(event.command.kind))) return null;
+  return { play, before: events.slice(0, events.indexOf(play[0]!)) };
+}
+
+/** A Fix of the last Play: its new calls are read against the game before it, and nothing saves until the scorer taps. */
+function fix(press: Press, words: string, parsed: ParseResult): Decision {
+  const local = parsePhrase(words);
+  const read = local.kind === 'plays' ? local : parsed.kind === 'plays' && parsed.model ? parsed : null;
+  if (!read || read.plays.some((play) => play.kind === 'undo')) {
+    return { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
+  }
+  const last = lastPlay(press.events);
+  if (!last) return { kind: 'reject', message: "There's no play to fix yet." };
+  const before: Press = { setup: press.setup, roster: press.roster, transcript: press.transcript, at: press.at, events: last.before };
+  const was = reading(before, last.play.map((event) => event.command));
+  const calls = read.parts.map((part) => asSaid(words, part));
+  const replacement = whole(before, read);
+  switch (replacement.kind) {
+    case 'save':
+    case 'confirm': return { kind: 'fix', was, options: [replacement.reading], calls };
+    case 'ask': return { kind: 'fix', was, options: replacement.options, prompt: replacement.prompt, calls };
+    case 'reject': return { kind: 'reject', message: replacement.message };
+    default: return replacement;
+  }
+}
+
+/** Routes one press, in the spec's section 3 order. The first match wins. */
+export function route(press: Press, parsed: ParseResult = parsePhrase(press.transcript)): Decision {
+  if (isEmptyTranscript(press.transcript)) return { kind: 'didnt_catch' };
+  const words = fixWords(press.transcript);
+  if (words) return fix(press, words, parsed);
+  if (parsed.kind === 'not_a_command') return { kind: 'no_play', question: parsed.question };
+  if (parsed.kind === 'unclear') return { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
+  if (parsed.plays.some((play) => play.kind === 'undo')) {
+    return parsed.plays.length === 1 ? { kind: 'undo' } : { kind: 'unknown_phrase', message: `Didn't understand "${press.transcript.trim()}". Tap to score.` };
+  }
+  return split(press, parsed, whole(press, parsed));
 }

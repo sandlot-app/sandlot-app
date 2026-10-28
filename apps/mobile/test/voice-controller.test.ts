@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { openOfflineGame, type DemoAction, type SavedGame } from '../src/scoring/offline-game.ts';
+import { playLabel } from '../src/scoring/play-label.ts';
 import { createVoiceController, type VoiceView } from '../src/voice/voice-controller.ts';
 import { connect } from './database.ts';
 import { fakeApi, fakeMic, fakeSocket, tick, timeouts } from './voice-fakes.ts';
@@ -46,7 +47,9 @@ async function scorer(voiceOn = true, gate?: Promise<boolean>) {
     return (transcript: string) => heldSocket.server({ type: 'conversation.item.input_audio_transcription.completed', transcript });
   }
   const plays = () => game.events.slice(started.game.events.length);
-  return { controller, record, recorded, views, hold, plays, game: () => game };
+  /** Each saved Play's commands, in order. */
+  const groups = () => [...new Set(plays().map((event) => event.group))].map((group) => plays().filter((event) => event.group === group).map((event) => event.command));
+  return { controller, record, recorded, views, hold, plays, groups, game: () => game };
 }
 
 test('a voice play saves once, against the game the press started on', async () => {
@@ -196,4 +199,93 @@ test('#65: tearing the controller down mid-press puts the bar back to idle', asy
   controller.start();
   controller.dispose();
   assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+});
+
+const ball = { kind: 'pitch', result: 'ball' } as const;
+
+test('ADR 0006: the clear calls save at once as one Play, and only the rest waits on the card', async () => {
+  const { controller, game, groups, hold, record, views } = await scorer();
+  (await hold())('ball, ball, strike');
+  await settle();
+  assert.deepEqual(groups(), [[ball, ball]], 'the two balls saved together, before any answer');
+  const card = views.at(-1)?.card;
+  assert.equal(card?.kind, 'choose');
+  if (card?.kind !== 'choose') return;
+  assert.equal(card.words, 'strike', 'the card holds only the call it asks about');
+  assert.deepEqual(card.choices, ['Strike looking', 'Strike swinging']);
+  assert.equal(card.note, 'Looking or swinging? Ball · Ball saved, and Undo takes back just that. Tap one, or use the buttons below.');
+  assert.equal(playLabel(game().lastPlay!), 'Ball · Ball', 'the Undo button names the Play it takes back');
+
+  controller.choose(1);
+  await settle();
+  assert.deepEqual(groups(), [[ball, ball], [{ kind: 'pitch', result: 'swinging_strike' }]], 'the answer is its own Play');
+  assert.equal(playLabel(game().lastPlay!), 'Strike');
+  await record({ kind: 'undo' });
+  assert.deepEqual(game().state.count, { balls: 2, strikes: 0, pitches: 2 }, 'Undo after the answer takes back only the answer');
+});
+
+test('ADR 0006: the card never blocks: a tap or the next press drops it, with a line saying what wasn\'t saved', async () => {
+  const tapped = await scorer();
+  (await tapped.hold())('ball, ball, strike');
+  await settle();
+  tapped.controller.dismiss();
+  assert.deepEqual(tapped.views.at(-1), { listening: false, card: null, message: '1 call not saved: Strike' });
+  tapped.controller.choose(0);
+  await settle();
+  assert.deepEqual(tapped.groups(), [[ball, ball]], 'a dropped card can\'t be answered');
+
+  const spoken = await scorer();
+  (await spoken.hold())('Ball, Ramirez singles, steals second');
+  await settle();
+  const hear = await spoken.hold();
+  assert.equal(spoken.views.at(-1)?.message, '2 calls not saved: Ramirez singles, steals second');
+  assert.equal(spoken.views.at(-1)?.card?.kind, 'listening', 'the new press listens at once');
+  hear('foul');
+  await settle();
+  assert.deepEqual(spoken.groups(), [[ball], [{ kind: 'pitch', result: 'foul' }]]);
+  assert.equal(spoken.views.at(-1)?.message, '2 calls not saved: Ramirez singles, steals second', 'the line stays until the scorer moves on');
+
+  const whole = await scorer();
+  (await whole.hold())('strike');
+  await settle();
+  whole.controller.dismiss();
+  assert.equal(whole.views.at(-1)?.message, '1 call not saved: Strike', 'a whole-press card says so too');
+});
+
+test('ADR 0006: when the rest can\'t be recorded, the clear calls still save and a line says why', async () => {
+  const { groups, hold, views } = await scorer();
+  (await hold())('ball, walk');
+  await settle();
+  assert.deepEqual(groups(), [[ball]]);
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Ball saved. Couldn\'t record "walk": that would be ball 2, not ball four.' });
+});
+
+test('a voice fix of the last Play shows a preview, and sends the Fix only after the tap', async () => {
+  const { controller, game, groups, hold, recorded, views } = await scorer();
+  (await hold())('ball');
+  await settle();
+  const revision = game().revision;
+  (await hold())('no, strike looking');
+  await settle();
+  const card = views.at(-1)?.card;
+  assert.equal(card?.kind, 'choose');
+  if (card?.kind !== 'choose') return;
+  assert.equal(card.heading, 'Change ball to strike?');
+  assert.deepEqual(card.choices, ['Strike looking']);
+  assert.deepEqual(groups(), [[ball]], 'nothing changes before the tap');
+  assert.equal(recorded.length, 1);
+
+  controller.choose(0);
+  await settle();
+  assert.deepEqual(recorded.at(-1), { kind: 'fix', at: '2026-10-26T17:01:00.000Z', expectedRevision: revision, commands: [{ kind: 'pitch', result: 'called_strike' }] });
+});
+
+test('a dropped voice fix says the fix wasn\'t saved', async () => {
+  const { controller, hold, views } = await scorer();
+  (await hold())('ball');
+  await settle();
+  (await hold())('no, strike looking');
+  await settle();
+  controller.dismiss();
+  assert.equal(views.at(-1)?.message, 'Fix not saved: strike looking');
 });

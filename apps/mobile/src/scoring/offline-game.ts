@@ -42,7 +42,9 @@ export type DemoAction =
       event: 'steal' | 'wild_pitch' | 'passed_ball' | 'pickoff';
       moves: { runner: PlayerRef; to: Destination }[] }
   /** A reading the scorer said, as route() proposed it. The engine checks it like any other play (rule 6). */
-  | { kind: 'voice'; at: string; expectedRevision: number; commands: Command[] };
+  | { kind: 'voice'; at: string; expectedRevision: number; commands: Command[] }
+  /** A spoken Fix: `commands` replace the last play, through the engine's `correct` command. */
+  | { kind: 'fix'; at: string; expectedRevision: number; commands: Command[] };
 
 export type SavedGame = {
   id: GameId;
@@ -465,14 +467,19 @@ export async function openOfflineGame(
                     ? move.to === 'out' ? 'caught_stealing' : 'stolen_base'
                     : action.event }));
               }
-              else if (action.kind === 'voice') {
+              else if (action.kind === 'voice' || action.kind === 'fix') {
                 // A spoken press records plays only. Lineups, substitutions, corrections and undo have their own controls.
                 const plays: Command['kind'][] = ['pitch', 'ball_in_play', 'runner', 'batter_out'];
                 if (!action.commands.length || action.commands.some((command) => !plays.includes(command.kind))) {
                   result = { kind: 'rejected', code: 'not_implemented' };
                   return;
                 }
-                commands = action.commands;
+                const target = action.kind === 'fix' ? undoTarget(current!.groups, current!.row.bootstrap_group) : null;
+                if (action.kind === 'fix' && !target) {
+                  result = { kind: 'rejected', code: 'nothing_to_undo' };
+                  return;
+                }
+                commands = target ? [{ kind: 'correct', target, replacement: action.commands }] : action.commands;
               }
               else {
                 const target = undoTarget(
@@ -521,7 +528,7 @@ export async function openOfflineGame(
                 seq: (current?.events.length ?? 0) + index + 1,
                 group: savedGroup,
                 lockEpoch,
-                source: action.kind === 'voice' ? 'voice' : 'tap',
+                source: action.kind === 'voice' || action.kind === 'fix' ? 'voice' : 'tap',
                 at,
                 command,
               }));

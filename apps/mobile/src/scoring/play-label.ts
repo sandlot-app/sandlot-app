@@ -19,8 +19,21 @@ const runnerLabels: Partial<Record<RunnerEvent, string>> = {
   pickoff: 'Pickoff',
 };
 
-/** Names a saved play in a few words, as the Undo pill and sync line show it. */
-export function playLabel(commands: Command[]): string {
+/** A play's calls: an in-play pitch with its ball in play, a run of one runner event, or one command. */
+function calls(commands: Command[]): Command[][] {
+  const result: Command[][] = [];
+  for (const command of commands) {
+    const call = result.at(-1);
+    const previous = call?.at(-1);
+    const joins = (command.kind === 'ball_in_play' && previous?.kind === 'pitch' && previous.result === 'in_play')
+      || (command.kind === 'runner' && previous?.kind === 'runner' && previous.event === command.event);
+    if (call && joins) call.push(command);
+    else result.push([command]);
+  }
+  return result;
+}
+
+function callLabel(commands: Command[]): string {
   const outcome = commands.find((command) => command.kind === 'ball_in_play');
   if (outcome) {
     const choice = outcomeChoices.find((item) => item.outcome === outcome.outcome && item.trajectory === outcome.trajectory)
@@ -31,4 +44,12 @@ export function playLabel(commands: Command[]): string {
   if (first?.kind === 'pitch') return pitchLabels[first.result];
   if (first?.kind === 'runner') return runnerLabels[first.event] ?? 'Runner';
   return 'Play';
+}
+
+/**
+ * Names a saved play in a few words, as the Undo pill and sync line show it. A spoken press can hold several calls, so
+ * each is named ("Ball · Ball"), and Undo says exactly what it takes back.
+ */
+export function playLabel(commands: Command[]): string {
+  return calls(commands).map(callLabel).join(' · ') || 'Play';
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Command } from '@sandlot/engine';
+import { applyGroup } from '@sandlot/engine';
+import type { Command, GroupId } from '@sandlot/engine';
 import { echoMismatch } from '../src/echo.ts';
 import { gameWith, player, press, said } from './game.ts';
 
@@ -28,6 +29,40 @@ describe('routing a press (spec section 3)', () => {
   it('E1: "scratch that" and "undo" undo the last play', () => {
     expect(press(start, 'scratch that')).toEqual({ kind: 'undo' });
     expect(press(start, 'Undo.')).toEqual({ kind: 'undo' });
+  });
+
+  it('a press that starts "no", "actually", "that was" or "undo that" with a call fixes the last Play, after a preview', () => {
+    const game = said(['Soto singles']);
+    const double = press(game, 'No, that was a double');
+    expect(double).toMatchObject({
+      kind: 'fix', was: { readBack: 'J. Soto singles' }, options: [{ readBack: 'J. Soto doubles' }], calls: ['a double'],
+    });
+    expect(double.kind === 'fix' && double.options[0]!.commands[1]).toMatchObject({ kind: 'ball_in_play', outcome: 'double' });
+    expect(press(game, 'actually he tripled to right')).toMatchObject({ kind: 'fix', options: [{ readBack: 'J. Soto triples to right' }] });
+    expect(press(game, 'That was a home run')).toMatchObject({ kind: 'fix', options: [{ readBack: 'J. Soto homers' }] });
+    expect(press(game, 'undo that, double')).toMatchObject({ kind: 'fix', options: [{ readBack: 'J. Soto doubles' }] });
+  });
+
+  it('a voice fix is read against the game before the last Play, and asks when the new call is unclear', () => {
+    const game = said(['ball', 'ball', 'ball', 'strike looking']);
+    expect(press(game, 'actually ball four')).toMatchObject({
+      kind: 'fix', was: { readBack: 'Strike looking → count 3–1' }, options: [{ readBack: 'J. Soto walks' }],
+    });
+    const strike = press(said(['ball']), 'no, strike');
+    expect(strike).toMatchObject({ kind: 'fix', prompt: 'Looking or swinging?', was: { readBack: 'Ball → count 1–0' } });
+    expect(strike.kind === 'fix' && strike.options.map((option) => option.readBack)).toEqual(['Strike looking → count 0–1', 'Strike swinging → count 0–1']);
+  });
+
+  it('a voice fix the game can\'t take says why, and with no play yet there\'s nothing to fix', () => {
+    expect(press(said(['Soto singles']), 'no, he walked')).toEqual({ kind: 'reject', message: 'That would be ball 1, not ball four.' });
+    expect(press(start, 'no, that was a double')).toEqual({ kind: 'reject', message: 'There\'s no play to fix yet.' });
+  });
+
+  it('"undo" alone still undoes, and "undo" among other calls still isn\'t understood', () => {
+    const game = said(['Soto singles']);
+    expect(press(game, 'undo that')).toEqual({ kind: 'undo' });
+    expect(press(game, 'Undo')).toEqual({ kind: 'undo' });
+    expect(press(game, 'double, undo')).toEqual({ kind: 'unknown_phrase', message: 'Didn\'t understand "double, undo". Tap to score.' });
   });
 
   it('saves a simple pitch with a read-back', () => {
@@ -89,12 +124,59 @@ describe('routing a press (spec section 3)', () => {
     expect(press(game, 'steals third')).toEqual({ kind: 'reject', message: 'No runner on second.' });
   });
 
-  it('B6: one failing clause saves nothing and offers the clauses before it', () => {
+  it('ADR 0006: the clear calls before a failing one save, and the rest says why it can\'t be recorded', () => {
     const game = said(['Soto singles']);
-    expect(press(game, 'ball, ball, steals third')).toMatchObject({
-      kind: 'reject',
-      message: 'Couldn\'t record "steals third": no runner on second. Nothing was saved.',
-      savePart: { commands: [ball, ball], readBack: 'Ball → count 1–0 · Ball → count 2–0' },
+    expect(press(game, 'ball, ball, steals third')).toEqual({
+      kind: 'partial',
+      reading: { commands: [ball, ball], readBack: 'Ball → count 1–0 · Ball → count 2–0' },
+      rest: { kind: 'reject', message: 'Couldn\'t record "steals third": no runner on second.' },
+      calls: ['steals third'],
+    });
+  });
+
+  it('ADR 0006: the clear calls before an unclear one save, and only the rest goes on the card', () => {
+    const decision = press(start, 'ball, ball, strike');
+    expect(decision).toMatchObject({ kind: 'partial', reading: { commands: [ball, ball] }, rest: { kind: 'ask', prompt: 'Looking or swinging?' }, calls: ['strike'] });
+    // The card's choices are checked against the game after the saved calls, so they read the 2–0 count.
+    expect(decision.kind === 'partial' && decision.rest.kind === 'ask' && decision.rest.options.map((option) => option.readBack))
+      .toEqual(['Strike looking → count 2–1', 'Strike swinging → count 2–1']);
+  });
+
+  it('ADR 0006: the card\'s answer is its own Play, so Undo after it takes back only the answer', () => {
+    const decision = press(start, 'ball, ball, strike');
+    if (decision.kind !== 'partial' || decision.rest.kind !== 'ask') throw new Error('Expected a partial save with a card');
+    const answer = decision.rest.options[1]!.commands;
+    expect(answer).toEqual([{ kind: 'pitch', result: 'swinging_strike' }]);
+    const game = gameWith([decision.reading.commands, answer]);
+    expect(applyGroup(game.setup, game.events, [{ kind: 'undo', target: 'play-2' as GroupId }])).toMatchObject({
+      ok: true, state: { count: { balls: 2, strikes: 0 } },
+    });
+  });
+
+  it('ADR 0006: nothing saves when the first call is unclear', () => {
+    expect(press(start, 'strike, ball')).toMatchObject({ kind: 'ask', prompt: 'Looking or swinging?' });
+    expect(press(start, 'Ramirez singles, ball')).toMatchObject({ kind: 'ask', prompt: 'Who is Ramirez?' });
+  });
+
+  it('ADR 0006: when the clear calls need a card anyway, the whole press goes on one card', () => {
+    const game = said(['Soto singles']);
+    // L. Darcy's single moves two players, so it needs a check before it saves; the bare strike goes on the same card.
+    const decision = press(game, 'Darcy singles to right, strike');
+    expect(decision).toMatchObject({ kind: 'ask', prompt: 'Looking or swinging?' });
+    expect(decision.kind === 'ask' && decision.options.map((option) => option.readBack)).toEqual([
+      'L. Darcy singles to right, J. Soto to 2nd · Strike looking → count 0–1',
+      'L. Darcy singles to right, J. Soto to 2nd · Strike swinging → count 0–1',
+    ]);
+    expect(press(game, 'Darcy singles to right, steals home')).toMatchObject({
+      kind: 'reject', savePart: { readBack: 'L. Darcy singles to right, J. Soto to 2nd' },
+    });
+    expect(press(start, 'ball, strike', { confirmEverything: true })).toMatchObject({ kind: 'ask', prompt: 'Looking or swinging?' });
+  });
+
+  it('ADR 0006: a runner\'s move stays with the play it belongs to, so the split never cuts between them', () => {
+    const game = said(['Soto triples', 'Darcy doubles']);
+    expect(press(game, 'ball, Vance singles, runner scores')).toMatchObject({
+      kind: 'partial', reading: { commands: [ball] }, rest: { kind: 'ask', prompt: 'Which runner?' }, calls: ['Vance singles', 'runner scores'],
     });
   });
 

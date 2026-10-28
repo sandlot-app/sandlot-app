@@ -1,0 +1,108 @@
+appId: host.exp.Exponent
+# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="ball, ball, strike|ball|no, strike looking". See features/voice-scoring.md.
+---
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+    timeout: 15000
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
+
+# 1. "ball, ball, strike": the two balls save at once as one Play, and only "strike" waits on the card (ADR 0006).
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Not sure — which one?"
+    timeout: 15000
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting + 1} plays? saved on this phone"
+- assertVisible: "“strike”"
+- assertVisible: "Strike looking"
+- assertVisible: "Strike swinging"
+- assertVisible: "Undo · Ball · Ball"
+- takeScreenshot: voice-partial
+
+# 2. The next press drops the card, and a line says what wasn't saved. "ball" saves as its own Play.
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
+    timeout: 15000
+- assertNotVisible:
+    id: "voice-card"
+- assertVisible:
+    id: "voice-message"
+    text: "1 call not saved: Strike"
+- assertVisible: "Undo · Ball"
+- takeScreenshot: voice-dropped
+
+# 3. "no, strike looking" fixes the last Play: a one-tap preview, and nothing changes before the tap.
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Change ball to strike?"
+    timeout: 15000
+- assertVisible:
+    id: "voice-choice-0"
+    text: "Strike looking"
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting + 2} plays? saved on this phone"
+- takeScreenshot: voice-fix-preview
+- tapOn:
+    id: "voice-choice-0"
+# The engine doesn't apply `correct` yet (#84's PR), so the tap ends in this line and the game stays as it was.
+- extendedWaitUntil:
+    visible:
+      id: "voice-message"
+      text: "That fix didn't save. Undo the play and say it again, or tap to score."
+    timeout: 15000
+- takeScreenshot: voice-fix-tapped
+
+# Put the game back: undo both voice plays.
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 3} plays? saved on this phone"
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 4} plays? saved on this phone"
+    timeout: 15000

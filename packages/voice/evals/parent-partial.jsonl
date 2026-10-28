@@ -1,0 +1,21 @@
+{"id":"partial-strike-asks","said":[],"transcript":"ball, ball, strike","expect":{"kind":"partial","readBack":"Ball → count 1–0 · Ball → count 2–0","rest":{"kind":"ask","prompt":"Looking or swinging?"}}}
+{"id":"partial-who-is","said":[],"transcript":"Ball, foul, Ramirez singles","expect":{"kind":"partial","readBack":"Ball → count 1–0 · Foul → count 1–1","rest":{"kind":"ask","prompt":"Who is Ramirez?"}}}
+{"id":"partial-number-unknown","said":[],"transcript":"foul, number 23 singles","expect":{"kind":"partial","readBack":"Foul → count 0–1","rest":{"kind":"ask","prompt":"Who is number 23?"}}}
+{"id":"partial-wrong-batter","said":[],"transcript":"ball, ball, Darcy singles","expect":{"kind":"partial","readBack":"Ball → count 1–0 · Ball → count 2–0","rest":{"kind":"ask","prompt":"J. Soto is up, not L. Darcy."}}}
+{"id":"partial-no-runner","said":["Soto singles"],"transcript":"ball, ball, steals third","expect":{"kind":"partial","readBack":"Ball → count 1–0 · Ball → count 2–0","rest":{"kind":"reject","message":"Couldn't record \"steals third\": no runner on second."}}}
+{"id":"partial-early-walk","said":[],"transcript":"ball, walk","expect":{"kind":"partial","readBack":"Ball → count 1–0","rest":{"kind":"reject","message":"Couldn't record \"walk\": that would be ball 2, not ball four."}}}
+{"id":"partial-fielder-named","said":["Soto singles"],"transcript":"ball, Moss steals second","expect":{"kind":"partial","readBack":"Ball → count 1–0","rest":{"kind":"reject","message":"Couldn't record \"Moss steals second\": K. Moss is in the field this half."}}}
+{"id":"partial-runner-stays-with-play","said":["Soto triples","Darcy doubles"],"transcript":"ball, Vance singles, runner scores","expect":{"kind":"partial","readBack":"Ball → count 1–0","rest":{"kind":"ask","prompt":"Which runner?"}}}
+{"id":"first-call-unclear-strike","said":[],"transcript":"strike, ball","expect":{"kind":"ask","prompt":"Looking or swinging?"}}
+{"id":"first-call-unclear-name","said":[],"transcript":"Ramirez singles, ball","expect":{"kind":"ask","prompt":"Who is Ramirez?"}}
+{"id":"first-call-fails","said":[],"transcript":"walk, ball","expect":{"kind":"reject","message":"That would be ball 1, not ball four."}}
+{"id":"one-card-complex-then-unclear","said":["Soto singles"],"transcript":"Darcy singles to right, strike","expect":{"kind":"ask","prompt":"Looking or swinging?"}}
+{"id":"one-card-complex-then-fails","said":["Soto singles"],"transcript":"Darcy singles to right, steals home","expect":{"kind":"reject","message":"Couldn't record \"steals home\": no runner on third. Nothing was saved."}}
+{"id":"all-clear-complex-confirms","said":["Soto singles"],"transcript":"ball, Darcy singles to right","expect":{"kind":"confirm","readBack":"Ball → count 1–0 · L. Darcy singles to right, J. Soto to 2nd"}}
+{"id":"all-clear-saves","said":[],"transcript":"ball, strike swinging, foul","expect":{"kind":"save","readBack":"Ball → count 1–0 · Strike swinging → count 1–1 · Foul → count 1–2"}}
+{"id":"fix-no-that-was","said":["Soto singles"],"transcript":"No, that was a double","expect":{"kind":"fix","readBack":"J. Soto doubles"}}
+{"id":"fix-actually","said":["ball","ball","ball","strike looking"],"transcript":"actually ball four","expect":{"kind":"fix","readBack":"J. Soto walks"}}
+{"id":"fix-undo-that","said":["Soto singles"],"transcript":"undo that, he doubled to left","expect":{"kind":"fix","readBack":"J. Soto doubles to left"}}
+{"id":"fix-nothing-yet","said":[],"transcript":"no, that was a single","expect":{"kind":"reject","message":"There's no play to fix yet."}}
+{"id":"undo-alone","said":["Soto singles"],"transcript":"undo that","expect":{"kind":"undo"}}
+{"id":"undo-mixed-in","said":["Soto singles"],"transcript":"ball, undo","expect":{"kind":"unknown_phrase","message":"Didn't understand \"ball, undo\". Tap to score."}}

@@ -1,0 +1,4 @@
+appId: host.exp.Exponent
+# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="ball, ball, strike|ball|no, strike looking". See features/voice-scoring.md.
+---
+- runFlow: voice-partial.yaml

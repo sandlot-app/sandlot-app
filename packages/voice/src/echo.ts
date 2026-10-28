@@ -46,14 +46,25 @@ function commandOutcomes(commands: Command[]): Set<Outcome> {
   return found;
 }
 
+function heardIn(transcript: string): Set<Outcome> {
+  const text = transcript.toLowerCase().replace(/[^a-z0-9 -]/g, ' ').replace(/\s+/g, ' ');
+  const heard = new Set(synonyms.filter(([, pattern]) => pattern.test(text)).map(([outcome]) => outcome));
+  if (heard.has('caught_stealing')) heard.delete('steal');
+  return heard;
+}
+
 /**
  * The echo check (B4): true when the words heard name an outcome the play doesn't have, or the play has an outcome
  * nobody said. Players and bases the engine filled in on its own aren't mismatches.
  */
 export function echoMismatch(transcript: string, commands: Command[]): boolean {
-  const text = transcript.toLowerCase().replace(/[^a-z0-9 -]/g, ' ').replace(/\s+/g, ' ');
-  const heard = new Set(synonyms.filter(([, pattern]) => pattern.test(text)).map(([outcome]) => outcome));
-  if (heard.has('caught_stealing')) heard.delete('steal');
+  const heard = heardIn(transcript);
   const played = commandOutcomes(commands);
   return [...played].some((outcome) => !heard.has(outcome)) || [...heard].some((outcome) => !played.has(outcome));
+}
+
+/** Half the echo check, for the clear part of a press: true when the part has an outcome nobody said. */
+export function unsaid(transcript: string, commands: Command[]): boolean {
+  const heard = heardIn(transcript);
+  return [...commandOutcomes(commands)].some((outcome) => !heard.has(outcome));
 }
