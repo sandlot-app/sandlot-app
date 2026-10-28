@@ -29,6 +29,12 @@ const demoPlayers: Record<string, { number: string; name: string }> = {
   'away-9': { number: '21', name: 'M. Webb' },
 };
 
+/** The demo family's child, whose stat stickers and card the family shares after a Final game. */
+export const demoChild = { player: { kind: 'player', id: 'home-6' } as PlayerRef, side: 'home' as TeamSide, first: 'Javier', last: 'Ruiz' };
+
+/** The demo game's division, as the games list and stat card show it. */
+export const demoDivision = 'Mustang';
+
 /** The jersey number and short name a screen shows for a player, falling back to their batting order. */
 export function playerDisplay(state: GameState, side: TeamSide, player: PlayerRef): { number: string; name: string } {
   const known = demoPlayers[player.id];
