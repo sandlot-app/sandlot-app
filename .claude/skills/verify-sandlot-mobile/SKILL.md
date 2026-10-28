@@ -33,7 +33,44 @@ Run `verify.sh launch`. It:
 
 Ready means the line `[verify] READY: Sandlot is on screen in sandlot-verify, Metro on port 8091`. A first launch on a new simulator can take several minutes while Expo Go downloads. Later launches take about two minutes, most of it Expo Go's slow first start after a boot. Each `drive` takes another two to three minutes, because Maestro starts a Java process and a driver app on the simulator every time. Run long commands in the background rather than under a short timeout.
 
-To run a second instance alongside the first, such as an agent in another worktree, set both `SANDLOT_SIM_NAME` and `SANDLOT_METRO_PORT` to new values for every command of that run. Run state lives in each worktree's `.verify/run/`, but the simulator name and port are shared across the machine.
+Every run needs its own simulator and port. Set both `SANDLOT_SIM_NAME` and `SANDLOT_METRO_PORT` for every command of that run. The script uses the port for Metro, for the `exp://localhost:<port>` link it opens in Expo Go, and for its port checks. Run state lives in `.verify/run/<simulator>/` in each worktree, but simulator names and ports are shared across the machine.
+
+## Both simulators at once
+
+Phone tickets are checked on two simulators, and they run side by side:
+
+| Simulator | Phone | `SANDLOT_METRO_PORT` |
+| --- | --- | --- |
+| `sandlot-verify-38` | iPhone 17 Pro | 8091 |
+| `sandlot-verify-se` | iPhone SE | 8092 |
+
+Each run keeps `launch`, `doctor`, `drive` and `cleanup` in one shell command, so its Metro stays alive for the whole run, and records its own video. From the repo root:
+
+```bash
+v=.claude/skills/verify-sandlot-mobile/scripts/verify.sh
+check() { # check <simulator> <port> <flow.yaml>
+  ( export SANDLOT_SIM_NAME=$1 SANDLOT_METRO_PORT=$2; s=1
+    if "$v" launch && "$v" doctor; then
+      xcrun simctl io "$1" recordVideo --force ".verify/$1.mp4" & rec=$!
+      "$v" drive "$3"; s=$?
+      kill -INT $rec; wait $rec
+    fi
+    "$v" cleanup; exit $s ) >".verify/$1.log" 2>&1
+}
+mkdir -p .verify
+check sandlot-verify-38 8091 <flow>.yaml & a=$!
+check sandlot-verify-se 8092 <flow>.yaml & b=$!
+wait $a; ra=$?; wait $b; rb=$?
+echo "sandlot-verify-38: $ra, sandlot-verify-se: $rb (0 is a pass)"
+```
+
+Run it in the background: both runs together take about as long as the slower one. Each run's output is in `.verify/<simulator>.log` and its video is `.verify/<simulator>.mp4`. The evidence for each run is in the `evidence:` folder its log names.
+
+Before the first parallel run on a Mac:
+
+- **Create the SE simulator by hand.** `launch` makes every new simulator an iPhone 17 Pro, so make the SE one once: `xcrun simctl create sandlot-verify-se com.apple.CoreSimulator.SimDeviceType.iPhone-SE-3rd-generation <iOS runtime>`.
+- **Cache Expo Go.** With no copy in `~/.expo/ios-simulator-app-cache`, `launch` refuses while another simulator is booted. Run one simulator alone once to fill the cache.
+- **Check the two evidence folders differ.** Evidence folders are named by the UTC second the drive starts, so two drives of the same flow that start in the same second share one folder. If both logs name the same `evidence:` folder, run one simulator again.
 
 ## Doctor
 
@@ -73,4 +110,4 @@ Proof standards:
 
 Run `verify.sh cleanup`. It stops only the Metro process this run started (by the PID it recorded), shuts down the simulator only if this run booted it, and removes `.verify/run/`. It never kills by process name and never touches a simulator it has no record of booting. Evidence in `.verify/evidence/` stays. Add `--delete-sim` to delete the simulator too, under the same rule. The next `launch` recreates it.
 
-Run cleanup after every failed attempt as well, so a broken run doesn't leave Metro holding port 8091.
+Run cleanup after every failed attempt as well, so a broken run doesn't leave Metro holding its port.
