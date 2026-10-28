@@ -89,7 +89,7 @@ type GameState = {
 };
 ```
 
-- Events are never edited or deleted. Undo and fixes are new events that target a group, so one undo reverses everything one press recorded. Answering a voice "Not sure" card is a tap, so it records its own play ([ADR 0006](adr/0006-a-press-saves-its-clear-calls-and-asks-about-the-rest.md)).
+- Events are never edited or deleted. Undo and fixes are new events that target a group, so one undo reverses everything a press saved on its own. Answering a voice "Not sure" card is a tap, so it records its own play ([ADR 0006](adr/0006-a-press-saves-its-clear-calls-and-asks-about-the-rest.md)).
 - Game state is always computed from the events. The stored copy on the server is a cache that can be rebuilt.
 - Events and stats refer to players by ID. Names live in one table, which keeps privacy rules in one place.
 - IDs are branded types, so an event ID can never be passed where a group ID belongs.
@@ -183,7 +183,7 @@ Voice can record pitches too, so a parent can say "ball, strike" the way they wo
 - [ ] No wrong play would have saved without a confirm
 - [ ] 90% of simple plays show a result within 1.5 seconds of release
 - [ ] 90% of complex plays show a result within 2.5 seconds
-- [ ] Measured cost per game is under 25 cents
+- [ ] Measured cost per game is under 25 cents with plays by voice and pitches by tap, and under 40 cents when every pitch is said
 
 The prototype is thrown away. Its recorded test set and the on-phone phrase parser carry into the real app. September's voice edge-case spec carries over unchanged, apart from deferring parent flags.
 
