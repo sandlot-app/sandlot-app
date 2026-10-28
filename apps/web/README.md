@@ -81,7 +81,7 @@ values ('<game id>', '<active asset playback ID>', 0)
 on conflict (game_id) do update set playback_id = excluded.playback_id, clock_offset_ms = excluded.clock_offset_ms;
 ```
 
-`clock_offset_ms` is the recording's clock minus the scorer phone's clock. Measure it from the clap at the first pitch, then update the row.
+`clock_offset_ms` is the recording's clock minus the scorer phone's clock. Measure it from the clap at the first pitch with the clap tool below, then run the SQL it gives you.
 
 If the streaming phone drops for longer than Mux's reconnect window, 60 seconds by default, Mux starts a new asset. Update the row with the new asset's playback ID. Plays from before the drop then lose their clips.
 
@@ -90,6 +90,13 @@ If the streaming phone drops for longer than Mux's reconnect window, 60 seconds 
 - Safari and recent Chrome play HLS themselves. Other browsers load the light build of hls.js, only when a game has video.
 - The playback ID is public. That's fine for the adult demo game. Use signed playback before any game with children.
 
+## Filming-day tools
+
+Two tools open from the game's link. Both only read the public game, like the page.
+
+- **Clap offset**, at `/?game=<game id>&calibrate`. Pause the recording on the clap, pick the play the clap matches (the first pitch by default), and press "The clap is here". The page reads where the video is on the recording's own clock, works out `clock_offset_ms`, and shows the SQL to run, with that play's clip under it. The clap should come about 12 seconds into the clip. Use a desktop browser.
+- **Play to page**, at `/?game=<game id>&timer`. The normal page with a panel that times each new play from the moment the scorer started it to the moment this page shows it, with the median and the slowest. Plays already scored when the page opened don't count. The scorer's phone and this device both need their clocks set automatically, or the difference between them shows up in every number.
+
 ## Layout
 
 - `src/plays.ts` turns events into plays and the current state.
@@ -97,4 +104,5 @@ If the streaming phone drops for longer than Mux's reconnect window, 60 seconds 
 - `src/useLiveGame.ts` is the only module that touches supabase-js.
 - `src/snapshotFetcher.ts` sends one `get_snapshot` call at a time and gives up on a call after 10 seconds.
 - `src/clips.ts` reads a recording and makes a play's clip URL.
-- `src/components` holds the scoreboard, diamond, count, play list and the stream card.
+- `src/components` holds the scoreboard, field, play list and the stream card, and the two filming-day tools.
+- `src/tools.ts` has the filming-day tools' arithmetic.
