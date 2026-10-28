@@ -37,6 +37,15 @@
         {
           "microphonePermission": "Sandlot listens only while you hold the voice bar, to score the play you say."
         }
+      ],
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": false,
+          "savePhotosPermission": "Sandlot saves the stickers and stat cards you pick to Photos.",
+          "granularPermissions": ["photo"]
+        }
       ]
     ]
   }

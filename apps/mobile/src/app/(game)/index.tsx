@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { GameStatus } from '../../components/game-status.tsx';
 import type { SavedGame } from '../../scoring/offline-game.ts';
 import { syncAvailable, useOfflineGame, type StartResult } from '../../scoring/use-offline-game.tsx';
+import { demoChild } from '../../scoring/demo-roster.ts';
 import { phoneId } from '../../sync/backend';
 
 const { colors, sizes } = tokens.modes.Light;
@@ -20,6 +21,15 @@ const startProblems: Record<Exclude<StartResult, 'started' | 'none'>, string> = 
   offline: 'No signal. Try again once this phone is online.',
   unavailable: 'The live game couldn’t start. Try again.',
 };
+
+/** Opens the sticker picker for a Final game. */
+function ShareGameLink({ slot, game }: { slot: 'local' | 'synced'; game: SavedGame | null }) {
+  if (game?.state.status !== 'final') return null;
+  return <Pressable accessibilityRole="button" testID={`share-${slot}`} style={styles.galleryLink}
+    onPress={() => router.push(`/share?game=${slot}`)}>
+    <Text style={styles.galleryText}>{`Share ${demoChild.first}’s game`}</Text>
+  </Pressable>;
+}
 
 /** The game the server issued this phone, whose plays upload as they're scored. */
 function LiveGameCard() {
@@ -57,6 +67,7 @@ function LiveGameCard() {
             : `${waiting} ${waiting === 1 ? 'play' : 'plays'} waiting to upload${upload?.kind === 'stopped' ? ' · sync stopped' : ''}`}
       </Text>
       {problem ? <Text style={styles.detail} accessibilityLiveRegion="polite" testID="live-message" selectable>{problem}</Text> : null}
+      <ShareGameLink slot="synced" game={game} />
     </View>
   );
 }
@@ -83,6 +94,12 @@ export default function GamesScreen() {
         {__DEV__ ? (
           <Pressable accessibilityRole="button" testID="open-scorer-gallery" style={styles.galleryLink} onPress={() => router.push('/gallery')}>
             <Text style={styles.galleryText}>Scorer UI gallery</Text>
+          </Pressable>
+        ) : null}
+        {__DEV__ ? (
+          <Pressable accessibilityRole="button" testID="open-share-sample" style={styles.galleryLink}
+            onPress={() => router.push('/share?game=sample')}>
+            <Text style={styles.galleryText}>Sticker picker (sample game)</Text>
           </Pressable>
         ) : null}
         <GameStatus />
@@ -128,6 +145,7 @@ export default function GamesScreen() {
                 {view.message}
               </Text>
             )}
+            <ShareGameLink slot="local" game={game} />
           </View>
         )}
         {syncAvailable ? <LiveGameCard /> : null}

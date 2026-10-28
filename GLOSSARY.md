@@ -108,6 +108,10 @@ _Avoid_: Parent account, user
 A shareable image of one child's line from one game, for that child's claiming family only.
 _Avoid_: Player card (that's the in-app profile screen), stat image
 
+**Stat sticker**:
+A see-through image of one child's game, in one ink, that the claiming family lays on their own photo or video. It never shows the score or the result.
+_Avoid_: Overlay, badge
+
 ## Recap
 
 **Recap story**:

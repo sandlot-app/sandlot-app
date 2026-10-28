@@ -1,5 +1,5 @@
 import { applyGroup, initialState } from '@sandlot/engine';
-import type { Base, Command, Event, GameState, PitchResult, PlayerRef, TeamSide } from '@sandlot/engine';
+import type { Base, Command, Event, GameState, PitchResult, PlayerRef, Position, TeamSide } from '@sandlot/engine';
 import { demoSetup } from './demo-game.ts';
 import { demoTeams, playerDisplay } from './demo-roster.ts';
 import type { SavedGame } from './offline-game.ts';
@@ -259,4 +259,29 @@ export function playLog(game: SavedGame): HalfInning[] {
           .map(atBatOf).reverse(),
       };
     });
+}
+
+export type AppearanceResult =
+  | 'single' | 'double' | 'ground_rule_double' | 'triple' | 'home_run' | 'walk' | 'hit_by_pitch' | 'strikeout' | 'out' | 'other';
+/** How one finished plate appearance ended, for a stat sticker's best play. */
+export type Appearance = { result: AppearanceResult; fielder: Position | null; inning: number };
+
+const appearanceOutcomes: Partial<Record<string, AppearanceResult>> = {
+  single: 'single', double: 'double', ground_rule_double: 'ground_rule_double', triple: 'triple', home_run: 'home_run', out: 'out',
+};
+
+/** How each of `player`'s finished plate appearances ended, in game order. Undone plays don't count. */
+export function appearances(events: Event[], player: PlayerRef): Appearance[] {
+  const found: Appearance[] = [];
+  for (const play of standing(savedPlays(events))) {
+    if (!endsAppearance(play)) continue;
+    const side = battingSide(play.before);
+    if (play.before.lineups[side][play.before.nextBatter[side]]?.player.id !== player.id) continue;
+    const inPlay = play.commands.find((command) => command.kind === 'ball_in_play');
+    const pitch = pitchOf(play);
+    const result: AppearanceResult = inPlay ? appearanceOutcomes[inPlay.outcome] ?? 'other'
+      : pitch?.result === 'ball' ? 'walk' : pitch?.result === 'hit_by_pitch' ? 'hit_by_pitch' : pitch ? 'strikeout' : 'other';
+    found.push({ result, fielder: inPlay?.fielders[0] ?? null, inning: play.before.inning });
+  }
+  return found;
 }
