@@ -161,7 +161,7 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 ## Version pins
 
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
-- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.1'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
+- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.2'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
 - Local verification compares that artifact with the current engine and fixtures. CI also compares it with the trusted PR base or main-push predecessor and rejects changed results without an engine-version increase. [Engine verification](engine-verification.md) describes the commands and the initial release baseline.
 - Each upload carries `schemaVersion`. The server returns `unsupported_version` when it differs from the server's `EVENT_SCHEMA_VERSION` or from the game's pinned `schema_version`. The parser checks it before any command, so an old-format request returns `unsupported_version`, not `invalid`.
 - The server also returns `unsupported_version` for a game pinned to a different engine version. Milestone 6 still requires the phone to refuse scoring under mismatched pins.
@@ -206,7 +206,7 @@ A `rejected` response's `reason` is one of the engine's reject codes, `REJECT_CO
 | `in_play_needs_outcome` | an `in_play` pitch isn't followed by its ball in play |
 | `base_occupied` | a runner moves to a base another runner still holds |
 | `runner_not_on_base` | a runner it moves isn't on base |
-| `duplicate_runner` | a ball in play moves the same runner twice |
+| `duplicate_runner` | a ball in play or a runner play moves the same runner twice |
 | `batter_destination_missing` | a double or triple play doesn't say where the batter went |
 | `outs_dont_match_outcome` | a double play doesn't record two outs, or a triple play three |
 | `too_many_outs` | its outs would take the half-inning past three |
@@ -221,6 +221,7 @@ A `rejected` response's `reason` is one of the engine's reject codes, `REJECT_CO
 | `balks_not_allowed` | it records a balk where the rules have none |
 | `pitcher_reentry_not_allowed` | a removed pitcher comes back where the rules don't allow it |
 | `bunting_not_allowed` | it records a bunt where the rules don't allow bunting |
+| `runner_passed` | a runner finishes ahead of a runner who started in front of them and isn't out, including one left where they were, or scores while a runner who started in front of them makes the third out (OBR 5.08(a), 5.09(b)(9)) |
 
 When the queue stops, the phone shows how many plays are waiting, for example "3 plays waiting. Tap to fix." The fix is **Discard from here**. It deletes the stuck group and every group after it on the phone, and it runs only when the scorer taps it. The phone never deletes pending plays on its own.
 
