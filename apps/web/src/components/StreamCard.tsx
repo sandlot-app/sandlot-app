@@ -1,20 +1,35 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import type { Score } from '../plays.ts';
 import type { Roster } from '../roster.ts';
+
+/** Where the video is on the recording's own clock, in epoch milliseconds, or null when the stream carries no clock. */
+export type RecordingClock = () => number | null;
+
+/** Safari's date for the start of a stream with program dates, missing from TypeScript's DOM types. */
+type WithStartDate = HTMLVideoElement & { getStartDate?: () => Date };
 
 /**
  * Plays an HLS stream. Safari plays HLS itself, and every other browser loads hls.js only when a game has video, so
  * games without a stream don't download it.
  */
-function HlsVideo({ src, onError }: { src: string; onError: () => void }) {
+export function HlsVideo({ src, onError, clock }: { src: string; onError: () => void; clock?: RefObject<RecordingClock | null> }) {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    const { getStartDate } = video as WithStartDate;
+    // Chrome plays HLS itself too but can't tell where the video is on the recording's clock, so the clap tool uses hls.js there.
+    if (video.canPlayType('application/vnd.apple.mpegurl') && (!clock || getStartDate)) {
       video.src = src;
+      if (clock) {
+        clock.current = () => {
+          const start = getStartDate?.call(video).getTime();
+          return start !== undefined && Number.isFinite(start) ? start + video.currentTime * 1000 : null;
+        };
+      }
       return () => {
+        if (clock) clock.current = null;
         video.removeAttribute('src');
         video.load();
       };
@@ -30,13 +45,15 @@ function HlsVideo({ src, onError }: { src: string; onError: () => void }) {
       });
       hls.loadSource(src);
       hls.attachMedia(video);
+      if (clock) clock.current = () => hls.playingDate?.getTime() ?? null;
       destroy = () => hls.destroy();
     });
     return () => {
       cancelled = true;
+      if (clock) clock.current = null;
       destroy();
     };
-  }, [src, onError]);
+  }, [src, onError, clock]);
 
   return <video ref={ref} className="stream-video" controls playsInline muted autoPlay onError={onError} />;
 }
