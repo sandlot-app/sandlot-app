@@ -7,7 +7,8 @@
   "types": "src/index.ts",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "ai-first": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON prototype-ai-first/run.ts"
   },
   "dependencies": {
     "@sandlot/engine": "workspace:*"
