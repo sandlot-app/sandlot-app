@@ -89,7 +89,7 @@ type GameState = {
 };
 ```
 
-- Events are never edited or deleted. Undo and fixes are new events that target a group, so one undo reverses everything a press saved on its own. Answering a voice "Not sure" card is a tap, so it records its own play ([ADR 0006](adr/0006-a-press-saves-its-clear-calls-and-asks-about-the-rest.md)).
+- Events are never edited or deleted. Undo and fixes are new events that target a group, so one undo reverses everything a press saved on its own. Answering a voice card is a tap, and the reading the scorer picks is that press's one play ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)).
 - Game state is always computed from the events. The stored copy on the server is a cache that can be rebuilt.
 - Events and stats refer to players by ID. Names live in one table, which keeps privacy rules in one place.
 - IDs are branded types, so an event ID can never be passed where a group ID belongs.
@@ -161,7 +161,7 @@ The scorer's phone is the source of truth during a game, so scoring never waits 
 - **Handing off.** The scorer hands the lock to another parent while online with nothing left to upload. An admin can force a takeover, and late events from the old phone come back as items to review.
 - **Sync.** The phone uploads queued events when signal returns, when the app opens, every few seconds during a live game, and before the game is finalized. Each event has its own ID, so a retry never duplicates a play.
 - **The screen.** The diamond, count, score and play log all come from the replayed game. Pitches are one tap on a bar that is always visible. A play is one tap on the outcome, or one voice press.
-- **Corrections.** Undo is instant. Every other fix opens a preview of what it changes before it saves. The voice spec from September defines these flows, and it carries over.
+- **Corrections.** Undo is instant. A voice fix of the last play saves right away, with the banner and Undo ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)). Every other fix opens a preview of what it changes before it saves. The voice spec from September defines these flows, and apart from the voice fix it carries over.
 
 The September plan wanted SQLite encryption on the phone because it holds kids' names. Confirm Expo supports it before relying on it.
 
@@ -182,6 +182,7 @@ Voice can record pitches too, so a parent can say "ball, strike" the way they wo
 - [ ] At least 95% of plays read exactly right
 - [ ] At most 2% of plays save wrong, and each one is shown on the banner with a one-step fix
 - [ ] Fewer than 1 press in 10 gets a card
+- [ ] The test includes names in the wrong role and plays with two believable readings. No wrong-role name saves as another player, and each two-reading play shows a card with both readings
 - [ ] 90% of simple plays show a result within 1.5 seconds of the press ending
 - [ ] 90% of complex plays show a result within 2.5 seconds of the press ending
 - [ ] Measured cost per game is under 25 cents with plays by voice and pitches by tap, and under 40 cents when every pitch is said
@@ -226,7 +227,7 @@ After the YC demo, before the beta. The only check before the demo is measuring 
 - **Errors.** Crash and error reporting on the phone, the live page and `sync-events`, through one hosted tool such as Sentry, with personal data stripped. Events carry IDs, never names.
 - **Sync.** Each `sync-events` call logs the game ID, group ID, error code and time taken, never command contents that could identify a player. A dashboard shows groups per minute, rejects by error code and stuck queues.
 - **Live page.** An alert when play-to-page time goes over a few seconds.
-- **Voice.** The prototype's five targets become live metrics: parse accuracy, latency and cost per game.
+- **Voice.** The targets in Voice scoring become live metrics: plays read right, wrong saves, how often a card appears, latency and cost per game.
 - **Video.** Stream health, and the cost of each streamed game for pricing.
 - **Alerts** go to Christian and Kevin, so a Saturday-morning failure is found before a parent reports it.
 - Christian reviews what gets logged, since it is a privacy change.
@@ -265,7 +266,7 @@ Milestones follow dependencies, not dates. Each one ends in a check that has to 
 | 2 | Shared contract | Both | [contract.md](contract.md): event numbering, upload request, commit checks, errors, live page, demo access | Contract agreed in PR 2. Kevin's backend stores an event the engine produced. |
 | 3 | Engine core | Christian | Mustang rules for pitches, walks, strikeouts, balls in play with runner advances, steals, inning changes, score, undo and box score. The interface freezes early so voice and sync can build on it. | Fixtures pass, and one real game replays to the right box score |
 | 4 | Tap scoring app | Christian | Lineup setup, diamond, pitch bar, play outcomes, play log, undo, games saved on the phone | A full game scored by tap from video, in airplane mode |
-| 5 | Voice | Christian | Hold to talk, streaming transcription with a recorded-clip fallback, AI parser, engine check, confirm card | Meets the five targets in Voice scoring |
+| 5 | Voice | Christian | Tap to talk, streaming transcription with a recorded-clip fallback, the AI reading the whole press, engine check, a card only when two readings are both believable | Meets the targets in Voice scoring |
 | 6 | Event sync and family live page | Kevin | Events uploaded to Supabase, live score on a private web link | A second device sees each play within a few seconds |
 | 7 | Live streaming and the demo clip | Kevin | A second phone streams through an existing app to a hosted service, which records it. The live page plays it with the score drawn on top. One clip of one play is cut from the recording using the event's time and an offset entered by hand, and shown on the live page next to the stat card. The demo uses footage that needs no consent. | Video plays on the live page with a correct score overlay, and the clip shows the whole play |
 | 8 | Game stat card | Christian | A card of one child's game line, styled for sharing, exported as an image. It shows only the stats the division uses. | After a scored game, the card exports in one tap and matches the box score |
