@@ -169,23 +169,26 @@ The September plan wanted SQLite encryption on the phone because it holds kids' 
 
 Voice is the main reason a team would switch, and also the biggest unknown, so a throwaway prototype tests it before the app depends on it. The rule from September stays: the AI proposes a play, and only the engine decides whether it is legal.
 
-1. The scorer taps or holds the mic button. The mic stays warm on the scoring screen and keeps the second before the touch, so no words are lost ([ADR 0005](adr/0005-the-mic-stays-warm-on-the-scoring-screen.md)).
+1. The scorer taps the mic button once. There is no hold. The mic stays warm on the scoring screen and keeps the second before the touch, so no words are lost ([ADR 0005](adr/0005-the-mic-stays-warm-on-the-scoring-screen.md)).
 2. Speech goes to a transcription service. September's plan chose OpenAI's gpt-live-transcribe, and the prototype confirms that choice or replaces it.
-3. A small parser on the phone handles common phrases like "ball", "steals second" or "fly out to center" with no AI. Anything else goes to an AI parser, which returns candidate commands.
-4. The engine checks the commands and classifies the play. A simple legal play saves instantly, with a spoken-word banner and undo. An unclear, complex or misheard play shows a confirm card or buttons. When a press holds several calls and one isn't clear, the clear calls before it save, and only the rest gets a card ([ADR 0006](adr/0006-a-press-saves-its-clear-calls-and-asks-about-the-rest.md)).
+3. A small parser on the phone handles only pitch calls like "ball" or "foul", and a lone "undo", with no AI. Anything else goes to the AI, which sees the whole game and answers with the whole play's result ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)).
+4. The engine checks the answer. A legal play saves with a banner naming each runner's result, Undo and a one-step fix by voice. A card appears only when two readings are both believable and nothing said picks one, when the same play arrives twice within 3 seconds, or when "confirm everything" is on.
 5. Any failure falls back to tap scoring in one step.
 
 Voice can record pitches too, so a parent can say "ball, strike" the way they would out loud. That costs more than September's estimate of about 4 cents a game, which assumed taps for pitches. The targets are under 25 cents for a game with plays by voice and pitches by tap, and under 40 cents when every pitch is said ([#78](https://github.com/sandlot-app/sandlot-app/issues/78)).
 
 **What the prototype must prove.** Record 100 or more spoken plays over game video with crowd noise playing. Voice goes ahead only if all of these hold:
 
-- [ ] At least 95% of plays parse exactly right
-- [ ] No wrong play would have saved without a confirm
-- [ ] 90% of simple plays show a result within 1.5 seconds of release
-- [ ] 90% of complex plays show a result within 2.5 seconds
+- [ ] At least 95% of plays read exactly right
+- [ ] At most 2% of plays save wrong, and each one is shown on the banner with a one-step fix
+- [ ] Fewer than 1 press in 10 gets a card
+- [ ] 90% of simple plays show a result within 1.5 seconds of the press ending
+- [ ] 90% of complex plays show a result within 2.5 seconds of the press ending
 - [ ] Measured cost per game is under 25 cents with plays by voice and pitches by tap, and under 40 cents when every pitch is said
 
-The prototype is thrown away. Its recorded test set and the on-phone phrase parser carry into the real app. September's voice edge-case spec carries over unchanged, apart from deferring parent flags.
+The test also reports the time from the scorer's last word to the result, because that's the wait a parent feels. The typed test on 2026-10-28 had a median of 2.5 seconds per AI press, so the 1.5-second target may not hold. If it misses, it comes back to Christian as a decision.
+
+The prototype is thrown away. Its test set carries into the real app. September's voice edge-case spec carries over unchanged, apart from deferring parent flags.
 
 The first version streams the press for live transcription, so words show while the scorer speaks, as the Figma screens do. When streaming can't connect, the phone uploads the recorded clip instead (spec A4, A5). The contract's Voice section has both endpoints.
 
