@@ -32,16 +32,53 @@ export function isEmptyTranscript(transcript: string): boolean {
   return normalize(transcript).replace(/[,;. ]/g, '') === '';
 }
 
-type Pitch = AnswerReading['pitches'][number] | 'strike';
+type Pitch = AnswerReading['pitches'][number];
+/** A bare "strike", or a bare "swinging" or "looking" that says which kind a strike next to it was. */
+type Word = Pitch | 'strike' | 'swinging' | 'looking';
 
-const pitchPhrases: [RegExp, Pitch][] = [
-  [/^(?:a )?ball(?: (?:one|two|three|1|2|3))?$/, 'ball'],
-  [/^(?:a )?strike(?: (?:one|two|1|2))?$/, 'strike'],
-  [/^(?:called strike|strike looking|looking|called)(?: (?:one|two|1|2))?$/, 'called_strike'],
-  [/^(?:swinging strike|strike swinging|swinging|swing and a miss|swing and miss|swings and misses)(?: (?:one|two|1|2))?$/, 'swinging_strike'],
-  [/^(?:foul|foul ball|fouled off|fouls it off|foul back)$/, 'foul'],
-  [/^foul tip$/, 'foul_tip'],
-];
+const count = '(?: (?:one|two|three|1|2|3))?';
+const pitchPhrases: [RegExp, Word][] = ([
+  [`(?:a )?ball${count}`, 'ball'],
+  [`(?:a )?strike${count}`, 'strike'],
+  [`(?:a )?(?:called strike|strike looking)${count}`, 'called_strike'],
+  [`(?:a )?(?:swinging strike|strike swinging)${count}`, 'swinging_strike'],
+  [`(?:looking|called)${count}`, 'looking'],
+  [`(?:swing and a miss|swings and misses|swing and miss|swinging)${count}`, 'swinging'],
+  ['(?:a )?(?:fouled it off|fouls it off|fouled off|foul ball|foul back|foul)', 'foul'],
+  ['(?:a )?foul tip', 'foul_tip'],
+] as const).map(([source, word]) => [new RegExp(`^${source}(?= |$)`), word]); // longest wording first in each
+
+/** The pitch calls in one part of a press, longest phrase first, with "and" or "then" between them; null if anything else is said. */
+function pitchesIn(part: string): Word[] | null {
+  const found: Word[] = [];
+  let rest = part;
+  while (rest) {
+    const matches = pitchPhrases.flatMap(([pattern, word]) => {
+      const match = rest.match(pattern);
+      return match ? [{ word, length: match[0].length }] : [];
+    });
+    if (!matches.length) return null;
+    const longest = matches.reduce((best, match) => match.length > best.length ? match : best);
+    found.push(longest.word);
+    rest = rest.slice(longest.length).trim().replace(/^(?:and (?:a |an )?|then )/, '');
+  }
+  return found;
+}
+
+/** "Strike two, swinging" and "swing and a miss, strike two" are one pitch: the word next to a bare strike says which kind. */
+function joinStrikes(words: Word[]): (Pitch | 'strike')[] | null {
+  const pitches: (Pitch | 'strike')[] = [];
+  for (let index = 0; index < words.length; index += 1) {
+    const word = words[index]!;
+    const next = words[index + 1];
+    const kind = (qualifier: Word | undefined) => qualifier === 'swinging' ? 'swinging_strike' : qualifier === 'looking' ? 'called_strike' : null;
+    if (word === 'strike' && kind(next)) { pitches.push(kind(next)!); index += 1; }
+    else if (kind(word) && next === 'strike') { pitches.push(kind(word)!); index += 1; }
+    else if (kind(word)) pitches.push(kind(word)!);
+    else pitches.push(word as Pitch | 'strike');
+  }
+  return pitches;
+}
 
 const undoPhrase = /^(?:undo|undo that|scratch that|take that back|cancel that)$/;
 const crowd = /^(?:(?:run|go|let's go|lets go|come on|nice|nice job|good|good job|yes|yeah|wow|great|hustle|get it|throw it|all the way|keep going|stay|back)(?: |$))+$/;
@@ -58,15 +95,21 @@ const pitchesOnly = (pitches: AnswerReading['pitches']): AnswerReading =>
  */
 export function readLocally(transcript: string): Local | null {
   if (isEmptyTranscript(transcript)) return { kind: 'empty' };
-  // "Strike two, swinging" is one pitch: a looking or swinging said after a strike tells which kind it was.
-  const text = normalize(transcript).replace(/\bstrike( (?:one|two|1|2))?[,;.]? (swinging|looking)\b/g, 'strike $2$1');
-  const parts = text.split(/[,;.]| and then | then /).map((part) => part.trim()).filter((part) => part && !crowd.test(part));
+  // A question ("Ball?") isn't a call. The AI says it isn't a play.
+  if (/\?\s*$/.test(transcript.trim())) return null;
+  const parts = normalize(transcript).split(/[,;.]| and then | then /).map((part) => part.trim()).filter((part) => part && !crowd.test(part));
   if (parts.length === 1 && undoPhrase.test(parts[0]!)) return { kind: 'undo' };
-  const pitches = parts.map((part) => pitchPhrases.find(([pattern]) => pattern.test(part))?.[1]);
-  if (!pitches.length || pitches.some((pitch) => pitch === undefined)) return null;
+  const words: Word[] = [];
+  for (const part of parts) {
+    const read = pitchesIn(part);
+    if (!read) return null;
+    words.push(...read);
+  }
+  const pitches = joinStrikes(words);
+  if (!pitches?.length) return null;
   const strikes = pitches.filter((pitch) => pitch === 'strike').length;
   if (strikes > 1) return null;
-  const withStrike = (strike: AnswerReading['pitches'][number]) => pitchesOnly(pitches.map((pitch) => pitch === 'strike' ? strike : pitch!) as AnswerReading['pitches']);
+  const withStrike = (strike: Pitch) => pitchesOnly(pitches.map((pitch) => pitch === 'strike' ? strike : pitch));
   if (!strikes) return { kind: 'answer', answer: { result: 'play', fix_last: false, readings: [withStrike('called_strike')] } };
   return { kind: 'answer', answer: { result: 'question', fix_last: false, readings: [withStrike('called_strike'), withStrike('swinging_strike')] } };
 }

@@ -161,3 +161,25 @@ describe('A5. surname in the scoring-word list', () => {
     expect(decision.kind).toBe('message');
   });
 });
+
+describe('the second adversarial review', () => {
+  it('a home run that leaves runners on base is refused, not saved as "homers"', () => {
+    const game = buildGame({ outs: 0, on: { '1': 'N. Cole', '2': 'P. Shah', '3': 'R. Diaz' }, up: 'L. Darcy' });
+    expect(run(game, 'Grand slam!', { bip: { o: 'home_run', b: 'home' } }).decision).toEqual({ kind: 'message', message: "A runner can't pass the runner ahead of them." });
+  });
+
+  const impossible: [string, Short][] = [
+    ['a runner sent back a base', { bip: { o: 'single', b: '1', r: ['3>2'] } }],
+    ['an out with the batter safe on third', { bip: { o: 'out', t: 'fly', f: ['CF'], b: '3' } }],
+  ];
+  it.each(impossible)('%s saves nothing', (_, short) => {
+    const game = buildGame({ outs: 0, on: { '3': 'R. Diaz' }, up: 'L. Darcy' });
+    expect(run(game, 'base hit', short).decision.kind).toBe('message');
+  });
+
+  it('a question whose one reading names the wrong batter saves nothing, rather than the other reading', () => {
+    const game = buildGame({ outs: 0, on: { '1': 'L. Darcy' }, up: 'J. Soto' });
+    const decision = run(game, 'Moss doubles', { result: 'question', readings: [{ batter: 'Moss', bip: { o: 'double', b: '2', r: ['1>home:Darcy'] } }, { bip: { o: 'double', b: '2', r: ['1>3'] } }] }).decision;
+    expect(decision.kind).toBe('message');
+  });
+});

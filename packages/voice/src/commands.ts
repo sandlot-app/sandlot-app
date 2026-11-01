@@ -86,6 +86,8 @@ export function toCommands(game: PressGame, before: GameState, reading: AnswerRe
   let forceThrough = 0;
   for (const base of [1, 2, 3] as const) { if (!pre.bases[base]) break; forceThrough = base; }
   const defaultTo = batterDefault[play.outcome];
+  // An out, sacrifice fly or sacrifice bunt leaves the batter out: an answer that has them safe contradicts itself.
+  if (defaultTo === 'out' && play.batter_to !== 'out') return { ok: false, why: { kind: 'unusable' } };
   const batterOut: Advance = { runner: batter, to: 'out', outType: 'batter_before_first' };
   const listsBatter = toDestination(play.batter_to) !== defaultTo;
   const batterFirst = play.batter_to === 'out' && (defaultTo === 'out' || play.batter_out_first);
@@ -95,6 +97,8 @@ export function toCommands(game: PressGame, before: GameState, reading: AnswerRe
     const runner = runnerOn(move.from);
     if (!runner) return { ok: false, why: { kind: 'no_runner', base: toBase(move.from) } };
     const from = baseOf(pre, runner);
+    // A runner never ends a play on a base behind the one they started on.
+    if (from !== null && move.to !== 'out' && move.to !== 'home' && toBase(move.to) < from) return { ok: false, why: { kind: 'unusable' } };
     if (move.to === 'out') {
       const forced = !hit && !caught && from !== null && from <= forceThrough;
       advances.push({ runner, to: 'out', outType: forced ? 'force' : 'non_force' });
