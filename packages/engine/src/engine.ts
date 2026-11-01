@@ -223,9 +223,15 @@ function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending
   function next(id: GroupId, commands: Command[]): ApplyResult {
     const undo = commands.find((command) => command.kind === 'undo');
     const fix = commands.find((command) => command.kind === 'correct');
-    if (!undo && !fix) {
-      const result = applyPlay(setup, state, commands);
-      if (result.ok) active.push({ id, commands });
+    if (fix) {
+      const latest = active.at(-1);
+      const code = refusedFix(commands, fix, latest?.id);
+      if (code) return { ok: false, code };
+      active.pop();
+      const before = replayActive();
+      // Removing a play leaves the game just as it stood before it, alerts included, as an Undo does.
+      const result = before.ok && fix.replacement.length > 0 ? applyPlay(setup, before.state, fix.replacement) : before;
+      if (result.ok) active.push({ id, commands: fix.replacement, replaced: latest! });
       return result;
     }
     if (undo) {
@@ -238,14 +244,8 @@ function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending
       if (latest.replaced) active.push(latest.replaced);
       return replayActive();
     }
-    const latest = active.at(-1);
-    const code = refusedFix(commands, fix!, latest?.id);
-    if (code) return { ok: false, code };
-    active.pop();
-    const before = replayActive();
-    const result = before.ok ? applyPlay(setup, before.state, fix!.replacement) : before;
-    if (result.ok) active.push({ id, commands: fix!.replacement, replaced: latest! });
-    else active.push(latest!);
+    const result = applyPlay(setup, state, commands);
+    if (result.ok) active.push({ id, commands });
     return result;
   }
 

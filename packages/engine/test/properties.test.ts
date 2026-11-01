@@ -144,7 +144,7 @@ function fixBook() {
     return group;
   }
   function check() {
-    const plays = standing.map(({ commands }) => commands);
+    const plays = standing.map(({ commands }) => commands).filter((commands) => commands.length > 0);
     expect(replay(setup, events)).toEqual(replay(setup, flat(plays)));
     expect(battingLines(setup, events)).toEqual(battingLines(setup, flat(plays)));
   }
@@ -155,7 +155,7 @@ function fixBook() {
   }
   function fix(replacement: Command[]) {
     const latest = standing.at(-1)!;
-    const wanted = applyGroup(setup, flat(standing.slice(0, -1).map(({ commands }) => commands)), replacement);
+    const wanted = applyGroup(setup, flat(standing.slice(0, -1).map(({ commands }) => commands).filter((commands) => commands.length > 0)), replacement);
     const command: Command = { kind: 'correct', target: latest.group, replacement };
     const result = applyGroup(setup, events, [command]);
     expect(result.ok, JSON.stringify(replacement)).toBe(wanted.ok);

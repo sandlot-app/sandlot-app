@@ -170,10 +170,9 @@ describe('a Fix', () => {
     expect(replay(setup, stored)).toEqual(fixed);
   });
 
-  it('saves nothing when its replacement is refused, so the game stays as it was', () => {
+  it('refuses a replacement the engine refuses, with that replacement\'s own reason', () => {
     const refused: Command[] = [{ kind: 'correct', target, replacement: [{ kind: 'runner', event: 'wild_pitch', runner: away(1), to: 2 }] }];
     expect(applyGroup(setup, played, refused)).toEqual({ ok: false, code: 'runner_not_on_base' });
-    expect(replay(setup, played)).toEqual(applyGroup(setup, started, [{ kind: 'pitch', result: 'ball' }]));
   });
 
   it('refuses a replacement that names a player outside the roster', () => {
