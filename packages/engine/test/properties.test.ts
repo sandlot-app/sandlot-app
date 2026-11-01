@@ -1,7 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import {
-  applyGroup, initialState, presets, replay,
+  applyGroup, battingLines, initialState, presets, replay,
   type Base, type Command, type Event, type EventId, type GameId, type GameSetup,
   type GameState, type GroupId, type OpponentId, type PlayerId, type PlayerRef, type Timestamp,
 } from '../src/index.ts';
@@ -122,5 +122,96 @@ describe('random games through the public event log', () => {
         expect(book.state).toEqual(before);
       },
     ), { numRuns: 100 });
+  });
+});
+
+type Standing = { group: GroupId; commands: Command[]; replaced?: Standing };
+
+/** A log kept beside a model of the plays that stand, where a Fix swaps a play for its replacement and an Undo of that Fix swaps it back. */
+function fixBook() {
+  const events: Event[] = [];
+  const standing: Standing[] = [];
+  let groups = 0;
+  const flat = (plays: Command[][]): Event[] => plays.flatMap((commands, group) => commands.map((command, index): Event => ({
+    id: `flat-${group}-${index}` as EventId, gameId: 'property-game' as GameId, seq: 1, group: `flat-${group}` as GroupId, lockEpoch: 1, source: 'tap', at, command,
+  })));
+  function append(commands: Command[]): GroupId {
+    const group = `fix-play-${++groups}` as GroupId;
+    for (const command of commands) {
+      const seq = events.length + 1;
+      events.push({ id: `fix-event-${seq}` as EventId, gameId: 'property-game' as GameId, seq, group, lockEpoch: 1, source: 'tap', at, command });
+    }
+    return group;
+  }
+  function check() {
+    const plays = standing.map(({ commands }) => commands);
+    expect(replay(setup, events)).toEqual(replay(setup, flat(plays)));
+    expect(battingLines(setup, events)).toEqual(battingLines(setup, flat(plays)));
+  }
+  function play(commands: Command[]) {
+    if (!applyGroup(setup, events, commands).ok) return;
+    standing.push({ group: append(commands), commands });
+    check();
+  }
+  function fix(replacement: Command[]) {
+    const latest = standing.at(-1)!;
+    const wanted = applyGroup(setup, flat(standing.slice(0, -1).map(({ commands }) => commands)), replacement);
+    const command: Command = { kind: 'correct', target: latest.group, replacement };
+    const result = applyGroup(setup, events, [command]);
+    expect(result.ok, JSON.stringify(replacement)).toBe(wanted.ok);
+    if (!result.ok) {
+      check();
+      return;
+    }
+    standing.pop();
+    standing.push({ group: append([command]), commands: replacement, replaced: latest });
+    check();
+  }
+  function undo() {
+    const latest = standing.pop()!;
+    append([{ kind: 'undo', target: latest.group }]);
+    if (latest.replaced) standing.push(latest.replaced);
+    check();
+  }
+  for (const side of ['away', 'home'] as const) {
+    play([{ kind: 'game', control: { kind: 'lineup_set', side, lineup: setup.roster[side].map((runner, index) => ({ player: runner, position: index === 0 ? 'P' : null })) } }]);
+  }
+  play([{ kind: 'game', control: { kind: 'start', umpireStart: at } }]);
+  const opening = standing.length;
+  return { play, fix, undo, get canChange() { return standing.length > opening; } };
+}
+
+describe('Fix and Undo through the public event log', () => {
+  const play = (outcome: 'single' | 'double' | 'out'): Command[] => [
+    { kind: 'pitch', result: 'in_play' },
+    { kind: 'ball_in_play', outcome, trajectory: 'line', fielders: ['LF'], advances: [] },
+  ];
+  const replacements: Command[][] = [
+    [{ kind: 'pitch', result: 'ball' }],
+    [{ kind: 'pitch', result: 'called_strike' }, { kind: 'pitch', result: 'foul' }],
+    play('out'),
+    play('single'),
+    [],
+  ];
+  const action = fc.record({
+    kind: fc.constantFrom('ball', 'strike', 'single', 'double', 'out', 'fix', 'fix', 'undo', 'undo'),
+    choice: fc.nat({ max: replacements.length - 1 }),
+  });
+
+  it('leaves the game, and every batting line, as if only the plays that stand were played', () => {
+    fc.assert(fc.property(fc.array(action, { minLength: 10, maxLength: 60 }), (actions) => {
+      const book = fixBook();
+      for (const { kind, choice } of actions) {
+        if (kind === 'fix') {
+          if (book.canChange) book.fix(replacements[choice]!);
+        } else if (kind === 'undo') {
+          if (book.canChange) book.undo();
+        } else if (kind === 'ball' || kind === 'strike') {
+          book.play([{ kind: 'pitch', result: kind === 'ball' ? 'ball' : 'called_strike' }]);
+        } else {
+          book.play(play(kind));
+        }
+      }
+    }), { numRuns: 200 });
   });
 });
