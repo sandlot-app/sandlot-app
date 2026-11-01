@@ -140,6 +140,36 @@ test('#103: a fix, an answer voice-parse could not use, and a timeout each save 
   }
 });
 
+test('#88: a queued press the AI read does not save on a game the AI never saw, and says so', async () => {
+  const words = 'Soto doubles';
+  const { controller, mic, plays, views, socket } = await scorer(true, undefined, { openMs: 30, finalMs: 2000 }, false, answering(words, play(double('Soto', []))));
+  const sockets: ReturnType<typeof socket>[] = [];
+  for (let press = 0; press < 2; press += 1) {
+    controller.tap();
+    await tick();
+    socket().open();
+    mic.push([1, 0, 2, 0]);
+    sockets.push(socket());
+    controller.tap();
+  }
+  const said = (index: number, transcript: string) => sockets[index]!.server({ type: 'conversation.item.input_audio_transcription.completed', transcript });
+  said(1, words);
+  said(0, 'ball');
+  await settle();
+  assert.deepEqual(plays().map((event) => event.command), [{ kind: 'pitch', result: 'ball' }], 'only the press the phone read saves');
+  assert.equal(views.at(-1)?.message, lost);
+});
+
+test('#88: a press the AI read after an earlier voice play has saved still saves, because the AI saw that game', async () => {
+  const words = 'Soto doubles';
+  const { say, plays } = await scorer(true, undefined, timeouts, false, answering(words, play(double('Soto', []))));
+  (await say())('ball');
+  await settle();
+  (await say())(words);
+  await settle();
+  assert.deepEqual(plays().map((event) => event.command.kind), ['pitch', 'pitch', 'ball_in_play']);
+});
+
 test('#88: a touch of any length opens the mic and nothing but a second tap or 30 s closes it', async () => {
   const { controller, mic, recorded, views, plays, socket } = await scorer();
   controller.tap();
@@ -227,6 +257,7 @@ test('#88: two queued presses both save, in the order they ended, each against t
 });
 
 test('#88: a scoring-button tap drops the open press, and a press that already ended still saves', async () => {
+  // A long wait for the first press's words, so a slow machine never makes it give up before the words arrive.
   const { controller, mic, say, plays, views, socket } = await scorer(true, undefined, { openMs: 30, finalMs: 2000 });
   const hearFirst = await say();
   controller.tap();

@@ -170,6 +170,12 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
       return;
     }
     const base = pinned(from);
+    // The AI answered about the game it was shown. On a newer game its bases could mean a different runner, so that press
+    // doesn't save and the scorer says it again. Only what the phone read itself moves on top of the press before it.
+    if (answer.heard.kind === 'answer' && base.revision !== from.revision) {
+      message = unsavedMessage;
+      return;
+    }
     const decision = decide({ game: base.snapshot, transcript: answer.transcript, at: from.at, previous }, answer.heard);
     if (decision.kind === 'save') await save(decision.reading, base);
     else if (decision.kind === 'undo') {

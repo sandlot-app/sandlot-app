@@ -272,10 +272,6 @@ type AnswerReading = {
   forced_runners: (Named & { from: '1' | '2' | '3' })[];  // named runners a walk or hit by pitch forced along
   taken_back: Named[];           // names the scorer said and then took back
 };
-  runner_events: (Named & { event: 'stolen_base' | 'caught_stealing' | 'pickoff' | 'wild_pitch' | 'passed_ball' | 'advance_on_error';
-    from: '1' | '2' | '3'; to: '1' | '2' | '3' | 'home' | 'out' })[];
-  forced_runners: (Named & { from: '1' | '2' | '3' })[];  // named runners a walk or hit by pitch forced along
-};
 type Answer =
   | { result: 'play'; fix_last: boolean; readings: [AnswerReading] }
   | { result: 'question'; fix_last: boolean; readings: [AnswerReading, AnswerReading] }
