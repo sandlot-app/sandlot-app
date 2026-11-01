@@ -23,8 +23,9 @@ export default function ScorerGallery({ onExit }: { onExit: () => void }) {
   const show = (name: GallerySection) => section === 'all' || section === name;
   const onPitch = (pitch: Pitch) => { setLastPitch(pitch); setBarResult(`Pitch: ${pitch}`); };
   const saved: SyncState = { status: 'saved', lastPlay: lastPitch };
-  const voiceBarFor = (mic: MicStatus) => <VoiceBar listening={false} mic={mic} onStart={() => setBarResult('Voice pressed')} onRelease={() => {}} onCancel={() => {}} />;
+  const voiceBarFor = (mic: MicStatus) => <VoiceBar listening={false} mic={mic} onTap={() => setBarResult('Voice pressed')} />;
   const voiceBar = voiceBarFor('off');
+  const voiceBarIn = (phase: 'listening' | 'reading' | 'saved') => <VoiceBar listening={phase === 'listening'} reading={phase === 'reading'} saved={phase === 'saved'} mic="ready" onTap={() => setBarResult('Voice pressed')} />;
   return <View style={styles.root}>
     <ScrollView contentContainerStyle={styles.content}>
       <Pressable accessibilityRole="button" onPress={onExit} style={styles.exit}><Text style={styles.exitText}>‹ Sandlot</Text></Pressable>
@@ -66,9 +67,13 @@ export default function ScorerGallery({ onExit }: { onExit: () => void }) {
         <ScorerBar sync={{ status: 'saving', lastPlay: 'Strike' }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} voice={voiceBar} testID="gallery-scorer-bar-saving" />
         <ScorerBar sync={{ status: 'offline', lastPlay: 'Ball', waiting: 3 }} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')} voice={voiceBar} testID="gallery-scorer-bar-offline" />
         <Text style={styles.heading}>Voice bar and the mic</Text>
-        <Text style={styles.caption}>{(['ready', 'refused', 'busy'] as const).map((mic) => barView(mic, false).label).join(' · ')}</Text>
+        <Text style={styles.caption}>{(['ready', 'refused', 'busy'] as const).map((mic) => barView(mic, 'idle').label).join(' · ')}</Text>
         {(['ready', 'refused', 'busy'] as const).map((mic) => <ScorerBar key={mic} sync={saved} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')}
           voice={voiceBarFor(mic)} testID={`gallery-scorer-bar-mic-${mic}`} />)}
+        <Text style={styles.heading}>Voice bar while a press is read</Text>
+        <Text style={styles.caption}>{(['listening', 'reading', 'saved'] as const).map((phase) => barView('ready', phase).label).join(' · ')}</Text>
+        {(['listening', 'reading', 'saved'] as const).map((phase) => <ScorerBar key={phase} sync={saved} onPitch={onPitch} onUndo={() => setBarResult('Undo pressed')} onMore={() => setBarResult('More pressed')}
+          voice={voiceBarIn(phase)} testID={`gallery-scorer-bar-${phase}`} />)}
         <Text style={styles.heading}>Disabled pitch buttons</Text>
         <View style={styles.pitchSampleRow} testID="gallery-disabled-pitches">
           <PitchButton label="Ball" kind="ball" disabled onPress={() => {}} />

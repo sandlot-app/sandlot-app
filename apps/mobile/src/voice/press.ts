@@ -3,13 +3,14 @@ import { Clip, SAMPLE_RATE, toBase64 } from './pcm.ts';
 import { liveTimeouts, openLive, type Live, type LiveTimeouts, type OpenSocket } from './realtime.ts';
 import type { ParseContext, Session, VoiceApi, VoiceFailure } from './voice-api.ts';
 
-// One hold of the voice bar. A press starts with the second before the touch when the mic is warm (ADR 0005), so no
-// words are lost, and the mic opens on touch-down only when it isn't (plan, Voice scoring step 1). Live words stream
-// while the scorer holds. On release the final transcript is read by the phone's own grammar, and voice-parse reads only
-// what that grammar can't. When streaming didn't connect, or came back blank, the recorded clip goes to voice-parse
-// instead, once (spec A4, A5, and the blank retry). Nothing here saves a play: the caller routes what was heard through
-// route(), and the engine decides (rule 6). Nothing is sent before a press starts, so the warm mic's audio stays on the
-// phone until then.
+// One tap-to-talk press of the voice bar. A press starts with the second before the touch when the mic is warm (ADR
+// 0005), so no words are lost, and the mic opens on the touch only when it isn't (plan, Voice scoring step 1). Live
+// words stream while the mic is open and nothing else is read: no pause ends a press. A second tap, or the 30 s limit,
+// ends it. Then the final transcript is read by the phone's own grammar, and voice-parse reads only what that grammar
+// can't. When streaming didn't connect, or came back blank, the recorded clip goes to voice-parse instead, once (spec
+// A4, A5, and the blank retry). Nothing here saves a play: the caller routes what was heard through route(), and the
+// engine decides (rule 6). Nothing is sent before a press starts, so the warm mic's audio stays on the phone until
+// then.
 
 export type Mic = {
   /**
@@ -23,6 +24,8 @@ export type Mic = {
 
 export type PressUpdate =
   | { kind: 'words'; words: string }
+  /** The mic is closed and the press is being read: a second tap, or the 30 s limit, ended it. */
+  | { kind: 'ended' }
   | { kind: 'heard'; transcript: string; parsed: ParseResult }
   | { kind: 'failed'; failure: VoiceFailure };
 
@@ -98,6 +101,7 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
     if (released || cancelled) return;
     released = true;
     stopMic();
+    emit({ kind: 'ended' });
     if (!(await micReady)) return;
     if (wrongRate) return emit({ kind: 'failed', failure: 'voice_unavailable' });
     if (!clip.bytes) return emit(nothing());

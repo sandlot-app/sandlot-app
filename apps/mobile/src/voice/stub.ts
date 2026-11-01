@@ -5,7 +5,7 @@ import type { AudioSource, Permission } from './warm-mic.ts';
 
 // A stand-in for the mic, voice-session and OpenAI's socket, for the Mac simulator check only. A simulator can't
 // speak, and the functions aren't deployed yet. Start Metro with EXPO_PUBLIC_VOICE_STUB="strike swinging|strike" and
-// each finished press hears the next phrase, word by word, as the real socket sends it. The press controller,
+// each finished press hears the next phrase, word by word, as the real socket sends it. A press ends on the second tap. The press controller,
 // route() and the engine all run for real. Development builds only: voice-service.ts checks __DEV__.
 //
 // The mic stand-in is silence, and by default it only runs during a press, like a phone with no warm mic. Add
@@ -14,6 +14,9 @@ import type { AudioSource, Permission } from './warm-mic.ts';
 //   undetermined  the first-open line, then "Mic ready" once the stand-in says yes (iOS has no prompt to answer here)
 //   denied        the Settings line, and a press says it can't listen
 //   busy          the "Mic busy" line, as when another app holds the mic
+//
+// EXPO_PUBLIC_VOICE_STUB_READ_MS (default 150) is how long the stand-in takes to answer after a press ends, so the bar's
+// "Reading your play…" state stays up long enough to film.
 
 export const stubPhrases = String(process.env.EXPO_PUBLIC_VOICE_STUB ?? '').split('|').map((phrase) => phrase.trim()).filter(Boolean);
 
@@ -22,6 +25,8 @@ const stubMics: readonly string[] = ['granted', 'undetermined', 'denied', 'busy'
 const asked = String(process.env.EXPO_PUBLIC_VOICE_STUB_MIC ?? '').trim();
 export const stubMic: StubMic = stubMics.includes(asked) ? asked as StubMic : '';
 
+const askedMs = Number(process.env.EXPO_PUBLIC_VOICE_STUB_READ_MS);
+const readMs = Number.isFinite(askedMs) && askedMs >= 0 ? askedMs : 150;
 const chunkMs = 100;
 const wordMs = 500;
 
@@ -70,7 +75,7 @@ export function stubDeps(phrases: string[], mic: Mic): VoiceDeps {
         onopen: null, onmessage: null, onerror: null, onclose: null,
         send(data) {
           if ((JSON.parse(data) as { type: string }).type !== 'input_audio_buffer.commit') return;
-          later(150, () => {
+          later(readMs, () => {
             heard += 1;
             message({ type: 'conversation.item.input_audio_transcription.completed', item_id: 'stub', transcript: phrase });
           });

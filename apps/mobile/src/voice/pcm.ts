@@ -1,8 +1,8 @@
 // 16-bit mono PCM at 24 kHz, the only audio voice-session and voice-parse take (docs/contract.md, Voice).
 
 export const SAMPLE_RATE = 24000;
-/** 15 seconds of audio, the longest press (spec A2). */
-export const MAX_CLIP_BYTES = 15 * SAMPLE_RATE * 2;
+/** 30 seconds of audio, the longest press and the safety limit that ends a forgotten open mic (spec A2). */
+export const MAX_CLIP_BYTES = 30 * SAMPLE_RATE * 2;
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -26,7 +26,7 @@ export class Clip {
   get bytes(): number { return this.size; }
   get full(): boolean { return this.size >= MAX_CLIP_BYTES; }
 
-  /** Keeps what fits under 15 seconds and returns that part, so the stream sends the same audio. */
+  /** Keeps what fits under 30 seconds and returns that part, so the stream sends the same audio. */
   append(chunk: Uint8Array): Uint8Array {
     const room = MAX_CLIP_BYTES - this.size;
     // Whole samples only, so a cut never splits one.

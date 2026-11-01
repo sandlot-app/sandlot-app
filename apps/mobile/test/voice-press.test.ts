@@ -16,7 +16,7 @@ function run(mic: Mic, api: VoiceApi, socket: Socket) {
   const done = new Promise<PressUpdate>((resolve) => { settle = resolve; });
   const press = startPress({ mic, api, openSocket: () => socket, timeouts }, input, (update) => {
     updates.push(update);
-    if (update.kind !== 'words') settle(update);
+    if (update.kind !== 'words' && update.kind !== 'ended') settle(update);
   });
   return { press, updates, done };
 }
@@ -176,18 +176,36 @@ test('a press with no audio at all is empty and calls nothing', async () => {
   assert.equal(api.parsed.length, 0);
 });
 
-test('A2: a press stops itself at 15 seconds and keeps exactly 15 seconds of audio', async () => {
+test('A2: a press stops itself at 30 seconds and keeps exactly 30 seconds of audio', async () => {
   const mic = fakeMic();
   const api = fakeApi({ ok: false, failure: 'voice_unavailable' }, { ok: true, value: { transcript: 'ball', parsed: { kind: 'plays', plays: [{ kind: 'pitch', result: 'ball' }], parts: ['ball'] } } });
   const { done } = run(mic, api, fakeSocket());
   await tick();
   const second = new Array<number>(SAMPLE_RATE * 2).fill(1);
-  for (let index = 0; index < 16; index += 1) mic.push(second);
+  for (let index = 0; index < 31; index += 1) mic.push(second);
   await done;
   assert.equal(mic.stopped, 1);
   const body = api.parsed[0];
   assert.ok(body && 'audio' in body);
   assert.equal(body.audio.length, Math.ceil(MAX_CLIP_BYTES / 3) * 4);
+  assert.equal(MAX_CLIP_BYTES, 30 * SAMPLE_RATE * 2, 'the longest press is 30 seconds, not 15');
+});
+
+test('#88: a press says it ended as soon as a second tap or 30 seconds close the mic, before it has an answer', async () => {
+  const tapped = run(fakeMic(), fakeApi(), fakeSocket());
+  await tick();
+  tapped.press.release();
+  assert.deepEqual(tapped.updates.map((update) => update.kind), ['ended'], 'ended comes first, and only once');
+  await tapped.done;
+  assert.equal(tapped.updates.filter((update) => update.kind === 'ended').length, 1);
+
+  const mic = fakeMic();
+  const long = run(mic, fakeApi(), fakeSocket());
+  await tick();
+  const second = new Array<number>(SAMPLE_RATE * 2).fill(1);
+  for (let index = 0; index < 30; index += 1) mic.push(second);
+  assert.deepEqual(long.updates.map((update) => update.kind), ['ended'], 'the 30 s limit ends it with no tap');
+  await long.done;
 });
 
 test('sliding off cancels the press: nothing is heard, sent or parsed', async () => {

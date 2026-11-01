@@ -107,7 +107,7 @@ test('a press begins with the second before the touch, then goes on with the liv
   warm.warm(true);
   await tick();
   hearFor(1, 20);
-  controller.start();
+  controller.tap();
   await tick();
   sockets[0]!.open();
   hearFor(21, 2);
@@ -156,7 +156,7 @@ test('leaving the screen stops the mic and throws its audio away, so the next pr
   hearFor(1, 10);
   warm.warm(false);
   assert.equal(source.closed, 1);
-  controller.start();
+  controller.tap();
   await tick();
   sockets[0]!.open();
   hearFor(11, 2);
@@ -169,7 +169,7 @@ test('a refused mic: the bar says to turn it on in Settings, a press says why it
   warm.warm(true);
   await tick();
   assert.deepEqual(statuses, ['refused']);
-  controller.start();
+  controller.tap();
   await tick();
   assert.equal(views.at(-1)?.message, 'Sandlot can’t use the microphone. Allow it in Settings, or tap to score.');
   assert.equal(views.at(-1)?.listening, false);
@@ -209,7 +209,7 @@ test('a press during the first-open line asks iOS itself, and the line\'s timer 
   });
   warm.warm(true);
   await tick();
-  controller.start();
+  controller.tap();
   await tick();
   assert.equal(source.asked, 1, 'the touch asked iOS');
   assert.equal(views.at(-1)?.message, 'Sandlot can’t use the microphone. Allow it in Settings, or tap to score.');
@@ -226,7 +226,7 @@ test('a press during the first-open line that the scorer allows leaves the mic r
   });
   warm.warm(true);
   await tick();
-  controller.start();
+  controller.tap();
   await tick();
   assert.equal(views.at(-1)?.listening, true);
   pass();
@@ -252,7 +252,7 @@ test('allowing the mic in Settings clears the "can\'t use the microphone" line o
   const { warm, source, controller, views } = await scorer({ permission: 'denied' });
   warm.warm(true);
   await tick();
-  controller.start();
+  controller.tap();
   await tick();
   assert.equal(views.at(-1)?.message, cantUseMic);
   warm.warm(false);
@@ -260,7 +260,7 @@ test('allowing the mic in Settings clears the "can\'t use the microphone" line o
   warm.warm(true);
   await tick();
   controller.micReady();
-  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+  assert.deepEqual(views.at(-1), { listening: false, reading: 0, saved: 0, card: null, message: null });
 });
 
 test('the mic being ready clears only that line, and leaves a press that is listening alone', async () => {
@@ -272,7 +272,7 @@ test('the mic being ready clears only that line, and leaves a press that is list
   const listening = await scorer();
   listening.warm.warm(true);
   await tick();
-  listening.controller.start();
+  listening.controller.tap();
   await tick();
   const before = listening.views.at(-1);
   listening.controller.micReady();
@@ -282,12 +282,12 @@ test('the mic being ready clears only that line, and leaves a press that is list
 
 test('without the warm mic (Android until its device check passes) a press opens the mic on touch-down and closes it on release', async () => {
   const { source, controller, sockets, hearFor } = await scorer();
-  controller.start();
+  controller.tap();
   await tick();
   assert.equal(source.opened, 1);
   sockets[0]!.open();
   hearFor(1, 2);
-  controller.release();
+  controller.tap();
   assert.equal(source.closed, 1, 'no mic indicator once the press is over');
   assert.deepEqual(audioSent(sockets[0]!), [1, 2], 'there was nothing before the touch to start with');
 });
@@ -297,14 +297,14 @@ test('with the warm mic a press ends without stopping the mic, and the next pres
   warm.warm(true);
   await tick();
   hearFor(1, 3);
-  controller.start();
+  controller.tap();
   await tick();
   sockets[0]!.open();
   hearFor(4, 3);
-  controller.release();
+  controller.tap();
   assert.equal(source.closed, 0, 'the screen is still open');
   hearFor(7, 3);
-  controller.start();
+  controller.tap();
   await tick();
   sockets[1]!.open();
   assert.deepEqual(audioSent(sockets[0]!), [1, 2, 3, 4, 5, 6]);
@@ -317,11 +317,11 @@ test('another app holding the mic: the bar points to tap scoring, and the next p
   warm.warm(true);
   await tick();
   assert.deepEqual(statuses, ['busy']);
-  controller.start();
+  controller.tap();
   await tick();
   assert.equal(views.at(-1)?.listening, false, 'the press says the mic can\'t be used');
   source.busy = false;
-  controller.start();
+  controller.tap();
   await tick();
   assert.equal(views.at(-1)?.listening, true);
   assert.deepEqual(statuses, ['busy', 'ready']);
@@ -336,7 +336,7 @@ test('a stream that went quiet (a phone call, say) is opened again by the next p
   await tick();
   hearFor(1, 10);
   advance(5000);
-  controller.start();
+  controller.tap();
   await tick();
   sockets[0]!.open();
   hearFor(11, 2);
@@ -348,9 +348,9 @@ test('a release while iOS is still asking stops the stream that press began', as
   const { source, controller } = await scorer();
   let answer: () => void = () => {};
   source.gate = new Promise((resolve) => { answer = resolve; });
-  controller.start();
+  controller.tap();
   await tick();
-  controller.release();
+  controller.tap();
   answer();
   await tick();
   assert.equal(source.closed, 1, 'no mic left running with nobody to hear it');
@@ -363,11 +363,11 @@ async function pressHearingNothing(setup: Parameters<typeof scorer>[0]) {
   const scored = await scorer(setup);
   scored.warm.warm(true);
   await tick();
-  scored.controller.start();
+  scored.controller.tap();
   await tick();
   scored.sockets[0]!.open();
   scored.hearFor(1, 3);
-  scored.controller.release();
+  scored.controller.tap();
   await tick();
   scored.sockets[0]!.server({ type: 'conversation.item.input_audio_transcription.completed', transcript: '' });
   await new Promise((resolve) => setTimeout(resolve, timeouts.openMs + timeouts.finalMs + 30));
@@ -392,16 +392,22 @@ test('"Didn\'t catch that" shows only when the recording is blank too', async ()
   assert.equal(failed.views.at(-1)?.message, 'Voice is unavailable right now. Tap to score.');
 });
 
-test('the idle bar says what the mic is doing, and "Listening" wins while a press is open', () => {
-  const idle = (['off', 'explain', 'ready', 'refused', 'busy'] as const).map((mic) => barView(mic, false));
+test('#88: the bar says one clear thing for each moment: ready, listening, reading, saved', () => {
+  const idle = (['off', 'explain', 'ready', 'refused', 'busy'] as const).map((mic) => barView(mic, 'idle'));
   assert.deepEqual(idle.map((view) => view.label), [
-    'Hold to score by voice',
-    'Hold to score by voice',
-    'Mic ready',
+    'Tap to score by voice',
+    'Tap to score by voice',
+    'Tap to score by voice',
     'Turn on the mic in Settings',
     'Mic busy · tap to score',
   ]);
   assert.deepEqual(idle.map((view) => view.lines), [1, 1, 1, 2, 2], 'the two long lines get room on a narrow phone');
-  assert.equal(idle[2]!.accessibilityLabel, 'Mic ready. Hold to score by voice', 'a screen reader still hears how to use the bar');
-  for (const mic of ['ready', 'refused', 'busy'] as const) assert.equal(barView(mic, true).label, 'Listening…');
+  assert.equal(idle[2]!.accessibilityLabel, 'Mic ready. Tap to score by voice', 'a screen reader still hears the mic is ready');
+  for (const mic of ['off', 'ready', 'refused', 'busy'] as const) {
+    assert.equal(barView(mic, 'listening').label, 'Listening… tap to finish', 'the open mic wins over what the mic was doing before');
+    assert.equal(barView(mic, 'reading').label, 'Reading your play…');
+    assert.equal(barView(mic, 'saved').label, 'Saved');
+  }
+  assert.deepEqual(['idle', 'listening', 'reading', 'saved'].map((phase) => barView('ready', phase as 'idle').button), [true, true, false, false],
+    'while a play is read or saved the bar is not a button, it is only a line');
 });

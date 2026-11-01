@@ -111,7 +111,7 @@ export default function ScoreScreen() {
       <View onLayout={(event) => setBarHeight(event.nativeEvent.layout.height)}>
         <ScorerBar sync={sync} onPitch={onPitch} onUndo={() => { voice.dismiss(); void record({ kind: 'undo' }); }}
           onMore={() => { voice.dismiss(); setDraft({ kind: 'more', game }); }} disabled={!enabled}
-          voice={<VoiceBar listening={voice.listening} mic={voice.mic} disabled={!enabled} onStart={voice.start} onRelease={voice.release} onCancel={voice.cancel} testID="voice-bar" />}
+          voice={<VoiceBar listening={voice.listening} reading={voice.reading > 0} saved={voice.saved} mic={voice.mic} disabled={!enabled} onTap={voice.tap} testID="voice-bar" />}
           undoDisabled={view.kind !== 'ready' || !game.canUndo} testID="scorer-bar" syncTestID="waiting-plays" />
         <View style={[styles.belowBar, spacerHeight(belowBarSpace(Platform.OS, insets.bottom))]} />
       </View>
