@@ -226,17 +226,65 @@ When the queue stops, the phone shows how many plays are waiting, for example "3
 
 ## Voice
 
-Two functions serve voice scoring. Both need a signed-in phone (an anonymous sign-in is enough for the demo), allow 30 requests a minute per user, and return `502 voice_unavailable` when OpenAI fails, which the phone treats as "Voice is unavailable right now. Tap to score." (A10). Neither writes to the database or logs a request body, a transcript or a name: bodies carry the lineup's display names and what was said (rule 5). The scorer-lock check (A8) and the monthly limit (A9) wait until the phone uploads games (#29).
+Two functions serve voice scoring. Both need a signed-in phone (an anonymous sign-in is enough for the demo), allow 30 requests a minute per user, and return `502 voice_unavailable` when OpenAI fails, which the phone treats as "Voice is unavailable right now. Tap to score." (A10). Neither writes to the database or logs a request body, a transcript, an answer or a name: bodies carry display names, jersey numbers and what was said (rule 5). The scorer-lock check (A8) and the monthly limit (A9) wait until the phone uploads games (#29).
 
 The phone gives each request its own timeout, about 25 seconds, because a clip goes through two OpenAI calls, and on a timeout it falls back to taps. A `401` can also come from the Supabase gateway before the function runs, with the gateway's own body, so the phone branches on the status, not the `error` code.
 
 **Cost.** The per-user rate limit and the 60-second secret are not a spending cap. The secret only limits when a session can start: once connected, OpenAI keeps a transcription session open for up to 60 minutes, so the phone closes the socket when the scorer lets go. A hard monthly budget on the OpenAI project is the real cap, and setting it is a required step before the first deploy, until the monthly limit (A9) arrives with #29.
 
-**Privacy.** Audio, the transcript and the names the phone sends go to OpenAI. `voice-session` sends only last names as transcription keywords. `voice-parse` sends the lineup's display names to the parser model, with `store: false`. OpenAI still keeps API data for up to 30 days for abuse monitoring unless the project has zero data retention. Whether to ask for zero data retention, and the fewest names the parser needs, are Christian's and Kevin's decision before the beta.
+**Privacy.** Audio, the transcript and the game the phone sends go to OpenAI. `voice-session` sends only last names as transcription keywords. `voice-parse` sends the parser model, with `store: false`, the game as the AI needs it to read a whole press ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)): display names and jersey numbers labeled by role (the batter due up, the pitcher, each runner by base, the batting order and the fielders by position), the inning, outs, count and score, and the last play in words, which also carries display names. It sends no player IDs and no event log. The model's answer names players only by role and base, plus the words the scorer used for each one. Its free-text notes are dropped inside `voice-parse` and never returned, shown or logged. OpenAI still keeps API data for up to 30 days for abuse monitoring unless the project has zero data retention, which has to be in place before any real children's game ([#77](https://github.com/sandlot-app/sandlot-app/issues/77), item 3). Christian reviews this paragraph and Kevin signs off before `voice-parse` is deployed with it.
 
 **`voice-session`** starts one press's live transcription. The phone sends `{ names: string[] }`, the lineup's display names (at most 40). A list that isn't all text is `invalid`. The server drops any name it can't use, then asks OpenAI for a client secret that must be used within 60 seconds and opens only a `gpt-live-transcribe` transcription session, with the last names and scoring words as keywords. It returns `{ url, secret, expiresAt, sampleRate }`. The phone streams 16-bit mono PCM at `sampleRate` to `url` with that secret. The server's key never leaves the server.
 
-**`voice-parse`** finishes a press the phone couldn't read alone. The phone sends `{ transcript, context }` or, when live streaming didn't connect (A4, A5), `{ audio, context }` with the press's 16-bit mono PCM at 24 kHz in base64, at most 15 seconds (A2). `context` is `{ batting, fielding, runners }`, lists of display names. The server transcribes a clip with `gpt-transcribe`, reads the words with the phone's own grammar, and asks a parser model (`gpt-6-luna`, with Structured Outputs) only for what the grammar can't read. It returns `{ transcript, parsed }`, where `parsed` is the same `ParseResult` `packages/voice` returns, or `null` for an empty transcript. The model only proposes: the phone routes `parsed` with `route()`, and the engine decides. A model answer that breaks the schema becomes `unclear`.
+**`voice-parse`** reads every press the phone can't read alone: anything but pitch calls, a lone "undo" or "scratch that", or filler. The phone sends `{ transcript, context }` or, when live streaming didn't connect (A4, A5), `{ audio, context }` with the press's 16-bit mono PCM at 24 kHz in base64, at most 15 seconds (A2). `context` is the game before the press, built on the phone from the same game it will check the answer against:
+
+```ts
+type Person = { name: string; number: string };
+type PressContext = {
+  inning: number; half: 'top' | 'bottom'; outs: 0 | 1 | 2; balls: number; strikes: number;
+  score: { batting: number; fielding: number };
+  batter: Person; pitcher: Person | null;
+  runners: { '1'?: Person; '2'?: Person; '3'?: Person };
+  battingOrder: { player: Person; position: Position | null }[];
+  fielders: { player: Person; position: Position }[];
+  lastPlay: string | null;   // the latest play that stands, in the banner's words
+};
+```
+
+The server refuses a context that is off with `invalid`: names longer than 40 characters or four words, or with anything but letters, digits, spaces and `.'’-` (the phone cleans names to fit first), jersey numbers past three digits, an inning outside 1 to 30, outs, balls or strikes out of range, a score past 99, more than 20 batters, more than 10 fielders or two at one position, or a last play longer than 300 characters or with characters a banner doesn't use. It transcribes a clip with `gpt-transcribe`, then asks the parser model (`gpt-6-luna`, with Structured Outputs, strict) once, with fixed instructions and the game as text. It returns `{ transcript, answer }`:
+
+```ts
+type Named = { name: string | null; number: string | null };  // the words the scorer used, as heard
+type Fielder = Named & { position: Position };
+type RunnerEvent = Named & { event: 'stolen_base' | 'caught_stealing' | 'pickoff' | 'wild_pitch' | 'passed_ball' | 'advance_on_error';
+  from: '1' | '2' | '3'; to: '1' | '2' | '3' | 'home' | 'out'; fielders: Fielder[] };
+type AnswerReading = {
+  batter: Named;                 // the batter of the last at-bat in the press
+  earlier_batters: Named[];      // batters of earlier at-bats the press's pitches ended, in order
+  pitcher: Named;
+  pitches: ('ball' | 'called_strike' | 'swinging_strike' | 'foul' | 'foul_tip' | 'hit_by_pitch')[];
+  ball_in_play: null | { outcome: BallInPlayOutcome; trajectory: Trajectory | null; fielders: Fielder[];
+    batter_to: '1' | '2' | '3' | 'home' | 'out';
+    runners: (Named & { from: '1' | '2' | '3'; to: '1' | '2' | '3' | 'home' | 'out' })[];
+    batter_out_first: boolean }; // the batter was out before any runner, as on a 3-6 double play
+  runner_events: RunnerEvent[];        // before any ball in play
+  runner_events_after: RunnerEvent[];  // after it, keyed by the base the runner was on after it
+  forced_runners: (Named & { from: '1' | '2' | '3' })[];  // named runners a walk or hit by pitch forced along
+  taken_back: Named[];           // names the scorer said and then took back
+};
+  runner_events: (Named & { event: 'stolen_base' | 'caught_stealing' | 'pickoff' | 'wild_pitch' | 'passed_ball' | 'advance_on_error';
+    from: '1' | '2' | '3'; to: '1' | '2' | '3' | 'home' | 'out' })[];
+  forced_runners: (Named & { from: '1' | '2' | '3' })[];  // named runners a walk or hit by pitch forced along
+};
+type Answer =
+  | { result: 'play'; fix_last: boolean; readings: [AnswerReading] }
+  | { result: 'question'; fix_last: boolean; readings: [AnswerReading, AnswerReading] }
+  | { result: 'not_a_play' | 'unclear'; fix_last: false; readings: [] };
+```
+
+Runners are keyed by the base they were on when the press began. `answer` is `null` for an empty transcript, for words the phone reads itself, and for a model reply that was refused, cut off or broke the schema; the phone then says "Couldn't read that. Tap to score." Both the server and the phone read the answer with the same strict reader, which keeps only the fields above.
+
+The model only proposes. The phone maps each reading to commands, checks that every name or number said fits the player who holds that role, and the engine decides whether the play is legal (rule 6). A legal play saves with a banner built from the commands the engine accepted. A `question` shows a card with its two readings when the engine accepts both. A name in the wrong role saves nothing and says who holds the role ("J. Ruiz is up, not K. Moss."). A player's name, a near spelling of one, or a jersey number in the words that the answer left out of every slot saves nothing too, with "Didn't understand", because the answer may have named the play by role alone. A near spelling of the player in that role, such as "Parker" for batter D. Park, saves as that player only when no other player on either roster is that close, and the banner names who was saved. A forced runner counts only after ball four or a hit by pitch, and a name taken back only when a correction like "no" or "I mean" follows it. `fix_last`, or a press that starts like a correction ("no, that was a double") right after a play, unless it names a new batter who is up now, saves nothing (a leading "No!" or "No way" is read as a cheer, and what follows it decides) until the engine applies `correct` ([#97](https://github.com/sandlot-app/sandlot-app/issues/97)). A question whose other reading the engine refuses saves the one it accepts, with the banner, because the rules picked it; a reading refused for a name refuses the whole answer, because the names said are the same in every reading.
 
 | Error | HTTP status | Phone action |
 | --- | --- | --- |

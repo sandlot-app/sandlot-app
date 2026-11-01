@@ -1,4 +1,4 @@
-import type { ParseResult } from '@sandlot/voice';
+import { readAnswer, type Answer, type PressContext } from '@sandlot/voice';
 
 // The two voice functions, as the Voice section of docs/contract.md describes them. Bodies carry display names and
 // what was said, so nothing here logs a body, a transcript or a name (rule 5).
@@ -11,10 +11,10 @@ export type VoiceFailure =
 export type Result<T> = { ok: true; value: T } | { ok: false; failure: VoiceFailure };
 
 export type Session = { url: string; secret: string; expiresAt: number; sampleRate: number };
-/** The lineup's display names, so the parser model can name players. */
-export type ParseContext = { batting: string[]; fielding: string[]; runners: string[] };
-export type ParseBody = { transcript: string; context: ParseContext } | { audio: string; context: ParseContext };
-export type Parsed = { transcript: string; parsed: ParseResult | null };
+/** The words, or the clip when streaming didn't connect, with the game as the AI sees it. */
+export type ParseBody = { transcript: string; context: PressContext } | { audio: string; context: PressContext };
+/** `answer` is null for empty words, words the phone reads itself, or an answer voice-parse couldn't use. */
+export type Parsed = { transcript: string; answer: Answer | null };
 
 export type VoiceApi = {
   session(names: string[]): Promise<Result<Session>>;
@@ -54,16 +54,13 @@ function session(value: unknown): Session | null {
   return { url: raw.url, secret: raw.secret, expiresAt: raw.expiresAt, sampleRate: raw.sampleRate };
 }
 
+/** The reply, with the answer read as strictly as voice-parse read it, so nothing outside the schema reaches decide(). */
 function parsed(value: unknown): Parsed | null {
-  const raw = value as { transcript?: unknown; parsed?: unknown } | null;
-  if (!raw || !isText(raw.transcript)) return null;
-  if (raw.parsed === null) return { transcript: raw.transcript, parsed: null };
-  const result = raw.parsed as { kind?: unknown; plays?: unknown; parts?: unknown } | undefined;
-  if (result?.kind === 'not_a_command' || result?.kind === 'unclear') return { transcript: raw.transcript, parsed: result as ParseResult };
-  if (result?.kind === 'plays' && Array.isArray(result.plays) && Array.isArray(result.parts)) {
-    return { transcript: raw.transcript, parsed: result as ParseResult };
-  }
-  return null;
+  const raw = value as { transcript?: unknown; answer?: unknown } | null;
+  if (!raw || !isText(raw.transcript) || !('answer' in raw)) return null;
+  if (raw.answer === null) return { transcript: raw.transcript, answer: null };
+  const answer = readAnswer(raw.answer);
+  return answer ? { transcript: raw.transcript, answer } : null;
 }
 
 export function createVoiceApi({ url, key, token, fetch, timeoutMs = 25_000 }: ApiConfig): VoiceApi {
