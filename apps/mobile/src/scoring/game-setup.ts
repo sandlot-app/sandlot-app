@@ -118,7 +118,7 @@ export function addFromRoster(slots: LineupSlot[], player: PlayerRef): LineupSlo
 
 const same = (left: PlayerRef, right: PlayerRef) => left.kind === right.kind && left.id === right.id;
 
-/** The names Game setup shows for each side: the sample game's Hawks and Marlins. */
+/** The names Game setup shows for each side: the sample game's Hawks and Marlins. For a new game only; a saved game's sides come from `teamsOf`. */
 export const teamName = (side: TeamSide) => demoTeams[side].name;
 
 const positionNames: Record<Position, string> = {

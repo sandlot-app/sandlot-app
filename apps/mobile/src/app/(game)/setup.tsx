@@ -33,8 +33,8 @@ export default function GameSetupScreen() {
     let result: Awaited<ReturnType<typeof startSetup>> = 'unavailable';
     try {
       result = await startSetup(draft);
-    } catch {
-      console.error('Sandlot could not start the game.');
+    } catch (error) {
+      console.error('Sandlot could not start the game.', error instanceof Error ? `${error.name}: ${error.message}` : 'unknown error');
       result = 'unavailable';
     } finally {
       setStarting(false);
