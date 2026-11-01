@@ -96,7 +96,8 @@ export function applyGroupFrom(setup: GameSetup, from: GameState, events: Event[
 }
 
 /**
- * Each batter's line from the plays that stand, keyed by player or opponent ID. An undone play counts for no one.
+ * Each batter's line from the plays that stand, keyed by player or opponent ID. An undone play counts for no one,
+ * and a Fix counts in place of the play it replaced, until an Undo of the Fix brings that play back.
  * It reads a log `replay` accepts; on one it rejects, the lines stop before the rejected play.
  */
 export function battingLines(setup: GameSetup, events: Event[]): Record<string, BattingLine> {
@@ -125,7 +126,7 @@ export function battingLinesFrom(setup: GameSetup, from: GameState, events: Even
         standing.push(latest);
         break;
       }
-      standing.push({ id: play.id, state: result.state, tally, replaced: latest! });
+      standing.push({ id: play.id, state: result.state, tally, replaced: latest });
       continue;
     }
     const tally: PlayTally = { appearances: [], runs: [] };
@@ -252,7 +253,7 @@ function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending
     const result = next(play.id, play.commands);
     if (!result.ok) return result;
     state = result.state;
-    if (play.commands.find((command) => command.kind === 'undo')) undoGroups.add(play.id);
+    if (play.commands.some((command) => command.kind === 'undo')) undoGroups.add(play.id);
   }
   return pending ? next('' as GroupId, pending) : { ok: true, state };
 }

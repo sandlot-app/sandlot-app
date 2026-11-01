@@ -166,7 +166,7 @@ describe('a Fix', () => {
 
   it('replays to the same game once the Fix is stored beside the play it replaced', () => {
     const fixed = applyGroup(setup, played, fix);
-    const stored = [...played, ...events([[...fix]]).map((event, i) => ({ ...event, id: `fix-${i}` as EventId, seq: played.length + 1 + i, group: 'fix' as GroupId }))];
+    const stored = [...played, ...events([fix]).map((event, i) => ({ ...event, id: `fix-${i}` as EventId, seq: played.length + 1 + i, group: 'fix' as GroupId }))];
     expect(replay(setup, stored)).toEqual(fixed);
   });
 

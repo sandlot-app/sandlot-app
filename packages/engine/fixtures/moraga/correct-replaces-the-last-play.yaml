@@ -1,6 +1,6 @@
 name: A Fix replaces the last play, so a single becomes a double that scores the runner
 cite: Sandlot GLOSSARY.md Fix; docs/design/spec-update-fix-and-delay.md Rules; ADR 0007 a voice fix saves right away; Official Baseball Rules
-  5.05(a)(6) and 9.04(a)(1) for the run and the batter's RBI; issue 102
+  9.05(a) for the hit and 9.04(a)(1) for the batter's RBI; issue 102
 preset: moraga-mustang-first-half
 started: true
 given:

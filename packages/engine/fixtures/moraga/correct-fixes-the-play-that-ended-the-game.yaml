@@ -1,6 +1,6 @@
 name: A Fix of the walk-off play reopens the game
-cite: Sandlot docs/design/spec-update-fix-and-delay.md and the Fix a play spec, fixing after Final; Moraga Mustang rules revised February 2024 D.16;
-  Official Baseball Rules 7.01(e); issue 102
+cite: Sandlot GLOSSARY.md Closed book, only a closed book can no longer be fixed; docs/design/spec-update-public-states-and-close-the-book.md Rules;
+  Fix a play spec (issue 41) user story 7; Moraga Mustang rules revised February 2024 D.16 and Official Baseball Rules 7.01(e) for the walk-off; issue 102
 preset: moraga-mustang-first-half
 started: true
 given:
