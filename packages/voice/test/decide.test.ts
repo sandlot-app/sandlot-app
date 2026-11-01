@@ -3,7 +3,7 @@ import { readAnswer } from '../src/answer.ts';
 import { pressContext, readContext } from '../src/context.ts';
 import { decide, type Heard } from '../src/decide.ts';
 import { readLocally } from '../src/local.ts';
-import { fits } from '../src/players.ts';
+import { fits, words } from '../src/players.ts';
 import type { RosterEntry } from '../src/state.ts';
 import { append, buildGame, entryByName, roster, withLastPlay } from './game.ts';
 import { expandShort, type Short } from './short.ts';
@@ -33,6 +33,15 @@ describe('the name policy', () => {
     const crowded = roster.map((entry) => entry.name === 'S. Bell' ? parks : entry);
     expect(fits(crowded, park, said('Parker'))).toBe(false);
     expect(fits(crowded, park, said('Park'))).toBe(true);
+  });
+
+  it('matches a name the AI echoes back the way the phone cleaned it ("St.-Pierre" shown as "St -Pierre")', () => {
+    const roster2 = roster.map((entry) => entry.name === 'D. Park' ? { ...entry, name: "R. St.-Pierre" } : entry.name === 'K. Moss' ? { ...entry, name: "K. O.'Neil" } : entry);
+    const holder = (name: string) => roster2.find((entry) => entry.name === name)!;
+    const shown = (name: string) => pressContext({ ...buildGame({ half: 'bottom', up: 'D. Park' }), roster: roster2.map((entry) => ({ ...entry, name: entry.name === name ? name : entry.name })) });
+    expect(shown('R. St.-Pierre').batter.name).toBe('R. St -Pierre');
+    expect(fits(roster2, holder('R. St.-Pierre'), said('R. St -Pierre'))).toBe(true);
+    expect(fits(roster2, holder("K. O.'Neil"), said("K. O 'Neil"))).toBe(true);
   });
 
   it('lets the role tell two players with one surname apart', () => {
@@ -115,7 +124,13 @@ describe('the context the phone sends', () => {
     const base = buildGame({ outs: 0, on: { '1': 'L. Darcy' }, up: 'J. Soto' });
     for (const name of names) {
       const game = { ...base, roster: base.roster.map((entry) => entry.name === 'J. Soto' ? { ...entry, name } : entry) };
-      expect(readContext(JSON.parse(JSON.stringify(pressContext(game)))), JSON.stringify(name)).not.toBeNull();
+      const context = pressContext(game);
+      expect(readContext(JSON.parse(JSON.stringify(context))), JSON.stringify(name)).not.toBeNull();
+      // The name the AI sees reads as the same words as the roster's, so a name it echoes back still matches. A name
+      // cut to four words or 40 characters, or with nothing left to keep, is the only exception.
+      const shown = context.batter.name;
+      const cut = shown === 'Unknown player' || shown.split(' ').length === 4 || shown.length > 36;
+      if (!cut) expect(words(shown), JSON.stringify(name)).toEqual(words(name));
     }
   });
 

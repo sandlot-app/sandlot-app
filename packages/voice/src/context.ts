@@ -45,9 +45,11 @@ export const isNameWord = (word: string) =>
  */
 function cleanName(name: string): string {
   const kept: string[] = [];
-  for (const raw of name.replace(/[^\p{L}\p{N} .'’-]/gu, ' ').replace(/\.(?=\p{L}{2})/gu, '. ').split(/\s+/)) {
-    // "A.J" gets its last dot; any other dot that isn't the end of a word goes ("O.'Neil", "Jr..").
-    const word = /^(?:\p{L}\.)+\p{L}$/u.test(raw) ? `${raw}.` : isNameWord(raw) ? raw : raw.replace(/\./g, '');
+  // "A.J" gets its last dot. Any other dot that isn't the end of a word becomes a space ("O.'Neil" is "O 'Neil"), so
+  // the name still reads as the same words as the roster's and a name the AI echoes back still matches it.
+  const spaced = name.replace(/[^\p{L}\p{N} .'’-]/gu, ' ').replace(/\.(?=\p{L}{2})/gu, '. ').split(/\s+/)
+    .flatMap((raw) => /^(?:\p{L}\.)+\p{L}$/u.test(raw) ? [`${raw}.`] : isNameWord(raw) ? [raw] : raw.split('.'));
+  for (const word of spaced) {
     if (!isNameWord(word) || kept.length === 4 || [...kept, word].join(' ').length > 40) continue;
     kept.push(word);
   }
