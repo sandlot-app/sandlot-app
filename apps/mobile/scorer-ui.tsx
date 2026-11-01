@@ -179,6 +179,8 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, voice, disabled = fal
 }) {
   const [choosingStrike, setChoosingStrike] = useState(false);
   const recordPitch = (pitch: Pitch) => { setChoosingStrike(false); onPitch(pitch); };
+  // A strike said by voice is saved while the chooser could still be open, so it closes rather than invite a second one.
+  useEffect(() => { if (disabled) setChoosingStrike(false); }, [disabled]);
   return <View style={styles.scorerBar} testID={testID}>
     {choosingStrike ? <View style={styles.strikeControls}>
       <View style={styles.strikeChooser}>
@@ -249,7 +251,8 @@ export function VoiceBar({ phase, mic = 'off', disabled = false, onTap, testID }
   }, [phase, button, grow, scale]);
   // iOS ignores live regions, so the two lines that replace the button are said out loud.
   useEffect(() => {
-    if (!button) AccessibilityInfo.announceForAccessibility(label);
+    // Android reads the live region itself, so announcing there would say each line twice.
+    if (!button && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(label);
   }, [button, label]);
   const responder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => !latest.current.disabled,

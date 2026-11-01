@@ -230,6 +230,17 @@ test('#88: a press that throws while it settles frees the bar, and the press beh
   assert.equal(views.at(-1)?.reading, 0, 'nothing is left reading');
 });
 
+test('#88: a Not sure choice whose save throws tells the scorer instead of failing silently', async () => {
+  const { controller, say, views, plays } = await scorer(true, undefined, timeouts, true);
+  (await say())('strike');
+  await settle();
+  assert.equal(views.at(-1)?.card?.kind, 'choose');
+  controller.choose(0);
+  await settle();
+  assert.deepEqual(plays(), []);
+  assert.equal(views.at(-1)?.message, lost);
+});
+
 test('#88: a press that is mid-save when the screen is torn down shows nothing afterwards', async () => {
   let answer: (saved: boolean) => void = () => {};
   const { controller, say, views } = await scorer(true, new Promise((resolve) => { answer = resolve; }));

@@ -246,7 +246,7 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
       choosing = null;
       publish();
       const born = generation;
-      void save(picked.commands, pressed).then(() => { if (born === generation) publish(); });
+      void save(picked.commands, pressed).catch(() => { message = unsavedMessage; }).then(() => { if (born === generation) publish(); });
     },
     /**
      * The phone's mic is ready, such as after the scorer allowed it in Settings, so a "can't use the microphone" line
