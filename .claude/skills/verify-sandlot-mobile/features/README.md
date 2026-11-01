@@ -42,7 +42,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 - [Offline scoring](./offline-scoring.md) covers pitches, undo, saved state, and reopening.
 - [Tap outcomes and runner moves](./tap-plays.md) covers In play, the four More actions, third-out evidence and whole-play undo.
 - [Scoring screen](./scoring-screen.md) covers the Figma Field tab: scoreboard, matchup ticket, field chips, the Scorer Bar, and Hit by pitch in More.
-- [Voice scoring](./voice-scoring.md) covers hold to talk: Listening, Got it, Not sure, cancel and the tap fallback.
+- [Voice scoring](./voice-scoring.md) covers hold to talk: Listening, a saved play's banner, Not sure, a name in the wrong role, cancel and the tap fallback.
 - [Play log](./play-log.md) covers the Plays tab: the saved book by half-inning and at-bat, with undone plays marked.
 - [Live game](./live-game.md) covers the server's demo game: starting it after the seed, uploading each play, waiting without signal, and the family page matching.
 

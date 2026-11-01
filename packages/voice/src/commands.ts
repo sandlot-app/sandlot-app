@@ -1,8 +1,7 @@
 import { applyGroup } from '@sandlot/engine';
 import type { Advance, Base, Command, Destination, GameState, PlayerRef, RejectCode } from '@sandlot/engine';
 import type { AnswerReading, BaseKey, DestinationKey } from './answer.ts';
-import { samePlayer } from './players.ts';
-import { baseOf, batterUp, type PressGame } from './state.ts';
+import { baseOf, batterDefault, batterUp, type PressGame } from './state.ts';
 
 // One reading of the answer as engine commands. Runners are looked up by the base they were on when the press began,
 // the batter comes from the game, and the engine still decides whether the whole thing is legal (rule 6).
@@ -12,10 +11,6 @@ export type Mapped =
   | { ok: true; commands: Command[]; atBat: GameState }
   | { ok: false; why: { kind: 'no_runner'; base: Base } | { kind: 'engine'; code: RejectCode } };
 
-const batterDefault: Record<NonNullable<AnswerReading['ball_in_play']>['outcome'], Destination | null> = {
-  single: 1, double: 2, ground_rule_double: 2, triple: 3, home_run: 'home', out: 'out', sacrifice_fly: 'out', sacrifice_bunt: 'out',
-  error: 1, fielders_choice: 1, double_play: null, triple_play: null,
-};
 const hits = new Set(['single', 'double', 'ground_rule_double', 'triple', 'home_run']);
 const toBase = (key: BaseKey): Base => Number(key) as Base;
 const toDestination = (key: DestinationKey): Destination => key === 'home' || key === 'out' ? key : toBase(key);

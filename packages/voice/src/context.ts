@@ -1,4 +1,5 @@
 import type { Event, Half, PlayerRef, Position } from '@sandlot/engine';
+import { positions } from './answer.ts';
 import { readBack } from './explain.ts';
 import { entryFor } from './players.ts';
 import { batterUp, batting, fielding, stateAfter, type PressGame } from './state.ts';
@@ -29,7 +30,7 @@ export type PressContext = {
   lastPlay: string | null;
 };
 
-const unknown: Person = { name: 'Unknown player', number: '' };
+const unknownPlayer: Person = { name: 'Unknown player', number: '' };
 
 /** The groups that stand, oldest first: an undo takes back the latest one standing. Setup and lineups aren't plays. */
 function standingPlays(events: Event[]): Event[][] {
@@ -53,7 +54,7 @@ export function pressContext(game: PressGame): PressContext {
   if (!state) throw new Error("The game doesn't replay");
   const person = (player: PlayerRef | undefined): Person => {
     const entry = player && entryFor(game.roster, player);
-    return entry ? { name: entry.name, number: entry.number } : unknown;
+    return entry ? { name: entry.name, number: entry.number } : unknownPlayer;
   };
   const runners: PressContext['runners'] = {};
   for (const base of [1, 2, 3] as const) {
@@ -83,7 +84,6 @@ export function pressContext(game: PressGame): PressContext {
   };
 }
 
-const positions: readonly Position[] = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'ROVER'];
 type Raw = Record<string, unknown>;
 const isObject = (value: unknown): value is Raw => typeof value === 'object' && value !== null && !Array.isArray(value);
 const whole = (value: unknown, min: number, max: number): value is number => Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
@@ -124,9 +124,9 @@ export function readContext(raw: unknown): PressContext | null {
     runners[base] = runner;
   }
   const battingOrder = readPlayers(raw.battingOrder, 20, (item, player) =>
-    item.position === null || positions.includes(item.position as Position) ? { player, position: item.position as Position | null } : null);
+    item.position === null || (positions as readonly unknown[]).includes(item.position) ? { player, position: item.position as Position | null } : null);
   const fielders = readPlayers(raw.fielders, 10, (item, player) =>
-    positions.includes(item.position as Position) ? { player, position: item.position as Position } : null);
+    (positions as readonly unknown[]).includes(item.position) ? { player, position: item.position as Position } : null);
   if (!battingOrder || !fielders || new Set(fielders.map((fielder) => fielder.position)).size !== fielders.length) return null;
   return {
     inning, half, outs: outs as PressContext['outs'], balls, strikes, score: { batting: score.batting, fielding: score.fielding },

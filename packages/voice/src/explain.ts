@@ -1,6 +1,6 @@
-import type { BallInPlayOutcome, Base, Command, Destination, GameState, PlayerRef, Position } from '@sandlot/engine';
+import type { BallInPlayOutcome, Base, Command, GameState, PlayerRef, Position } from '@sandlot/engine';
 import { nameOf, samePlayer } from './players.ts';
-import { baseOf, batting, stateAfter, units, type PressGame } from './state.ts';
+import { baseOf, batterDefault, batting, stateAfter, units, type PressGame } from './state.ts';
 
 export const baseWord: Record<Base | 'home', string> = { 1: '1st', 2: '2nd', 3: '3rd', home: 'home' };
 const direction: Record<Position, string> = {
@@ -16,11 +16,7 @@ const otherVerb: Record<Exclude<BallInPlayOutcome, 'error' | 'out'>, string> = {
   fielders_choice: "reaches on a fielder's choice", sacrifice_fly: 'hits a sacrifice fly', sacrifice_bunt: 'lays down a sacrifice bunt',
   double_play: 'hits into a double play', triple_play: 'hits into a triple play',
 };
-/** Where each outcome leaves the batter, so the banner says only where the batter went otherwise. */
-const batterUsual: Record<BallInPlayOutcome, Destination> = {
-  single: 1, double: 2, ground_rule_double: 2, triple: 3, home_run: 'home', error: 1, fielders_choice: 1,
-  out: 'out', sacrifice_fly: 'out', sacrifice_bunt: 'out', double_play: 'out', triple_play: 'out',
-};
+
 
 const heldOutcomes = new Set(['single', 'double', 'ground_rule_double', 'triple', 'error']);
 
@@ -81,7 +77,8 @@ function battedText(game: PressGame, before: GameState, after: GameState, play: 
   const outs = play.advances.flatMap((advance) => advance.to === 'out' ? [advance.runner] : []);
   // Where the batter ended, when it isn't where the outcome puts them: "J. Soto singles, J. Soto to 2nd".
   const own = batter && play.advances.find((advance) => samePlayer(advance.runner, batter));
-  const usual = batterUsual[play.outcome];
+  // A double or triple play names the batter's out explicitly, but that out is the usual one, so it isn't repeated.
+  const usual = batterDefault[play.outcome] ?? 'out';
   const extra = own && own.to !== usual ? [own.to === 'out' ? `${name} out` : own.to === 'home' ? `${name} scores` : `${name} to ${baseWord[own.to]}`] : [];
   return [text, ...runnerMoves(game, before, after, outs, unmoved(before, play)), ...extra].join(', ');
 }

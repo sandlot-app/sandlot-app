@@ -26,7 +26,7 @@ Preconditions:
 - **Save, Not sure and cancel.** Run `verify.sh drive voice-scoring.yaml`. Hold 1 hears "strike swinging" and saves it (screenshot `voice-saved`). Hold 2 hears "strike", shows Not sure with Strike looking and Strike swinging (screenshot `voice-not-sure`), and saves Strike looking on the tap. A slide off the bar saves nothing (screenshot `voice-cancelled`). It then undoes both plays.
 - **The whole press (#103).** Relaunch with `EXPO_PUBLIC_VOICE_STUB="double, everybody scores|Moss doubles|double, the runner scores"` and run `verify.sh drive acceptance-103.yaml`. The stub answers those three phrases the way the AI would, from the game the phone sends. Press 1 saves a double with everyone on base scoring (screenshot `voice-whole-play-banner`). Press 2 says "<batter> is up, not K. Moss." and saves nothing (screenshot `voice-wrong-role`); it assumes Moss isn't the batter due up. Four Ball taps then put runners on first and second, and press 3 shows two readings (screenshot `voice-two-readings`) and saves the second on a tap. The flow undoes its six plays at the end.
 - **Listening.** Maestro waits while it holds, so it can't screenshot mid-hold. Record the simulator during the drive (`xcrun simctl io <udid> recordVideo`) and take the Listening frame from the first hold.
-- **Figma pairs.** The Listening, Got it and `voice-not-sure` screens pair with frames `87:3663`, `87:3886` and `87:4112`, in the ticket's `proof-<number>` release.
+- **Figma pairs.** The Listening and `voice-not-sure` screens pair with frames `87:3663` and `87:4112`, in the ticket's `proof-<number>` release. The Got it frame (`87:3886`) is no longer shown: since #103 nothing reads the words until the press ends.
 
 ## Gotchas
 

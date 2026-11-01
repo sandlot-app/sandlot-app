@@ -251,7 +251,7 @@ type PressContext = {
 };
 ```
 
-The server refuses a context that is off with `invalid`: names longer than 40 characters or with anything but letters, digits, spaces and `.'’-`, numbers past three digits, counts or outs out of range, more than 20 batters or 10 fielders, or a last play longer than 300 characters. It transcribes a clip with `gpt-transcribe`, then asks the parser model (`gpt-6-luna`, with Structured Outputs, strict) once, with fixed instructions and the game as text. It returns `{ transcript, answer }`:
+The server refuses a context that is off with `invalid`: names longer than 40 characters or with anything but letters, digits, spaces and `.'’-`, jersey numbers past three digits, an inning outside 1 to 30, outs, balls or strikes out of range, a score past 99, more than 20 batters, more than 10 fielders or two at one position, or a last play longer than 300 characters or with characters a banner doesn't use. It transcribes a clip with `gpt-transcribe`, then asks the parser model (`gpt-6-luna`, with Structured Outputs, strict) once, with fixed instructions and the game as text. It returns `{ transcript, answer }`:
 
 ```ts
 type Named = { name: string | null; number: string | null };  // the words the scorer used, as heard

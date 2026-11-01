@@ -66,7 +66,7 @@ export function readLocally(transcript: string): Local | null {
   if (!pitches.length || pitches.some((pitch) => pitch === undefined)) return null;
   const strikes = pitches.filter((pitch) => pitch === 'strike').length;
   if (strikes > 1) return null;
-  const as = (strike: AnswerReading['pitches'][number]) => pitchesOnly(pitches.map((pitch) => pitch === 'strike' ? strike : pitch!) as AnswerReading['pitches']);
-  if (!strikes) return { kind: 'answer', answer: { result: 'play', fix_last: false, readings: [as('called_strike')] } };
-  return { kind: 'answer', answer: { result: 'question', fix_last: false, readings: [as('called_strike'), as('swinging_strike')] } };
+  const withStrike = (strike: AnswerReading['pitches'][number]) => pitchesOnly(pitches.map((pitch) => pitch === 'strike' ? strike : pitch!) as AnswerReading['pitches']);
+  if (!strikes) return { kind: 'answer', answer: { result: 'play', fix_last: false, readings: [withStrike('called_strike')] } };
+  return { kind: 'answer', answer: { result: 'question', fix_last: false, readings: [withStrike('called_strike'), withStrike('swinging_strike')] } };
 }

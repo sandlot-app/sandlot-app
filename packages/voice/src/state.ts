@@ -1,5 +1,5 @@
 import { applyGroup, replay } from '@sandlot/engine';
-import type { Base, Command, Destination, Event, GameSetup, GameState, PlayerRef, TeamSide } from '@sandlot/engine';
+import type { BallInPlayOutcome, Base, Command, Destination, Event, GameSetup, GameState, PlayerRef, TeamSide } from '@sandlot/engine';
 import { samePlayer } from './players.ts';
 
 /** A player the scorer can name. The app passes these in with each press; they never reach events, stats or logs. */
@@ -29,6 +29,15 @@ export const runnersOn = (state: GameState): { base: Base; player: PlayerRef }[]
     const player = state.bases[base]?.player;
     return player ? [{ base, player }] : [];
   });
+
+/**
+ * Where each outcome leaves the batter when the play doesn't say: the engine's own defaults. A double or triple play
+ * has none, because the engine needs the batter's destination said.
+ */
+export const batterDefault: Record<BallInPlayOutcome, Destination | null> = {
+  single: 1, double: 2, ground_rule_double: 2, triple: 3, home_run: 'home', error: 1, fielders_choice: 1,
+  out: 'out', sacrifice_fly: 'out', sacrifice_bunt: 'out', double_play: null, triple_play: null,
+};
 
 /** The batter due up. */
 export const batterUp = (state: GameState): PlayerRef | undefined => state.lineups[batting(state)][state.nextBatter[batting(state)]]?.player;

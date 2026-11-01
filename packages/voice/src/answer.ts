@@ -13,7 +13,7 @@ const outcomes = ['single', 'double', 'ground_rule_double', 'triple', 'home_run'
   'sacrifice_fly', 'sacrifice_bunt', 'double_play', 'triple_play'] as const satisfies readonly BallInPlayOutcome[];
 const trajectories = ['ground', 'line', 'fly', 'popup', 'bunt'] as const satisfies readonly Trajectory[];
 const runnerEvents = ['stolen_base', 'caught_stealing', 'pickoff', 'wild_pitch', 'passed_ball', 'advance_on_error'] as const satisfies readonly RunnerEvent[];
-const positions = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'ROVER'] as const satisfies readonly Position[];
+export const positions = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'ROVER'] as const satisfies readonly Position[];
 const bases = ['1', '2', '3'] as const;
 const destinations = ['1', '2', '3', 'home', 'out'] as const;
 
@@ -148,7 +148,7 @@ function readReading(raw: unknown): AnswerReading | null {
   const pitcher = readNamed(raw.pitcher);
   const pitches = list(raw.pitches, limits.pitches, (item) => isOneOf(pitchResults, item) ? item : null);
   const ballInPlay = readBallInPlay(raw.ball_in_play);
-  const runnerEvents_ = list(raw.runner_events, limits.runnerEvents, (item) => {
+  const events = list(raw.runner_events, limits.runnerEvents, (item) => {
     const move = readMove(item);
     return move && isObject(item) && isOneOf(runnerEvents, item.event) ? { event: item.event, ...move } : null;
   });
@@ -157,9 +157,9 @@ function readReading(raw: unknown): AnswerReading | null {
     const who = readNamed(item);
     return who && { from: item.from, ...who };
   });
-  if (!batter || !pitcher || !pitches || ballInPlay === undefined || !runnerEvents_ || !distinctFrom(runnerEvents_) || !forced || !distinctFrom(forced)) return null;
-  if (!pitches.length && !ballInPlay && !runnerEvents_.length) return null;
-  return { batter, pitcher, pitches, ball_in_play: ballInPlay, runner_events: runnerEvents_, forced_runners: forced };
+  if (!batter || !pitcher || !pitches || ballInPlay === undefined || !events || !distinctFrom(events) || !forced || !distinctFrom(forced)) return null;
+  if (!pitches.length && !ballInPlay && !events.length) return null;
+  return { batter, pitcher, pitches, ball_in_play: ballInPlay, runner_events: events, forced_runners: forced };
 }
 
 /**

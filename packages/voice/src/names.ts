@@ -63,7 +63,7 @@ export function checkNames(game: PressGame, before: GameState, atBat: GameState,
       ?? (heard.name !== null ? namedPlayer(others, heard) : null);
     return { kind: 'wrong_role', role, holder, other };
   }
-  // The second witness: answering by role loses which name was said, so a batting player's surname in the words must
+  // A check that doesn't trust the slots: answering by role loses which name was said, so a batting player's surname in the words must
   // show up in a slot. Only the batting team's players can be recorded as a batter or runner; a fielder's name can't
   // save as another player, because plays name fielders by position.
   const said = new Set(words(transcript));
