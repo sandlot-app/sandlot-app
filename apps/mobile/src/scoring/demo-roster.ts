@@ -43,6 +43,11 @@ export function rosterName(player: PlayerRef): string {
   return demoPlayers[player.id]?.name ?? player.id;
 }
 
+/** The jersey number and short name Game setup shows for a roster player, before any lineup exists. */
+export function rosterDisplay(player: PlayerRef): { number: string; name: string } {
+  return demoPlayers[player.id] ?? { number: '', name: player.id };
+}
+
 /** The jersey number and short name a screen shows for a player, falling back to their batting order. */
 export function playerDisplay(state: GameState, side: TeamSide, player: PlayerRef): { number: string; name: string } {
   const known = demoPlayers[player.id];

@@ -10,6 +10,8 @@ import type { UploadStatus } from '../sync/upload.ts';
 import type { SqlDatabase } from './database.ts';
 import { blockedMessages, gameSummary } from './game-summary.ts';
 import { openNativeDatabase } from './native-database';
+import { startAction } from './game-setup.ts';
+import type { SetupDraft } from './game-setup.ts';
 import { openOfflineGame } from './offline-game.ts';
 import type { DemoAction, OpenResult, SavedGame } from './offline-game.ts';
 
@@ -28,6 +30,7 @@ const retryMs = 15_000;
 
 /** How starting a game went. A live game can't start until the server names this phone a game's scorer. */
 export type StartResult = 'started' | 'none' | 'mismatch' | 'refused' | 'offline' | 'unavailable';
+export type SetupStartResult = 'started' | 'unavailable' | { rejected: RejectCode };
 type ViewState =
   | { kind: 'loading' }
   | {
@@ -58,6 +61,8 @@ type ScoringContext = {
   open(slot: Slot): void;
   /** Starts `slot`'s game and opens it. The live game uses the game and session the server issued this phone. */
   start(slot: Slot): Promise<StartResult>;
+  /** Starts the local game with the season half and lineups the scorer chose in Game setup, or says why the engine refused. */
+  startSetup(setup: SetupDraft): Promise<SetupStartResult>;
   reopen(): void;
 };
 const Context = createContext<ScoringContext | null>(null);
@@ -283,7 +288,23 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
     return 'started';
   }
 
-  return <Context value={{ view, active, games, upload, uploadSlow, record, open, start, reopen }}>{children}</Context>;
+  async function startSetup(setup: SetupDraft): Promise<SetupStartResult> {
+    const store = sessions.current.local;
+    if (!store || operation.current) return 'unavailable';
+    const work = store.record(startAction(setup));
+    operation.current = work;
+    try {
+      const result = await work;
+      if (result.kind === 'rejected') return { rejected: result.code };
+      if (result.kind !== 'saved') return 'unavailable';
+    } finally {
+      if (operation.current === work) operation.current = null;
+    }
+    open('local');
+    return 'started';
+  }
+
+  return <Context value={{ view, active, games, upload, uploadSlow, record, open, start, startSetup, reopen }}>{children}</Context>;
 }
 
 export function useOfflineGame(): ScoringContext {

@@ -157,6 +157,41 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       await cdp.send('Page.navigate', { url: `http://localhost:${port}/` });
       await visible('start-game');
       await click('start-game');
+      await visible('start-setup');
+      const label = (id) => evaluate(`document.querySelector('[data-testid="${id}"]')?.textContent`);
+      const gone = (id) => retry(async () => assert.equal(await evaluate(`Boolean(document.querySelector('[data-testid="${id}"]'))`), false));
+      assert.equal(await label('start-setup'), 'Set both lineups to start');
+      assert.equal(await evaluate(`document.querySelector('[data-testid="start-setup"]').getAttribute('aria-disabled')`), 'true', 'Start is off until both lineups are saved');
+      assert.equal(await label('lineup-summary-home'), 'Not set yet');
+      assert.match(await label('half-note'), /^Second half since Oct 1, so pitchers can get 9 outs a day\./);
+      for (const side of ['home', 'away']) {
+        await click(`lineup-${side}`);
+        await visible('save-lineup');
+        if (side === 'home') {
+          await click('position-0');
+          await visible('position-sheet');
+          await click('position-choice-CF');
+          await gone('position-sheet');
+          await evaluate(`document.querySelector('[data-testid="change-pitcher"]').scrollIntoView()`);
+          await click('change-pitcher');
+          await visible('pitcher-sheet');
+          await click('pitcher-confirm');
+          await gone('pitcher-sheet');
+          await evaluate(`document.querySelector('[data-testid="add-player"]').scrollIntoView()`);
+          await click('add-player');
+          await visible('add-empty');
+          await click('sheet-scrim', true);
+          await gone('add-sheet');
+        }
+        await evaluate(`document.querySelector('[data-testid="save-lineup"]').scrollIntoView()`);
+        await click('save-lineup');
+        await gone('save-lineup');
+        await visible('start-setup');
+      }
+      assert.equal(await label('lineup-summary-home'), '10 players · T. Nguyen pitching');
+      assert.equal(await label('lineup-summary-away'), '9 players · J. Soto pitching');
+      assert.equal(await label('start-setup'), 'Start game');
+      await click('start-setup');
       await visible('pitch-ball');
       await click('pitch-ball');
       await retry(async () => assert.equal(await evaluate(`document.querySelector('[data-testid="score-summary"]').getAttribute('aria-label')`), 'Away 0, home 0. Inning 1, top. 0 outs. Count 1 ball and 0 strikes. Bases empty.'));

@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router/stack';
 import { Redirect, useGlobalSearchParams } from 'expo-router';
+import { SetupDraftProvider } from '../../scoring/setup-draft.tsx';
 import { OfflineGameProvider } from '../../scoring/use-offline-game.tsx';
 
 export default function GameLayout() {
@@ -8,7 +9,9 @@ export default function GameLayout() {
     return <Redirect href={{ pathname: '/gallery', params: { gallery } }} />;
   return (
     <OfflineGameProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      <SetupDraftProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </SetupDraftProvider>
     </OfflineGameProvider>
   );
 }

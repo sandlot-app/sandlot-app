@@ -5,18 +5,22 @@ import { presets } from '@sandlot/engine';
 import type { LineupSlot, PlayerRef, Position } from '@sandlot/engine';
 import { openOfflineGame } from '../src/scoring/offline-game.ts';
 import {
+  addChoices,
   addFromRoster,
   benchPlayers,
   canStart,
   lineupSummary,
   movePlayer,
   newSetupDraft,
+  pitcherChoices,
+  positionChoices,
   positionLabel,
   saveLineup,
   seasonHalfNote,
   seasonHalfOn,
   setPosition,
   setStartingPitcher,
+  setupRefusal,
   startAction,
   startingPitcher,
 } from '../src/scoring/game-setup.ts';
@@ -149,4 +153,56 @@ test('the scorer reorders, changes positions, picks the starting pitcher and add
     ['home-4', 'home-5', 'home-6', 'home-7', 'home-8', 'home-9', 'home-10']);
   assert.deepEqual(ids(addFromRoster(start, player('home-7'))).at(-1), ['home-7', null]);
   assert.deepEqual(start.map((slot) => slot.position), ['P', 'C', null], 'edits never change the lineup they start from');
+});
+
+const scorer: LineupSlot[] = [
+  { player: player('home-1'), position: 'P' },
+  { player: player('home-2'), position: 'C' },
+  { player: player('home-3'), position: null },
+];
+
+test('tapping a position lists every position and Bats only, marks the batter’s own, and says who a taken one swaps with', () => {
+  const choices = positionChoices(scorer, 1);
+  assert.deepEqual(choices.map((choice) => [choice.label, choice.note, choice.selected]), [
+    ['P', 'Swaps with T. Nguyen', false],
+    ['C', 'Catcher', true],
+    ['1B', 'First base', false],
+    ['2B', 'Second base', false],
+    ['3B', 'Third base', false],
+    ['SS', 'Shortstop', false],
+    ['LF', 'Left field', false],
+    ['CF', 'Center field', false],
+    ['RF', 'Right field', false],
+    ['Bats only', 'No fielding position', false],
+  ]);
+  assert.deepEqual(choices.map((choice) => choice.position),
+    ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', null]);
+});
+
+test('the starting pitcher choices are the lineup’s players, with the pitcher marked and what the league lets them throw', () => {
+  assert.deepEqual(pitcherChoices('second', scorer).map((choice) => [choice.number, choice.name, choice.note, choice.selected]), [
+    ['15', 'T. Nguyen', 'Fully rested · 75 pitches available today', true],
+    ['12', 'M. Ortiz', 'Fully rested · 75 pitches available today', false],
+    ['24', 'D. Park', 'Fully rested · 75 pitches available today', false],
+  ]);
+});
+
+test('adding from the roster offers the players not yet in the lineup, by jersey number and name', () => {
+  assert.deepEqual(addChoices('home', scorer).map((choice) => [choice.number, choice.name, choice.note]), [
+    ['7', 'S. Bell', 'Not in the lineup yet'],
+    ['3', 'A. Kindle', 'Not in the lineup yet'],
+    ['6', 'J. Ruiz', 'Not in the lineup yet'],
+    ['9', 'R. Hale', 'Not in the lineup yet'],
+    ['1', 'K. Moss', 'Not in the lineup yet'],
+    ['22', 'E. Brooks', 'Not in the lineup yet'],
+    ['18', 'B. Lane', 'Not in the lineup yet'],
+  ]);
+  assert.deepEqual(addChoices('home', newSetupDraft('2026-10-24').lineups.home.slots), [], 'the sample lineup already has everyone');
+});
+
+test('a refused lineup or Start says why in words a scorer can act on', () => {
+  assert.equal(setupRefusal('no_pitcher'), 'Each team needs a starting pitcher. Choose one for the team that has none.');
+  assert.equal(setupRefusal('unknown_player'), 'That player isn’t on this game’s roster, so the lineup wasn’t saved.');
+  assert.equal(setupRefusal('game_already_started'), 'This game has already started, so its lineups can’t change.');
+  assert.equal(setupRefusal('too_many_outs'), 'That lineup can’t be used. Check the batting order and positions.');
 });
