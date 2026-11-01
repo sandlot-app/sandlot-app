@@ -19,7 +19,7 @@ const holdsHawks = (side: TeamSide, lineups: Lineups) => lineups[side].some((slo
  * Games saved before the sample moved to Hawks-away have them at home, so the sides are read from the lineups, not assumed.
  */
 export function teamsOf(lineups: Lineups): typeof demoTeams {
-  return holdsHawks('home', lineups) && !holdsHawks('away', lineups) ? { home: demoTeams.away, away: demoTeams.home } : demoTeams;
+  return childSideOf(lineups) === 'home' ? { home: demoTeams.away, away: demoTeams.home } : demoTeams;
 }
 
 /** The side the demo family's child plays on in a game: the Hawks' side. */
