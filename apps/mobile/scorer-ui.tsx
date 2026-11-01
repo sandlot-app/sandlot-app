@@ -1,6 +1,6 @@
 import { tokens } from '@sandlot/tokens';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing, Image, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AccessibilityInfo, Animated, Easing, Image, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { CheckIcon, MicIcon, MoreHorizontalIcon } from './src/components/icons.tsx';
 import { barView, type BarPhase, type MicStatus } from './src/voice/mic-status.ts';
 import { createStyles } from './style';
@@ -183,8 +183,8 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, voice, disabled = fal
     {choosingStrike ? <View style={styles.strikeControls}>
       <View style={styles.strikeChooser}>
         <Text style={styles.strikeHeading}>Strike —</Text>
-        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-looking')} style={styles.strikeOption} testID="strike-looking"><Text style={styles.pitchLabel}>Looking</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-swinging')} style={styles.strikeOption} testID="strike-swinging"><Text style={styles.pitchLabel}>Swinging</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => recordPitch('strike-looking')} style={[styles.strikeOption, disabled && styles.dimmed]} testID="strike-looking"><Text style={styles.pitchLabel}>Looking</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => recordPitch('strike-swinging')} style={[styles.strikeOption, disabled && styles.dimmed]} testID="strike-swinging"><Text style={styles.pitchLabel}>Swinging</Text></Pressable>
       </View>
       <View style={styles.strikeProgress}><View style={styles.strikeProgressFill} /></View>
     </View> : null}
@@ -237,14 +237,20 @@ export function VoiceBar({ phase, mic = 'off', disabled = false, onTap, testID }
   const [scale] = useState(() => new Animated.Value(1));
   const [grow] = useState(() => new Animated.Value(1));
   const before = useRef(phase);
-  useEffect(() => {
+  // Before paint, so the button never shows once at full size before it grows.
+  useLayoutEffect(() => {
     const away = before.current === 'reading' || before.current === 'saved';
     before.current = phase;
     if (!away || !button) return;
-    // The button comes back out of the line it left, rather than appearing.
+    // The button comes back out of the line it left, rather than appearing. It left mid-touch, so it comes back unpressed.
+    scale.setValue(1);
     grow.setValue(0);
     Animated.timing(grow, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== 'web' }).start();
-  }, [phase, button, grow]);
+  }, [phase, button, grow, scale]);
+  // iOS ignores live regions, so the two lines that replace the button are said out loud.
+  useEffect(() => {
+    if (!button) AccessibilityInfo.announceForAccessibility(label);
+  }, [button, label]);
   const responder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => !latest.current.disabled,
     onPanResponderTerminationRequest: () => false,
@@ -262,7 +268,7 @@ export function VoiceBar({ phase, mic = 'off', disabled = false, onTap, testID }
       <Text style={styles.voiceStatusLabel}>{label}</Text>
     </View>;
   return <Animated.View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={accessibilityLabel}
-    accessibilityState={{ disabled, busy: listening }} onAccessibilityTap={() => latest.current.onTap()}
+    accessibilityState={{ disabled, busy: listening }} onAccessibilityTap={() => { if (!latest.current.disabled) latest.current.onTap(); }}
     style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, growTransform(scale, grow)]} testID={testID}>
     {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
     {/* Larger system text shrinks the label to fit the bar, down to 80%, instead of cutting it off. */}

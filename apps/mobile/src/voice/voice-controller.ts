@@ -104,8 +104,10 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
   }
 
   const save = async (commands: Command[], pressed: Pressed) => {
+    const born = generation;
     const done = await commit({ kind: 'voice', at: new Date(pressed.at).toISOString(), expectedRevision: pressed.revision, commands }, pressed);
-    if (done) {
+    // The play is in the book either way, but a screen that was torn down meanwhile isn't told.
+    if (done && born === generation) {
       previous = { commands, at: pressed.at };
       showSaved();
     }
@@ -172,8 +174,14 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
       ended.delete(slot);
       // A teardown since this press ended drops it, even if its answer had already arrived.
       if (born !== generation) return;
-      await settle(result, from);
-      publish();
+      try {
+        await settle(result, from);
+      } catch {
+        // One press that can't settle must not hold up the ones behind it, so the scorer hears it and the line moves on.
+        message = unsavedMessage;
+      }
+      // A teardown while this press was saving leaves the screen to whatever comes next.
+      if (born === generation) publish();
     })();
     publish();
   }
@@ -237,7 +245,8 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
       const { pressed } = choosing;
       choosing = null;
       publish();
-      void save(picked.commands, pressed).then(publish);
+      const born = generation;
+      void save(picked.commands, pressed).then(() => { if (born === generation) publish(); });
     },
     /**
      * The phone's mic is ready, such as after the scorer allowed it in Settings, so a "can't use the microphone" line

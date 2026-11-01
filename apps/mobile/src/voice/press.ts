@@ -102,7 +102,8 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
     released = true;
     stopMic();
     emit({ kind: 'ended' });
-    if (!(await micReady)) return;
+    // A mic that failed after the second tap still answers, so the press never waits forever.
+    if (!(await micReady)) return emit({ kind: 'failed', failure: 'microphone' });
     if (wrongRate) return emit({ kind: 'failed', failure: 'voice_unavailable' });
     if (!clip.bytes) return emit(nothing());
     // A short press can end before voice-session answers, so it waits a little for the socket.

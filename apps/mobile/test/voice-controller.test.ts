@@ -11,7 +11,7 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, timeouts.openM
 const idle: VoiceView = { listening: false, reading: 0, saved: false, card: null, message: null };
 
 /** A started offline game, a controller on it, and a fake mic and socket for each press. */
-async function scorer(voiceOn = true, gate?: Promise<boolean>, wait = timeouts) {
+async function scorer(voiceOn = true, gate?: Promise<boolean>, wait = timeouts, flaky = false) {
   const session = await openOfflineGame(connect(':memory:'), { newId: randomUUID, now: () => '2026-10-26T17:00:00.000Z' });
   if (session.kind !== 'ready') throw new Error('Session must open');
   const started = await session.record({ kind: 'start' });
@@ -22,6 +22,8 @@ async function scorer(voiceOn = true, gate?: Promise<boolean>, wait = timeouts) 
     recorded.push(action);
     // A gate holds a voice save open, then answers it, so a test can act while record() is in flight.
     if (gate && action.kind === 'voice') return gate;
+    // A save that throws once, so a test can check one bad press doesn't stall the ones behind it.
+    if (flaky && action.kind === 'voice' && recorded.filter((made) => made.kind === 'voice').length === 1) throw new Error('storage failed');
     const result = await session.record(action);
     if (result.kind === 'saved') game = result.game;
     return result.kind === 'saved';
@@ -207,6 +209,38 @@ test('#88: tearing down while presses are queued saves none of them, even one wh
   await settle();
   assert.deepEqual(plays(), [], 'leaving the screen drops every press, so nothing saves after it');
   assert.deepEqual(recorded, []);
+});
+
+test('#88: a press that throws while it settles frees the bar, and the press behind it still saves', async () => {
+  const { controller, mic, plays, views, socket } = await scorer(true, undefined, { openMs: 30, finalMs: 2000 }, true);
+  const sockets: ReturnType<typeof socket>[] = [];
+  for (let press = 0; press < 2; press += 1) {
+    controller.tap();
+    await tick();
+    socket().open();
+    mic.push([1, 0, 2, 0]);
+    sockets.push(socket());
+    controller.tap();
+  }
+  const said = (index: number, transcript: string) => sockets[index]!.server({ type: 'conversation.item.input_audio_transcription.completed', transcript });
+  said(0, 'strike swinging');
+  said(1, 'ball');
+  await settle();
+  assert.deepEqual(plays().map((event) => event.command), [{ kind: 'pitch', result: 'ball' }], 'the second press saved');
+  assert.equal(views.at(-1)?.reading, 0, 'nothing is left reading');
+});
+
+test('#88: a press that is mid-save when the screen is torn down shows nothing afterwards', async () => {
+  let answer: (saved: boolean) => void = () => {};
+  const { controller, say, views } = await scorer(true, new Promise((resolve) => { answer = resolve; }));
+  (await say())('ball');
+  await new Promise((resolve) => setTimeout(resolve, 60));
+  controller.dispose();
+  const shown = views.length;
+  answer(true);
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  assert.equal(views.length, shown, 'no update reaches the screen after teardown');
+  assert.deepEqual(views.at(-1), idle);
 });
 
 test('a tap saved while a press is read makes the press stale, so it never writes on top', async () => {

@@ -208,6 +208,14 @@ test('#88: a press says it ended as soon as a second tap or 30 seconds close the
   await long.done;
 });
 
+test('#88: a mic that fails after the second tap still ends the press, with the microphone line, so nothing waits forever', async () => {
+  const { press, updates, done } = run(fakeMic(false), fakeApi(), fakeSocket());
+  press.release();
+  const result = await done;
+  assert.deepEqual(updates.map((update) => update.kind), ['ended', 'failed']);
+  assert.equal(result.kind === 'failed' && result.failure, 'microphone');
+});
+
 test('sliding off cancels the press: nothing is heard, sent or parsed', async () => {
   const mic = fakeMic();
   const socket = fakeSocket();
