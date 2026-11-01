@@ -1,6 +1,6 @@
 # Game setup and lineups
 
-Starting the local demo game opens Game setup, built to the Figma frames "Scorer — Game setup (milestone 4)" and "Scorer — Lineup · Hawks (full length)". The scorer checks the season half, saves each team's lineup, and starts the game. Start saves the chosen half and both lineups as the game's first play, and reopening the game rebuilds it from them. The engine refuses an unusable lineup or start, and the screen says why.
+Starting the local demo game opens Game setup, built to the Figma frames "Scorer — Game setup (milestone 4)" and "Scorer — Lineup · Hawks (full length)". The scorer checks the season half, saves each team's lineup, and starts the game. Start saves the chosen half and both lineups as the game's first play, and reopening the game rebuilds it from them. The engine rejects an unusable lineup or start, and the screen says why.
 
 ## Sub-features
 
@@ -25,12 +25,12 @@ Preconditions:
 - `verify.sh launch` printed READY and `verify.sh doctor` reports every line ok.
 - The phone has no saved local game. This path only exists before Start, and the flow never clears app data.
 
-- **The whole path.** Run `verify.sh drive lineups-28.yaml`. It checks Start is off, tries the half control, changes a position and puts it back, drags K. Moss down and back, changes the starting pitcher and back, opens the empty roster list, saves the Hawks and checks the row (screenshot `setup-hawks-set`, the Figma state), saves the Marlins with nobody pitching (their row reads "no starting pitcher yet") and sees Start rejected with "The Marlins need a starting pitcher." (screenshot `setup-refused`), fixes it, starts, undoes a pitch, reads it as Undone in Plays, and finds it again after reopening.
+- **The whole path.** Run `verify.sh drive lineups-28.yaml`. It checks Start is off, tries the half control, changes a position and puts it back, drags K. Moss down and back, changes the starting pitcher and back, opens the empty roster list, saves the Hawks and checks the row (screenshot `setup-hawks-set`, the Figma state), saves the Marlins with nobody pitching (their row reads "no starting pitcher yet") and sees Start rejected with "The Marlins need a starting pitcher." (screenshot `setup-rejected`), fixes it, starts, undoes a pitch, reads it as Undone in Plays, and finds it again after reopening.
 - **Other flows.** `_start-local-game.yaml` is the shared start: both lineups saved as they are, then Start. Every flow that scores the local demo game uses it.
 - **Figma pairs.** `setup-hawks-set` pairs with `167:11241`, and `lineup-hawks-top` and `lineup-hawks-bottom` with `168:11244`. They are uploaded to the `proof-28` release.
 
 ## Gotchas
 
 - Save lineup sits at the bottom of a scrolling page, so scroll to it before tapping.
-- The flow gives the Marlins' pitcher "Bats only" on purpose, to show the refusal, then picks the pitcher again.
+- The flow gives the Marlins' pitcher "Bats only" on purpose, to show the rejection, then picks the pitcher again.
 - Game setup is only for the local demo game. The live game still starts with the sample setup the server issued.

@@ -1,6 +1,6 @@
 appId: host.exp.Exponent
 ---
-# #28: the scorer sets both lineups in Game setup, is refused a start with no pitcher, fixes it, starts, then reads the saved
+# #28: the scorer sets both lineups in Game setup, has a start rejected for want of a pitcher, fixes it, starts, then reads the saved
 # log with an undone play in it and finds it again after reopening. Needs a phone with no saved local game.
 - runFlow: _ready.yaml
 - assertVisible:
@@ -126,7 +126,7 @@ appId: host.exp.Exponent
     id: "start-setup"
     enabled: false
 - takeScreenshot: setup-hawks-set
-# Marlins lineup: nobody pitching is saved, and Start is refused with the engine's reason.
+# Marlins lineup: nobody pitching is saved, and Start is rejected with the engine's reason.
 - tapOn:
     id: "lineup-away"
 - extendedWaitUntil:
@@ -158,7 +158,7 @@ appId: host.exp.Exponent
       id: "setup-message"
       text: "The Marlins need a starting pitcher."
     timeout: 15000
-- takeScreenshot: setup-refused
+- takeScreenshot: setup-rejected
 - tapOn:
     id: "lineup-away"
 - scrollUntilVisible:

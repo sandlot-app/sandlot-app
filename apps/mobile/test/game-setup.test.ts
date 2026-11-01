@@ -78,7 +78,7 @@ test('a start without a chosen setup uses the second-half sample game', async ()
   await database.close();
 });
 
-test('an illegal or incomplete setup is refused with the engine reason and saves nothing', async () => {
+test('an illegal or incomplete setup is rejected with the engine reason and saves nothing', async () => {
   const { database, session } = await open();
   const noPitcher = awayLineup.map((slot) => ({ ...slot, position: slot.position === 'P' ? null : slot.position }));
   assert.deepEqual(await session.record({ kind: 'start', lineups: { home: [{ player: player('home-1'), position: 'P' }], away: noPitcher } }),
@@ -122,7 +122,7 @@ test('Start stays off until the scorer saves both lineups, and the rows say what
     lineups: { home: draft.lineups.home.slots, away: draft.lineups.away.slots } });
 });
 
-test('saving a lineup with a player who is not on the roster is refused with the engine reason', () => {
+test('saving a lineup with a player who is not on the roster is rejected with the engine reason', () => {
   const draft = newSetupDraft('2026-10-24');
   assert.deepEqual(saveLineup(draft, 'home', [...draft.lineups.home.slots, { player: player('away-1'), position: null }]),
     { kind: 'rejected', code: 'unknown_player' });

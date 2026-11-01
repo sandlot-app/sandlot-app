@@ -199,6 +199,7 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
         await click('save-lineup');
         await gone('save-lineup');
         await visible('start-setup');
+        if (side === 'home') await screenshot('web-setup-hawks-set');
       }
       assert.equal(await label('lineup-summary-home'), '10 players · T. Nguyen pitching');
       await screenshot('web-setup-ready');

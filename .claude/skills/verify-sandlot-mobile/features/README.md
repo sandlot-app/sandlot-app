@@ -39,7 +39,7 @@ Keep implementation details out of the map. Name only user paths, stable handles
 ## Features
 
 - [Home screen](./home-screen.md) covers the saved-game entry point.
-- [Game setup and lineups](./lineups.md) covers Game setup, each team's lineup, the starting pitcher, Start and the engine's refusals.
+- [Game setup and lineups](./lineups.md) covers Game setup, each team's lineup, the starting pitcher, Start and the engine's rejections.
 - [Offline scoring](./offline-scoring.md) covers pitches, undo, saved state, and reopening.
 - [Tap outcomes and runner moves](./tap-plays.md) covers In play, the four More actions, third-out evidence and whole-play undo.
 - [Scoring screen](./scoring-screen.md) covers the Figma Field tab: scoreboard, matchup ticket, field chips, the Scorer Bar, and Hit by pitch in More.
