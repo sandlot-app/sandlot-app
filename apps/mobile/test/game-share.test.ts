@@ -9,7 +9,8 @@ import { bestPlay, gameLine, gameShare, seasonOf, shortDate, statCells } from '.
 import { connect } from './database.ts';
 
 const at = '2026-10-24T18:01:00.000Z';
-// The Hawks batting home-1 to home-9 in order, so Javier Ruiz (home-6) bats sixth in every script below.
+// The Hawks are the away team, so they bat in the top of every inning. They bat home-1 to home-9 in order, so Javier Ruiz
+// (home-6) bats sixth in every script below.
 const hawksInOrder: LineupSlot[] = (['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'] as Position[])
   .map((position, index) => ({ player: { kind: 'player', id: `home-${index + 1}` as PlayerId }, position }));
 
@@ -23,7 +24,7 @@ async function scorer() {
     game = result.game;
     return game;
   };
-  await save({ kind: 'start', lineups: { home: hawksInOrder, away: demoLineups.away } });
+  await save({ kind: 'start', lineups: { away: hawksInOrder, home: demoLineups.home } });
   const strikeouts = async (batters: number) => {
     for (let pitch = 0; pitch < batters * 3; pitch += 1) await save({ kind: 'pitch', result: 'called_strike' });
   };
@@ -65,14 +66,13 @@ test('the date and season come from the first saved event', () => {
 
 test('a game share reads the child’s line, position and best play from the saved events', async () => {
   const s = await scorer();
-  await s.strikeouts(3); // top 1
-  await s.strikeouts(3); // bottom 1: home-1 to home-3
-  await s.strikeouts(3); // top 2
-  await s.strikeouts(2); // home-4, home-5
+  await s.strikeouts(3); // top 1: home-1 to home-3
+  await s.strikeouts(3); // bottom 1
+  await s.strikeouts(2); // top 2: home-4, home-5
   await s.hit('double', 'CF');
   await s.strikeouts(1); // home-7
   const game = s.game();
-  const share = gameShare({ setup: game.setup, events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
+  const share = gameShare({ setup: game.setup, events: game.events, state: game.state, player: javier, side: 'away', names, ...context });
   assert.ok(share);
   assert.equal(share.position, 'SHORTSTOP');
   assert.deepEqual(share.stats, [{ label: 'AB', value: 1 }, { label: 'H', value: 1 }, { label: '2B', value: 1 }]);
@@ -85,19 +85,18 @@ test('a game share reads the child’s line, position and best play from the sav
 
 test('an undone hit doesn’t count, and a child with no plate appearance gets no share', async () => {
   const s = await scorer();
-  await s.strikeouts(3);
-  await s.strikeouts(3);
-  await s.strikeouts(3);
-  await s.strikeouts(2);
+  await s.strikeouts(3); // top 1: home-1 to home-3
+  await s.strikeouts(3); // bottom 1
+  await s.strikeouts(2); // top 2: home-4, home-5
   await s.hit('home_run', 'LF');
   await s.save({ kind: 'undo' });
   await s.strikeouts(1); // Javier strikes out instead
   const game = s.game();
-  const share = gameShare({ setup: game.setup, events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
+  const share = gameShare({ setup: game.setup, events: game.events, state: game.state, player: javier, side: 'away', names, ...context });
   assert.ok(share);
   assert.deepEqual(share.stats, [{ label: 'AB', value: 1 }, { label: 'H', value: 0 }]);
   assert.equal(share.bestPlay, null);
-  const nobody = gameShare({ setup: game.setup, events: game.events, state: game.state, player: player('home-9'), side: 'home', names, ...context });
+  const nobody = gameShare({ setup: game.setup, events: game.events, state: game.state, player: player('home-9'), side: 'away', names, ...context });
   assert.equal(nobody, null);
 });
 
@@ -107,16 +106,15 @@ test('appearances read walks, hit by pitches and strikeouts, and agree with batt
   const { demoSetup } = await import('../src/scoring/demo-game.ts');
   const s = await scorer();
   const balls = async (count: number) => { for (let pitch = 0; pitch < count; pitch += 1) await s.save({ kind: 'pitch', result: 'ball' }); };
-  await s.strikeouts(3); // top 1
-  await s.strikeouts(3); // bottom 1: home-1 to home-3
-  await s.strikeouts(3); // top 2
-  await s.strikeouts(2); // home-4, home-5
+  await s.strikeouts(3); // top 1: home-1 to home-3
+  await s.strikeouts(3); // bottom 1
+  await s.strikeouts(2); // top 2: home-4, home-5
   await balls(4); // Javier walks
   await s.strikeouts(1); // home-7, the half's third out
-  await s.strikeouts(3); // top 3
-  await s.strikeouts(3); // bottom 3: home-8, home-9, home-1
-  await s.strikeouts(3); // top 4
-  await s.strikeouts(2); // home-2, home-3
+  await s.strikeouts(3); // bottom 2
+  await s.strikeouts(3); // top 3: home-8, home-9, home-1
+  await s.strikeouts(3); // bottom 3
+  await s.strikeouts(2); // top 4: home-2, home-3
   await balls(4); // home-4 walks
   await balls(4); // home-5 walks
   await s.save({ kind: 'pitch', result: 'hit_by_pitch' }); // Javier, bases loaded
@@ -136,18 +134,17 @@ test('a strikeout that ends the half is still a finished plate appearance', asyn
   const { battingLines } = await import('@sandlot/engine');
   const { demoSetup } = await import('../src/scoring/demo-game.ts');
   const s = await scorer();
-  await s.strikeouts(3); // top 1
-  await s.strikeouts(3); // bottom 1: home-1 to home-3
-  await s.strikeouts(3); // top 2
-  await s.strikeouts(2); // home-4, home-5
+  await s.strikeouts(3); // top 1: home-1 to home-3
+  await s.strikeouts(3); // bottom 1
+  await s.strikeouts(2); // top 2: home-4, home-5
   await s.save((game) => ({ kind: 'ball_in_play', at, expectedRevision: game.revision, outcome: 'single', trajectory: null, fielders: ['LF'], advances: [] }));
-  await s.strikeouts(1); // home-7 ends bottom 2
-  await s.strikeouts(3); // top 3
-  await s.strikeouts(3); // home-8, home-9, home-1
-  await s.strikeouts(3); // top 4
-  await s.strikeouts(3); // home-2 to home-4
-  await s.strikeouts(3); // top 5
-  await s.strikeouts(1); // home-5
+  await s.strikeouts(1); // home-7 ends top 2
+  await s.strikeouts(3); // bottom 2
+  await s.strikeouts(3); // top 3: home-8, home-9, home-1
+  await s.strikeouts(3); // bottom 3
+  await s.strikeouts(3); // top 4: home-2 to home-4
+  await s.strikeouts(3); // bottom 4
+  await s.strikeouts(1); // top 5: home-5
   await s.strikeouts(1); // Javier
   const game = s.game();
   const found = appearances(game.setup, game.events, javier);
@@ -155,7 +152,7 @@ test('a strikeout that ends the half is still a finished plate appearance', asyn
   const line = battingLines(demoSetup, game.events)[javier.id]!;
   assert.equal(line.strikeouts, 1);
   assert.equal(line.plateAppearances, found.length);
-  const share = gameShare({ setup: game.setup, events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
+  const share = gameShare({ setup: game.setup, events: game.events, state: game.state, player: javier, side: 'away', names, ...context });
   assert.deepEqual(share?.stats, [{ label: 'AB', value: 2 }, { label: 'H', value: 1 }]);
   assert.equal(share?.gameLine, '1 FOR 2');
 });

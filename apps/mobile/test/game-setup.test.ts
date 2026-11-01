@@ -32,7 +32,7 @@ const boundary = { newId: randomUUID, now: () => '2026-10-24T18:30:00.000Z' };
 const player = (id: string): PlayerRef => ({ kind: 'player', id } as PlayerRef);
 const opponent = (id: string): PlayerRef => ({ kind: 'opponent', id } as PlayerRef);
 const ids = (slots: LineupSlot[]) => slots.map((slot) => [slot.player.id, slot.position]);
-const awayLineup: LineupSlot[] = (['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'] as Position[])
+const marlinsLineup: LineupSlot[] = (['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'] as Position[])
   .map((position, index) => ({ player: opponent(`away-${index + 1}`), position }));
 
 async function open(database = connect(':memory:')) {
@@ -43,17 +43,17 @@ async function open(database = connect(':memory:')) {
 
 test('starting a game saves its season half and both lineups once, and reopening rebuilds the same game', async () => {
   const { database, session } = await open();
-  const home: LineupSlot[] = [
+  const hawksLineup: LineupSlot[] = [
     { player: player('home-8'), position: 'CF' },
     { player: player('home-1'), position: 'P' },
     { player: player('home-10'), position: null },
   ];
-  const started = await session.record({ kind: 'start', half: 'first', lineups: { home, away: awayLineup } });
+  const started = await session.record({ kind: 'start', half: 'first', lineups: { away: hawksLineup, home: marlinsLineup } });
   assert.equal(started.kind, 'saved');
   if (started.kind !== 'saved') return;
   assert.deepEqual(started.game.setup.rules, presets['moraga-mustang-first-half']);
-  assert.deepEqual(ids(started.game.state.lineups.home), [['home-8', 'CF'], ['home-1', 'P'], ['home-10', null]]);
-  assert.deepEqual(started.game.state.pitchers.home, player('home-1'));
+  assert.deepEqual(ids(started.game.state.lineups.away), [['home-8', 'CF'], ['home-1', 'P'], ['home-10', null]]);
+  assert.deepEqual(started.game.state.pitchers.away, player('home-1'));
   assert.equal(started.game.canUndo, false);
 
   const stored = await database.all<{ event_json: string }>('SELECT event_json FROM local_events ORDER BY seq');
@@ -61,7 +61,7 @@ test('starting a game saves its season half and both lineups once, and reopening
   const saved = JSON.stringify(await database.all('SELECT * FROM local_games')) + JSON.stringify(stored);
   for (const name of ['Nguyen', 'Moss', 'Lane', 'Hawks', 'Marlins']) assert.ok(!saved.includes(name), `${name} must not be saved`);
 
-  const again = await session.record({ kind: 'start', half: 'second', lineups: { home: awayLineup, away: awayLineup } });
+  const again = await session.record({ kind: 'start', half: 'second', lineups: { away: marlinsLineup, home: marlinsLineup } });
   assert.deepEqual(again, started, 'a second start keeps the saved game');
 
   const reopened = await open(database);
@@ -75,16 +75,16 @@ test('a start without a chosen setup uses the second-half sample game', async ()
   assert.equal(started.kind, 'saved');
   if (started.kind !== 'saved') return;
   assert.deepEqual(started.game.setup.rules, presets['moraga-mustang-second-half']);
-  assert.equal(started.game.state.lineups.home.length, 10);
+  assert.equal(started.game.state.lineups.away.length, 10);
   await database.close();
 });
 
 test('an illegal or incomplete setup is rejected with the engine reason and saves nothing', async () => {
   const { database, session } = await open();
-  const noPitcher = awayLineup.map((slot) => ({ ...slot, position: slot.position === 'P' ? null : slot.position }));
-  assert.deepEqual(await session.record({ kind: 'start', lineups: { home: [{ player: player('home-1'), position: 'P' }], away: noPitcher } }),
+  const noPitcher = marlinsLineup.map((slot) => ({ ...slot, position: slot.position === 'P' ? null : slot.position }));
+  assert.deepEqual(await session.record({ kind: 'start', lineups: { away: [{ player: player('home-1'), position: 'P' }], home: noPitcher } }),
     { kind: 'rejected', code: 'no_pitcher' });
-  assert.deepEqual(await session.record({ kind: 'start', lineups: { home: [{ player: player('nobody'), position: 'P' }], away: awayLineup } }),
+  assert.deepEqual(await session.record({ kind: 'start', lineups: { away: [{ player: player('nobody'), position: 'P' }], home: marlinsLineup } }),
     { kind: 'rejected', code: 'unknown_player' });
   assert.deepEqual(await database.all('SELECT * FROM local_events'), []);
   assert.deepEqual(await database.all('SELECT * FROM local_games'), []);
@@ -104,33 +104,33 @@ test('the season half is filled in from the date the league switches, with the n
 test('Start stays off until the scorer saves both lineups, and the rows say what each team has', () => {
   let draft = newSetupDraft('2026-10-24');
   assert.equal(canStart(draft), false);
-  assert.equal(lineupSummary(draft, 'home'), 'Not set yet');
   assert.equal(lineupSummary(draft, 'away'), 'Not set yet');
+  assert.equal(lineupSummary(draft, 'home'), 'Not set yet');
 
-  const hawks = saveLineup(draft, 'home', draft.lineups.home.slots);
+  const hawks = saveLineup(draft, 'away', draft.lineups.away.slots);
   assert.equal(hawks.kind, 'saved');
   if (hawks.kind !== 'saved') return;
   draft = hawks.draft;
-  assert.equal(lineupSummary(draft, 'home'), '10 players · T. Nguyen pitching');
+  assert.equal(lineupSummary(draft, 'away'), '10 players · T. Nguyen pitching');
   assert.equal(canStart(draft), false);
 
-  const marlins = saveLineup(draft, 'away', draft.lineups.away.slots);
+  const marlins = saveLineup(draft, 'home', draft.lineups.home.slots);
   assert.equal(marlins.kind, 'saved');
   if (marlins.kind !== 'saved') return;
   draft = { ...marlins.draft, half: 'first' };
   assert.equal(canStart(draft), true);
   assert.deepEqual(startAction(draft), { kind: 'start', half: 'first',
-    lineups: { home: draft.lineups.home.slots, away: draft.lineups.away.slots } });
+    lineups: { away: draft.lineups.away.slots, home: draft.lineups.home.slots } });
 });
 
 test('saving a lineup with a player who is not on the roster is rejected with the engine reason', () => {
   const draft = newSetupDraft('2026-10-24');
-  assert.deepEqual(saveLineup(draft, 'home', [...draft.lineups.home.slots, { player: player('away-1'), position: null }]),
+  assert.deepEqual(saveLineup(draft, 'away', [...draft.lineups.away.slots, { player: player('away-1'), position: null }]),
     { kind: 'rejected', code: 'unknown_player' });
 });
 
 test('the Hawks sample lineup bats everyone present, and a player with no position bats only', () => {
-  const { slots } = newSetupDraft('2026-10-24').lineups.home;
+  const { slots } = newSetupDraft('2026-10-24').lineups.away;
   assert.deepEqual(ids(slots), [
     ['home-8', 'CF'], ['home-6', 'SS'], ['home-4', '2B'], ['home-3', '1B'], ['home-7', 'LF'],
     ['home-5', '3B'], ['home-1', 'P'], ['home-2', 'C'], ['home-9', 'RF'], ['home-10', null],
@@ -151,7 +151,7 @@ test('the scorer reorders, changes positions, picks the starting pitcher and add
   assert.deepEqual(ids(setPosition(start, 1, null)), [['home-1', 'P'], ['home-2', null], ['home-3', null]]);
   assert.deepEqual(ids(setPosition(start, 2, 'SS')), [['home-1', 'P'], ['home-2', 'C'], ['home-3', 'SS']]);
   assert.deepEqual(ids(setStartingPitcher(start, player('home-3'))), [['home-1', null], ['home-2', 'C'], ['home-3', 'P']]);
-  assert.deepEqual(benchPlayers('home', start).map((ref) => ref.id),
+  assert.deepEqual(benchPlayers('away', start).map((ref) => ref.id),
     ['home-4', 'home-5', 'home-6', 'home-7', 'home-8', 'home-9', 'home-10']);
   assert.deepEqual(ids(addFromRoster(start, player('home-7'))).at(-1), ['home-7', null]);
   assert.deepEqual(start.map((slot) => slot.position), ['P', 'C', null], 'edits never change the lineup they start from');
@@ -190,7 +190,7 @@ test('the starting pitcher choices are the lineup’s players, with the pitcher 
 });
 
 test('adding from the roster offers the players not yet in the lineup, by jersey number and name', () => {
-  assert.deepEqual(addChoices('home', scorer).map((choice) => [choice.number, choice.name, choice.note]), [
+  assert.deepEqual(addChoices('away', scorer).map((choice) => [choice.number, choice.name, choice.note]), [
     ['7', 'S. Bell', 'Not in the lineup yet'],
     ['3', 'A. Kindle', 'Not in the lineup yet'],
     ['6', 'J. Ruiz', 'Not in the lineup yet'],
@@ -199,7 +199,7 @@ test('adding from the roster offers the players not yet in the lineup, by jersey
     ['22', 'E. Brooks', 'Not in the lineup yet'],
     ['18', 'B. Lane', 'Not in the lineup yet'],
   ]);
-  assert.deepEqual(addChoices('home', newSetupDraft('2026-10-24').lineups.home.slots), [], 'the sample lineup already has everyone');
+  assert.deepEqual(addChoices('away', newSetupDraft('2026-10-24').lineups.away.slots), [], 'the sample lineup already has everyone');
 });
 
 test('a rejected lineup or Start says why in words a scorer can act on', () => {
@@ -217,33 +217,43 @@ test('a division with ten fielders also offers the Rover position', () => {
 
 test('a lineup saved with nobody pitching says so on its row, and Start names the team that needs a pitcher', () => {
   let draft = newSetupDraft('2026-10-24');
-  const hawks = draft.lineups.home.slots;
-  const marlins = draft.lineups.away.slots.map((slot) => ({ ...slot, position: slot.position === 'P' ? null : slot.position }));
-  const savedHawks = saveLineup(draft, 'home', hawks);
+  const hawks = draft.lineups.away.slots;
+  const marlins = draft.lineups.home.slots.map((slot) => ({ ...slot, position: slot.position === 'P' ? null : slot.position }));
+  const savedHawks = saveLineup(draft, 'away', hawks);
   assert.equal(savedHawks.kind, 'saved');
   if (savedHawks.kind !== 'saved') return;
-  const savedMarlins = saveLineup(savedHawks.draft, 'away', marlins);
+  const savedMarlins = saveLineup(savedHawks.draft, 'home', marlins);
   assert.equal(savedMarlins.kind, 'saved');
   if (savedMarlins.kind !== 'saved') return;
   draft = savedMarlins.draft;
-  assert.equal(lineupSummary(draft, 'away'), '9 players · no starting pitcher yet');
+  assert.equal(lineupSummary(draft, 'home'), '9 players · no starting pitcher yet');
   assert.equal(startRejection(draft, 'no_pitcher'), 'The Marlins need a starting pitcher.');
-  const neither = saveLineup(draft, 'home', hawks.map((slot) => ({ ...slot, position: slot.position === 'P' ? null : slot.position })));
+  const neither = saveLineup(draft, 'away', hawks.map((slot) => ({ ...slot, position: slot.position === 'P' ? null : slot.position })));
   assert.equal(neither.kind === 'saved' && startRejection(neither.draft, 'no_pitcher'), 'Both teams need a starting pitcher.');
   assert.equal(startRejection(draft, 'game_already_started'), setupRejection('game_already_started'));
 });
 
-test('a game saved before the sample moved to the second half, with its nine-player Hawks roster, still reopens', async () => {
+test('a game saved before the sample moved to the second half and the Hawks to the away side still reopens', async () => {
   const { database, session } = await open();
-  const old = (side: 'home' | 'away') => Array.from({ length: 9 }, (_, index) => ({ kind: side === 'home' ? 'player' : 'opponent', id: `${side}-${index + 1}` }));
-  const started = await session.record({ kind: 'start', half: 'first', lineups: { home: [
-    { player: player('home-1'), position: 'P' }, { player: player('home-2'), position: 'C' }], away: awayLineup } });
+  const started = await session.record({ kind: 'start', half: 'first', lineups: { away: [
+    { player: player('home-1'), position: 'P' }, { player: player('home-2'), position: 'C' }], home: marlinsLineup } });
   assert.equal(started.kind, 'saved');
+  // Rewrite what was saved the way the earlier app saved it: the Hawks on the home side, nine of them, first-half rules.
+  const nine = (side: 'home' | 'away') => Array.from({ length: 9 }, (_, index) => ({ kind: side === 'home' ? 'player' : 'opponent', id: `${side}-${index + 1}` }));
   await database.run('UPDATE local_games SET setup_json = ?',
-    [JSON.stringify({ rules: presets['moraga-mustang-first-half'], roster: { home: old('home'), away: old('away') }, pitcherOutsEarlierToday: {} })]);
+    [JSON.stringify({ rules: presets['moraga-mustang-first-half'], roster: { home: nine('home'), away: nine('away') }, pitcherOutsEarlierToday: {} })]);
+  for (const row of await database.all<{ seq: number; event_json: string }>('SELECT seq, event_json FROM local_events')) {
+    const event = JSON.parse(row.event_json);
+    if (event.command.control?.kind === 'lineup_set') {
+      event.command.control.side = event.command.control.side === 'away' ? 'home' : 'away';
+      await database.run('UPDATE local_events SET event_json = ? WHERE seq = ?', [JSON.stringify(event), row.seq]);
+    }
+  }
   const reopened = await open(database);
   assert.equal(reopened.session.kind, 'ready');
-  assert.deepEqual(reopened.session.kind === 'ready' && reopened.session.game?.setup.rules, presets['moraga-mustang-first-half']);
+  const game = reopened.session.kind === 'ready' ? reopened.session.game : null;
+  assert.deepEqual(game?.setup.rules, presets['moraga-mustang-first-half']);
+  assert.deepEqual(ids(game!.state.lineups.home), [['home-1', 'P'], ['home-2', 'C']], 'the Hawks are on the home side, as that game saved them');
   await database.close();
 });
 
@@ -256,7 +266,7 @@ test('a player who is not playing today comes out of the batting order, can be a
   const without = removeFromLineup(lineup, 1);
   assert.deepEqual(ids(without), [['home-1', 'P'], ['home-3', null]], 'everyone else keeps their place and position');
   assert.deepEqual(ids(lineup), [['home-1', 'P'], ['home-2', 'C'], ['home-3', null]], 'the lineup it started from is unchanged');
-  assert.deepEqual(addChoices('home', without).map((choice) => choice.name).slice(0, 2), ['M. Ortiz', 'S. Bell'], 'they are back on the roster list, in roster order');
+  assert.deepEqual(addChoices('away', without).map((choice) => choice.name).slice(0, 2), ['M. Ortiz', 'S. Bell'], 'they are back on the roster list, in roster order');
   assert.deepEqual(ids(addFromRoster(without, player('home-2'))).at(-1), ['home-2', null], 'added back, they bat last with no position');
   assert.equal(startingPitcher(removeFromLineup(lineup, 0)), null, 'taking out the pitcher leaves nobody pitching');
   assert.deepEqual(ids(removeFromLineup(lineup, 5)), ids(lineup), 'an index that is not in the lineup changes nothing');

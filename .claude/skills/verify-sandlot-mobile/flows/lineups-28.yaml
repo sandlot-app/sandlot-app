@@ -19,7 +19,7 @@ appId: host.exp.Exponent
     enabled: false
 - assertVisible: "Second half since Oct 1, so pitchers can get 9 outs a day. Change it if your league switched on another date."
 - assertVisible:
-    id: "lineup-summary-home"
+    id: "lineup-summary-away"
     text: "Not set yet"
 - takeScreenshot: setup-empty
 - tapOn:
@@ -28,7 +28,7 @@ appId: host.exp.Exponent
     id: "half-second"
 # Hawks lineup: bats only, a position change and back, a drag and back, and the starting pitcher changed and back.
 - tapOn:
-    id: "lineup-home"
+    id: "lineup-away"
 - extendedWaitUntil:
     visible:
       id: "save-lineup"
@@ -107,6 +107,34 @@ appId: host.exp.Exponent
 - assertVisible: "Everyone on the roster is already in the lineup."
 - takeScreenshot: lineup-add-sheet
 - tapOn: "Cancel"
+# Not playing today: B. Lane comes out of the batting order, then comes back from the roster, last and with no position.
+- scrollUntilVisible:
+    element:
+      id: "position-9"
+- tapOn:
+    id: "position-9"
+- extendedWaitUntil:
+    visible:
+      id: "position-remove"
+    timeout: 15000
+- assertVisible: "Takes B. Lane out of today’s lineup"
+- takeScreenshot: lineup-position-remove
+- tapOn:
+    id: "position-remove"
+- assertNotVisible: "B. Lane, Bats only. Change position"
+- scrollUntilVisible:
+    element:
+      id: "add-player"
+- tapOn:
+    id: "add-player"
+- extendedWaitUntil:
+    visible:
+      id: "add-choice-home-10"
+    timeout: 15000
+- takeScreenshot: lineup-add-sheet-lane
+- tapOn:
+    id: "add-choice-home-10"
+- assertVisible: "B. Lane, Bats only. Change position"
 - scrollUntilVisible:
     element:
       id: "save-lineup"
@@ -116,11 +144,11 @@ appId: host.exp.Exponent
 # Back on Game setup the Hawks row reads as the Figma frame shows it and Start is still off.
 - extendedWaitUntil:
     visible:
-      id: "lineup-summary-home"
+      id: "lineup-summary-away"
       text: "10 players · T. Nguyen pitching"
     timeout: 15000
 - assertVisible:
-    id: "lineup-summary-away"
+    id: "lineup-summary-home"
     text: "Not set yet"
 - assertVisible:
     id: "start-setup"
@@ -128,7 +156,7 @@ appId: host.exp.Exponent
 - takeScreenshot: setup-hawks-set
 # Marlins lineup: nobody pitching is saved, and Start is rejected with the engine's reason.
 - tapOn:
-    id: "lineup-away"
+    id: "lineup-home"
 - extendedWaitUntil:
     visible:
       id: "save-lineup"
@@ -147,7 +175,7 @@ appId: host.exp.Exponent
     id: "save-lineup"
 - extendedWaitUntil:
     visible:
-      id: "lineup-summary-away"
+      id: "lineup-summary-home"
       text: "9 players · no starting pitcher yet"
     timeout: 15000
 - assertVisible: "Start game"
@@ -160,7 +188,7 @@ appId: host.exp.Exponent
     timeout: 15000
 - takeScreenshot: setup-rejected
 - tapOn:
-    id: "lineup-away"
+    id: "lineup-home"
 - scrollUntilVisible:
     element:
       id: "change-pitcher"
@@ -177,7 +205,7 @@ appId: host.exp.Exponent
     id: "save-lineup"
 - extendedWaitUntil:
     visible:
-      id: "lineup-summary-away"
+      id: "lineup-summary-home"
       text: "9 players · J. Soto pitching"
     timeout: 15000
 - assertVisible:

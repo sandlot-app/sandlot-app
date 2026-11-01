@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
-import type { PlayerRef } from '@sandlot/engine';
 import { demoLineups } from '../src/scoring/demo-game.ts';
 import { openOfflineGame, type DemoAction, type SavedGame } from '../src/scoring/offline-game.ts';
 import { playLog } from '../src/scoring/play-log.ts';
@@ -35,9 +34,9 @@ test('a walk, a strikeout and a hit by pitch read as finished plate appearances,
   const [top] = playLog(game);
   assert.equal(top?.label, 'Top 1');
   assert.deepEqual(top.atBats.map((atBat) => [atBat.title, atBat.inProgress, atBat.count, atBat.kind]), [
-    ['C. Vance is hit by a pitch. J. Soto to 2nd.', false, '0–0', 'in_play'],
-    ['L. Darcy strikes out looking.', false, '0–3', 'out'],
-    ['J. Soto walks.', false, '4–0', 'in_play'],
+    ['S. Bell is hit by a pitch. K. Moss to 2nd.', false, '0–0', 'in_play'],
+    ['J. Ruiz strikes out looking.', false, '0–3', 'out'],
+    ['K. Moss walks.', false, '4–0', 'in_play'],
   ]);
   assert.equal(top.atBats[0]!.detail, '1 out · runners on 1st and 2nd');
   assert.deepEqual(top.atBats[2]!.rows.map((row) => [row.number, row.mark, row.label, row.count]), [
@@ -57,7 +56,7 @@ test('undoing the third out keeps the restored half current, and the half it lef
   const log = playLog(game);
   assert.deepEqual(log.map((half) => [half.label, half.current]), [['Top 1', true]]);
   const [up] = log[0]!.atBats;
-  assert.equal(up?.title, 'C. Vance at bat');
+  assert.equal(up?.title, 'S. Bell at bat');
   assert.equal(up.inProgress, true);
   assert.equal(up.count, '0–2');
   assert.deepEqual(up.rows.map((row) => [row.number, row.label, row.count, row.undone]), [
@@ -73,14 +72,14 @@ test('a hit names the batter, the fielder and the runners it moved, and a run sh
   const game = await save((current) => inPlay('double', 'RF', { advances: [{ runner: current.state.bases[1]!.player, to: 'home' }] })(current));
   const [top] = playLog(game);
   const [double, single] = top!.atBats;
-  assert.equal(double?.title, 'L. Darcy doubles to right. J. Soto scores.');
+  assert.equal(double?.title, 'J. Ruiz doubles to right. K. Moss scores.');
   assert.equal(double.kind, 'run');
   assert.equal(double.score, '1 – 0');
   assert.equal(double.count, '0–1');
   assert.equal(double.detail, '0 outs · runner on 2nd');
   assert.deepEqual(double.rows.map((row) => [row.number, row.mark, row.label, row.count]),
     [[1, 'strike', 'Strike looking', '0–1'], [2, 'in_play', 'In play', null]]);
-  assert.equal(single?.title, 'J. Soto singles to center.');
+  assert.equal(single?.title, 'K. Moss singles to center.');
   assert.equal(single.count, '1–0');
   assert.equal(top!.totals, '1 R · 2 H');
 });
@@ -90,7 +89,7 @@ test('the batter still up shows the pitcher’s pitch number, the count and the 
   await save(inPlay('single', 'LF'));
   const game = await save({ kind: 'pitch', result: 'foul' });
   const [up] = playLog(game)[0]!.atBats;
-  assert.equal(up?.title, 'L. Darcy at bat');
+  assert.equal(up?.title, 'J. Ruiz at bat');
   assert.equal(up.detail, 'Pitch 2 · runner on 1st');
   assert.equal(up.count, '0–1');
   assert.deepEqual(up.rows.map((row) => row.mark), ['foul']);
@@ -102,9 +101,9 @@ test('a new half with no plays yet is current and empty, and the finished half s
   await save({ kind: 'undo' });
   const log = playLog(await save(inPlay('out', 'RF')));
   assert.deepEqual(log.map((half) => [half.label, half.batting, half.current, half.atBats.length]),
-    [['Bottom 1', 'Hawks', true, 0], ['Top 1', 'Marlins', false, 3]]);
+    [['Bottom 1', 'Marlins', true, 0], ['Top 1', 'Hawks', false, 3]]);
   assert.equal(log[1]!.totals, '0 R · 0 H · 0 E');
-  assert.equal(log[1]!.atBats[0]!.title, 'C. Vance flies out to right.');
+  assert.equal(log[1]!.atBats[0]!.title, 'S. Bell flies out to right.');
   assert.equal(log[1]!.atBats[0]!.detail, '3 outs');
   assert.deepEqual(log[1]!.atBats[0]!.rows.map((row) => [row.number, row.label, row.undone]),
     [[null, 'In play · Fly out', true], [1, 'In play', false]]);
@@ -118,7 +117,7 @@ test('undoing back past a whole at-bat resumes the earlier batter’s at-bat and
   await save({ kind: 'undo' });
   const game = await save({ kind: 'pitch', result: 'ball' });
   const [top] = playLog(game);
-  assert.deepEqual(top!.atBats.map((atBat) => atBat.title), ['J. Soto at bat']);
+  assert.deepEqual(top!.atBats.map((atBat) => atBat.title), ['K. Moss at bat']);
   assert.deepEqual(top!.atBats[0]!.rows.map((row) => [row.number, row.label, row.undone]),
     [[null, 'In play · Single', true], [1, 'Ball', false]]);
 });
@@ -130,9 +129,9 @@ test('a runner play during an at-bat is a row in that at-bat', async () => {
   const game = await save((current) => ({ kind: 'runner_play', at, expectedRevision: current.revision, event: 'steal',
     moves: [{ runner: current.state.bases[1]!.player, to: 2 }] }));
   const [up] = playLog(game)[0]!.atBats;
-  assert.equal(up?.title, 'L. Darcy at bat');
+  assert.equal(up?.title, 'J. Ruiz at bat');
   assert.deepEqual(up.rows.map((row) => [row.number, row.mark, row.label, row.count]),
-    [[1, 'ball', 'Ball', '1–0'], [null, null, 'J. Soto steals 2nd', null]]);
+    [[1, 'ball', 'Ball', '1–0'], [null, null, 'K. Moss steals 2nd', null]]);
   assert.equal(up.detail, 'Pitch 2 · runner on 2nd');
 });
 
@@ -140,9 +139,8 @@ test('a game started from chosen lineups reads its own batting order, and an und
   const database = connect(':memory:');
   const opened = await openOfflineGame(database, { newId: randomUUID, now: () => '2026-10-26T17:00:00.000Z' });
   if (opened.kind !== 'ready') throw new Error('Session must open');
-  const marlins = (['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'] as const)
-    .map((position, index) => ({ player: { kind: 'opponent', id: `away-${9 - index}` } as PlayerRef, position }));
-  const started = await opened.record({ kind: 'start', half: 'first', lineups: { home: demoLineups.home, away: marlins } });
+  const hawks = [...demoLineups.away].reverse();
+  const started = await opened.record({ kind: 'start', half: 'first', lineups: { away: hawks, home: demoLineups.home } });
   if (started.kind !== 'saved') throw new Error('The game must start');
   for (let pitch = 0; pitch < 3; pitch += 1) await opened.record({ kind: 'pitch', result: 'called_strike' });
   await opened.record({ kind: 'pitch', result: 'ball' });
@@ -152,7 +150,7 @@ test('a game started from chosen lineups reads its own batting order, and an und
 
   const [top] = playLog(undone.game);
   assert.deepEqual(top!.atBats.map((atBat) => [atBat.title, atBat.inProgress]),
-    [['H. Lin at bat', true], ['M. Webb strikes out looking.', false]], 'away-9 leads off this lineup');
+    [['E. Brooks at bat', true], ['B. Lane strikes out looking.', false]], 'B. Lane leads off this lineup');
   assert.deepEqual(top!.atBats[0]!.rows.map((row) => [row.label, row.undone]), [['Ball', true]]);
   assert.deepEqual((await database.all('SELECT * FROM local_events ORDER BY seq')).slice(0, before.length), before);
 

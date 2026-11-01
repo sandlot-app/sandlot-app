@@ -25,7 +25,7 @@ type Open = { kind: 'position'; index: number } | { kind: 'pitcher' } | { kind: 
 /** Figma Scorer — Lineup · Hawks (168:11244): a team's batting order, its starting pitcher, and adding from the roster. */
 export default function LineupScreen() {
   const { side: param } = useLocalSearchParams<{ side?: string }>();
-  const side: TeamSide = param === 'away' ? 'away' : 'home';
+  const side: TeamSide = param === 'home' ? 'home' : 'away';
   const { draft, setDraft } = useSetupDraft();
   const [slots, setSlots] = useState<LineupSlot[]>(draft.lineups[side].slots);
   const [open, setOpen] = useState<Open>(null);

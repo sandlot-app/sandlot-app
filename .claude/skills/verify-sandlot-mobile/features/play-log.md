@@ -7,7 +7,7 @@ The scorer's Plays tab, built to the Figma frame "Viewer — Plays tab (full len
 - `log-tabs` switches between Field and Plays (`tab-field`, `tab-plays`). Video and Box score stay hidden until they exist.
 - `log-scoreboard` is the expanded scoreboard: role badges, big scores, the count in dots and the Live badge. Screen readers hear the same summary as the Field tab (`score-summary`).
 - `log-halves` lists half-innings newest first with runs and hits, and errors on finished halves. Older halves start closed and open on a tap (`half-<top|bottom>-<inning>`).
-- `log-at-bats` reads each finished plate appearance in words, such as "J. Soto walks." or "L. Darcy doubles to right. J. Soto scores.", and the batter still up as "<name> at bat" with the pitcher's pitch number (`at-bat-<id>`).
+- `log-at-bats` reads each finished plate appearance in words, such as "K. Moss walks." or "J. Ruiz doubles to right. K. Moss scores.", and the batter still up as "<name> at bat" with the pitcher's pitch number (`at-bat-<id>`).
 - `log-undone` keeps an undone play in its at-bat with "Undone" in place of its count (`play-undone-<id>`). After undoing a third out, the half the game went back to is the current one.
 
 ## How to get to it (user POV)

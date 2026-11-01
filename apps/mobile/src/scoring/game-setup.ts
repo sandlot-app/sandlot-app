@@ -175,7 +175,7 @@ export function setupRejection(code: RejectCode): string {
 /** Why Start was rejected. A missing pitcher names the team, or both. */
 export function startRejection(draft: SetupDraft, code: RejectCode): string {
   if (code !== 'no_pitcher') return setupRejection(code);
-  const without = (['home', 'away'] as const).filter((side) => startingPitcher(draft.lineups[side].slots) === null);
+  const without = (['away', 'home'] as const).filter((side) => startingPitcher(draft.lineups[side].slots) === null);
   return without.length === 2 ? 'Both teams need a starting pitcher.'
     : without.length === 1 ? `The ${teamName(without[0]!)} need a starting pitcher.` : setupRejection(code);
 }

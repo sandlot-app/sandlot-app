@@ -28,16 +28,19 @@ const positions: Position[] = [
   'CF',
   'RF',
 ];
+// The design's sample game is Hawks away at Marlins (Hawks 2, Marlins 1 in the bottom of the 5th). The Hawks are the
+// team the family follows, so their players are `player`s, and the Marlins' are `opponent`s. The IDs predate the sides
+// moving: `home-N` is still a Hawks player and `away-N` a Marlins player, and games saved under them keep reading right.
 // home-10 has no fielding position in the sample lineup: everyone present bats in Mustang.
-const home: PlayerRef[] = [...positions, null].map((_, index) => ({
+const hawks: PlayerRef[] = [...positions, null].map((_, index) => ({
   kind: 'player',
   id: `home-${index + 1}` as PlayerId,
 }));
-const away: PlayerRef[] = positions.map((_, index) => ({
+const marlins: PlayerRef[] = positions.map((_, index) => ({
   kind: 'opponent',
   id: `away-${index + 1}` as OpponentId,
 }));
-const roster: Record<TeamSide, PlayerRef[]> = { home, away };
+const roster: Record<TeamSide, PlayerRef[]> = { away: hawks, home: marlins };
 
 /** The demo game's setup for `half`: the demo roster under that half's Mustang rules. */
 export function gameSetup(half: SeasonHalf): GameSetup {
@@ -48,13 +51,13 @@ export function gameSetup(half: SeasonHalf): GameSetup {
 export const demoSetup: GameSetup = gameSetup('second');
 
 const slot = (id: string, position: Position | null): LineupSlot => ({
-  player: home.find((player) => player.id === id)!,
+  player: hawks.find((player) => player.id === id)!,
   position,
 });
 
 /** The sample lineups (docs/design/spec-update-milestone-4.md, Sample lineup), by player ID. */
 export const demoLineups: Record<TeamSide, LineupSlot[]> = {
-  home: [
+  away: [
     slot('home-8', 'CF'),
     slot('home-6', 'SS'),
     slot('home-4', '2B'),
@@ -66,5 +69,5 @@ export const demoLineups: Record<TeamSide, LineupSlot[]> = {
     slot('home-9', 'RF'),
     slot('home-10', null),
   ],
-  away: away.map((player, index) => ({ player, position: positions[index]! })),
+  home: marlins.map((player, index) => ({ player, position: positions[index]! })),
 };

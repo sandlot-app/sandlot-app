@@ -3,6 +3,7 @@ import {
   ENGINE_VERSION,
   EVENT_SCHEMA_VERSION,
   parseUploadRequest,
+  presets,
   replay,
 } from '@sandlot/engine';
 import type {
@@ -32,13 +33,19 @@ import { demoLineups, gameSetup } from './demo-game.ts';
 import type { SeasonHalf } from './demo-game.ts';
 
 /**
- * The setup games saved before the sample moved to the second half were stored with: first-half rules and a nine-player
- * Hawks roster. Their events still replay under the first half, so such a game reopens instead of reading as corrupt.
+ * The setup games saved before the sample moved to the second half and the Hawks moved to the away side were stored
+ * with: first-half rules, a nine-player Hawks roster on the home side and the Marlins on the away side. Such a game
+ * reopens and replays under that stored setup, so it isn't read as corrupt.
  */
-const legacySetupJson = JSON.stringify({
-  ...gameSetup('first'),
-  roster: { ...gameSetup('first').roster, home: gameSetup('first').roster.home.slice(0, 9) },
-});
+const legacySetup = {
+  rules: presets['moraga-mustang-first-half'],
+  roster: {
+    home: Array.from({ length: 9 }, (_, index) => ({ kind: 'player', id: `home-${index + 1}` })),
+    away: Array.from({ length: 9 }, (_, index) => ({ kind: 'opponent', id: `away-${index + 1}` })),
+  },
+  pitcherOutsEarlierToday: {},
+} as unknown as GameSetup;
+const legacySetupJson = JSON.stringify(legacySetup);
 
 /** The game and scoring session the server issued this phone, from the seed script (docs/contract.md, Demo access). */
 export type ServerGame = { gameId: string; sessionId: string; lockEpoch: number };
@@ -229,10 +236,9 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
     syncRows.length > 1
   )
     throw new SavedDataError('corrupt');
-  const half = (['first', 'second'] as const).find((option) => row.setup_json === JSON.stringify(gameSetup(option)))
-    ?? (row.setup_json === legacySetupJson ? 'first' : undefined);
-  if (!half) throw new SavedDataError('corrupt');
-  const setup = gameSetup(half);
+  const half = (['first', 'second'] as const).find((option) => row.setup_json === JSON.stringify(gameSetup(option)));
+  const setup = half ? gameSetup(half) : row.setup_json === legacySetupJson ? legacySetup : null;
+  if (!setup) throw new SavedDataError('corrupt');
   const lockEpoch = sync?.lock_epoch ?? 1;
   const groups: Event[][] = [];
   try {

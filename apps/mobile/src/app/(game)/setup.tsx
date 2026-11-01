@@ -74,7 +74,7 @@ export default function GameSetupScreen() {
         <View style={styles.section}>
           <SectionLabel>Lineups</SectionLabel>
           <View style={styles.card}>
-            {(['home', 'away'] as const).map((side, index) => {
+            {(['away', 'home'] as const).map((side, index) => {
               const summary = lineupSummary(draft, side);
               return (
                 <Pressable key={side} accessibilityRole="button" accessibilityLabel={`${teamName(side)} lineup. ${summary}`}

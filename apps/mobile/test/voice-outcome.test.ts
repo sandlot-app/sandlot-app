@@ -71,15 +71,15 @@ test('a press sends the lineup\'s display names, split by side, with the runners
   const { session, game } = await started();
   const input = pressInput(game);
   assert.equal(input.names.length, 19, 'nine Marlins and ten Hawks');
-  assert.equal(input.context.batting[0], 'J. Soto', 'the away team bats first');
-  assert.equal(input.context.fielding[0], 'K. Moss', 'the Hawks leadoff batter');
+  assert.equal(input.context.batting[0], 'K. Moss', 'the away team, the Hawks, bats first');
+  assert.equal(input.context.fielding[0], 'J. Soto', 'the Marlins leadoff batter');
   assert.deepEqual(input.context.runners, []);
   let current = game;
   for (let ball = 0; ball < 4; ball += 1) {
     const saved = await session.record({ kind: 'pitch', result: 'ball' });
     if (saved.kind === 'saved') current = saved.game;
   }
-  assert.deepEqual(pressInput(current).context.runners, ['J. Soto']);
+  assert.deepEqual(pressInput(current).context.runners, ['K. Moss']);
 });
 
 test('a choice keeps every clause, and shows the whole read-back when two short labels would match', () => {
