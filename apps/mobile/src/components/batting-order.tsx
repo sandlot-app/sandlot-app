@@ -80,7 +80,7 @@ export function BattingOrder({ slots, onMove, onPickPosition, onDragging }: {
               onAccessibilityAction={(event) => {
                 const to = event.nativeEvent.actionName === 'decrement' ? index - 1 : index + 1;
                 if (to >= 0 && to < slots.length) onMove(index, to);
-              }} style={styles.handle} testID={`drag-handle-${index}`}>
+              }} hitSlop={(sizes['tap/min'] - 18) / 2} style={styles.handle} testID={`drag-handle-${index}`}>
               <DragHandleIcon />
             </View>
           </View>

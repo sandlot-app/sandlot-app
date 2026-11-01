@@ -9,6 +9,7 @@ import { RejectionBand, SectionLabel, SetupNav } from '../../components/setup-ch
 import { ChevronIcon } from '../../components/setup-marks.tsx';
 import { canStart, demoGame, lineupSummary, seasonHalfNote, startRejection, teamName } from '../../scoring/game-setup.ts';
 import type { SeasonHalf } from '../../scoring/demo-game.ts';
+import type { SetupDraft } from '../../scoring/game-setup.ts';
 import { useSetupDraft } from '../../scoring/setup-draft.tsx';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
 
@@ -20,18 +21,20 @@ const halves: { half: SeasonHalf; label: string }[] = [{ half: 'first', label: '
 export default function GameSetupScreen() {
   const { draft, setDraft } = useSetupDraft();
   const { view, startSetup } = useOfflineGame();
-  const [message, setMessage] = useState<string | null>(null);
+  // A rejection belongs to the setup it was about, so it goes away once a lineup or the half changes.
+  const [rejection, setRejection] = useState<{ text: string; draft: SetupDraft } | null>(null);
+  const message = rejection?.draft === draft ? rejection.text : null;
   const [starting, setStarting] = useState(false);
   const ready = canStart(draft) && view.kind === 'ready' && !starting;
 
   const start = async () => {
-    setMessage(null);
+    setRejection(null);
     setStarting(true);
     const result = await startSetup(draft);
     setStarting(false);
     if (result === 'started') router.replace('/score');
-    else if (result === 'unavailable') setMessage('The game couldn’t start. Try again.');
-    else setMessage(startRejection(draft, result.rejected));
+    else if (result === 'unavailable') setRejection({ text: 'The game couldn’t start. Try again.', draft });
+    else setRejection({ text: startRejection(draft, result.rejected), draft });
   };
 
   const details: [string, string][] = [

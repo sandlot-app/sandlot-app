@@ -75,7 +75,7 @@ export function AddPlayerSheet({ team, choices, onChoose, onClose }: {
           ? <Text style={styles.caption} testID="add-empty">Everyone on the roster is already in the lineup.</Text>
           : <View style={styles.rows}>
             {choices.map((choice) => (
-              <BenchPlayerRow key={choice.player.id} number={choice.number} name={choice.name} note={choice.note}
+              <BenchPlayerRow key={choice.player.id} number={choice.number} name={choice.name} note={choice.note} role="button"
                 onPress={() => onChoose(choice.player)} testID={`add-choice-${choice.player.id}`} />
             ))}
           </View>}

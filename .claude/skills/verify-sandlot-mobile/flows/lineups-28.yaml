@@ -184,6 +184,8 @@ appId: host.exp.Exponent
     id: "start-setup"
     text: "Start game"
     enabled: true
+- assertNotVisible:
+    id: "setup-message"
 - takeScreenshot: setup-ready
 - tapOn:
     id: "start-setup"

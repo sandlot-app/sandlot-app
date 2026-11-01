@@ -7,16 +7,18 @@ import { RadioRing } from './setup-marks.tsx';
 const { colors, sizes, textStyles } = tokens.modes.Light;
 
 /** Figma Bench Player Row (85:3077), Default and Selected: a player you can pick, with a note under the name. */
-export function BenchPlayerRow({ number, name, note, selected = false, onPress, testID }: {
+export function BenchPlayerRow({ number, name, note, selected = false, role = 'radio', onPress, testID }: {
   number: string;
   name: string;
   note: string;
   selected?: boolean;
+  /** A row that picks one of several is a radio; a row that does something when tapped is a button. */
+  role?: 'radio' | 'button';
   onPress?: () => void;
   testID?: string;
 }) {
   return (
-    <Pressable accessibilityRole={onPress ? 'radio' : undefined} accessibilityState={{ selected }} accessibilityLabel={`${name}, number ${number}. ${note}`}
+    <Pressable accessibilityRole={onPress ? role : undefined} accessibilityState={{ selected }} accessibilityLabel={`${name}, number ${number}. ${note}`}
       disabled={!onPress} onPress={onPress} style={[styles.row, selected && styles.selected]} testID={testID}>
       <View style={styles.disc}><Text style={styles.number}>{number}</Text></View>
       <View style={styles.text}>
