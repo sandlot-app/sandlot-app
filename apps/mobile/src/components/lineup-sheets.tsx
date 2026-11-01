@@ -10,11 +10,13 @@ import { CheckIcon } from './icons.tsx';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
 
-/** The list a position pill opens. It has no Figma frame; it is laid out like the More sheet's cards. */
-export function PositionSheet({ name, choices, onChoose, onClose }: {
+/** The list a position pill opens, with Not playing today under it (Figma 262:14318). */
+export function PositionSheet({ name, choices, onChoose, onRemove, onClose }: {
   name: string;
   choices: PositionChoice[];
   onChoose: (choice: PositionChoice) => void;
+  /** Takes the batter out of today's lineup. */
+  onRemove: () => void;
   onClose: () => void;
 }) {
   return (
@@ -32,6 +34,17 @@ export function PositionSheet({ name, choices, onChoose, onClose }: {
               {choice.selected ? <CheckIcon color={colors['scoreboard/bg']} size={20} /> : null}
             </Pressable>
           ))}
+        </View>
+      </SheetSection>
+      <SheetSection>
+        <View style={styles.card}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Not playing today. Takes ${name} out of today’s lineup`}
+            onPress={onRemove} style={styles.positionRow} testID="position-remove">
+            <View style={styles.positionText}>
+              <Text style={styles.strong}>Not playing today</Text>
+              <Text style={styles.caption}>{`Takes ${name} out of today’s lineup`}</Text>
+            </View>
+          </Pressable>
         </View>
       </SheetSection>
     </Sheet>
@@ -61,7 +74,7 @@ export function PitcherSheet({ choices, onChoose, onClose }: {
   );
 }
 
-/** The sheet "Add a player from the roster" opens: roster players not in the lineup. Tapping one adds them. */
+/** The sheet "Add a player from the roster" opens: roster players not in the lineup, tapped to add (Figma 262:14532). */
 export function AddPlayerSheet({ team, choices, onChoose, onClose }: {
   team: string;
   choices: PlayerChoice[];

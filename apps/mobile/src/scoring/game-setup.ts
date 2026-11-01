@@ -101,6 +101,11 @@ export function setStartingPitcher(slots: LineupSlot[], player: PlayerRef): Line
   return index < 0 ? slots : setPosition(slots, index, 'P');
 }
 
+/** Takes the batter at `index` out of the lineup because they aren't playing today. Everyone else keeps their place. */
+export function removeFromLineup(slots: LineupSlot[], index: number): LineupSlot[] {
+  return slots.filter((_, at) => at !== index);
+}
+
 /** Roster players not in the lineup, in roster order. */
 export function benchPlayers(side: TeamSide, slots: LineupSlot[]): PlayerRef[] {
   return gameSetup('second').roster[side].filter((player) => !slots.some((slot) => same(slot.player, player)));

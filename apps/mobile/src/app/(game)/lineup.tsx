@@ -12,7 +12,7 @@ import { AddPlayerSheet, PitcherSheet, PositionSheet } from '../../components/li
 import { RejectionBand, SectionLabel, SetupNav } from '../../components/setup-chrome.tsx';
 import { rosterDisplay } from '../../scoring/demo-roster.ts';
 import {
-  addChoices, addFromRoster, movePlayer, pitcherChoices, positionChoices, saveLineup, setPosition, setStartingPitcher,
+  addChoices, addFromRoster, movePlayer, pitcherChoices, positionChoices, removeFromLineup, saveLineup, setPosition, setStartingPitcher,
   setupRejection, teamName,
 } from '../../scoring/game-setup.ts';
 import { gameSetup } from '../../scoring/demo-game.ts';
@@ -73,7 +73,8 @@ export default function LineupScreen() {
       </ScrollView>
       {open?.kind === 'position'
         ? <PositionSheet name={rosterDisplay(slots[open.index]!.player).name} choices={positionChoices(slots, open.index, gameSetup(draft.half).rules.fielders)} onClose={() => setOpen(null)}
-          onChoose={(choice) => { edit(setPosition(slots, open.index, choice.position)); setOpen(null); }} />
+          onChoose={(choice) => { edit(setPosition(slots, open.index, choice.position)); setOpen(null); }}
+          onRemove={() => { edit(removeFromLineup(slots, open.index)); setOpen(null); }} />
         : open?.kind === 'pitcher'
           ? <PitcherSheet choices={choices} onChoose={chosen} onClose={() => setOpen(null)} />
           : open?.kind === 'add'

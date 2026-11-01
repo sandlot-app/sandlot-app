@@ -15,6 +15,7 @@ import {
   pitcherChoices,
   positionChoices,
   positionLabel,
+  removeFromLineup,
   saveLineup,
   seasonHalfNote,
   seasonHalfOn,
@@ -244,4 +245,19 @@ test('a game saved before the sample moved to the second half, with its nine-pla
   assert.equal(reopened.session.kind, 'ready');
   assert.deepEqual(reopened.session.kind === 'ready' && reopened.session.game?.setup.rules, presets['moraga-mustang-first-half']);
   await database.close();
+});
+
+test('a player who is not playing today comes out of the batting order, can be added back, and the lineup they left is untouched', () => {
+  const lineup: LineupSlot[] = [
+    { player: player('home-1'), position: 'P' },
+    { player: player('home-2'), position: 'C' },
+    { player: player('home-3'), position: null },
+  ];
+  const without = removeFromLineup(lineup, 1);
+  assert.deepEqual(ids(without), [['home-1', 'P'], ['home-3', null]], 'everyone else keeps their place and position');
+  assert.deepEqual(ids(lineup), [['home-1', 'P'], ['home-2', 'C'], ['home-3', null]], 'the lineup it started from is unchanged');
+  assert.deepEqual(addChoices('home', without).map((choice) => choice.name).slice(0, 2), ['M. Ortiz', 'S. Bell'], 'they are back on the roster list, in roster order');
+  assert.deepEqual(ids(addFromRoster(without, player('home-2'))).at(-1), ['home-2', null], 'added back, they bat last with no position');
+  assert.equal(startingPitcher(removeFromLineup(lineup, 0)), null, 'taking out the pitcher leaves nobody pitching');
+  assert.deepEqual(ids(removeFromLineup(lineup, 5)), ids(lineup), 'an index that is not in the lineup changes nothing');
 });
