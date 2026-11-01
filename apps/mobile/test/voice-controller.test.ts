@@ -37,6 +37,7 @@ async function scorer(voiceOn = true, gate?: Promise<boolean>, wait = timeouts, 
     record,
     now: () => Date.parse('2026-10-26T17:01:00.000Z'),
     savedMs: 60,
+    readLimitMs: 150,
     onChange: (view) => views.push(view),
   });
   /** One tap opens the mic and a second tap ends it; the final words arrive when `hear` is called. */
@@ -228,6 +229,58 @@ test('#88: a press that throws while it settles frees the bar, and the press beh
   await settle();
   assert.deepEqual(plays().map((event) => event.command), [{ kind: 'pitch', result: 'ball' }], 'the second press saved');
   assert.equal(views.at(-1)?.reading, 0, 'nothing is left reading');
+});
+
+test('#88: a press whose answer never arrives frees the bar and says so, and its late words save nothing', async () => {
+  const { say, plays, views } = await scorer(true, undefined, { openMs: 30, finalMs: 5000 });
+  const hear = await say();
+  assert.equal(views.at(-1)?.reading, 1);
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  assert.equal(views.at(-1)?.reading, 0, 'the scoring buttons are back');
+  assert.equal(views.at(-1)?.message, "That took too long and didn't save. Say it again or tap to score.");
+  hear('ball');
+  await settle();
+  assert.deepEqual(plays(), [], 'the late answer is ignored');
+});
+
+test('#88: a mic that never answers frees the bar too', async () => {
+  const { controller, mic, views } = await scorer();
+  mic.start = () => new Promise(() => {});
+  controller.tap();
+  await tick();
+  controller.tap();
+  assert.equal(views.at(-1)?.reading, 1);
+  await new Promise((resolve) => setTimeout(resolve, 250));
+  assert.equal(views.at(-1)?.reading, 0);
+});
+
+test('#88: the press behind one that timed out still saves', async () => {
+  const { controller, mic, plays, socket } = await scorer(true, undefined, { openMs: 30, finalMs: 5000 });
+  const sockets: ReturnType<typeof socket>[] = [];
+  for (let press = 0; press < 2; press += 1) {
+    controller.tap();
+    await tick();
+    socket().open();
+    mic.push([1, 0, 2, 0]);
+    sockets.push(socket());
+    controller.tap();
+    // The first press has nearly used its time when the second ends, so only the first runs out.
+    if (press === 0) await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+  sockets[1]!.server({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'ball' });
+  await new Promise((resolve) => setTimeout(resolve, 120));
+  assert.deepEqual(plays().map((event) => event.command), [{ kind: 'pitch', result: 'ball' }]);
+});
+
+test('#88: a forgotten second tap: a play followed by stray talk does not save a play the phone cannot read', async () => {
+  // With no pause ending, a scorer who says "ball" and forgets to tap sends everything heard until 30 s. The phone's
+  // reader doesn't guess: this goes to the AI reader, and when that can't help, nothing saves and the scorer is told.
+  const { say, plays, views } = await scorer();
+  (await say())('ball nice swing two outs come on Marco');
+  await settle();
+  assert.deepEqual(plays(), []);
+  assert.ok(views.at(-1)?.message, 'the scorer hears that nothing saved');
+  assert.equal(views.at(-1)?.saved, false);
 });
 
 test('#88: a Not sure choice whose save throws tells the scorer instead of failing silently', async () => {

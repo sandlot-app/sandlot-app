@@ -31,6 +31,8 @@ export type VoiceControllerDeps = {
   now(): number;
   /** How long `saved` stays up after a voice play saves. */
   savedMs?: number;
+  /** How long an ended press may take to be read. The scoring buttons wait for it, so it can't be long: pitches keep coming. */
+  readLimitMs?: number;
   onChange(view: VoiceView): void;
 };
 
@@ -41,7 +43,7 @@ type Answer = Exclude<PressUpdate, { kind: 'words' } | { kind: 'ended' }> | null
 type Choosing = { card: Extract<VoiceCard, { kind: 'choose' }>; readings: Reading[]; pressed: Pressed };
 type Ended = { handle: PressHandle; answer(answer: Answer): void };
 
-export function createVoiceController({ voice, game, record, now, savedMs = 1500, onChange }: VoiceControllerDeps) {
+export function createVoiceController({ voice, game, record, now, savedMs = 1500, readLimitMs = 10_000, onChange }: VoiceControllerDeps) {
   /** The press the mic is open for. */
   let open: PressHandle | null = null;
   let words = '';
@@ -166,6 +168,12 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
     readingWords = words;
     const slot: Ended = { handle, answer: resolve };
     ended.add(slot);
+    // Past the limit the press is dropped and the scorer told, so no answer that never comes can hold the buttons.
+    const limit = setTimeout(() => {
+      handle.cancel();
+      resolve({ kind: 'failed', failure: 'timeout' });
+    }, readLimitMs);
+    void answer.then(() => clearTimeout(limit));
     const behind = queue;
     const born = generation;
     queue = (async () => {

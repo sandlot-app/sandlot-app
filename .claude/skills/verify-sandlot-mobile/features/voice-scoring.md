@@ -6,7 +6,7 @@ The scorer taps the Voice Bar, says a pitch or a play, and taps again. There is 
 
 - `voice-save` saves a simple play on the second tap ("strike swinging"). The status line and the Undo label name it (`voice-bar`, `waiting-plays`, `scorer-undo`).
 - `voice-live` shows the Listening card with the live words while the mic is open, and the bar reads "Listening… tap to finish" (`voice-card`, `voice-status`, `voice-words`).
-- `voice-reading` shows "Reading…" on the card and "Reading your play…" with a spinner on the bar while an ended press is read. Nothing has saved yet, and the scoring buttons wait too, so a tap on Ball does nothing until the play is read (`voice-bar`, `voice-status`, `pitch-ball`).
+- `voice-reading` shows "Reading…" on the card and "Reading your play…" with a spinner on the bar while an ended press is read. Nothing has saved yet, and the scoring buttons wait too, so a tap on Ball does nothing until the play is read (`voice-bar`, `voice-status`, `pitch-ball`). A press still unread after 10 s is dropped with one line, and the buttons come back; the controller tests cover that, because the stub always answers.
 - `voice-saved` shows a plain "Saved" for a moment after a voice play saves, then the button grows back (`voice-bar`).
 - `voice-not-sure` shows the readings as choices and saves only the one tapped (`voice-choice-0`, `voice-choice-1`).
 - `voice-drop` drops the open press, saving nothing, when a scoring button is tapped. The tapped button still saves (`pitch-ball`).
