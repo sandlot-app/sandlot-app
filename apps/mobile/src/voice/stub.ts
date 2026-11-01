@@ -1,11 +1,14 @@
+import type { Answer, AnswerReading, PressContext } from '@sandlot/voice';
 import { SAMPLE_RATE } from './pcm.ts';
 import type { VoiceDeps } from './press.ts';
 import type { Socket } from './realtime.ts';
 
-// A stand-in for the mic, voice-session and OpenAI's socket, for the Mac simulator check only. A simulator can't
-// speak, and the functions aren't deployed yet. Start Metro with EXPO_PUBLIC_VOICE_STUB="strike swinging|strike" and
-// each finished press hears the next phrase, word by word, as the real socket sends it. The press controller,
-// route() and the engine all run for real. Development builds only: voice-service.ts checks __DEV__.
+// A stand-in for the mic, voice-session, OpenAI's socket and voice-parse's AI, for the Mac simulator check only. A
+// simulator can't speak, and the functions aren't deployed yet. Start Metro with EXPO_PUBLIC_VOICE_STUB="strike
+// swinging|strike" and each finished press hears the next phrase, word by word, as the real socket sends it. Pitch
+// calls are read on the phone as usual; the three phrases in stubAnswer() get the answer the AI would give, built from
+// the game the phone sent. The press controller, decide() and the engine all run for real. Development builds only:
+// voice-service.ts checks __DEV__.
 
 export const stubPhrases = String(process.env.EXPO_PUBLIC_VOICE_STUB ?? '').split('|').map((phrase) => phrase.trim()).filter(Boolean);
 
@@ -18,6 +21,29 @@ function pieces(phrase: string): string[] {
     const spaced = index ? ` ${word}` : word;
     return word.length > 6 ? [spaced.slice(0, spaced.length - 3), spaced.slice(-3)] : [spaced];
   });
+}
+
+const nobody = { name: null, number: null };
+const play = (reading: AnswerReading): Answer => ({ result: 'play', fix_last: false, readings: [reading] });
+const double = (batter: string | null, runners: NonNullable<AnswerReading['ball_in_play']>['runners']): AnswerReading => ({
+  batter: { name: batter, number: null }, pitcher: nobody, pitches: [], runner_events: [], forced_runners: [],
+  ball_in_play: { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners },
+});
+
+/** The AI's answer for the stub's phrases, or null (an answer voice-parse couldn't use) for anything else. */
+export function stubAnswer(transcript: string, context: PressContext): Answer | null {
+  const on = (['3', '2', '1'] as const).filter((base) => context.runners[base]);
+  const home = (from: typeof on[number]) => ({ from, to: 'home' as const, ...nobody });
+  switch (transcript.trim().toLowerCase()) {
+    case 'double, everybody scores': return play(double(null, on.map(home)));
+    // K. Moss bats eighth for the Hawks, so this is a name in the wrong role unless Moss is up.
+    case 'moss doubles': return play(double('Moss', on.map(home)));
+    // With two runners on, "the runner" doesn't say which one: the lead runner scores and the other stops at third, or both score.
+    case 'double, the runner scores':
+      if (on.length !== 2) return play(double(null, on.map(home)));
+      return { result: 'question', fix_last: false, readings: [double(null, [home(on[0]!), { from: on[1]!, to: '3', ...nobody }]), double(null, on.map(home))] };
+    default: return null;
+  }
 }
 
 export function stubDeps(phrases: string[]): VoiceDeps {
@@ -36,7 +62,9 @@ export function stubDeps(phrases: string[]): VoiceDeps {
     },
     api: {
       session: async () => ({ ok: true, value: { url: 'wss://voice-stub.invalid', secret: 'stub', expiresAt: 0, sampleRate: SAMPLE_RATE } }),
-      parse: async () => ({ ok: false, failure: 'voice_unavailable' }),
+      parse: async (body) => 'transcript' in body
+        ? { ok: true, value: { transcript: body.transcript, answer: stubAnswer(body.transcript, body.context) } }
+        : { ok: false, failure: 'voice_unavailable' },
     },
     openSocket() {
       const phrase = phrases[heard % phrases.length]!;

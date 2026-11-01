@@ -1,0 +1,119 @@
+appId: host.exp.Exponent
+# #103: the AI reads the whole press. Needs Metro started with
+# EXPO_PUBLIC_VOICE_STUB="double, everybody scores|Moss doubles|double, the runner scores". See features/voice-scoring.md.
+# The stub answers like the AI, from the game the phone sends; the controller, decide() and the engine run for real.
+---
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+    timeout: 15000
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
+
+# 1. A whole play in one press saves once, and the banner names each runner's result.
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
+    timeout: 15000
+- assertVisible:
+    id: "voice-message"
+    text: ".* doubles.*"
+- assertNotVisible:
+    id: "voice-card"
+- takeScreenshot: voice-whole-play-banner
+
+# 2. A name in the wrong role saves nothing, and the line says who is up.
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-message"
+      text: ".* is up, not K\\. Moss\\."
+    timeout: 15000
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting + 1} plays? saved on this phone"
+- takeScreenshot: voice-wrong-role
+
+# Step 1 left the batter on second, so one walk by tap puts runners on first and second.
+- repeat:
+    times: 4
+    commands:
+      - tapOn:
+          id: "pitch-ball"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 5} plays? saved on this phone"
+    timeout: 15000
+
+# 3. "The runner" with two runners on shows both readings, and nothing saves until a tap.
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Not sure — which one?"
+    timeout: 15000
+- assertVisible:
+    id: "voice-choice-0"
+- assertVisible:
+    id: "voice-choice-1"
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting + 5} plays? saved on this phone"
+- takeScreenshot: voice-two-readings
+- tapOn:
+    id: "voice-choice-1"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 6} plays? saved on this phone"
+    timeout: 15000
+- assertNotVisible:
+    id: "voice-card"
+- takeScreenshot: voice-reading-chosen
+
+# Put the game back: undo the six plays this flow saved.
+- repeat:
+    times: 6
+    commands:
+      - tapOn:
+          id: "scorer-undo"
+      - waitForAnimationToEnd:
+          timeout: 2000
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 12} plays? saved on this phone"
+    timeout: 20000
