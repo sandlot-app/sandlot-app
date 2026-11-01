@@ -2,7 +2,7 @@ import type { Base, GameState, PlayerRef, Position } from '@sandlot/engine';
 import type { AnswerReading, Named } from './answer.ts';
 import type { Mapped } from './commands.ts';
 import { normalize } from './local.ts';
-import { entryFor, fits, namedPlayer, samePlayer, words } from './players.ts';
+import { entryFor, fits, namedPlayer, nearly, samePlayer, words } from './players.ts';
 import { batterUp, batting, fielding, type PressGame, type RosterEntry } from './state.ts';
 
 // Who holds each role a reading names, and whether the scorer's words fit them. The AI reports the words; the phone
@@ -61,7 +61,8 @@ function holderOf(game: PressGame, before: GameState, mapped: Extract<Mapped, { 
 const plainWords = new Set(['ball', 'strike', 'foul', 'out', 'home', 'first', 'second', 'third', 'short', 'left', 'right',
   'center', 'field', 'run', 'runs', 'hit', 'hits', 'base', 'safe', 'fly', 'pop', 'line', 'walk', 'steal', 'play', 'double',
   'triple', 'single', 'most', 'past', 'part', 'with', 'what', 'that', 'then', 'they', 'this', 'there', 'nice', 'great', 'good',
-  'come', 'gone', 'here', 'yeah', 'okay', 'well', 'whoa', 'wait', 'sorry', 'over', 'back', 'down', 'deep', 'hard', 'fast']);
+  'come', 'gone', 'here', 'yeah', 'okay', 'well', 'whoa', 'wait', 'sorry', 'over', 'back', 'down', 'deep', 'hard', 'fast',
+  'kind', 'full', 'wild', 'sharp', 'long', 'called', 'solo', 'both']);
 
 /**
  * A capitalized word spelled like a surname with up to two more or fewer letters at the end, sharing at least four
@@ -85,18 +86,25 @@ function unaccounted(game: PressGame, reading: AnswerReading, slots: Slot[], tra
   const slotWords = new Set(slots.flatMap(({ heard }) => heard.name ? words(heard.name) : []));
   const takenBack = reading.taken_back.filter((heard) => heard.name !== null && words(heard.name).every((word) => {
     if (new RegExp(`\\bnot ${word}\\b`).test(said)) return true;
-    const after = said.match(new RegExp(`\\b${word}\\b[^.]{0,30}?\\b(?:no|nope|i mean|sorry|wait|actually|make that|scratch that)\\b(.{0,30})`))?.[1];
-    return after !== undefined && words(after).some((next) => slotWords.has(next));
+    // The word right after the correction ("no, I mean Shah") must be a name the answer placed: "no throw" isn't one.
+    const next = said.match(new RegExp(`\\b${word}\\b[^.]{0,30}?\\b(?:no|nope|sorry|wait|actually|make that|scratch that|i mean)\\b[, ]*(?:i mean[, ]*)?(\\p{L}+)`, 'u'))?.[1];
+    return next !== undefined && slotWords.has(next);
   }));
   const reported = [...slots.map(({ heard }) => heard), ...takenBack];
   const reportedWords = new Set(reported.flatMap((heard) => heard.name ? words(heard.name) : []));
   const reportedNumbers = new Set(reported.flatMap((heard) => heard.number ? [heard.number] : []));
   const cased = /\p{Lu}/u.test(transcript);
-  const candidates = (cased ? transcript.match(/\p{Lu}[\p{L}'’-]*/gu) ?? [] : transcript.split(/[^\p{L}'’-]+/u)).flatMap(words);
+  // With capitals, only capitalized words can be names. A word that starts a sentence is capitalized anyway, so there
+  // only an exact name counts, or a close spelling that isn't an everyday word ("Kind of a bloop", "Come on").
+  const candidates = cased
+    ? [...transcript.matchAll(/\p{Lu}[\p{L}'’-]*/gu)].map((match) => ({ word: words(match[0]).join(''), initial: /(?:^|[.!?…])\W*$/u.test(transcript.slice(0, match.index)) }))
+    : transcript.split(/[^\p{L}'’-]+/u).flatMap(words).map((word) => ({ word, initial: true }));
   const nameWords = (entry: RosterEntry) => words(entry.name).filter((word, index, all) => index === all.length - 1 || word.length > 1);
-  const names = candidates.some((word) => !reportedWords.has(word) && game.roster.some((entry) =>
-    (nameWords(entry).includes(word) && (cased || !plainWords.has(word))) ||
-    (cased && !plainWords.has(word) && startsLike(word, nameWords(entry).at(-1)!))));
+  const names = candidates.some(({ word, initial }) => word && !reportedWords.has(word) && game.roster.some((entry) => {
+    const surname = nameWords(entry).at(-1)!;
+    if (initial) return nameWords(entry).includes(word) || (cased && !plainWords.has(word) && startsLike(word, surname));
+    return nameWords(entry).includes(word) || startsLike(word, surname) || (!plainWords.has(word) && nearly(word, entry));
+  }));
   const numbers = [...normalize(transcript).matchAll(/(?:\bnumber|#|\bno\.?) ?(\d{1,2})\b/g)].map((match) => match[1]!);
   return names || numbers.some((number) => !reportedNumbers.has(number));
 }

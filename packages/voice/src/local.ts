@@ -83,7 +83,8 @@ function joinStrikes(words: Word[]): (Pitch | 'strike')[] | null {
 const undoPhrase = /^(?:undo|undo that|scratch that|take that back|cancel that)$/;
 const crowd = /^(?:(?:run|go|let's go|lets go|come on|nice|nice job|good|good job|yes|yeah|wow|great|hustle|get it|throw it|all the way|keep going|stay|back)(?: |$))+$/;
 
-export type Local = { kind: 'empty' } | { kind: 'undo' } | { kind: 'answer'; answer: Answer };
+/** `pitches`: the phone's own reading of pitch calls, in the AI's answer shape so it takes the same path. */
+export type Local = { kind: 'empty' } | { kind: 'undo' } | { kind: 'pitches'; answer: Answer };
 
 const nobody = { name: null, number: null };
 const pitchesOnly = (pitches: AnswerReading['pitches']): AnswerReading =>
@@ -113,6 +114,6 @@ export function readLocally(transcript: string): Local | null {
   const strikes = pitches.filter((pitch) => pitch === 'strike').length;
   if (strikes > 1) return null;
   const withStrike = (strike: Pitch) => pitchesOnly(pitches.map((pitch) => pitch === 'strike' ? strike : pitch));
-  if (!strikes) return { kind: 'answer', answer: { result: 'play', fix_last: false, readings: [withStrike('called_strike')] } };
-  return { kind: 'answer', answer: { result: 'question', fix_last: false, readings: [withStrike('called_strike'), withStrike('swinging_strike')] } };
+  if (!strikes) return { kind: 'pitches', answer: { result: 'play', fix_last: false, readings: [withStrike('called_strike')] } };
+  return { kind: 'pitches', answer: { result: 'question', fix_last: false, readings: [withStrike('called_strike'), withStrike('swinging_strike')] } };
 }

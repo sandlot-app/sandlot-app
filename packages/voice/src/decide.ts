@@ -5,15 +5,16 @@ import { toCommands } from './commands.ts';
 import { readBack } from './explain.ts';
 import { normalize, type Local } from './local.ts';
 import { checkNames, type NameRefusal } from './names.ts';
-import { entryFor, fits } from './players.ts';
-import { batterUp, passesRunner, type PressGame } from './state.ts';
+import { standingPlays } from './context.ts';
+import { entryFor, fits, samePlayer, words } from './players.ts';
+import { batterUp, passesRunner, stateAfter, type PressGame } from './state.ts';
 
 // Everything after a press ends, in one pure function: what was heard (the phone's own reading or the AI's answer)
 // goes in with the game the press started on, and what the screen does comes out. The engine decides what's legal
 // (rule 6), and every banner is built from the commands it accepted, never from the model's words.
 
 /** What one press heard: the phone's own reading, the AI's answer, or an AI reply with no answer to use. */
-export type Heard = Local | { kind: 'unusable' };
+export type Heard = Local | { kind: 'answer'; answer: Answer } | { kind: 'unusable' };
 
 export type Press = {
   /** The game the press started on. The context sent to the AI came from this same game, so its bases mean these runners. */
@@ -107,13 +108,14 @@ function refusalMessage(refusal: Refusal, transcript: string): string {
  * each role, then the engine and the passing-runner check. A name that doesn't fit refuses even when the engine
  * would accept the play.
  */
-function check(press: Press, reading: AnswerReading): { ok: true; reading: Reading } | { ok: false; refusal: Refusal } {
+function check(press: Press, reading: AnswerReading, fromAi: boolean): { ok: true; reading: Reading } | { ok: false; refusal: Refusal } {
   const { game } = press;
   const start = replay(game.setup, game.events);
   if (!start.ok) return { ok: false, refusal: { kind: 'engine', code: start.code } };
   const mapped = toCommands(game, start.state, reading);
   if (!mapped.ok) return { ok: false, refusal: mapped.why };
-  const names = checkNames(game, start.state, mapped, reading, press.transcript);
+  // The phone's own pitch readings hold no names, so only the AI's answers need their names checked.
+  const names = fromAi ? checkNames(game, start.state, mapped, reading, press.transcript) : null;
   if (names) return { ok: false, refusal: names };
   const result = applyGroup(game.setup, game.events, mapped.commands);
   if (!result.ok) return { ok: false, refusal: { kind: 'engine', code: result.code } };
@@ -128,23 +130,35 @@ const same = (a: Command[], b: Command[]) => JSON.stringify(a) === JSON.stringif
  * is treated as a fix even when the answer doesn't say so, so a fix never saves as a new play. "No. 17" is a number.
  */
 function soundsLikeAFix(press: Press, answer: Answer): boolean {
-  // "Oh no, Soto beans her" is a cheer, not a correction, so "oh" counts only before "wait".
-  const opening = /^(?:no|nope|actually|wait|oh,? wait|oops|my bad|sorry|correction|i mean|make that|change that|scratch that|that was|it was|hold on)\b(?![ .]*\d)/;
-  if (!opening.test(normalize(press.transcript))) return false;
-  if (!press.game.events.some((event) => event.command.kind !== 'game')) return false;
-  // "Wait, Cole singles" names the batter up, so it's a new play, not a fix of the last one.
-  const start = replay(press.game.setup, press.game.events);
-  const batter = start.ok ? batterUp(start.state) : undefined;
-  const holder = batter && entryFor(press.game.roster, batter);
+  const { game, transcript } = press;
+  const text = normalize(transcript).replace(/^[,;. ]+/, '');
+  // "No way!" and "No!" are cheers, and "oh" counts only before "wait" ("Oh no, Soto beans her" is a cheer too).
+  if (/^\W*no\s*(?:!|way\b)/i.test(transcript)) return false;
+  const opening = /^(?:no|nope|actually|wait|oh,? wait|oops|whoops|my bad|sorry|correction|i mean|make that|make it|change that|scratch that|strike that|undo that|hold on|hang on|that was|it was)\b(?![ .]*\d)/;
+  const notA = /\bnot an? (?:single|double|triple|home run|homer|walk|strikeout|ball|strike|out|error)\b/;
+  if (!opening.test(text) && !notA.test(text)) return false;
+  const plays = standingPlays(game.events);
+  const last = plays.at(-1);
+  if (!last) return false;
+  // "Wait, Cole singles" names a new batter who is up now, so it's a new play. The name has to be in the words, and
+  // the batter has to have changed since the last play, or it's the last play being fixed.
+  const now = stateAfter(game, []);
+  const then = stateAfter({ ...game, events: game.events.slice(0, game.events.indexOf(last[0]!)) }, []);
+  const batter = now && batterUp(now);
+  const before = then && batterUp(then);
+  const holder = batter && entryFor(game.roster, batter);
   const named = answer.readings[0]?.batter;
-  return !(holder && named && (named.name !== null || named.number !== null) && fits(press.game.roster, holder, named));
+  const said = new Set(words(transcript));
+  const inWords = named !== undefined && (named.name !== null ? words(named.name).every((word) => said.has(word)) : named.number !== null && text.includes(named.number));
+  const newBatter = Boolean(batter && before && !samePlayer(batter, before));
+  return !(holder && named && inWords && newBatter && fits(game.roster, holder, named));
 }
 
-function fromAnswer(press: Press, answer: Answer): Decision {
+function fromAnswer(press: Press, answer: Answer, fromAi: boolean): Decision {
   if (answer.result === 'not_a_play') return { kind: 'message', message: messages.notAPlay };
   if (answer.result === 'unclear') return { kind: 'message', message: messages.unclear(press.transcript) };
-  if (answer.fix_last || soundsLikeAFix(press, answer)) return { kind: 'message', message: messages.fixNotYet };
-  const checked = answer.readings.map((reading) => check(press, reading));
+  if (answer.fix_last || (fromAi && soundsLikeAFix(press, answer))) return { kind: 'message', message: messages.fixNotYet };
+  const checked = answer.readings.map((reading) => check(press, reading, fromAi));
   // The names said are the same in every reading. A reading refused for a name means the answer misplaced it, so
   // no reading of that answer saves.
   const misnamed = checked.find((result) => !result.ok && (result.refusal.kind === 'wrong_role' || result.refusal.kind === 'unaccounted'));
@@ -170,6 +184,7 @@ export function decide(press: Press, heard: Heard): Decision {
     case 'empty': return { kind: 'message', message: messages.empty };
     case 'undo': return { kind: 'undo' };
     case 'unusable': return { kind: 'message', message: messages.unusable };
-    case 'answer': return fromAnswer(press, heard.answer);
+    case 'pitches': return fromAnswer(press, heard.answer, false);
+    case 'answer': return fromAnswer(press, heard.answer, true);
   }
 }

@@ -115,7 +115,7 @@ describe('the context the phone sends', () => {
 describe('what the phone reads alone', () => {
   const pitches = (transcript: string) => {
     const local = readLocally(transcript);
-    return local?.kind === 'answer' ? local.answer.readings.map((reading) => reading.pitches) : local?.kind ?? 'to the AI';
+    return local?.kind === 'pitches' ? local.answer.readings.map((reading) => reading.pitches) : local?.kind ?? 'to the AI';
   };
   it.each([
     ['Ball ball', [['ball', 'ball']]],

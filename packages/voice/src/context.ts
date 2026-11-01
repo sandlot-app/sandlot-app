@@ -37,7 +37,7 @@ const unknownPlayer: Person = { name: 'Unknown player', number: '' };
  * characters. Anything else is dropped, so a name like "Player #7" goes as "Player 7" rather than failing the press.
  */
 function cleanName(name: string): string {
-  const kept = name.replace(/[^\p{L}\p{N} .'’-]/gu, ' ').split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).slice(0, 4).join(' ').slice(0, 40).trim();
+  const kept = name.replace(/[^\p{L}\p{N} .'’-]/gu, ' ').replace(/\.(?=\p{L}{2})/gu, '. ').split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).slice(0, 4).join(' ').slice(0, 40).trim();
   return kept || unknownPlayer.name;
 }
 const cleanNumber = (number: string) => /^\d{1,3}$/.test(number) ? number : '';
@@ -51,7 +51,7 @@ function fitted(words: string): string | null {
 }
 
 /** The groups that stand, oldest first: an undo takes back the latest one standing. Setup and lineups aren't plays. */
-function standingPlays(events: Event[]): Event[][] {
+export function standingPlays(events: Event[]): Event[][] {
   const groups: Event[][] = [];
   for (const event of events) {
     const last = groups.at(-1);

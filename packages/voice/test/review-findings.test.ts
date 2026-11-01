@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readAnswer } from '../src/answer.ts';
 import { decide, type Decision } from '../src/decide.ts';
+import { readLocally } from '../src/local.ts';
 import { batting, stateAfter, type PressGame, type RosterEntry } from '../src/state.ts';
 import { buildGame, stateOf, withLastPlay } from './game.ts';
 import { expandShort, type Short } from './short.ts';
@@ -229,5 +230,48 @@ describe('the second-round review', () => {
     ['Solo home run!', { bip: { o: 'home_run', t: 'fly', b: 'home' } }],
   ] as [string, Short][])('"%s" is not a near spelling of a name', (transcript, short) => {
     expect(run(buildGame({ outs: 0, up: 'J. Soto' }), transcript, short).decision.kind).toBe('save');
+  });
+});
+
+describe('the third-round review', () => {
+  const fixNotYet = { kind: 'message', message: "Fixing a play by voice isn't ready yet. Tap Undo, then say the play again." };
+  const afterSingle = () => withLastPlay(buildGame({ outs: 0, up: 'C. Vance', next: ['N. Cole'] }), { batter: 'Vance', bip: { o: 'single', f: ['LF'], b: '1' } });
+
+  it.each(['Double by Shaw, runner scores.', 'Double by Ruis, runner scores.'])('"%s": a one-letter-off name mid-sentence that the answer dropped saves nothing', (transcript) => {
+    const game = buildGame({ outs: 0, on: { '1': 'L. Darcy' }, up: 'J. Soto' });
+    expect(run(game, transcript, { bip: { o: 'double', b: '2', r: ['1>home'] } }).decision.kind).toBe('message');
+  });
+
+  it('"no throw" is not a correction, so it can\'t hide a name as taken back', () => {
+    const game = buildGame({ outs: 0, on: { '1': 'L. Darcy' }, up: 'J. Soto' });
+    expect(run(game, 'Moss doubles, no throw, Darcy scores.', { back: ['Moss'], bip: { o: 'double', b: '2', r: ['1>home:Darcy'] } }).decision.kind).toBe('message');
+  });
+
+  it.each([
+    ['Um, no, that was a double.', { bip: { o: 'double', f: ['LF'], b: '2' } }],
+    ["That's a double, not a single.", { bip: { o: 'double', f: ['LF'], b: '2' } }],
+    ['No, that was a double.', { batter: 'Cole', bip: { o: 'double', f: ['LF'], b: '2', r: ['1>home'] } }],
+  ] as [string, Short][])('"%s" right after a play is a fix the model missed', (transcript, short) => {
+    expect(run(afterSingle(), transcript, short).decision).toEqual(fixNotYet);
+  });
+
+  it('naming a batter who was already up for the last play is still a fix', () => {
+    const game = withLastPlay(buildGame({ outs: 0, up: 'N. Cole' }), { p: ['ball'] });
+    expect(run(game, 'Actually, Cole swung at that one.', { batter: 'Cole', p: ['swinging_strike'] }).decision).toEqual(fixNotYet);
+  });
+
+  it.each(['No way, home run!', 'No! Pops up to the catcher.'])('"%s" is a cheer, not a correction', (transcript) => {
+    const short: Short = transcript.includes('home') ? { bip: { o: 'home_run', t: 'fly', b: 'home', r: ['1>home'] } } : { bip: { o: 'out', t: 'popup', f: ['C'], b: 'out' } };
+    expect(run(afterSingle(), transcript, short).decision.kind).toBe('save');
+  });
+
+  it.each(['Kind of a bloop single to right.'])('"%s" doesn\'t read a capitalized first word as a name', (transcript) => {
+    expect(run(buildGame({ outs: 0, up: 'J. Soto' }), transcript, { bip: { o: 'single', t: 'fly', f: ['RF'], b: '1' } }).decision.kind).toBe('save');
+  });
+
+  it('a pitch call the phone reads alone is never refused for a player named Ball', () => {
+    const game = rename(buildGame({ outs: 0, up: 'J. Soto' }), 'M. Webb', 'M. Ball');
+    const decision = decide({ game, transcript: 'Ball.', at: 10_000 }, readLocally('Ball.')!);
+    expect(decision.kind).toBe('save');
   });
 });

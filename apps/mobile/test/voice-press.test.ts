@@ -46,7 +46,7 @@ test('a press streams the audio from before the socket opened first, shows live 
   const result = await done;
   assert.equal(result.kind, 'heard');
   assert.equal(result.kind === 'heard' && result.transcript, 'strike swinging');
-  assert.equal(result.kind === 'heard' && result.heard.kind, 'answer', 'the phone reads a pitch call as an answer of its own');
+  assert.equal(result.kind === 'heard' && result.heard.kind, 'pitches', 'the phone reads a pitch call on its own');
   assert.equal(api.parsed.length, 0, 'the phone reads a simple pitch without voice-parse');
   assert.equal(mic.stopped, 1);
   assert.equal(socket.closed, true, 'the socket closes on release, so the session stops costing money');
