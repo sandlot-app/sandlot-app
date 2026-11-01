@@ -59,8 +59,8 @@ export function signedIn(user: { id: string } | null, error: { status?: number }
 /** Who signed the request, or whether the auth service couldn't say. */
 export type GetUser = (token: string) => Promise<{ userId: string | null; unavailable: boolean }>;
 
-/** 15 seconds of base64 audio plus room for the JSON around it. */
-const MAX_BODY_BYTES = 1_500_000;
+/** 30 seconds of base64 audio (1.92 MB) plus room for the JSON around it. */
+const MAX_BODY_BYTES = 2_500_000;
 
 /**
  * Everything a voice function checks before its handler runs: a POST from a signed-in phone (an anonymous sign-in is
