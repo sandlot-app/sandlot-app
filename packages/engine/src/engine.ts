@@ -212,6 +212,8 @@ function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending
   function replayActive(): ApplyResult {
     let restored = from;
     for (const play of active) {
+      // A play removed by a Fix is nothing to play, and playing nothing would still clear the alerts.
+      if (play.commands.length === 0) continue;
       const result = applyPlay(setup, restored, play.commands);
       if (!result.ok) return result;
       restored = result.state;
