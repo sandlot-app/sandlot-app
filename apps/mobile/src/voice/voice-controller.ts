@@ -37,7 +37,7 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
   /** Counts each time the scorer moves on (a new press, a tap, a teardown), so a late refusal can tell it's stale. */
   let turn = 0;
   let pressed: Pressed | null = null;
-  /** The last play voice saved, for route()'s duplicate guard (D4). A tap or an undo clears it. */
+  /** The last play voice saved, for decide()'s duplicate guard (D4). A tap or an undo clears it. */
   let previous: { commands: Command[]; at: number } | undefined;
 
   const publish = () => onChange({ listening, card: live ?? choosing?.card ?? null, message });
