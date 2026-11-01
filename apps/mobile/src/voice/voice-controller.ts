@@ -1,13 +1,13 @@
 import type { Command } from '@sandlot/engine';
-import { route, type ParseResult, type Reading } from '@sandlot/voice';
+import { decide, type Reading } from '@sandlot/voice';
 import type { VoiceCard } from '../../scorer-ui';
 import type { DemoAction, SavedGame } from '../scoring/offline-game.ts';
-import { choiceLabels, failureMessage, liveCard, lostMessage, outcome, pressGame, pressInput, unsavedMessage } from './outcome.ts';
+import { choiceLabels, failureMessage, lostMessage, pressGame, pressInput, unsavedMessage } from './outcome.ts';
 import { startPress, type PressHandle, type VoiceDeps } from './press.ts';
 
 // The scoring screen's voice state, kept out of React so tests can drive it: the Transcript Card while a press is
-// held or waiting for a choice, and a line for anything that falls back to taps. Every save goes through `record`,
-// so the engine checks it (rule 6).
+// held or waiting for a choice, and a line for the banner of a saved play or anything that falls back to taps.
+// Every save goes through `record`, so the engine checks it (rule 6).
 
 export type VoiceView = { listening: boolean; card: VoiceCard | null; message: string | null };
 
@@ -46,11 +46,15 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
    * A press saves against the game it started on. If anything was saved since, the engine sees a stale revision and
    * nothing is written twice.
    */
-  async function save(commands: Command[], from: Pressed) {
+  async function save({ commands, banner }: Reading, from: Pressed) {
     const mine = turn;
     const saved = await record({ kind: 'voice', at: new Date(from.at).toISOString(), expectedRevision: from.revision, commands });
-    if (saved) previous = { commands, at: from.at };
-    else refused(mine);
+    if (!saved) return refused(mine);
+    previous = { commands, at: from.at };
+    // The banner says what the engine recorded, until the scorer moves on.
+    if (mine !== turn) return;
+    message = banner;
+    publish();
   }
 
   /** A save or undo the engine refused, as stale or busy: the scorer hears it, unless they've already moved on. */
@@ -86,12 +90,12 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
     live = { kind: 'listening', words: '' };
     const from: Pressed = { at: now(), revision: current.revision };
     pressed = from;
-    const routed = (transcript: string, parsed?: ParseResult) =>
-      route({ ...pressGame(game() ?? current), transcript, at: from.at, previous }, parsed);
-    const handle = startPress(voice, pressInput(current), (update) => {
+    // The press is read against the game it started on, the same game the AI is shown.
+    const snapshot = pressGame(current);
+    const handle = startPress(voice, pressInput(snapshot), (update) => {
       if (press !== handle) return;
       if (update.kind === 'words') {
-        live = liveCard(routed(update.words), update.words);
+        live = { kind: 'listening', words: update.words };
         return publish();
       }
       press = null;
@@ -104,17 +108,17 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
         message = failureMessage(update.failure);
         return publish();
       }
-      const result = outcome(routed(update.transcript, update.parsed));
-      if (result.kind === 'save') void save(result.commands, from);
-      else if (result.kind === 'undo') {
+      const decision = decide({ game: snapshot, transcript: update.transcript, at: from.at, previous }, update.heard);
+      if (decision.kind === 'save') void save(decision.reading, from);
+      else if (decision.kind === 'undo') {
         previous = undefined;
         // Pinned like a save, so an undo said before another save never takes that save back.
         const mine = turn;
         void record({ kind: 'undo', expectedRevision: from.revision }).then((undone) => { if (!undone) refused(mine); });
-      } else if (result.kind === 'message') message = result.message;
+      } else if (decision.kind === 'message') message = decision.message;
       else choosing = {
-        card: { kind: 'choose', heading: result.heading, words: update.transcript, choices: choiceLabels(result.choices), note: result.note },
-        readings: result.choices,
+        card: { kind: 'choose', heading: decision.heading, words: update.transcript, choices: choiceLabels(decision.readings), note: decision.note },
+        readings: decision.readings,
       };
       publish();
     });
@@ -145,7 +149,7 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
       if (!picked || !pressed) return;
       choosing = null;
       publish();
-      void save(picked.commands, pressed);
+      void save(picked, pressed);
     },
     /** A tap on the scorer buttons takes over from voice, including a press that's still being read. */
     dismiss() {

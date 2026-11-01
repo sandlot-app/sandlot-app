@@ -1,6 +1,6 @@
-import type { Base, Command, GameState, PlayerRef, Position } from '@sandlot/engine';
+import type { BallInPlayOutcome, Base, Command, Destination, GameState, PlayerRef, Position } from '@sandlot/engine';
 import { nameOf, samePlayer } from './players.ts';
-import { baseOf, batting, stateAfter, units, type PressGame } from './resolve.ts';
+import { baseOf, batting, stateAfter, units, type PressGame } from './state.ts';
 
 export const baseWord: Record<Base | 'home', string> = { 1: '1st', 2: '2nd', 3: '3rd', home: 'home' };
 const direction: Record<Position, string> = {
@@ -11,7 +11,16 @@ export const fielderName: Record<Position, string> = {
   LF: 'left fielder', CF: 'center fielder', RF: 'right fielder', ROVER: 'rover',
 };
 const outVerb = { ground: 'grounds out', fly: 'flies out', line: 'lines out', popup: 'pops out', bunt: 'is out on a bunt' } as const;
-const hitVerb = { single: 'singles', double: 'doubles', ground_rule_double: 'hits a ground-rule double', triple: 'triples', home_run: 'homers' } as const;
+const otherVerb: Record<Exclude<BallInPlayOutcome, 'error' | 'out'>, string> = {
+  single: 'singles', double: 'doubles', ground_rule_double: 'hits a ground-rule double', triple: 'triples', home_run: 'homers',
+  fielders_choice: "reaches on a fielder's choice", sacrifice_fly: 'hits a sacrifice fly', sacrifice_bunt: 'lays down a sacrifice bunt',
+  double_play: 'hits into a double play', triple_play: 'hits into a triple play',
+};
+/** Where each outcome leaves the batter, so the banner says only where the batter went otherwise. */
+const batterUsual: Record<BallInPlayOutcome, Destination> = {
+  single: 1, double: 2, ground_rule_double: 2, triple: 3, home_run: 'home', error: 1, fielders_choice: 1,
+  out: 'out', sacrifice_fly: 'out', sacrifice_bunt: 'out', double_play: 'out', triple_play: 'out',
+};
 
 const heldOutcomes = new Set(['single', 'double', 'ground_rule_double', 'triple', 'error']);
 
@@ -21,18 +30,6 @@ function unmoved(before: GameState, play: Extract<Command, { kind: 'ball_in_play
   return ([1, 2, 3] as const).flatMap((base) => {
     const runner = before.bases[base]?.player;
     return runner && !play.advances.some((advance) => samePlayer(advance.runner, runner)) ? [runner] : [];
-  });
-}
-
-/** Runners a hit or error left where they were, because the press didn't say they moved (H1). */
-export function heldRunners(game: PressGame, commands: Command[]): PlayerRef[] {
-  return units(commands).flatMap(([start]) => {
-    const play = commands[start + 1];
-    if (play?.kind !== 'ball_in_play') return [];
-    const before = stateAfter(game, commands.slice(0, start));
-    const after = stateAfter(game, commands.slice(0, start + 2));
-    if (!before || !after || after.half !== before.half || after.inning !== before.inning) return [];
-    return unmoved(before, play).filter((runner) => baseOf(after, runner) === baseOf(before, runner));
   });
 }
 
@@ -80,10 +77,13 @@ function battedText(game: PressGame, before: GameState, after: GameState, play: 
   let text: string;
   if (play.outcome === 'error') text = `${name} reaches on an error${at ? ` by the ${fielderName[at]}` : ''}`;
   else if (play.outcome === 'out') text = `${name} ${outVerb[play.trajectory ?? 'ground']}${at ? ` to ${direction[at]}` : ''}`;
-  else if (play.outcome in hitVerb) text = `${name} ${hitVerb[play.outcome as keyof typeof hitVerb]}${at ? ` to ${direction[at]}` : ''}`;
-  else text = `${name} puts it in play`;
+  else text = `${name} ${otherVerb[play.outcome]}${at ? ` to ${direction[at]}` : ''}`;
   const outs = play.advances.flatMap((advance) => advance.to === 'out' ? [advance.runner] : []);
-  return [text, ...runnerMoves(game, before, after, outs, unmoved(before, play))].join(', ');
+  // Where the batter ended, when it isn't where the outcome puts them: "J. Soto singles, J. Soto to 2nd".
+  const own = batter && play.advances.find((advance) => samePlayer(advance.runner, batter));
+  const usual = batterUsual[play.outcome];
+  const extra = own && own.to !== usual ? [own.to === 'out' ? `${name} out` : own.to === 'home' ? `${name} scores` : `${name} to ${baseWord[own.to]}`] : [];
+  return [text, ...runnerMoves(game, before, after, outs, unmoved(before, play)), ...extra].join(', ');
 }
 
 function runnerText(game: PressGame, before: GameState, commands: Extract<Command, { kind: 'runner' }>[]): string {

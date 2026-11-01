@@ -1,8 +1,9 @@
-import type { PlayerRef, TeamSide } from '@sandlot/engine';
-import type { Mention, RosterEntry } from './types.ts';
+import type { PlayerRef } from '@sandlot/engine';
+import type { Named } from './answer.ts';
+import type { RosterEntry } from './state.ts';
 
-const words = (name: string) => name.toLowerCase().replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean);
-const lastName = (name: string) => words(name).at(-1) ?? '';
+/** A name's words, lower case, letters only, with any "'s" dropped: "D. Park's" is ["d", "park"]. */
+export const words = (name: string) => name.toLowerCase().replace(/['’]s\b/g, '').replace(/[^\p{L} ]/gu, ' ').split(/\s+/).filter(Boolean);
 
 export const samePlayer = (a: PlayerRef, b: PlayerRef) => a.kind === b.kind && a.id === b.id;
 
@@ -13,17 +14,6 @@ export function entryFor(roster: RosterEntry[], player: PlayerRef): RosterEntry 
 export function nameOf(roster: RosterEntry[], player: PlayerRef): string {
   const entry = entryFor(roster, player);
   return entry ? entry.name : 'the runner';
-}
-
-/** Everyone on the roster the mention could mean. Numbers are matched within `side`, since both teams reuse numbers. */
-export function matches(roster: RosterEntry[], who: Mention, side: TeamSide): RosterEntry[] {
-  if (who.number) return roster.filter((entry) => entry.side === side && entry.number === who.number);
-  if (!who.name) return [];
-  const heard = words(who.name);
-  return roster.filter((entry) => {
-    const known = words(entry.name);
-    return lastName(entry.name) === heard.at(-1) && (heard.length === 1 || heard[0]![0] === known[0]![0]);
-  });
 }
 
 function distance(a: string, b: string): number {
@@ -40,8 +30,51 @@ function distance(a: string, b: string): number {
   return row[b.length]!;
 }
 
-/** The two closest names to what was heard, among `among` (B1). */
-export function closest(among: RosterEntry[], heard: string): RosterEntry[] {
-  const target = lastName(heard);
-  return [...among].sort((a, b) => distance(lastName(a.name), target) - distance(lastName(b.name), target)).slice(0, 2);
+/**
+ * The words exactly name the player: the last word is their surname, and a first initial said with it matches.
+ * A one-word first name matches too, when the roster has the whole first name ("Danny" for "Danny Park").
+ */
+export function exactly(heard: string, entry: RosterEntry): boolean {
+  const said = words(heard);
+  const known = words(entry.name);
+  if (!said.length || !known.length) return false;
+  if (said.at(-1) === known.at(-1)) return said.length === 1 || said[0]![0] === known[0]![0];
+  return said.length === 1 && known.length > 1 && known[0]!.length > 1 && said[0] === known[0];
+}
+
+/**
+ * The words nearly name the player, as speech-to-text often spells a name: one surname starts with the other, sharing
+ * at least 3 letters and at most 2 more ("Parker" for "Park"), or they are one letter apart and both have at least 4
+ * ("Ruis"). A first initial said with it must still match.
+ */
+function nearly(heard: string, entry: RosterEntry): boolean {
+  const said = words(heard);
+  const known = words(entry.name);
+  if (said.length > 1 && said[0]![0] !== known[0]?.[0]) return false;
+  const [a, b] = [said.at(-1) ?? '', known.at(-1) ?? ''];
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  return (short.length >= 3 && long.length - short.length <= 2 && long.startsWith(short)) || (short.length >= 4 && distance(a, b) === 1);
+}
+
+/**
+ * THE NAME POLICY. Whether the words the scorer used for a role can mean the player who holds it.
+ * - A number fits only the holder's own jersey number.
+ * - An exact name fits. A teammate with the same surname doesn't stop it: the role tells two Lopezes apart.
+ * - A near name fits only when the holder is the one player on either roster it equals or nearly equals. So
+ *   "Parker" saves as batter D. Park when no one else is near "Parker", and the banner names D. Park, so a wrong
+ *   guess shows and is one Undo away. A name near anyone else never saves.
+ */
+export function fits(roster: RosterEntry[], holder: RosterEntry, heard: Named): boolean {
+  if (heard.number !== null && heard.number !== holder.number) return false;
+  if (heard.name === null) return true;
+  if (exactly(heard.name, holder)) return true;
+  const name = heard.name;
+  return nearly(name, holder) && roster.every((entry) => samePlayer(entry.player, holder.player) || !(exactly(name, entry) || nearly(name, entry)));
+}
+
+/** The one roster player on `among` the words exactly name, for a message like "J. Ruiz is up, not K. Moss." */
+export function namedPlayer(among: RosterEntry[], heard: Named): RosterEntry | null {
+  const found = among.filter((entry) => (heard.number === null || entry.number === heard.number) &&
+    (heard.name === null ? heard.number !== null : exactly(heard.name, entry)));
+  return found.length === 1 ? found[0]! : null;
 }
