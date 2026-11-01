@@ -44,16 +44,15 @@ export const isNameWord = (word: string) =>
  * characters. Anything else is dropped, so a name like "Player #7" goes as "Player 7" rather than failing the press.
  */
 function cleanName(name: string): string {
-  const kept: string[] = [];
   // "A.J" gets its last dot. Any other dot that isn't the end of a word becomes a space ("O.'Neil" is "O 'Neil"), so
   // the name still reads as the same words as the roster's and a name the AI echoes back still matches it.
   const spaced = name.replace(/[^\p{L}\p{N} .'’-]/gu, ' ').replace(/\.(?=\p{L}{2})/gu, '. ').split(/\s+/)
     .flatMap((raw) => /^(?:\p{L}\.)+\p{L}$/u.test(raw) ? [`${raw}.`] : isNameWord(raw) ? [raw] : raw.split('.'));
-  for (const word of spaced) {
-    if (!isNameWord(word) || kept.length === 4 || [...kept, word].join(' ').length > 40) continue;
-    kept.push(word);
-  }
-  return kept.join(' ') || unknownPlayer.name;
+  const kept = spaced.filter(isNameWord);
+  // Past four words or 40 characters, words go from the middle, so the first name and the surname survive.
+  while (kept.length > 2 && (kept.length > 4 || kept.join(' ').length > 40)) kept.splice(1, 1);
+  if (kept.join(' ').length > 40) kept.splice(0, kept.length - 1);
+  return kept.join(' ').length <= 40 && kept.length ? kept.join(' ') : unknownPlayer.name;
 }
 const cleanNumber = (number: string) => /^\d{1,3}$/.test(number) ? number : '';
 
