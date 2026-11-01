@@ -267,31 +267,11 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
     reopen();
   }
 
-  async function start(slot: Slot): Promise<StartResult> {
+  /** Saves `action` as the start of `slot`'s game, as one play, and opens that game. */
+  async function startWith(slot: Slot, action: DemoAction): Promise<'started' | 'unavailable' | { rejected: RejectCode }> {
     const store = sessions.current[slot];
     if (!store || operation.current) return 'unavailable';
-    let action: DemoAction = { kind: 'start' };
-    if (slot === 'synced') {
-      if (!serverRows) return 'unavailable';
-      const found = await findServerGame(serverRows);
-      if (found.kind !== 'found') return found.kind;
-      action = { kind: 'start', server: found.server };
-    }
     const work = store.record(action);
-    operation.current = work;
-    try {
-      if ((await work).kind !== 'saved') return 'unavailable';
-    } finally {
-      if (operation.current === work) operation.current = null;
-    }
-    open(slot);
-    return 'started';
-  }
-
-  async function startSetup(setup: SetupDraft): Promise<SetupStartResult> {
-    const store = sessions.current.local;
-    if (!store || operation.current) return 'unavailable';
-    const work = store.record(startAction(setup));
     operation.current = work;
     try {
       const result = await work;
@@ -300,9 +280,23 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
     } finally {
       if (operation.current === work) operation.current = null;
     }
-    open('local');
+    open(slot);
     return 'started';
   }
+
+  async function start(slot: Slot): Promise<StartResult> {
+    let action: DemoAction = { kind: 'start' };
+    if (slot === 'synced') {
+      if (!serverRows) return 'unavailable';
+      const found = await findServerGame(serverRows);
+      if (found.kind !== 'found') return found.kind;
+      action = { kind: 'start', server: found.server };
+    }
+    const result = await startWith(slot, action);
+    return result === 'started' ? 'started' : 'unavailable';
+  }
+
+  const startSetup = (setup: SetupDraft) => startWith('local', startAction(setup));
 
   return <Context value={{ view, active, games, upload, uploadSlow, record, open, start, startSetup, reopen }}>{children}</Context>;
 }

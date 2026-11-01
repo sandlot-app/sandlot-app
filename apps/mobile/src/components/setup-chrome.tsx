@@ -23,8 +23,8 @@ export function SectionLabel({ children }: { children: string }) {
   return <Text style={styles.label} accessibilityRole="header">{children}</Text>;
 }
 
-/** Why the engine refused a lineup or Start, in the same band the scoring screen uses for a refused play. */
-export function RefusalBand({ message, testID }: { message: string; testID: string }) {
+/** Why the engine rejected a lineup or Start, in the same band the scoring screen uses for a rejected play. */
+export function RejectionBand({ message, testID }: { message: string; testID: string }) {
   return <Text style={styles.band} accessibilityLiveRegion="polite" testID={testID}>{message}</Text>;
 }
 

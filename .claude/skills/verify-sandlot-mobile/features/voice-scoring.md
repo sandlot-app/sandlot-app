@@ -12,7 +12,7 @@ The scorer holds the Voice Bar, says a pitch or a play, and lets go. While held,
 
 ## How to get to it (user POV)
 
-- Tap Start demo game or Continue scoring from Your games, then hold "Hold to score by voice" in the Scorer Bar.
+- Tap Start demo game (then save both lineups and tap Start game, as in lineups.md) or Continue scoring from Your games, then hold "Hold to score by voice" in the Scorer Bar.
 
 ## Driving it with Maestro
 

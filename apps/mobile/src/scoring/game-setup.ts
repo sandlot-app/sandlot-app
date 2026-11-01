@@ -58,13 +58,13 @@ export function startAction(draft: SetupDraft, server?: ServerGame): DemoAction 
     lineups: { home: draft.lineups.home.slots, away: draft.lineups.away.slots } };
 }
 
-/** A team's row in Game setup: "10 players · T. Nguyen pitching", or "Not set yet". */
+/** A team's row in Game setup: "10 players · T. Nguyen pitching", "9 players · no starting pitcher yet", or "Not set yet". */
 export function lineupSummary(draft: SetupDraft, side: TeamSide): string {
   const lineup = draft.lineups[side];
   if (!lineup.set) return 'Not set yet';
   const pitcher = startingPitcher(lineup.slots);
   const players = `${lineup.slots.length} ${lineup.slots.length === 1 ? 'player' : 'players'}`;
-  return pitcher ? `${players} · ${rosterName(pitcher)} pitching` : players;
+  return `${players} · ${pitcher ? `${rosterName(pitcher)} pitching` : 'no starting pitcher yet'}`;
 }
 
 /** What a lineup row's position pill reads. */
@@ -120,15 +120,16 @@ const positionNames: Record<Position, string> = {
   P: 'Pitcher', C: 'Catcher', '1B': 'First base', '2B': 'Second base', '3B': 'Third base', SS: 'Shortstop',
   LF: 'Left field', CF: 'Center field', RF: 'Right field', ROVER: 'Rover',
 };
-/** Every position a Mustang batter can be given, in the order the position list shows them, then none. */
-const choosablePositions: (Position | null)[] = ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', null];
+/** The positions a batter can be given, in the order the position list shows them: the nine, and Rover where the division fields ten. */
+const choosablePositions = (fielders: 9 | 10): Position[] =>
+  ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', ...(fielders === 10 ? ['ROVER' as const] : [])];
 
 export type PositionChoice = { position: Position | null; label: string; note: string; selected: boolean };
 
 /** The list shown when the scorer taps the position of the batter at `index`. A position another player holds says who swaps. */
-export function positionChoices(slots: LineupSlot[], index: number): PositionChoice[] {
+export function positionChoices(slots: LineupSlot[], index: number, fielders: 9 | 10 = 9): PositionChoice[] {
   const own = slots[index]?.position ?? null;
-  return choosablePositions.map((position) => {
+  return [...choosablePositions(fielders), null].map((position) => {
     const holder = position === null ? undefined : slots.find((slot, at) => at !== index && slot.position === position);
     const note = holder ? `Swaps with ${rosterName(holder.player)}` : position === null ? 'No fielding position' : positionNames[position];
     return { position, label: positionLabel(position), note, selected: position === own };
@@ -156,12 +157,20 @@ export function addChoices(side: TeamSide, slots: LineupSlot[]): PlayerChoice[] 
   return benchPlayers(side, slots).map((player) => ({ player, ...rosterDisplay(player), note: 'Not in the lineup yet' }));
 }
 
-/** Why the engine refused a lineup or Start, in words a scorer can act on. */
-export function setupRefusal(code: RejectCode): string {
+/** Why the engine rejected a lineup or Start, in words a scorer can act on. */
+export function setupRejection(code: RejectCode): string {
   switch (code) {
-    case 'no_pitcher': return 'Each team needs a starting pitcher. Choose one for the team that has none.';
+    case 'no_pitcher': return 'A team needs a starting pitcher. Choose one for the team that has none.';
     case 'unknown_player': return 'That player isn’t on this game’s roster, so the lineup wasn’t saved.';
     case 'game_already_started': return 'This game has already started, so its lineups can’t change.';
     default: return 'That lineup can’t be used. Check the batting order and positions.';
   }
+}
+
+/** Why Start was rejected. A missing pitcher names the team, or both. */
+export function startRejection(draft: SetupDraft, code: RejectCode): string {
+  if (code !== 'no_pitcher') return setupRejection(code);
+  const without = (['home', 'away'] as const).filter((side) => startingPitcher(draft.lineups[side].slots) === null);
+  return without.length === 2 ? 'Both teams need a starting pitcher.'
+    : without.length === 1 ? `The ${teamName(without[0]!)} need a starting pitcher.` : setupRejection(code);
 }

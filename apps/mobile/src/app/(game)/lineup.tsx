@@ -9,18 +9,18 @@ import { PrimaryButton } from '../../../scorer-ui';
 import { BattingOrder } from '../../components/batting-order.tsx';
 import { BenchPlayerRow } from '../../components/bench-player-row.tsx';
 import { AddPlayerSheet, PitcherSheet, PositionSheet } from '../../components/lineup-sheets.tsx';
-import { RefusalBand, SectionLabel, SetupNav } from '../../components/setup-chrome.tsx';
+import { RejectionBand, SectionLabel, SetupNav } from '../../components/setup-chrome.tsx';
 import { rosterDisplay } from '../../scoring/demo-roster.ts';
 import {
   addChoices, addFromRoster, movePlayer, pitcherChoices, positionChoices, saveLineup, setPosition, setStartingPitcher,
-  setupRefusal, startingPitcher, teamName,
+  setupRejection, teamName,
 } from '../../scoring/game-setup.ts';
+import { gameSetup } from '../../scoring/demo-game.ts';
 import { useSetupDraft } from '../../scoring/setup-draft.tsx';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
 
 type Open = { kind: 'position'; index: number } | { kind: 'pitcher' } | { kind: 'add' } | null;
-const spacerHeight = (height: number) => ({ height });
 
 /** Figma Scorer — Lineup · Hawks (168:11244): a team's batting order, its starting pitcher, and adding from the roster. */
 export default function LineupScreen() {
@@ -31,19 +31,18 @@ export default function LineupScreen() {
   const [open, setOpen] = useState<Open>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const pitcher = startingPitcher(slots);
   const team = teamName(side);
+  const choices = pitcherChoices(draft.half, slots);
+  const pitching = choices.find((choice) => choice.selected);
 
   const edit = (next: LineupSlot[]) => { setMessage(null); setSlots(next); };
   const moveBatter = useCallback((from: number, to: number) => { setMessage(null); setSlots((current) => movePlayer(current, from, to)); }, []);
   const save = () => {
     const result = saveLineup(draft, side, slots);
     if (result.kind === 'saved') { setDraft(result.draft); router.back(); }
-    else setMessage(setupRefusal(result.code));
+    else setMessage(setupRejection(result.code));
   };
   const chosen = (player: PlayerRef) => { edit(setStartingPitcher(slots, player)); setOpen(null); };
-  const pitcherNote = pitcher ? pitcherChoices(draft.half, slots).find((choice) => choice.selected) : undefined;
-  const display = pitcher ? rosterDisplay(pitcher) : null;
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -60,24 +59,23 @@ export default function LineupScreen() {
         </View>
         <View style={styles.section}>
           <SectionLabel>Starting pitcher</SectionLabel>
-          {pitcherNote && display
-            ? <BenchPlayerRow number={display.number} name={display.name} note={pitcherNote.note} selected testID="starting-pitcher" />
+          {pitching
+            ? <BenchPlayerRow number={pitching.number} name={pitching.name} note={pitching.note} selected testID="starting-pitcher" />
             : <Text style={styles.none} testID="starting-pitcher-none">No starting pitcher yet.</Text>}
           <Pressable accessibilityRole="button" hitSlop={sizes['space/3']} onPress={() => setOpen({ kind: 'pitcher' })} style={styles.linkTap} testID="change-pitcher">
-            <Text style={styles.link}>{pitcher ? 'Change starting pitcher' : 'Choose a starting pitcher'}</Text>
+            <Text style={styles.link}>{pitching ? 'Change starting pitcher' : 'Choose a starting pitcher'}</Text>
           </Pressable>
         </View>
         <View style={styles.actions}>
-          {message ? <RefusalBand message={message} testID="lineup-message" /> : null}
+          {message ? <RejectionBand message={message} testID="lineup-message" /> : null}
           <PrimaryButton label="Save lineup" onPress={save} testID="save-lineup" />
         </View>
-        <View style={spacerHeight(sizes['space/6'])} />
       </ScrollView>
       {open?.kind === 'position'
-        ? <PositionSheet name={rosterDisplay(slots[open.index]!.player).name} choices={positionChoices(slots, open.index)} onClose={() => setOpen(null)}
+        ? <PositionSheet name={rosterDisplay(slots[open.index]!.player).name} choices={positionChoices(slots, open.index, gameSetup(draft.half).rules.fielders)} onClose={() => setOpen(null)}
           onChoose={(choice) => { edit(setPosition(slots, open.index, choice.position)); setOpen(null); }} />
         : open?.kind === 'pitcher'
-          ? <PitcherSheet choices={pitcherChoices(draft.half, slots)} onChoose={chosen} onClose={() => setOpen(null)} />
+          ? <PitcherSheet choices={choices} onChoose={chosen} onClose={() => setOpen(null)} />
           : open?.kind === 'add'
             ? <AddPlayerSheet team={team} choices={addChoices(side, slots)} onClose={() => setOpen(null)}
               onChoose={(player) => { edit(addFromRoster(slots, player)); setOpen(null); }} />
@@ -88,7 +86,7 @@ export default function LineupScreen() {
 
 const styles = createStyles({
   screen: { flex: 1, backgroundColor: colors['surface/page'] },
-  content: { gap: sizes['space/4'], paddingTop: sizes['space/1'], paddingHorizontal: sizes['space/4'] },
+  content: { gap: sizes['space/4'], paddingTop: sizes['space/1'], paddingHorizontal: sizes['space/4'], paddingBottom: sizes['space/6'] },
   hint: { ...textStyles.Caption, color: colors['text/secondary'] },
   section: { gap: sizes['space/2'] },
   linkTap: { alignItems: 'center', justifyContent: 'center' },

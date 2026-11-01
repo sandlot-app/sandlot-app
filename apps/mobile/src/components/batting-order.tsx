@@ -9,8 +9,8 @@ import { DragHandleIcon } from './setup-marks.tsx';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
 
-/** One row is 8 above the 34 number, 8 below, and the 1 hairline above it: 51 from one row to the next. */
-const rowPitch = 51;
+/** One row is the number disc with a row's padding above and below, plus the 1 hairline above it: 51 from one row to the next. */
+const rowPitch = sizes['chip/size'] + 2 * sizes['space/2'] + 1;
 const shift = (translateY: number) => ({ transform: [{ translateY }] });
 const clamp = (value: number, low: number, high: number) => Math.min(high, Math.max(low, value));
 

@@ -16,7 +16,7 @@ export function BenchPlayerRow({ number, name, note, selected = false, onPress, 
   testID?: string;
 }) {
   return (
-    <Pressable accessibilityRole="radio" accessibilityState={{ selected }} accessibilityLabel={`${name}, number ${number}. ${note}`}
+    <Pressable accessibilityRole={onPress ? 'radio' : undefined} accessibilityState={{ selected }} accessibilityLabel={`${name}, number ${number}. ${note}`}
       disabled={!onPress} onPress={onPress} style={[styles.row, selected && styles.selected]} testID={testID}>
       <View style={styles.disc}><Text style={styles.number}>{number}</Text></View>
       <View style={styles.text}>

@@ -20,7 +20,8 @@ import {
   seasonHalfOn,
   setPosition,
   setStartingPitcher,
-  setupRefusal,
+  setupRejection,
+  startRejection,
   startAction,
   startingPitcher,
 } from '../src/scoring/game-setup.ts';
@@ -200,9 +201,47 @@ test('adding from the roster offers the players not yet in the lineup, by jersey
   assert.deepEqual(addChoices('home', newSetupDraft('2026-10-24').lineups.home.slots), [], 'the sample lineup already has everyone');
 });
 
-test('a refused lineup or Start says why in words a scorer can act on', () => {
-  assert.equal(setupRefusal('no_pitcher'), 'Each team needs a starting pitcher. Choose one for the team that has none.');
-  assert.equal(setupRefusal('unknown_player'), 'That player isn’t on this game’s roster, so the lineup wasn’t saved.');
-  assert.equal(setupRefusal('game_already_started'), 'This game has already started, so its lineups can’t change.');
-  assert.equal(setupRefusal('too_many_outs'), 'That lineup can’t be used. Check the batting order and positions.');
+test('a rejected lineup or Start says why in words a scorer can act on', () => {
+  assert.equal(setupRejection('no_pitcher'), 'A team needs a starting pitcher. Choose one for the team that has none.');
+  assert.equal(setupRejection('unknown_player'), 'That player isn’t on this game’s roster, so the lineup wasn’t saved.');
+  assert.equal(setupRejection('game_already_started'), 'This game has already started, so its lineups can’t change.');
+  assert.equal(setupRejection('too_many_outs'), 'That lineup can’t be used. Check the batting order and positions.');
+});
+
+test('a division with ten fielders also offers the Rover position', () => {
+  assert.deepEqual(positionChoices(scorer, 1, 10).map((choice) => choice.label),
+    ['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF', 'ROVER', 'Bats only']);
+  assert.equal(positionChoices(scorer, 1, 9).length, 10);
+});
+
+test('a lineup saved with nobody pitching says so on its row, and Start names the team that needs a pitcher', () => {
+  let draft = newSetupDraft('2026-10-24');
+  const hawks = draft.lineups.home.slots;
+  const marlins = draft.lineups.away.slots.map((slot) => ({ ...slot, position: slot.position === 'P' ? null : slot.position }));
+  const savedHawks = saveLineup(draft, 'home', hawks);
+  assert.equal(savedHawks.kind, 'saved');
+  if (savedHawks.kind !== 'saved') return;
+  const savedMarlins = saveLineup(savedHawks.draft, 'away', marlins);
+  assert.equal(savedMarlins.kind, 'saved');
+  if (savedMarlins.kind !== 'saved') return;
+  draft = savedMarlins.draft;
+  assert.equal(lineupSummary(draft, 'away'), '9 players · no starting pitcher yet');
+  assert.equal(startRejection(draft, 'no_pitcher'), 'The Marlins need a starting pitcher.');
+  const neither = saveLineup(draft, 'home', hawks.map((slot) => ({ ...slot, position: slot.position === 'P' ? null : slot.position })));
+  assert.equal(neither.kind === 'saved' && startRejection(neither.draft, 'no_pitcher'), 'Both teams need a starting pitcher.');
+  assert.equal(startRejection(draft, 'game_already_started'), setupRejection('game_already_started'));
+});
+
+test('a game saved before the sample moved to the second half, with its nine-player Hawks roster, still reopens', async () => {
+  const { database, session } = await open();
+  const old = (side: 'home' | 'away') => Array.from({ length: 9 }, (_, index) => ({ kind: side === 'home' ? 'player' : 'opponent', id: `${side}-${index + 1}` }));
+  const started = await session.record({ kind: 'start', half: 'first', lineups: { home: [
+    { player: player('home-1'), position: 'P' }, { player: player('home-2'), position: 'C' }], away: awayLineup } });
+  assert.equal(started.kind, 'saved');
+  await database.run('UPDATE local_games SET setup_json = ?',
+    [JSON.stringify({ rules: presets['moraga-mustang-first-half'], roster: { home: old('home'), away: old('away') }, pitcherOutsEarlierToday: {} })]);
+  const reopened = await open(database);
+  assert.equal(reopened.session.kind, 'ready');
+  assert.deepEqual(reopened.session.kind === 'ready' && reopened.session.game?.setup.rules, presets['moraga-mustang-first-half']);
+  await database.close();
 });

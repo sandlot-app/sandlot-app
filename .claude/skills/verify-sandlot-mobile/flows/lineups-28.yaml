@@ -83,7 +83,7 @@ appId: host.exp.Exponent
 - takeScreenshot: lineup-pitcher-sheet
 - tapOn:
     id: "pitcher-choice-home-2"
-- assertVisible: "Choose M. Ortiz"
+- assertVisible: "Pitch first"
 - tapOn:
     id: "pitcher-confirm"
 - assertVisible:
@@ -148,7 +148,7 @@ appId: host.exp.Exponent
 - extendedWaitUntil:
     visible:
       id: "lineup-summary-away"
-      text: "9 players"
+      text: "9 players · no starting pitcher yet"
     timeout: 15000
 - assertVisible: "Start game"
 - tapOn:
@@ -156,7 +156,7 @@ appId: host.exp.Exponent
 - extendedWaitUntil:
     visible:
       id: "setup-message"
-      text: "Each team needs a starting pitcher. Choose one for the team that has none."
+      text: "The Marlins need a starting pitcher."
     timeout: 15000
 - takeScreenshot: setup-refused
 - tapOn:

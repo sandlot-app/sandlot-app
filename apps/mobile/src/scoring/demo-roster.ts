@@ -40,7 +40,7 @@ export const demoDivision = 'Mustang';
 
 /** A roster player's short name, before any lineup exists, or their ID when the demo roster doesn't know them. */
 export function rosterName(player: PlayerRef): string {
-  return demoPlayers[player.id]?.name ?? player.id;
+  return rosterDisplay(player).name;
 }
 
 /** The jersey number and short name Game setup shows for a roster player, before any lineup exists. */

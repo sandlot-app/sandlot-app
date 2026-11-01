@@ -1,13 +1,13 @@
 import { tokens } from '@sandlot/tokens';
 import { router } from 'expo-router';
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createStyles } from '../../../style';
 import { PrimaryButton } from '../../../scorer-ui';
-import { RefusalBand, SectionLabel, SetupNav } from '../../components/setup-chrome.tsx';
+import { RejectionBand, SectionLabel, SetupNav } from '../../components/setup-chrome.tsx';
 import { ChevronIcon } from '../../components/setup-marks.tsx';
-import { canStart, demoGame, lineupSummary, seasonHalfNote, setupRefusal, teamName } from '../../scoring/game-setup.ts';
+import { canStart, demoGame, lineupSummary, seasonHalfNote, startRejection, teamName } from '../../scoring/game-setup.ts';
 import type { SeasonHalf } from '../../scoring/demo-game.ts';
 import { useSetupDraft } from '../../scoring/setup-draft.tsx';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
@@ -31,7 +31,7 @@ export default function GameSetupScreen() {
     setStarting(false);
     if (result === 'started') router.replace('/score');
     else if (result === 'unavailable') setMessage('The game couldn’t start. Try again.');
-    else setMessage(setupRefusal(result.rejected));
+    else setMessage(startRejection(draft, result.rejected));
   };
 
   const details: [string, string][] = [
@@ -56,16 +56,13 @@ export default function GameSetupScreen() {
         <View style={styles.section}>
           <SectionLabel>Season half</SectionLabel>
           <View style={styles.halves} accessibilityRole="radiogroup">
-            {halves.map(({ half, label }, index) => {
+            {halves.map(({ half, label }) => {
               const selected = draft.half === half;
               return (
-                <Fragment key={half}>
-                {index > 0 ? <View style={styles.halfGap} /> : null}
-                <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={() => setDraft({ ...draft, half })}
+                <Pressable key={half} accessibilityRole="radio" accessibilityState={{ selected }} onPress={() => setDraft({ ...draft, half })}
                   style={[styles.half, selected && styles.halfSelected]} testID={`half-${half}`}>
                   <Text style={selected ? styles.halfLabelSelected : styles.halfLabel}>{label}</Text>
                 </Pressable>
-                </Fragment>
               );
             })}
           </View>
@@ -91,7 +88,7 @@ export default function GameSetupScreen() {
         </View>
       </ScrollView>
       <View style={styles.footer}>
-        {message ? <RefusalBand message={message} testID="setup-message" /> : null}
+        {message ? <RejectionBand message={message} testID="setup-message" /> : null}
         <PrimaryButton label={canStart(draft) ? 'Start game' : 'Set both lineups to start'} disabled={!ready} onPress={() => void start()} testID="start-setup" />
       </View>
     </SafeAreaView>
@@ -109,7 +106,6 @@ const styles = createStyles({
   detailTeam: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
   detailValue: { ...textStyles['Body/Regular'], color: colors['text/primary'] },
   halves: { flexDirection: 'row', padding: sizes['space/1'], borderRadius: sizes['radius/full'], backgroundColor: colors['surface/card'] },
-  halfGap: { width: 2 },
   half: { flex: 1, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: sizes['radius/full'] },
   halfSelected: { backgroundColor: colors['scoreboard/bg'] },
   halfLabel: { ...textStyles.Tab, color: colors['text/secondary'] },

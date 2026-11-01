@@ -22,7 +22,7 @@ Preconditions:
 - Any saved demo state works. The flow records two balls and undoes both, so the game ends as it began.
 
 - **Plays tab.** Run `verify.sh drive play-log.yaml`. It records two balls and undoes the second, opens Plays and sees the scoreboard, a half-inning header and the batter at bat (screenshot `plays`), scrolls to the Undone row (screenshot `plays-undone`) and the hint, taps the pinned Field tab and undoes the first ball.
-- **Ticket 28 acceptance.** Run `verify.sh drive acceptance-28.yaml`. It runs `tap-plays.yaml` first, then the scoring screen, the matchup ticket and the play log.
+- **Ticket 28 acceptance.** Run `verify.sh drive acceptance-28.yaml`. It runs `lineups-28.yaml` first (Game setup, lineups, Start, then an undone play found again after reopening), then `tap-plays.yaml`, then the scoring screen, the matchup ticket and the play log.
 - **Figma pair.** The `plays` screenshot is the app half of the Figma comparison with `69:1895`, uploaded to the `proof-28` release as `figma-plays-pair.png`.
 
 ## Gotchas

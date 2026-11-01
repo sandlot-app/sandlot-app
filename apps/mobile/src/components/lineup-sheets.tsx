@@ -45,10 +45,9 @@ export function PitcherSheet({ choices, onChoose, onClose }: {
   onClose: () => void;
 }) {
   const [picked, setPicked] = useState<PlayerRef | null>(choices.find((choice) => choice.selected)?.player ?? null);
-  const pickedChoice = choices.find((choice) => picked !== null && choice.player.id === picked.id);
   return (
     <Sheet open onRequestClose={onClose} testID="pitcher-sheet" header={<SheetHeader title="Starting pitcher" onCancel={onClose} />}
-      actions={<PrimaryButton label={pickedChoice ? `Choose ${pickedChoice.name}` : 'Choose a pitcher'} disabled={!picked}
+      actions={<PrimaryButton label={'Pitch first'} disabled={!picked}
         onPress={() => picked && onChoose(picked)} testID="pitcher-confirm" />}>
       <SheetSection label="Pitches first">
         <View style={styles.rows}>

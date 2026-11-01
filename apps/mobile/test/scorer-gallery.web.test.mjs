@@ -158,8 +158,15 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
       await visible('start-game');
       await click('start-game');
       await visible('start-setup');
+      const screenshot = async (name) => {
+        if (!process.env.SANDLOT_SCREENSHOTS_DIR) return;
+        mkdirSync(process.env.SANDLOT_SCREENSHOTS_DIR, {recursive:true});
+        const capture = await cdp.send('Page.captureScreenshot', {format:'png'});
+        writeFileSync(join(process.env.SANDLOT_SCREENSHOTS_DIR, `${name}.png`), Buffer.from(capture.data,'base64'));
+      };
       const label = (id) => evaluate(`document.querySelector('[data-testid="${id}"]')?.textContent`);
       const gone = (id) => retry(async () => assert.equal(await evaluate(`Boolean(document.querySelector('[data-testid="${id}"]'))`), false));
+      await screenshot('web-setup-empty');
       assert.equal(await label('start-setup'), 'Set both lineups to start');
       assert.equal(await evaluate(`document.querySelector('[data-testid="start-setup"]').getAttribute('aria-disabled')`), 'true', 'Start is off until both lineups are saved');
       assert.equal(await label('lineup-summary-home'), 'Not set yet');
@@ -168,27 +175,33 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
         await click(`lineup-${side}`);
         await visible('save-lineup');
         if (side === 'home') {
+          await screenshot('web-lineup-hawks-top');
           await click('position-0');
           await visible('position-sheet');
+          await screenshot('web-lineup-position-sheet');
           await click('position-choice-CF');
           await gone('position-sheet');
           await evaluate(`document.querySelector('[data-testid="change-pitcher"]').scrollIntoView()`);
           await click('change-pitcher');
           await visible('pitcher-sheet');
+          await screenshot('web-lineup-pitcher-sheet');
           await click('pitcher-confirm');
           await gone('pitcher-sheet');
           await evaluate(`document.querySelector('[data-testid="add-player"]').scrollIntoView()`);
           await click('add-player');
           await visible('add-empty');
+          await screenshot('web-lineup-add-sheet');
           await click('sheet-scrim', true);
           await gone('add-sheet');
         }
         await evaluate(`document.querySelector('[data-testid="save-lineup"]').scrollIntoView()`);
+        if (side === 'home') await screenshot('web-lineup-hawks-bottom');
         await click('save-lineup');
         await gone('save-lineup');
         await visible('start-setup');
       }
       assert.equal(await label('lineup-summary-home'), '10 players · T. Nguyen pitching');
+      await screenshot('web-setup-ready');
       assert.equal(await label('lineup-summary-away'), '9 players · J. Soto pitching');
       assert.equal(await label('start-setup'), 'Start game');
       await click('start-setup');
@@ -221,12 +234,6 @@ test('gallery controls work and a saved pitch survives browser reload', { timeou
         assert.ok(rect, `${label} should exist`);
         await cdp.send('Input.dispatchMouseEvent', {type:'mousePressed',...rect,button:'left',clickCount:1});
         await cdp.send('Input.dispatchMouseEvent', {type:'mouseReleased',...rect,button:'left',clickCount:1});
-      };
-      const screenshot = async (name) => {
-        if (!process.env.SANDLOT_SCREENSHOTS_DIR) return;
-        mkdirSync(process.env.SANDLOT_SCREENSHOTS_DIR, {recursive:true});
-        const capture = await cdp.send('Page.captureScreenshot', {format:'png'});
-        writeFileSync(join(process.env.SANDLOT_SCREENSHOTS_DIR, `${name}.png`), Buffer.from(capture.data,'base64'));
       };
       const pitch = async (result) => {
         const before = await text('waiting-plays');

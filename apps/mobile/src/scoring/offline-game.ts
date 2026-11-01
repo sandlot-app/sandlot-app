@@ -31,6 +31,15 @@ import type { SqlConnection, SqlDatabase } from './database.ts';
 import { demoLineups, gameSetup } from './demo-game.ts';
 import type { SeasonHalf } from './demo-game.ts';
 
+/**
+ * The setup games saved before the sample moved to the second half were stored with: first-half rules and a nine-player
+ * Hawks roster. Their events still replay under the first half, so such a game reopens instead of reading as corrupt.
+ */
+const legacySetupJson = JSON.stringify({
+  ...gameSetup('first'),
+  roster: { ...gameSetup('first').roster, home: gameSetup('first').roster.home.slice(0, 9) },
+});
+
 /** The game and scoring session the server issued this phone, from the seed script (docs/contract.md, Demo access). */
 export type ServerGame = { gameId: string; sessionId: string; lockEpoch: number };
 
@@ -220,7 +229,8 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
     syncRows.length > 1
   )
     throw new SavedDataError('corrupt');
-  const half = (['first', 'second'] as const).find((option) => row.setup_json === JSON.stringify(gameSetup(option)));
+  const half = (['first', 'second'] as const).find((option) => row.setup_json === JSON.stringify(gameSetup(option)))
+    ?? (row.setup_json === legacySetupJson ? 'first' : undefined);
   if (!half) throw new SavedDataError('corrupt');
   const setup = gameSetup(half);
   const lockEpoch = sync?.lock_epoch ?? 1;
