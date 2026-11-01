@@ -2,7 +2,7 @@ import { tokens } from '@sandlot/tokens';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Image, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { CheckIcon, MicIcon, MoreHorizontalIcon } from './src/components/icons.tsx';
-import { barView, type MicStatus } from './src/voice/mic-status.ts';
+import { barView, type BarPhase, type MicStatus } from './src/voice/mic-status.ts';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -212,8 +212,6 @@ export type VoiceCard =
   | { kind: 'listening'; words: string }
   /** The mic is closed and the play is being read. */
   | { kind: 'reading'; words: string }
-  /** The live words already read as a play: releasing saves `result`. */
-  | { kind: 'got_it'; words: string; result: string; tone: 'ball' | 'strike' }
   /** Nothing is saved until the scorer taps a choice. */
   | { kind: 'choose'; heading: string; words: string; choices: string[]; note: string };
 
@@ -222,19 +220,17 @@ export type VoiceCard =
  * mic is doing: "Tap to score by voice", or why it can't listen (ADR 0005). While a play is read the button leaves and
  * a spinner with "Reading your play…" stands in its place, then a plain "Saved", then the button grows back.
  */
-export function VoiceBar({ listening, reading = false, saved = false, mic = 'off', disabled = false, onTap, testID }: {
-  listening: boolean;
-  /** A play is being read: the bar shows a spinner and no button. */
-  reading?: boolean;
-  /** A play just saved: the bar says so for a moment, with no button. */
-  saved?: boolean;
+export function VoiceBar({ phase, mic = 'off', disabled = false, onTap, testID }: {
+  /** Reading and saved show a line with no button; idle and listening show the button. */
+  phase: BarPhase;
   /** What the phone's mic is doing between presses. */
   mic?: MicStatus;
   disabled?: boolean;
   onTap: () => void;
   testID?: string;
 }) {
-  const phase = reading ? 'reading' : saved ? 'saved' : listening ? 'listening' : 'idle';
+  const listening = phase === 'listening';
+  const reading = phase === 'reading';
   const { label, accessibilityLabel, lines, button } = barView(mic, phase);
   const latest = useRef({ disabled, onTap });
   useEffect(() => { latest.current = { disabled, onTap }; });
@@ -287,20 +283,16 @@ function Spinner() {
 
 /** Floats above the Scorer Bar while voice is in use: Listening, Got it, or Not sure. */
 export function TranscriptCard({ card, onChoose }: { card: VoiceCard; onChoose: (index: number) => void }) {
-  const status = card.kind === 'listening' ? 'Listening…' : card.kind === 'reading' ? 'Reading…' : card.kind === 'got_it' ? 'Got it' : card.heading;
+  const status = card.kind === 'listening' ? 'Listening…' : card.kind === 'reading' ? 'Reading…' : card.heading;
   return (
     <View style={styles.card} accessibilityLiveRegion="polite" testID="voice-card">
       <View style={styles.cardHead}>
-        <View style={card.kind === 'listening' ? styles.liveDot : card.kind === 'got_it' ? styles.savedDot : styles.unsureDot} />
+        <View style={card.kind === 'listening' ? styles.liveDot : styles.unsureDot} />
         <Text style={styles.cardStatus} testID="voice-status">{status}</Text>
       </View>
       {card.kind === 'listening'
         ? <Text style={styles.cardWords} testID="voice-words">{card.words ? `“${card.words}` : ''}<Text style={styles.cardPending}>…</Text></Text>
         : <Text style={styles.cardWords} testID="voice-words">{`“${card.words}”`}</Text>}
-      {card.kind === 'got_it' ? <View style={styles.cardResult}>
-        <View style={card.tone === 'ball' ? styles.ballResult : styles.strikeResult} />
-        <Text style={styles.cardResultText} testID="voice-result">{card.result}</Text>
-      </View> : null}
       {card.kind === 'choose' ? <View style={styles.choices}>
         {card.choices.map((choice, index) => <Pressable key={choice} accessibilityRole="button" onPress={() => onChoose(index)}
           style={({ pressed }) => [styles.choice, pressed && styles.dimmed]} testID={`voice-choice-${index}`}>
@@ -308,7 +300,7 @@ export function TranscriptCard({ card, onChoose }: { card: VoiceCard; onChoose: 
         </Pressable>)}
       </View> : null}
       <Text style={styles.cardHint}>
-        {card.kind === 'listening' ? 'Say a pitch or a play · tap to finish' : card.kind === 'reading' ? 'Hold on, your play is being read' : card.kind === 'got_it' ? 'Release to save · slide away to cancel' : card.note}
+        {card.kind === 'listening' ? 'Say a pitch or a play · tap to finish' : card.kind === 'reading' ? 'Hold on, your play is being read' : card.note}
       </Text>
     </View>
   );
@@ -382,7 +374,6 @@ const styles = createStyles({
   voiceListening: { borderWidth: 2, borderColor: colors['scoreboard/text-muted'] },
   voiceLabel: { ...textStyles['Body/Strong'], fontWeight: '500', letterSpacing: 0.075, color: colors['scoreboard/text'], flexShrink: 1, textAlign: 'center' },
   liveDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['status/live'] },
-  savedDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/ball'] },
   unsureDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
   card: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/3'], backgroundColor: colors['text/primary'], borderWidth: 1, borderColor: colors['border/glass'], borderRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingVertical: sizes['space/3'], gap: sizes['space/3'], shadowColor: colors['chip/label/halo'], shadowOpacity: 0.18, shadowRadius: sizes['radius/md'], shadowOffset: { width: 0, height: 8 }, elevation: 6 },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
@@ -390,10 +381,6 @@ const styles = createStyles({
   cardWords: { ...textStyles['Player/Name'], fontWeight: '500', color: colors['scoreboard/text'] },
   cardPending: { color: colors['scoreboard/text-muted'] },
   cardHint: { ...textStyles.Caption, color: colors['scoreboard/text-muted'] },
-  cardResult: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'], backgroundColor: colors['surface/glass'], borderRadius: sizes['radius/md'], paddingHorizontal: sizes['space/3'], paddingVertical: sizes['space/2'] },
-  ballResult: { width: 10, height: 10, borderRadius: sizes['radius/full'], backgroundColor: colors['count/ball'] },
-  strikeResult: { width: 10, height: 10, borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
-  cardResultText: { ...textStyles['Body/Strong'], color: colors['scoreboard/text'], flexShrink: 1 },
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: sizes['space/2'] },
   choice: { flexGrow: 1, flexBasis: '40%', minHeight: sizes['tap/min'], borderRadius: sizes['radius/full'], backgroundColor: colors['surface/card'], alignItems: 'center', justifyContent: 'center', paddingHorizontal: sizes['space/3'] },
   choiceText: { ...textStyles['Body/Strong'], color: colors['text/primary'], textAlign: 'center' },

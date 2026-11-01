@@ -69,6 +69,12 @@ appId: host.exp.Exponent
     id: "waiting-plays"
     text: ".* ${output.waiting} plays? saved on this phone"
 - takeScreenshot: voice-reading
+# The scoring buttons wait while a play is read, so a tap on Ball does nothing and "strike swinging" is the only play.
+- tapOn:
+    id: "pitch-ball"
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting} plays? saved on this phone"
 # Then a plain "Saved", and the button comes back.
 - extendedWaitUntil:
     visible:
@@ -148,14 +154,28 @@ appId: host.exp.Exponent
     text: ".* ${output.waiting + 3} plays? saved on this phone"
 - takeScreenshot: voice-dropped
 
-# Put the game back: undo the three plays (two voice, one tapped ball).
+# 4. With no second tap, the press ends by itself at 30 s and is read: the stub hears "ball".
 - tapOn:
-    id: "scorer-undo"
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Listening…"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Reading…"
+    timeout: 50000
+- takeScreenshot: voice-limit-reading
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
       text: ".* ${output.waiting + 4} plays? saved on this phone"
-    timeout: 15000
+    timeout: 20000
+- assertVisible: "Undo · Ball"
+
+# Put the game back: undo the four plays (three voice, one tapped ball).
 - tapOn:
     id: "scorer-undo"
 - extendedWaitUntil:
@@ -169,4 +189,18 @@ appId: host.exp.Exponent
     visible:
       id: "waiting-plays"
       text: ".* ${output.waiting + 6} plays? saved on this phone"
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 7} plays? saved on this phone"
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 8} plays? saved on this phone"
     timeout: 15000

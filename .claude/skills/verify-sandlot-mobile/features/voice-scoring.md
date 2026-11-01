@@ -6,7 +6,7 @@ The scorer taps the Voice Bar, says a pitch or a play, and taps again. There is 
 
 - `voice-save` saves a simple play on the second tap ("strike swinging"). The status line and the Undo label name it (`voice-bar`, `waiting-plays`, `scorer-undo`).
 - `voice-live` shows the Listening card with the live words while the mic is open, and the bar reads "Listening… tap to finish" (`voice-card`, `voice-status`, `voice-words`).
-- `voice-reading` shows "Reading…" on the card and "Reading your play…" with a spinner on the bar while an ended press is read. Nothing has saved yet (`voice-bar`, `voice-status`).
+- `voice-reading` shows "Reading…" on the card and "Reading your play…" with a spinner on the bar while an ended press is read. Nothing has saved yet, and the scoring buttons wait too, so a tap on Ball does nothing until the play is read (`voice-bar`, `voice-status`, `pitch-ball`).
 - `voice-saved` shows a plain "Saved" for a moment after a voice play saves, then the button grows back (`voice-bar`).
 - `voice-not-sure` shows the readings as choices and saves only the one tapped (`voice-choice-0`, `voice-choice-1`).
 - `voice-drop` drops the open press, saving nothing, when a scoring button is tapped. The tapped button still saves (`pitch-ball`).
@@ -14,7 +14,7 @@ The scorer taps the Voice Bar, says a pitch or a play, and taps again. There is 
 - `voice-warm-mic` keeps the phone's mic listening while the scoring screen is open and in the foreground, and keeps only the last second in memory so a press starts with it (ADR 0005). The idle bar's accessibility label reads "Mic ready. Tap to score by voice" (`voice-bar`). It stops on leaving the screen, on the Plays tab, and when the app leaves the foreground.
 - `voice-mic-first-open` shows one line above the bar the first time a scoring screen opens, before iOS asks for the mic: "Sandlot listens only while you're on this screen, and only sends what you say after you press." (`voice-message`).
 - `voice-mic-refused` shows "Turn on the mic in Settings" on the bar when the mic was refused. A press says it can't use the microphone, and the buttons keep scoring (`voice-bar`, `voice-message`).
-- `voice-limit` ends a press at 30 s of audio with no tap. It is covered by the app's press and controller tests, not the Maestro flows, because the stub's mic is silence at real speed.
+- `voice-limit` ends a press at 30 s of audio with no tap (screenshot `voice-limit-reading`). The flow waits the full 30 s, because the stub's mic delivers silence at real speed.
 - `voice-blank-retry` sends the recording to voice-parse once when the live transcript comes back blank, and shows "Didn't catch that" only when that is blank too. It is covered by the app's press and controller tests, not the Maestro flows, because the stub never returns a blank transcript.
 - `voice-fallback` shows one line (`voice-message`) when voice can't help, such as "Voice is unavailable right now. Tap to score." A press the engine refuses because the game moved says "That voice play didn't save. Say it again or tap to score." This is covered by the app's controller tests, not the Maestro flow, because the stub answers too fast to overlap two presses.
 

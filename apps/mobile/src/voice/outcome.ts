@@ -1,6 +1,5 @@
 import type { Command, TeamSide } from '@sandlot/engine';
 import type { Decision, PressGame, Reading, RosterEntry } from '@sandlot/voice';
-import type { VoiceCard } from '../../scorer-ui';
 import { demoSetup } from '../scoring/demo-game.ts';
 import { playerDisplay } from '../scoring/demo-roster.ts';
 import type { SavedGame } from '../scoring/offline-game.ts';
@@ -27,13 +26,12 @@ export function outcome(decision: Decision): Outcome {
     case 'reject': return decision.savePart
       ? { kind: 'choose', heading: 'Save part of it?', choices: [decision.savePart], note: decision.message }
       : { kind: 'message', message: decision.message };
-    case 'didnt_catch': return { kind: 'message', message: "Didn't catch that. Hold and try again, or tap to score." };
+    case 'didnt_catch': return { kind: 'message', message: "Didn't catch that. Tap the bar and say it again, or use the buttons." };
     case 'no_play': return { kind: 'message', message: "That wasn't a play, so nothing was saved." };
     case 'unknown_phrase': return { kind: 'message', message: decision.message };
   }
 }
 
-export const lostMessage = "The last voice play didn't save. Say it again or tap to score.";
 export const unsavedMessage = "That voice play didn't save. Say it again or tap to score.";
 
 export function failureMessage(failure: VoiceFailure): string {
@@ -54,19 +52,6 @@ export function failureMessage(failure: VoiceFailure): string {
 export function choiceLabels(readings: Reading[]): string[] {
   const short = readings.map((reading) => reading.readBack.replace(/ → count [^·]*?(?= ·|$)/g, ''));
   return new Set(short).size === short.length ? short : readings.map((reading) => reading.readBack);
-}
-
-/** The result dot: a ball's green, everything else the strike yellow, as the Pitch Row marks them. */
-export function tone(commands: Command[]): 'ball' | 'strike' {
-  const first = commands[0];
-  return first?.kind === 'pitch' && (first.result === 'ball' || first.result === 'hit_by_pitch') ? 'ball' : 'strike';
-}
-
-/** While held, the card says "Got it" once the words so far would save on release. */
-export function liveCard(decision: Decision, words: string): VoiceCard {
-  return decision.kind === 'save'
-    ? { kind: 'got_it', words, result: decision.reading.readBack, tone: tone(decision.reading.commands) }
-    : { kind: 'listening', words };
 }
 
 /** The lineup the parser names players from. Names stay here and in the request; events carry IDs only (rule 5). */

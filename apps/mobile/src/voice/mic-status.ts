@@ -22,9 +22,16 @@ export const explainLine = "Sandlot listens only while you're on this screen, an
 /** Where the voice bar is in one press: waiting, the mic open, the play being read, or just saved. */
 export type BarPhase = 'idle' | 'listening' | 'reading' | 'saved';
 
+/** The phase from what the voice controller reports: a play being read wins, then Saved, then the mic being open. */
+export function barPhase({ listening, reading, saved }: { listening: boolean; reading: number; saved: boolean }): BarPhase {
+  if (reading > 0) return 'reading';
+  if (saved) return 'saved';
+  return listening ? 'listening' : 'idle';
+}
+
 /**
  * What the voice bar shows and says. `button` is false while a play is read or just saved: the bar is then only a line,
- * with a spinner or a check, and the button comes back after. The open mic wins over what the mic was doing before.
+ * with a spinner or a check, and the button comes back after. A press in progress wins over what the mic was doing before.
  */
 export type BarView = { label: string; accessibilityLabel: string; lines: 1 | 2; button: boolean };
 
@@ -34,7 +41,8 @@ const busy = 'Mic busy · tap to score';
 
 export function barView(mic: MicStatus, phase: BarPhase): BarView {
   switch (phase) {
-    case 'listening': return { label: 'Listening… tap to finish', accessibilityLabel: 'Listening. Tap to finish', lines: 1, button: true };
+    // Two lines: a narrow phone wraps it rather than cutting off "tap to finish".
+    case 'listening': return { label: 'Listening… tap to finish', accessibilityLabel: 'Listening. Tap to finish', lines: 2, button: true };
     case 'reading': return { label: 'Reading your play…', accessibilityLabel: 'Reading your play', lines: 1, button: false };
     case 'saved': return { label: 'Saved', accessibilityLabel: 'Saved', lines: 1, button: false };
     case 'idle': break;

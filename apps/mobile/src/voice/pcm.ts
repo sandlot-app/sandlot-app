@@ -1,7 +1,7 @@
 // 16-bit mono PCM at 24 kHz, the only audio voice-session and voice-parse take (docs/contract.md, Voice).
 
 export const SAMPLE_RATE = 24000;
-/** 30 seconds of audio, the longest press and the safety limit that ends a forgotten open mic (spec A2). */
+/** 30 seconds of audio, the longest press, counting the second kept before the touch, and the safety limit that ends a forgotten mic (spec A2). */
 export const MAX_CLIP_BYTES = 30 * SAMPLE_RATE * 2;
 
 const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';

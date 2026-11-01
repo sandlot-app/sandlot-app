@@ -15,8 +15,8 @@ export type VoiceView = {
   listening: boolean;
   /** How many ended presses are still being read or waiting their turn to save. */
   reading: number;
-  /** How many voice plays have saved on this screen, so the bar can say "Saved" when it goes up. */
-  saved: number;
+  /** A voice play just saved: the bar says so for a moment, then the button comes back. */
+  saved: boolean;
   card: VoiceCard | null;
   message: string | null;
 };
@@ -29,6 +29,8 @@ export type VoiceControllerDeps = {
   /** The newest record(), which reads the newest screen state. */
   record(action: DemoAction): Promise<boolean>;
   now(): number;
+  /** How long `saved` stays up after a voice play saves. */
+  savedMs?: number;
   onChange(view: VoiceView): void;
 };
 
@@ -39,7 +41,7 @@ type Answer = Exclude<PressUpdate, { kind: 'words' } | { kind: 'ended' }> | null
 type Choosing = { card: Extract<VoiceCard, { kind: 'choose' }>; readings: Reading[]; pressed: Pressed };
 type Ended = { handle: PressHandle; answer(answer: Answer): void };
 
-export function createVoiceController({ voice, game, record, now, onChange }: VoiceControllerDeps) {
+export function createVoiceController({ voice, game, record, now, savedMs = 1500, onChange }: VoiceControllerDeps) {
   /** The press the mic is open for. */
   let open: PressHandle | null = null;
   let words = '';
@@ -50,12 +52,15 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
   /** What the Transcript Card says while those presses are read: the newest one's words. */
   let readingWords = '';
   /** Ended presses settle one after another, in the order they ended. */
-  let line: Promise<void> = Promise.resolve();
-  let saved = 0;
+  let queue: Promise<void> = Promise.resolve();
+  let saved = false;
+  let savedTimer: ReturnType<typeof setTimeout> | undefined;
   /** The revision our own latest save left the game at. A press behind it saves on top of it, not as stale. */
-  let after: number | null = null;
+  let lastOwnRevision: number | null = null;
   /** Counts each time the scorer moves on (a tap, a teardown), so a late refusal can tell it's stale. */
   let turn = 0;
+  /** Counts teardowns, so a press that ended before one never saves after it. */
+  let generation = 0;
   /** The last play voice saved, for route()'s duplicate guard (D4). A tap or an undo clears it. */
   let previous: { commands: Command[]; at: number } | undefined;
 
@@ -72,7 +77,9 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
 
   /** The revision the game reaches once our save shows up, which the screen reports a moment after record() answers. */
   async function revisionAfter(from: number): Promise<number | null> {
-    for (let wait = 0; wait < 8; wait += 1) {
+    // The screen reports a save a render after record() answers, so this waits a few ticks. If it never does, the next
+    // press is treated as stale: it is refused and the scorer is told, never saved on a game it wasn't read against.
+    for (let wait = 0; wait < 25; wait += 1) {
       const revision = game()?.revision;
       if (revision !== undefined && revision > from) return revision;
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -87,8 +94,12 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
   async function commit(action: DemoAction, pressed: Pressed): Promise<boolean> {
     const mine = turn;
     const done = await record(action);
-    if (done) after = await revisionAfter(pressed.revision);
-    else refused(mine);
+    if (!done) refused(mine);
+    else {
+      const revision = await revisionAfter(pressed.revision);
+      // A tap that landed while this waited has saved on top of us, so there is nothing of ours to build on.
+      lastOwnRevision = mine === turn ? revision : null;
+    }
     return done;
   }
 
@@ -96,9 +107,18 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
     const done = await commit({ kind: 'voice', at: new Date(pressed.at).toISOString(), expectedRevision: pressed.revision, commands }, pressed);
     if (done) {
       previous = { commands, at: pressed.at };
-      saved += 1;
+      showSaved();
     }
   };
+
+  function showSaved() {
+    saved = true;
+    clearTimeout(savedTimer);
+    savedTimer = setTimeout(() => {
+      saved = false;
+      publish();
+    }, savedMs);
+  }
 
   /** A save or undo the engine refused, as stale or busy: the scorer hears it, unless they've already moved on. */
   function refused(mine: number) {
@@ -110,7 +130,7 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
   /** Where a press saves from: on top of our own latest save when nothing else has saved since, else where it started. */
   function pinned(from: Pressed): Pressed {
     const current = game();
-    return { at: from.at, revision: after !== null && current?.revision === after ? after : from.revision };
+    return { at: from.at, revision: lastOwnRevision !== null && current?.revision === lastOwnRevision ? lastOwnRevision : from.revision };
   }
 
   async function settle(answer: Answer, from: Pressed) {
@@ -144,11 +164,14 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
     readingWords = words;
     const slot: Ended = { handle, answer: resolve };
     ended.add(slot);
-    const behind = line;
-    line = (async () => {
+    const behind = queue;
+    const born = generation;
+    queue = (async () => {
       const result = await answer;
       await behind;
       ended.delete(slot);
+      // A teardown since this press ended drops it, even if its answer had already arrived.
+      if (born !== generation) return;
       await settle(result, from);
       publish();
     })();
@@ -187,6 +210,18 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
     publish();
   }
 
+  /** The scorer moved on: the open press, any card and any line go, and a late refusal stays quiet. */
+  function dropOpen() {
+    turn += 1;
+    open?.cancel();
+    open = null;
+    choosing = null;
+    message = null;
+    previous = undefined;
+    saved = false;
+    clearTimeout(savedTimer);
+  }
+
   /** The mic is open: a second tap ends it. */
   const end = () => open?.release();
 
@@ -215,26 +250,18 @@ export function createVoiceController({ voice, game, record, now, onChange }: Vo
     },
     /** A tap on the scorer buttons drops the press that is open. Presses that already ended still save. */
     dismiss() {
-      turn += 1;
-      open?.cancel();
-      open = null;
-      choosing = null;
-      message = null;
-      previous = undefined;
-      after = null;
+      dropOpen();
+      lastOwnRevision = null;
       publish();
     },
     dispose() {
-      turn += 1;
-      open?.cancel();
-      open = null;
+      dropOpen();
+      generation += 1;
       for (const slot of ended) {
         slot.handle.cancel();
         slot.answer(null);
       }
       ended.clear();
-      choosing = null;
-      message = null;
       publish();
     },
   };

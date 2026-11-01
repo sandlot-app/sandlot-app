@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { openOfflineGame, type DemoAction, type SavedGame } from '../src/scoring/offline-game.ts';
-import { barView, type MicStatus } from '../src/voice/mic-status.ts';
+import { barPhase, barView, type MicStatus } from '../src/voice/mic-status.ts';
 import { SAMPLE_RATE } from '../src/voice/pcm.ts';
 import { createVoiceController, type VoiceView } from '../src/voice/voice-controller.ts';
 import { createWarmMic, type AudioSource, type Permission } from '../src/voice/warm-mic.ts';
@@ -260,7 +260,7 @@ test('allowing the mic in Settings clears the "can\'t use the microphone" line o
   warm.warm(true);
   await tick();
   controller.micReady();
-  assert.deepEqual(views.at(-1), { listening: false, reading: 0, saved: 0, card: null, message: null });
+  assert.deepEqual(views.at(-1), { listening: false, reading: 0, saved: false, card: null, message: null });
 });
 
 test('the mic being ready clears only that line, and leaves a press that is listening alone', async () => {
@@ -356,7 +356,7 @@ test('a release while iOS is still asking stops the stream that press began', as
   assert.equal(source.closed, 1, 'no mic left running with nobody to hear it');
 });
 
-const didntCatch = "Didn't catch that. Hold and try again, or tap to score.";
+const didntCatch = "Didn't catch that. Tap the bar and say it again, or use the buttons.";
 
 /** A press that streams, lets go, and gets a blank final transcript. */
 async function pressHearingNothing(setup: Parameters<typeof scorer>[0]) {
@@ -404,10 +404,18 @@ test('#88: the bar says one clear thing for each moment: ready, listening, readi
   assert.deepEqual(idle.map((view) => view.lines), [1, 1, 1, 2, 2], 'the two long lines get room on a narrow phone');
   assert.equal(idle[2]!.accessibilityLabel, 'Mic ready. Tap to score by voice', 'a screen reader still hears the mic is ready');
   for (const mic of ['off', 'ready', 'refused', 'busy'] as const) {
-    assert.equal(barView(mic, 'listening').label, 'Listening… tap to finish', 'the open mic wins over what the mic was doing before');
+    assert.equal(barView(mic, 'listening').label, 'Listening… tap to finish', 'a press in progress wins over what the mic was doing before');
     assert.equal(barView(mic, 'reading').label, 'Reading your play…');
     assert.equal(barView(mic, 'saved').label, 'Saved');
   }
   assert.deepEqual(['idle', 'listening', 'reading', 'saved'].map((phase) => barView('ready', phase as 'idle').button), [true, true, false, false],
     'while a play is read or saved the bar is not a button, it is only a line');
+});
+
+test('#88: the bar is in one phase at a time: reading wins over Saved, Saved over Listening', () => {
+  assert.equal(barPhase({ listening: false, reading: 0, saved: false }), 'idle');
+  assert.equal(barPhase({ listening: true, reading: 0, saved: false }), 'listening');
+  assert.equal(barPhase({ listening: false, reading: 0, saved: true }), 'saved');
+  assert.equal(barPhase({ listening: false, reading: 2, saved: true }), 'reading', 'a play still being read shows the spinner, not Saved');
+  assert.equal(barPhase({ listening: true, reading: 1, saved: false }), 'reading');
 });

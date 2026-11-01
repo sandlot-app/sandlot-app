@@ -8,10 +8,10 @@ import { connect } from './database.ts';
 import { fakeApi, fakeMic, fakeSocket, tick, timeouts } from './voice-fakes.ts';
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, timeouts.openMs + timeouts.finalMs + 30));
-const idle: VoiceView = { listening: false, reading: 0, saved: 0, card: null, message: null };
+const idle: VoiceView = { listening: false, reading: 0, saved: false, card: null, message: null };
 
 /** A started offline game, a controller on it, and a fake mic and socket for each press. */
-async function scorer(voiceOn = true, gate?: Promise<boolean>) {
+async function scorer(voiceOn = true, gate?: Promise<boolean>, wait = timeouts) {
   const session = await openOfflineGame(connect(':memory:'), { newId: randomUUID, now: () => '2026-10-26T17:00:00.000Z' });
   if (session.kind !== 'ready') throw new Error('Session must open');
   const started = await session.record({ kind: 'start' });
@@ -30,10 +30,11 @@ async function scorer(voiceOn = true, gate?: Promise<boolean>) {
   let socket = fakeSocket();
   const views: VoiceView[] = [];
   const controller = createVoiceController({
-    voice: voiceOn ? { mic, api: fakeApi(), openSocket: () => (socket = fakeSocket()), timeouts } : null,
+    voice: voiceOn ? { mic, api: fakeApi(), openSocket: () => (socket = fakeSocket()), timeouts: wait } : null,
     game: () => game,
     record,
     now: () => Date.parse('2026-10-26T17:01:00.000Z'),
+    savedMs: 60,
     onChange: (view) => views.push(view),
   });
   /** One tap opens the mic and a second tap ends it; the final words arrive when `hear` is called. */
@@ -95,8 +96,10 @@ test('#88: a second tap ends the press and its words save', async () => {
   socket().server({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'strike swinging' });
   await settle();
   assert.deepEqual(plays().map((event) => event.command), [{ kind: 'pitch', result: 'swinging_strike' }]);
-  assert.equal(views.at(-1)?.reading, 0);
-  assert.equal(views.at(-1)?.saved, 1);
+  const lastReading = views.map((view) => view.reading).lastIndexOf(1);
+  assert.deepEqual([views[lastReading + 1]?.reading, views[lastReading + 1]?.saved], [0, true], '"Saved" comes up in the same update the reading ends, so the bar never flashes the button between them');
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  assert.equal(views.at(-1)?.saved, false, 'and goes after a moment, so the button comes back');
 });
 
 test('#88: 30 s of audio ends the press by itself and the play saves', async () => {
@@ -117,7 +120,8 @@ test('#88: 30 s of audio ends the press by itself and the play saves', async () 
 });
 
 test('#88: two queued presses both save, in the order they ended, each against the game after the one before', async () => {
-  const { controller, mic, plays, recorded, views, socket } = await scorer();
+  // A long wait for the first press's words, so a slow machine never makes it give up before the second is read.
+  const { controller, mic, plays, recorded, views, socket } = await scorer(true, undefined, { openMs: 30, finalMs: 2000 });
   const sockets: ReturnType<typeof socket>[] = [];
   const press = async () => {
     controller.tap();
@@ -181,7 +185,28 @@ test('#88: a press that can\'t be read saves nothing and tells the scorer what h
   assert.deepEqual(plays(), []);
   assert.ok(views.at(-1)?.message, 'the scorer hears why nothing saved');
   assert.equal(views.at(-1)?.reading, 0);
-  assert.equal(views.at(-1)?.saved, 0);
+  assert.equal(views.at(-1)?.saved, false);
+});
+
+test('#88: tearing down while presses are queued saves none of them, even one whose answer already arrived', async () => {
+  const { controller, mic, plays, recorded, socket } = await scorer(true, undefined, { openMs: 30, finalMs: 2000 });
+  const sockets: ReturnType<typeof socket>[] = [];
+  for (let press = 0; press < 2; press += 1) {
+    controller.tap();
+    await tick();
+    socket().open();
+    mic.push([1, 0, 2, 0]);
+    sockets.push(socket());
+    controller.tap();
+  }
+  const said = (index: number, transcript: string) => sockets[index]!.server({ type: 'conversation.item.input_audio_transcription.completed', transcript });
+  said(1, 'ball');
+  await tick();
+  controller.dispose();
+  said(0, 'strike swinging');
+  await settle();
+  assert.deepEqual(plays(), [], 'leaving the screen drops every press, so nothing saves after it');
+  assert.deepEqual(recorded, []);
 });
 
 test('a tap saved while a press is read makes the press stale, so it never writes on top', async () => {

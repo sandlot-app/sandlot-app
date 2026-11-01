@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { route } from '@sandlot/voice';
 import { openOfflineGame, type SavedGame } from '../src/scoring/offline-game.ts';
-import { choiceLabels, failureMessage, liveCard, outcome, pressGame, pressInput } from '../src/voice/outcome.ts';
+import { choiceLabels, failureMessage, outcome, pressGame, pressInput } from '../src/voice/outcome.ts';
 import { connect } from './database.ts';
 
 async function started() {
@@ -30,14 +30,6 @@ test('"strike swinging" saves through the engine as a voice play', async () => {
   assert.equal(JSON.stringify(play).includes('Darcy') || JSON.stringify(play).includes('Soto'), false, 'events carry IDs, never names (rule 5)');
 });
 
-test('while held, words that would save show Got it with the read-back; words that need a choice keep listening', async () => {
-  const { game } = await started();
-  assert.deepEqual(liveCard(said(game, 'strike swinging'), 'strike swinging'),
-    { kind: 'got_it', words: 'strike swinging', result: 'Strike swinging → count 0–1', tone: 'strike' });
-  assert.deepEqual(liveCard(said(game, 'ball'), 'ball'), { kind: 'got_it', words: 'ball', result: 'Ball → count 1–0', tone: 'ball' });
-  assert.deepEqual(liveCard(said(game, 'strike'), 'strike'), { kind: 'listening', words: 'strike' });
-});
-
 test('C3: "strike" asks which one, and nothing saves until a choice', async () => {
   const { game } = await started();
   const result = outcome(said(game, 'strike'));
@@ -50,7 +42,7 @@ test('C3: "strike" asks which one, and nothing saves until a choice', async () =
 
 test('the other decisions fall back to one line, or to undo', async () => {
   const { game } = await started();
-  assert.deepEqual(outcome(said(game, '')), { kind: 'message', message: "Didn't catch that. Hold and try again, or tap to score." });
+  assert.deepEqual(outcome(said(game, '')), { kind: 'message', message: "Didn't catch that. Tap the bar and say it again, or use the buttons." });
   assert.deepEqual(outcome(said(game, 'zorp the flibber')), { kind: 'message', message: 'Didn\'t understand "zorp the flibber". Tap to score.' });
   assert.deepEqual(outcome(said(game, 'scratch that')), { kind: 'undo' });
   assert.equal(failureMessage('voice_unavailable'), 'Voice is unavailable right now. Tap to score.', 'the contract\'s A10 wording');

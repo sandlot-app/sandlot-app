@@ -10,7 +10,7 @@ import type { AudioSource, Permission } from './warm-mic.ts';
 //
 // The mic stand-in is silence, and by default it only runs during a press, like a phone with no warm mic. Add
 // EXPO_PUBLIC_VOICE_STUB_MIC to turn the warm mic on over it, so the bar's states can be checked:
-//   granted       "Mic ready" on opening the scoring screen
+//   granted       the idle bar reads "Tap to score by voice" with "Mic ready" in its accessibility label
 //   undetermined  the first-open line, then "Mic ready" once the stand-in says yes (iOS has no prompt to answer here)
 //   denied        the Settings line, and a press says it can't listen
 //   busy          the "Mic busy" line, as when another app holds the mic
