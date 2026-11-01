@@ -1,0 +1,4 @@
+appId: host.exp.Exponent
+# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="double, everybody scores|Soto doubles|double, the runner scores".
+---
+- runFlow: voice-whole-press.yaml
