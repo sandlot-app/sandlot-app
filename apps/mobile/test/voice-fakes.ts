@@ -1,9 +1,19 @@
 import { SAMPLE_RATE } from '../src/voice/pcm.ts';
 import type { Mic } from '../src/voice/press.ts';
 import type { Socket } from '../src/voice/realtime.ts';
+import type { PressContext } from '@sandlot/voice';
 import type { ParseBody, Parsed, Result, Session, VoiceApi } from '../src/voice/voice-api.ts';
 
 // Stand-ins for the mic, the voice functions and OpenAI's socket, shared by the voice tests.
+
+const person = (name: string, number: string) => ({ name, number });
+/** A press's game as voice-parse sees it, for tests that only pass it along. */
+export const context: PressContext = {
+  inning: 1, half: 'top', outs: 0, balls: 0, strikes: 0, score: { batting: 0, fielding: 0 },
+  batter: person('L. Darcy', '3'), pitcher: person('A. Kindle', '3'), runners: {},
+  battingOrder: [{ player: person('L. Darcy', '3'), position: 'C' }], fielders: [{ player: person('A. Kindle', '3'), position: 'P' }],
+  lastPlay: null,
+};
 
 export const session: Session = { url: 'wss://api.openai.com/v1/realtime?intent=transcription', secret: 'ek_test', expiresAt: 0, sampleRate: SAMPLE_RATE };
 export const timeouts = { openMs: 30, finalMs: 30 };
@@ -33,7 +43,7 @@ export function fakeSocket() {
   return socket;
 }
 
-export function fakeApi(sessionResult: Result<Session> = { ok: true, value: session }, parseResult: Result<Parsed> = { ok: true, value: { transcript: '', parsed: null } }) {
+export function fakeApi(sessionResult: Result<Session> = { ok: true, value: session }, parseResult: Result<Parsed> = { ok: true, value: { transcript: '', answer: null } }) {
   const parsed: ParseBody[] = [];
   const api: VoiceApi & { parsed: ParseBody[] } = {
     parsed,

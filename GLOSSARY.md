@@ -23,7 +23,7 @@ Everything one scorer action records: one tap action or one Press. Undo reverses
 _Avoid_: Group (in conversation), action, entry
 
 **Press**:
-One tap or hold of the voice bar, from when the mic opens until it ends. A press records one Play, however many calls it holds.
+One tap of the voice bar and what's said after it, from when the mic opens until it ends. A press records one Play, however many calls it holds.
 _Avoid_: Recording, utterance, voice command
 
 **Call**:

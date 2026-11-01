@@ -1,13 +1,18 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { ParseResult } from '@sandlot/voice';
+import type { Answer } from '@sandlot/voice';
 import { Clip, MAX_CLIP_BYTES, SAMPLE_RATE, toBase64 } from '../src/voice/pcm.ts';
 import { startPress, type Mic, type PressUpdate } from '../src/voice/press.ts';
 import type { Socket } from '../src/voice/realtime.ts';
 import { createVoiceApi, type VoiceApi } from '../src/voice/voice-api.ts';
 import { fakeApi, fakeMic, fakeSocket, session, tick, timeouts } from './voice-fakes.ts';
 
-const context = { batting: ['L. Darcy'], fielding: ['A. Kindle'], runners: [] };
+const nobody = { name: null, number: null };
+const double: Answer = { result: 'play', fix_last: false, readings: [{ batter: { name: 'Darcy', number: null }, earlier_batters: [], pitcher: nobody, pitches: [], runner_events: [], runner_events_after: [], forced_runners: [], taken_back: [],
+  ball_in_play: { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners: [], batter_out_first: false } }] };
+
+import { context } from './voice-fakes.ts';
+
 const input = { names: ['L. Darcy', 'A. Kindle'], context };
 
 function run(mic: Mic, api: VoiceApi, socket: Socket) {
@@ -41,33 +46,32 @@ test('a press streams the audio from before the socket opened first, shows live 
   const result = await done;
   assert.equal(result.kind, 'heard');
   assert.equal(result.kind === 'heard' && result.transcript, 'strike swinging');
-  assert.equal(result.kind === 'heard' && result.parsed.kind, 'plays');
+  assert.equal(result.kind === 'heard' && result.heard.kind, 'pitches', 'the phone reads a pitch call on its own');
   assert.equal(api.parsed.length, 0, 'the phone reads a simple pitch without voice-parse');
   assert.equal(mic.stopped, 1);
   assert.equal(socket.closed, true, 'the socket closes on release, so the session stops costing money');
 });
 
-test('words the phone grammar can\'t read go to voice-parse as text, and its parse is what the press heard', async () => {
+test('anything but pitch calls or a lone undo goes to voice-parse with the game, and its answer is what the press heard', async () => {
   const mic = fakeMic();
   const socket = fakeSocket();
-  const parsed = { kind: 'not_a_command', question: true } as const;
-  const api = fakeApi(undefined, { ok: true, value: { transcript: 'how many outs', parsed } });
+  const api = fakeApi(undefined, { ok: true, value: { transcript: 'Darcy rips one to the gap', answer: double } });
   const { press, done } = run(mic, api, socket);
   await tick();
   socket.open();
   mic.push([1, 0]);
   press.release();
   await tick();
-  socket.server({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'zorp the flibber' });
+  socket.server({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'Darcy rips one to the gap' });
   const result = await done;
-  assert.deepEqual(api.parsed, [{ transcript: 'zorp the flibber', context }]);
-  assert.deepEqual(result, { kind: 'heard', transcript: 'zorp the flibber', parsed });
+  assert.deepEqual(api.parsed, [{ transcript: 'Darcy rips one to the gap', context }]);
+  assert.deepEqual(result, { kind: 'heard', transcript: 'Darcy rips one to the gap', heard: { kind: 'answer', answer: double } });
 });
 
-test('when voice-parse is down, unreadable words still route as unclear rather than failing the press', async () => {
+test('an answer voice-parse could not use is heard as unusable, so nothing saves', async () => {
   const mic = fakeMic();
   const socket = fakeSocket();
-  const api = fakeApi(undefined, { ok: false, failure: 'voice_unavailable' });
+  const api = fakeApi(undefined, { ok: true, value: { transcript: 'zorp the flibber', answer: null } });
   const { press, done } = run(mic, api, socket);
   await tick();
   socket.open();
@@ -75,8 +79,22 @@ test('when voice-parse is down, unreadable words still route as unclear rather t
   press.release();
   await tick();
   socket.server({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'zorp the flibber' });
-  const result = await done;
-  assert.equal(result.kind === 'heard' && result.parsed.kind, 'unclear');
+  assert.deepEqual(await done, { kind: 'heard', transcript: 'zorp the flibber', heard: { kind: 'unusable' } });
+});
+
+test('when voice-parse is down or slow, the press fails with the reason and points to taps', async () => {
+  for (const failure of ['voice_unavailable', 'timeout'] as const) {
+    const mic = fakeMic();
+    const socket = fakeSocket();
+    const { press, done } = run(mic, fakeApi(undefined, { ok: false, failure }), socket);
+    await tick();
+    socket.open();
+    mic.push([1, 0]);
+    press.release();
+    await tick();
+    socket.server({ type: 'conversation.item.input_audio_transcription.completed', transcript: 'zorp the flibber' });
+    assert.deepEqual(await done, { kind: 'failed', failure });
+  }
 });
 
 for (const [name, setup] of [
@@ -87,9 +105,8 @@ for (const [name, setup] of [
   test(`A4/A5: when ${name}, the whole recorded clip goes to voice-parse`, async () => {
     const mic = fakeMic();
     const socket = fakeSocket();
-    const plays: ParseResult = { kind: 'plays', plays: [{ kind: 'pitch', result: 'ball' }], parts: ['ball'] };
     const api = fakeApi(name === 'voice-session fails' ? { ok: false, failure: 'voice_unavailable' } : undefined,
-      { ok: true, value: { transcript: 'ball', parsed: plays } });
+      { ok: true, value: { transcript: 'Darcy doubles', answer: double } });
     const { press, done } = run(mic, api, socket);
     await tick();
     mic.push([1, 0, 2, 0]);
@@ -98,7 +115,7 @@ for (const [name, setup] of [
     press.release();
     const result = await done;
     assert.deepEqual(api.parsed, [{ audio: toBase64(Uint8Array.from([1, 0, 2, 0, 3, 0])), context }]);
-    assert.deepEqual(result, { kind: 'heard', transcript: 'ball', parsed: plays });
+    assert.deepEqual(result, { kind: 'heard', transcript: 'Darcy doubles', heard: { kind: 'answer', answer: double } });
   });
 }
 
@@ -117,21 +134,21 @@ async function finishWith(transcript: string, api: ReturnType<typeof fakeApi>) {
 }
 
 test('a blank live transcript is retried once with the recording, and what that hears is what the press heard', async () => {
-  const plays: ParseResult = { kind: 'plays', plays: [{ kind: 'pitch', result: 'ball' }], parts: ['ball'] };
   for (const blank of ['', '  ', 'um']) {
-    const api = fakeApi(undefined, { ok: true, value: { transcript: 'ball', parsed: plays } });
+    const api = fakeApi(undefined, { ok: true, value: { transcript: 'ball', answer: null } });
     const result = await finishWith(blank, api);
     assert.deepEqual(api.parsed, [{ audio: toBase64(Uint8Array.from([1, 0, 2, 0])), context }]);
-    assert.deepEqual(result, { kind: 'heard', transcript: 'ball', parsed: plays });
+    assert.equal(result.kind === 'heard' && result.transcript, 'ball');
+    assert.equal(result.kind === 'heard' && result.heard.kind, 'pitches');
   }
 });
 
-test('when the retry is blank too the press heard nothing, so route() says it didn\'t catch that, after one retry only', async () => {
-  const api = fakeApi(undefined, { ok: true, value: { transcript: '', parsed: null } });
+test('when the retry is blank too the press heard nothing, so decide() says it didn\'t catch that, after one retry only', async () => {
+  const api = fakeApi(undefined, { ok: true, value: { transcript: '', answer: null } });
   const result = await finishWith('', api);
   assert.equal(api.parsed.length, 1);
   assert.equal(result.kind === 'heard' && result.transcript, '');
-  assert.equal(result.kind === 'heard' && result.parsed.kind, 'not_a_command');
+  assert.equal(result.kind === 'heard' && result.heard.kind, 'empty');
 });
 
 test('when the retry itself fails the scorer hears why, not "didn\'t catch that"', async () => {
@@ -156,7 +173,7 @@ test('A10: a clip voice-parse refuses falls back to taps with the reason', async
   }
 });
 
-test('a clip with nothing said is an empty press, so route() says it didn\'t catch that', async () => {
+test('a clip with nothing said is an empty press, so the phone says it didn\'t catch that', async () => {
   const mic = fakeMic();
   const { press, done } = run(mic, fakeApi({ ok: false, failure: 'voice_unavailable' }), fakeSocket());
   await tick();
@@ -164,6 +181,7 @@ test('a clip with nothing said is an empty press, so route() says it didn\'t cat
   press.release();
   const result = await done;
   assert.equal(result.kind === 'heard' && result.transcript, '');
+  assert.equal(result.kind === 'heard' && result.heard.kind, 'empty');
 });
 
 test('a press with no audio at all is empty and calls nothing', async () => {
@@ -178,7 +196,7 @@ test('a press with no audio at all is empty and calls nothing', async () => {
 
 test('A2: a press stops itself at 15 seconds and keeps exactly 15 seconds of audio', async () => {
   const mic = fakeMic();
-  const api = fakeApi({ ok: false, failure: 'voice_unavailable' }, { ok: true, value: { transcript: 'ball', parsed: { kind: 'plays', plays: [{ kind: 'pitch', result: 'ball' }], parts: ['ball'] } } });
+  const api = fakeApi({ ok: false, failure: 'voice_unavailable' }, { ok: true, value: { transcript: 'ball', answer: null } });
   const { done } = run(mic, api, fakeSocket());
   await tick();
   const second = new Array<number>(SAMPLE_RATE * 2).fill(1);
@@ -274,8 +292,14 @@ test('voice-api reports no network, a timeout, no sign-in and a broken answer', 
   const slow = createVoiceApi({ ...base, timeoutMs: 5, fetch: (_, init) => new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new Error('aborted')))) });
   assert.deepEqual(await slow.parse({ transcript: 'ball', context }), { ok: false, failure: 'timeout' });
   assert.deepEqual(await createVoiceApi({ ...base, token: async () => null, fetch: async () => ({ status: 200, json: async () => session }) }).session([]), { ok: false, failure: 'auth_unavailable' });
-  const broken = createVoiceApi({ ...base, fetch: async () => ({ status: 200, json: async () => ({ transcript: 'ball', parsed: { kind: 'save_everything' } }) }) });
-  assert.deepEqual(await broken.parse({ transcript: 'ball', context }), { ok: false, failure: 'voice_unavailable' }, 'a parse outside ParseResult never reaches route()');
+  const broken = createVoiceApi({ ...base, fetch: async () => ({ status: 200, json: async () => ({ transcript: 'Darcy doubles', answer: { result: 'save_everything' } }) }) });
+  assert.deepEqual(await broken.parse({ transcript: 'Darcy doubles', context }), { ok: false, failure: 'voice_unavailable' }, 'an answer outside the schema never reaches decide()');
+  const old = createVoiceApi({ ...base, fetch: async () => ({ status: 200, json: async () => ({ transcript: 'ball', parsed: { kind: 'unclear' } }) }) });
+  assert.deepEqual(await old.parse({ transcript: 'ball', context }), { ok: false, failure: 'voice_unavailable' }, 'the old reply shape is refused');
+  const noted = createVoiceApi({ ...base, fetch: async () => ({ status: 200, json: async () => ({ transcript: 'Darcy doubles', answer: { ...double, unsure: ['NOTE-MARKER'] } }) }) });
+  const read = await noted.parse({ transcript: 'Darcy doubles', context });
+  assert.deepEqual(read, { ok: true, value: { transcript: 'Darcy doubles', answer: double } });
+  assert.equal(JSON.stringify(read).includes('NOTE-MARKER'), false, 'the phone reads the answer strictly too, so a note never reaches the screen');
   const insecure = createVoiceApi({ ...base, fetch: async () => ({ status: 200, json: async () => ({ ...session, url: 'ws://evil.example' }) }) });
   assert.deepEqual(await insecure.session([]), { ok: false, failure: 'voice_unavailable' });
 });

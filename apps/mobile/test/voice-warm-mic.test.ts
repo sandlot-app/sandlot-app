@@ -260,11 +260,11 @@ test('allowing the mic in Settings clears the "can\'t use the microphone" line o
   warm.warm(true);
   await tick();
   controller.micReady();
-  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null, banner: null });
 });
 
 test('the mic being ready clears only that line, and leaves a press that is listening alone', async () => {
-  const other = await pressHearingNothing({ parse: { ok: true, value: { transcript: '', parsed: null } } });
+  const other = await pressHearingNothing({ parse: { ok: true, value: { transcript: '', answer: null } } });
   assert.equal(other.views.at(-1)?.message, didntCatch);
   other.controller.micReady();
   assert.equal(other.views.at(-1)?.message, didntCatch, 'a different line stays');
@@ -376,7 +376,7 @@ async function pressHearingNothing(setup: Parameters<typeof scorer>[0]) {
 
 test('a blank live transcript sends the recording once, and a play it hears there still saves', async () => {
   const { api, plays, views } = await pressHearingNothing({
-    parse: { ok: true, value: { transcript: 'ball', parsed: { kind: 'plays', plays: [{ kind: 'pitch', result: 'ball' }], parts: ['ball'] } } },
+    parse: { ok: true, value: { transcript: 'ball', answer: null } },
   });
   assert.equal(api.parsed.length, 1);
   assert.equal(views.at(-1)?.message, null);
@@ -384,7 +384,7 @@ test('a blank live transcript sends the recording once, and a play it hears ther
 });
 
 test('"Didn\'t catch that" shows only when the recording is blank too', async () => {
-  const blank = await pressHearingNothing({ parse: { ok: true, value: { transcript: '', parsed: null } } });
+  const blank = await pressHearingNothing({ parse: { ok: true, value: { transcript: '', answer: null } } });
   assert.equal(blank.api.parsed.length, 1);
   assert.equal(blank.views.at(-1)?.message, didntCatch);
   assert.deepEqual(blank.plays(), []);
