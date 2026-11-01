@@ -63,6 +63,7 @@ export function BattingOrder({ slots, onMove, onPickPosition, onDragging }: {
 
   return (
     <View style={styles.card} testID="batting-order">
+      {slots.length === 0 ? <Text style={styles.empty} testID="batting-order-empty">Nobody is in the batting order yet.</Text> : null}
       {slots.map((slot, index) => {
         const { number, name } = rosterDisplay(slot.player);
         const label = positionLabel(slot.position);
@@ -103,4 +104,5 @@ const styles = createStyles({
   pillText: { ...textStyles.Caption, color: colors['text/primary'] },
   pillBatsOnly: { ...textStyles.Caption, color: colors['text/secondary'] },
   handle: { width: 18, height: 18 },
+  empty: { ...textStyles.Caption, paddingVertical: sizes['space/3'], color: colors['text/secondary'] },
 });

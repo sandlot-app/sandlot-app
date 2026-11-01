@@ -2,7 +2,7 @@ import { tokens } from '@sandlot/tokens';
 import type { GameState } from '@sandlot/engine';
 import { Image, Text, View } from 'react-native';
 import { createStyles } from '../../style';
-import { demoTeams } from '../scoring/demo-roster.ts';
+import { teamsOf } from '../scoring/demo-roster.ts';
 import { MiniDiamond } from './field.tsx';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -14,7 +14,7 @@ export function Scoreboard({ state, summary }: { state: GameState; summary: stri
   return (
     <View style={styles.board} accessible accessibilityLabel={summary} accessibilityLiveRegion="polite" testID="score-summary">
       <View style={styles.team}>
-        <Text style={styles.abbr} numberOfLines={1}>{demoTeams.away.short}</Text>
+        <Text style={styles.abbr} numberOfLines={1}>{teamsOf(state.lineups).away.short}</Text>
         <Text style={styles.score}>{state.score.away}</Text>
       </View>
       <View style={styles.state}>
@@ -29,7 +29,7 @@ export function Scoreboard({ state, summary }: { state: GameState; summary: stri
       </View>
       <View style={[styles.team, styles.home]}>
         <Text style={styles.score}>{state.score.home}</Text>
-        <Text style={styles.abbr} numberOfLines={1}>{demoTeams.home.short}</Text>
+        <Text style={styles.abbr} numberOfLines={1}>{teamsOf(state.lineups).home.short}</Text>
       </View>
     </View>
   );
@@ -62,7 +62,7 @@ export function ExpandedScoreboard({ state, summary }: { state: GameState; summa
   const team = (side: 'away' | 'home') => <View style={[styles.side, side === 'home' && styles.sideHome]}>
     <View style={[styles.nameRow, side === 'home' && styles.nameRowHome]}>
       {side === 'away' ? <RoleBadge batting={!homeBats} /> : null}
-      <Text style={[styles.teamName, side === 'home' && styles.right]} numberOfLines={1}>{demoTeams[side].name}</Text>
+      <Text style={[styles.teamName, side === 'home' && styles.right]} numberOfLines={1}>{teamsOf(state.lineups)[side].name}</Text>
       {side === 'home' ? <RoleBadge batting={homeBats} /> : null}
     </View>
     <Text style={styles.bigScore}>{state.score[side]}</Text>

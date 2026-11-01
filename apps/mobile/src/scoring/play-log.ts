@@ -1,6 +1,6 @@
 import { applyGroup, initialState } from '@sandlot/engine';
 import type { Base, Command, Event, GameSetup, GameState, PitchResult, PlayerRef, Position, TeamSide } from '@sandlot/engine';
-import { demoTeams, playerDisplay } from './demo-roster.ts';
+import { playerDisplay, teamsOf } from './demo-roster.ts';
 import type { SavedGame } from './offline-game.ts';
 import { playLabel } from './play-label.ts';
 
@@ -249,7 +249,7 @@ export function playLog(game: SavedGame): HalfInning[] {
       return {
         key: String(order),
         label: `${before.half === 'top' ? 'Top' : 'Bottom'} ${before.inning}`,
-        batting: demoTeams[side].name,
+        batting: teamsOf(state.lineups)[side].name,
         totals: `${runs} R · ${hitCount} H${current ? '' : ` · ${errors} E`}`,
         current,
         // An at-bat with nothing standing shows only while that batter is still up, with the undone plays in it.

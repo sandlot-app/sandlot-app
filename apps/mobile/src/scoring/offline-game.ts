@@ -18,7 +18,9 @@ import type {
   GameState,
   GroupId,
   LineupSlot,
+  OpponentId,
   PitchResult,
+  PlayerId,
   PlayerRef,
   Position,
   TeamSide,
@@ -37,14 +39,14 @@ import type { SeasonHalf } from './demo-game.ts';
  * with: first-half rules, a nine-player Hawks roster on the home side and the Marlins on the away side. Such a game
  * reopens and replays under that stored setup, so it isn't read as corrupt.
  */
-const legacySetup = {
+const legacySetup: GameSetup = {
   rules: presets['moraga-mustang-first-half'],
   roster: {
-    home: Array.from({ length: 9 }, (_, index) => ({ kind: 'player', id: `home-${index + 1}` })),
-    away: Array.from({ length: 9 }, (_, index) => ({ kind: 'opponent', id: `away-${index + 1}` })),
+    home: Array.from({ length: 9 }, (_, index): PlayerRef => ({ kind: 'player', id: `home-${index + 1}` as PlayerId })),
+    away: Array.from({ length: 9 }, (_, index): PlayerRef => ({ kind: 'opponent', id: `away-${index + 1}` as OpponentId })),
   },
   pitcherOutsEarlierToday: {},
-} as unknown as GameSetup;
+};
 const legacySetupJson = JSON.stringify(legacySetup);
 
 /** The game and scoring session the server issued this phone, from the seed script (docs/contract.md, Demo access). */

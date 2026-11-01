@@ -11,6 +11,22 @@ export const demoTeams: Record<TeamSide, { name: string; short: string }> = {
   home: { name: 'Marlins', short: 'MAR' },
 };
 
+type Lineups = Pick<GameState, 'lineups'>['lineups'];
+const holdsHawks = (side: TeamSide, lineups: Lineups) => lineups[side].some((slot) => slot.player.kind === 'player');
+
+/**
+ * The team names for a game's sides. The Hawks are the team the family follows, so they are the side that holds `player`s.
+ * Games saved before the sample moved to Hawks-away have them at home, so the sides are read from the lineups, not assumed.
+ */
+export function teamsOf(lineups: Lineups): typeof demoTeams {
+  return holdsHawks('home', lineups) && !holdsHawks('away', lineups) ? { home: demoTeams.away, away: demoTeams.home } : demoTeams;
+}
+
+/** The side the demo family's child plays on in a game: the Hawks' side. */
+export function childSideOf(lineups: Lineups): TeamSide {
+  return holdsHawks('home', lineups) && !holdsHawks('away', lineups) ? 'home' : 'away';
+}
+
 const demoPlayers: Record<string, { number: string; name: string }> = {
   'home-1': { number: '15', name: 'T. Nguyen' },
   'home-2': { number: '12', name: 'M. Ortiz' },
@@ -33,8 +49,8 @@ const demoPlayers: Record<string, { number: string; name: string }> = {
   'away-9': { number: '21', name: 'M. Webb' },
 };
 
-/** The demo family's child, whose stat stickers and card the family shares after a Final game. */
-export const demoChild = { player: { kind: 'player', id: 'home-6' } as PlayerRef, side: 'away' as TeamSide, first: 'Javier', last: 'Ruiz' };
+/** The demo family's child, whose stat stickers and card the family shares after a Final game. Their side is `childSideOf`. */
+export const demoChild = { player: { kind: 'player', id: 'home-6' } as PlayerRef, first: 'Javier', last: 'Ruiz' };
 
 /** The demo game's division, as the games list and stat card show it. */
 export const demoDivision = 'Mustang';

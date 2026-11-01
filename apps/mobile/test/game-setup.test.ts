@@ -3,7 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import { presets } from '@sandlot/engine';
 import type { LineupSlot, PlayerRef, Position } from '@sandlot/engine';
+import { childSideOf, teamsOf } from '../src/scoring/demo-roster.ts';
 import { openOfflineGame } from '../src/scoring/offline-game.ts';
+import { playLog } from '../src/scoring/play-log.ts';
 import {
   addChoices,
   addFromRoster,
@@ -254,6 +256,11 @@ test('a game saved before the sample moved to the second half and the Hawks to t
   const game = reopened.session.kind === 'ready' ? reopened.session.game : null;
   assert.deepEqual(game?.setup.rules, presets['moraga-mustang-first-half']);
   assert.deepEqual(ids(game!.state.lineups.home), [['home-1', 'P'], ['home-2', 'C']], 'the Hawks are on the home side, as that game saved them');
+  // The screens name a team by who is on its side, so that game still calls its home side the Hawks.
+  assert.deepEqual([teamsOf(game!.state.lineups).home.name, teamsOf(game!.state.lineups).away.name], ['Hawks', 'Marlins']);
+  assert.equal(teamsOf(game!.state.lineups).home.short, 'HAW');
+  assert.equal(childSideOf(game!.state.lineups), 'home', 'Javier is on the Hawks, wherever they sit');
+  assert.equal(playLog(game!)[0]!.batting, 'Marlins', 'the Marlins are the away team in that game and bat first');
   await database.close();
 });
 
@@ -270,4 +277,16 @@ test('a player who is not playing today comes out of the batting order, can be a
   assert.deepEqual(ids(addFromRoster(without, player('home-2'))).at(-1), ['home-2', null], 'added back, they bat last with no position');
   assert.equal(startingPitcher(removeFromLineup(lineup, 0)), null, 'taking out the pitcher leaves nobody pitching');
   assert.deepEqual(ids(removeFromLineup(lineup, 5)), ids(lineup), 'an index that is not in the lineup changes nothing');
+});
+
+test('in a new game the Hawks are the away side, and the screens name the sides that way', async () => {
+  const { database, session } = await open();
+  const started = await session.record({ kind: 'start' });
+  assert.equal(started.kind, 'saved');
+  if (started.kind !== 'saved') return;
+  assert.deepEqual([teamsOf(started.game.state.lineups).away.name, teamsOf(started.game.state.lineups).home.name], ['Hawks', 'Marlins']);
+  assert.equal(childSideOf(started.game.state.lineups), 'away');
+  assert.equal(playLog(started.game)[0]!.batting, 'Hawks', 'the Hawks bat in the top of the first');
+  assert.deepEqual([teamsOf({ away: [], home: [] }).away.name, childSideOf({ away: [], home: [] })], ['Hawks', 'away'], 'before the lineups exist, the sample sides');
+  await database.close();
 });

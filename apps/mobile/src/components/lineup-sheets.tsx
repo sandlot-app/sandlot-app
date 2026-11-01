@@ -63,6 +63,7 @@ export function PitcherSheet({ choices, onChoose, onClose }: {
       actions={<PrimaryButton label={'Pitch first'} disabled={!picked}
         onPress={() => picked && onChoose(picked)} testID="pitcher-confirm" />}>
       <SheetSection label="Pitches first">
+        {choices.length === 0 ? <Text style={styles.caption} testID="pitcher-empty">Add a player to the lineup first.</Text> : null}
         <View style={styles.rows}>
           {choices.map((choice) => (
             <BenchPlayerRow key={choice.player.id} number={choice.number} name={choice.name} note={choice.note}
