@@ -61,17 +61,28 @@ export function units(commands: Command[]): [number, number][] {
 
 const rank = (to: Destination): number | null => to === 'out' ? null : to === 'home' ? 4 : to;
 
-/** True when a runner ends up ahead of a runner who started in front of them, which can't happen on one play (the engine doesn't check it). */
+/**
+ * True when a runner ends up ahead of a runner who started in front of them, which can't happen on one play (the
+ * engine doesn't check it). On a ball in play the batter counts too, starting behind everyone.
+ */
 export function passesRunner(game: PressGame, commands: Command[]): boolean {
   return units(commands).some(([start, end]) => {
     const state = stateAfter(game, commands.slice(0, start));
     if (!state) return false;
+    const play = commands.slice(start, end).find((command) => command.kind === 'ball_in_play');
     const moves = commands.slice(start, end).flatMap((command): { runner: PlayerRef; to: Destination }[] =>
       command.kind === 'runner' ? [command] : command.kind === 'ball_in_play' ? command.advances : []);
-    const ends = runnersOn(state).map(({ base, player }) => {
+    const batter = batterUp(state);
+    const batterEnd = (): number | null => {
+      if (play?.kind !== 'ball_in_play' || !batter) return null;
+      const own = moves.find((move) => samePlayer(move.runner, batter));
+      const to = own ? own.to : batterDefault[play.outcome];
+      return to === null ? null : rank(to);
+    };
+    const ends = [batterEnd(), ...runnersOn(state).map(({ base, player }) => {
       const moved = moves.find((move) => samePlayer(move.runner, player));
       return moved ? rank(moved.to) : base;
-    });
+    })];
     return ends.some((behind, index) => ends.slice(index + 1).some((ahead) => behind !== null && ahead !== null && behind > ahead));
   });
 }

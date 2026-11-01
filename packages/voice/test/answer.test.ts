@@ -3,9 +3,9 @@ import { answerSchema, readAnswer } from '../src/answer.ts';
 
 const nobody = { name: null, number: null };
 const reading = (fields: Record<string, unknown> = {}) => ({
-  batter: nobody, pitcher: nobody, pitches: [], ball_in_play: null, runner_events: [], forced_runners: [], ...fields,
+  batter: nobody, earlier_batters: [], pitcher: nobody, pitches: [], ball_in_play: null, runner_events: [], runner_events_after: [], forced_runners: [], taken_back: [], ...fields,
 });
-const bip = { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners: [{ from: '1', to: 'home', name: null, number: null }] };
+const bip = { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners: [{ from: '1', to: 'home', name: null, number: null }], batter_out_first: false };
 const double = reading({ batter: { name: 'Moss', number: null }, ball_in_play: bip });
 const answer = (fields: Record<string, unknown> = {}) => ({ result: 'play', fix_last: false, readings: [double], unsure: [], ...fields });
 

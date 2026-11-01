@@ -14,9 +14,9 @@ const context = {
 const models = { parser: 'gpt-6-luna', clip: 'gpt-transcribe' };
 const nobody = { name: null, number: null };
 const triple = {
-  batter: { name: 'Moss', number: null }, pitcher: nobody, pitches: [], runner_events: [], forced_runners: [],
+  batter: { name: 'Moss', number: null }, earlier_batters: [], pitcher: nobody, pitches: [], runner_events: [], runner_events_after: [], forced_runners: [], taken_back: [],
   ball_in_play: { outcome: 'triple', trajectory: null, fielders: [], batter_to: '3', runners: [
-    { from: '2', to: 'home', name: null, number: null }, { from: '1', to: 'home', name: null, number: null }] },
+    { from: '2', to: 'home', name: null, number: null }, { from: '1', to: 'home', name: null, number: null }], batter_out_first: false },
 };
 const moss = 'Moss hits a triple. All base runners head to home. Moss stays at third.';
 

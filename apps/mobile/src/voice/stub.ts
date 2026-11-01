@@ -26,8 +26,8 @@ function pieces(phrase: string): string[] {
 const nobody = { name: null, number: null };
 const play = (reading: AnswerReading): Answer => ({ result: 'play', fix_last: false, readings: [reading] });
 const double = (batter: string | null, runners: NonNullable<AnswerReading['ball_in_play']>['runners']): AnswerReading => ({
-  batter: { name: batter, number: null }, pitcher: nobody, pitches: [], runner_events: [], forced_runners: [],
-  ball_in_play: { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners },
+  batter: { name: batter, number: null }, earlier_batters: [], pitcher: nobody, pitches: [], runner_events: [], runner_events_after: [], forced_runners: [], taken_back: [],
+  ball_in_play: { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners, batter_out_first: false },
 });
 
 /** The AI's answer for the stub's phrases, or null (an answer voice-parse couldn't use) for anything else. */

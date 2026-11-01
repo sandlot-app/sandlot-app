@@ -30,7 +30,7 @@ function unmoved(before: GameState, play: Extract<Command, { kind: 'ball_in_play
 }
 
 /** Where each runner on base before a play ended up, in plain words. A runner a hit left in place "holds". */
-function runnerMoves(game: PressGame, before: GameState, after: GameState, outs: PlayerRef[], held: PlayerRef[] = []): string[] {
+function runnerMoves(game: PressGame, before: GameState, after: GameState, outs: PlayerRef[], held: PlayerRef[] = [], sentHome: PlayerRef[] = []): string[] {
   let runs = after.score[batting(before)] - before.score[batting(before)];
   return ([3, 2, 1] as const).flatMap((from) => {
     const player = before.bases[from]?.player;
@@ -40,7 +40,9 @@ function runnerMoves(game: PressGame, before: GameState, after: GameState, outs:
     const now = baseOf(after, player);
     if (now === from) return held.some((runner) => samePlayer(runner, player)) ? [`${name} holds ${baseWord[from]}`] : [];
     if (now) return [`${name} to ${baseWord[now]}`];
-    if (runs <= 0) return [];
+    // A runner the play sent home whose run doesn't count, because the third out came by force, says so. A runner left
+    // on base when the half ended says nothing.
+    if (runs <= 0) return sentHome.some((runner) => samePlayer(runner, player)) ? [`${name} doesn't score`] : [];
     runs -= 1;
     return [`${name} scores`];
   });
@@ -80,7 +82,8 @@ function battedText(game: PressGame, before: GameState, after: GameState, play: 
   // A double or triple play names the batter's out explicitly, but that out is the usual one, so it isn't repeated.
   const usual = batterDefault[play.outcome] ?? 'out';
   const extra = own && own.to !== usual ? [own.to === 'out' ? `${name} out` : own.to === 'home' ? `${name} scores` : `${name} to ${baseWord[own.to]}`] : [];
-  return [text, ...runnerMoves(game, before, after, outs, unmoved(before, play)), ...extra].join(', ');
+  const home = play.advances.flatMap((advance) => advance.to === 'home' ? [advance.runner] : []);
+  return [text, ...runnerMoves(game, before, after, outs, unmoved(before, play), home), ...extra].join(', ');
 }
 
 function runnerText(game: PressGame, before: GameState, commands: Extract<Command, { kind: 'runner' }>[]): string {

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { readAnswer } from '../src/answer.ts';
+import { pressContext, readContext } from '../src/context.ts';
 import { decide, type Decision, type Heard } from '../src/decide.ts';
 import { readLocally } from '../src/local.ts';
 import { nameOf } from '../src/players.ts';
@@ -9,9 +10,10 @@ import { buildGame, stateOf, withLastPlay, type Sit } from './game.ts';
 import { expandShort, type Short } from './short.ts';
 
 // The voice test set, with the model's answers replayed. Each line is one press in one situation, the answer the model
-// gave (or should give) for it, and what the phone must do with it. `answer` is written in the short spelling; when a
-// real model answer has been recorded on the Mac (`recorded`, the full JSON), that is replayed instead. A press the
-// phone reads alone (pitch calls, a lone undo, filler) has no answer, and the runner checks it never needs one.
+// should give for it, and what the phone must do with it. Until a key is available, `answer` is written by hand in the
+// short spelling; a real model answer recorded on the Mac (`recorded`, the full JSON) is replayed instead when present.
+// A press the phone reads alone (pitch calls, a lone undo, filler) has no answer, and the runner checks it never needs
+// one. Every situation's context also goes through the same JSON round trip voice-parse sees.
 
 type Expect =
   | { do: 'save'; banner: string; runs?: number; bases?: Partial<Record<'1' | '2' | '3', string>>; outs?: number; count?: string }
@@ -82,6 +84,7 @@ for (const { file, cases } of sets) {
       const game = c.last ? withLastPlay(start, c.last) : start;
       const local = readLocally(c.transcript);
       expect(local === null, local ? 'the phone reads this press alone, so it needs no answer' : 'this press goes to the AI').toBe(c.answer !== undefined || c.recorded !== undefined);
+      expect(readContext(JSON.parse(JSON.stringify(pressContext(game)))), 'voice-parse accepts the context the phone builds').not.toBeNull();
       const decision = decide({ game, transcript: c.transcript, at: 10_000 }, heard(c));
       expect(shown(game, decision, c.expect)).toEqual(c.expect);
     });

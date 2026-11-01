@@ -251,16 +251,27 @@ type PressContext = {
 };
 ```
 
-The server refuses a context that is off with `invalid`: names longer than 40 characters or with anything but letters, digits, spaces and `.'’-`, jersey numbers past three digits, an inning outside 1 to 30, outs, balls or strikes out of range, a score past 99, more than 20 batters, more than 10 fielders or two at one position, or a last play longer than 300 characters or with characters a banner doesn't use. It transcribes a clip with `gpt-transcribe`, then asks the parser model (`gpt-6-luna`, with Structured Outputs, strict) once, with fixed instructions and the game as text. It returns `{ transcript, answer }`:
+The server refuses a context that is off with `invalid`: names longer than 40 characters or four words, or with anything but letters, digits, spaces and `.'’-` (the phone cleans names to fit first), jersey numbers past three digits, an inning outside 1 to 30, outs, balls or strikes out of range, a score past 99, more than 20 batters, more than 10 fielders or two at one position, or a last play longer than 300 characters or with characters a banner doesn't use. It transcribes a clip with `gpt-transcribe`, then asks the parser model (`gpt-6-luna`, with Structured Outputs, strict) once, with fixed instructions and the game as text. It returns `{ transcript, answer }`:
 
 ```ts
 type Named = { name: string | null; number: string | null };  // the words the scorer used, as heard
+type Fielder = Named & { position: Position };
+type RunnerEvent = Named & { event: 'stolen_base' | 'caught_stealing' | 'pickoff' | 'wild_pitch' | 'passed_ball' | 'advance_on_error';
+  from: '1' | '2' | '3'; to: '1' | '2' | '3' | 'home' | 'out'; fielders: Fielder[] };
 type AnswerReading = {
-  batter: Named; pitcher: Named;
+  batter: Named;                 // the batter of the last at-bat in the press
+  earlier_batters: Named[];      // batters of earlier at-bats the press's pitches ended, in order
+  pitcher: Named;
   pitches: ('ball' | 'called_strike' | 'swinging_strike' | 'foul' | 'foul_tip' | 'hit_by_pitch')[];
-  ball_in_play: null | { outcome: BallInPlayOutcome; trajectory: Trajectory | null;
-    fielders: (Named & { position: Position })[]; batter_to: '1' | '2' | '3' | 'home' | 'out';
-    runners: (Named & { from: '1' | '2' | '3'; to: '1' | '2' | '3' | 'home' | 'out' })[] };
+  ball_in_play: null | { outcome: BallInPlayOutcome; trajectory: Trajectory | null; fielders: Fielder[];
+    batter_to: '1' | '2' | '3' | 'home' | 'out';
+    runners: (Named & { from: '1' | '2' | '3'; to: '1' | '2' | '3' | 'home' | 'out' })[];
+    batter_out_first: boolean }; // the batter was out before any runner, as on a 3-6 double play
+  runner_events: RunnerEvent[];        // before any ball in play
+  runner_events_after: RunnerEvent[];  // after it, keyed by the base the runner was on after it
+  forced_runners: (Named & { from: '1' | '2' | '3' })[];  // named runners a walk or hit by pitch forced along
+  taken_back: Named[];           // names the scorer said and then took back
+};
   runner_events: (Named & { event: 'stolen_base' | 'caught_stealing' | 'pickoff' | 'wild_pitch' | 'passed_ball' | 'advance_on_error';
     from: '1' | '2' | '3'; to: '1' | '2' | '3' | 'home' | 'out' })[];
   forced_runners: (Named & { from: '1' | '2' | '3' })[];  // named runners a walk or hit by pitch forced along
@@ -273,7 +284,7 @@ type Answer =
 
 Runners are keyed by the base they were on when the press began. `answer` is `null` for an empty transcript, for words the phone reads itself, and for a model reply that was refused, cut off or broke the schema; the phone then says "Couldn't read that. Tap to score." Both the server and the phone read the answer with the same strict reader, which keeps only the fields above.
 
-The model only proposes. The phone maps each reading to commands, checks that every name or number said fits the player who holds that role, and the engine decides whether the play is legal (rule 6). A legal play saves with a banner built from the commands the engine accepted. A `question` shows a card with its two readings, each checked by the engine. A name in the wrong role saves nothing and says who holds the role ("J. Ruiz is up, not K. Moss."). A batting player's name in the words that the answer left out of every slot saves nothing too, with "Didn't understand", because the answer may have named the play by role alone. A near spelling of the player in that role, such as "Parker" for batter D. Park, saves as that player only when no other player on either roster is that close, and the banner names who was saved. `fix_last` saves nothing until the engine applies `correct` ([#97](https://github.com/sandlot-app/sandlot-app/issues/97)).
+The model only proposes. The phone maps each reading to commands, checks that every name or number said fits the player who holds that role, and the engine decides whether the play is legal (rule 6). A legal play saves with a banner built from the commands the engine accepted. A `question` shows a card with its two readings when the engine accepts both. A name in the wrong role saves nothing and says who holds the role ("J. Ruiz is up, not K. Moss."). A player's name, a near spelling of one, or a jersey number in the words that the answer left out of every slot saves nothing too, with "Didn't understand", because the answer may have named the play by role alone. A near spelling of the player in that role, such as "Parker" for batter D. Park, saves as that player only when no other player on either roster is that close, and the banner names who was saved. A forced runner counts only after ball four or a hit by pitch, and a name taken back only when a correction like "no" or "I mean" follows it. `fix_last`, or a press that starts like a correction ("no, that was a double") right after a play, saves nothing until the engine applies `correct` ([#97](https://github.com/sandlot-app/sandlot-app/issues/97)). A question whose other reading the engine refuses saves the one it accepts, with the banner, because the rules picked it.
 
 | Error | HTTP status | Phone action |
 | --- | --- | --- |

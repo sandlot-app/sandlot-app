@@ -32,6 +32,24 @@ export type PressContext = {
 
 const unknownPlayer: Person = { name: 'Unknown player', number: '' };
 
+/**
+ * A display name in the shape voice-parse accepts: up to four words of letters, digits and .'’-, at most 40
+ * characters. Anything else is dropped, so a name like "Player #7" goes as "Player 7" rather than failing the press.
+ */
+function cleanName(name: string): string {
+  const kept = name.replace(/[^\p{L}\p{N} .'’-]/gu, ' ').split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).slice(0, 4).join(' ').slice(0, 40).trim();
+  return kept || unknownPlayer.name;
+}
+const cleanNumber = (number: string) => /^\d{1,3}$/.test(number) ? number : '';
+
+/** Keeps the end of a long last play, a whole part at a time, so it fits what voice-parse accepts. */
+function fitted(words: string): string | null {
+  const parts = words.split(' · ');
+  while (parts.length > 1 && parts.join(' · ').length > 300) parts.shift();
+  const text = parts.join(' · ');
+  return text && text.length <= 300 ? text : null;
+}
+
 /** The groups that stand, oldest first: an undo takes back the latest one standing. Setup and lineups aren't plays. */
 function standingPlays(events: Event[]): Event[][] {
   const groups: Event[][] = [];
@@ -52,8 +70,10 @@ function standingPlays(events: Event[]): Event[][] {
 export function pressContext(game: PressGame): PressContext {
   const state = stateAfter(game, []);
   if (!state) throw new Error("The game doesn't replay");
+  // The AI sees display names as voice-parse accepts them, and the last play is told with the same names.
+  const roster = game.roster.map((entry) => ({ ...entry, name: cleanName(entry.name), number: cleanNumber(entry.number) }));
   const person = (player: PlayerRef | undefined): Person => {
-    const entry = player && entryFor(game.roster, player);
+    const entry = player && entryFor(roster, player);
     return entry ? { name: entry.name, number: entry.number } : unknownPlayer;
   };
   const runners: PressContext['runners'] = {};
@@ -64,8 +84,8 @@ export function pressContext(game: PressGame): PressContext {
   const last = standingPlays(game.events).at(-1);
   let lastPlay: string | null = null;
   if (last) {
-    const before = { ...game, events: game.events.slice(0, game.events.indexOf(last[0]!)) };
-    lastPlay = readBack(before, last.map((event) => event.command)) || null;
+    const before = { ...game, roster, events: game.events.slice(0, game.events.indexOf(last[0]!)) };
+    lastPlay = fitted(readBack(before, last.map((event) => event.command)));
   }
   const pitcher = state.pitchers[fielding(state)];
   return {
@@ -88,10 +108,15 @@ type Raw = Record<string, unknown>;
 const isObject = (value: unknown): value is Raw => typeof value === 'object' && value !== null && !Array.isArray(value);
 const whole = (value: unknown, min: number, max: number): value is number => Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
 
-/** A name is short text with no line breaks or symbols, so it can't carry instructions into the prompt. */
+/**
+ * A name is up to four words of letters, digits and .'’-, at most 40 characters, with no line breaks or other
+ * symbols. That keeps a name looking like a name, so it can carry little more than a name into the prompt.
+ */
 function readPerson(raw: unknown): Person | null {
   if (!isObject(raw) || typeof raw.name !== 'string' || typeof raw.number !== 'string') return null;
-  if (!raw.name.trim() || raw.name.length > 40 || !/^[\p{L}\p{N} .'’-]+$/u.test(raw.name) || !/^\d{0,3}$/.test(raw.number)) return null;
+  const words = raw.name.split(' ');
+  if (!raw.name.trim() || raw.name.length > 40 || words.length > 4 || !words.every((word) => /^[\p{L}\p{N}'’-]+\.?$/u.test(word))) return null;
+  if (!/^\d{0,3}$/.test(raw.number)) return null;
   return { name: raw.name, number: raw.number };
 }
 

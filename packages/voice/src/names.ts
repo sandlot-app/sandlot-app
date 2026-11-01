@@ -1,6 +1,8 @@
-import type { Base, GameState, Position } from '@sandlot/engine';
+import type { Base, GameState, PlayerRef, Position } from '@sandlot/engine';
 import type { AnswerReading, Named } from './answer.ts';
-import { entryFor, fits, namedPlayer, samePlayer, words } from './players.ts';
+import type { Mapped } from './commands.ts';
+import { normalize } from './local.ts';
+import { entryFor, fits, namedPlayer, nearly, samePlayer, words } from './players.ts';
 import { batterUp, batting, fielding, type PressGame, type RosterEntry } from './state.ts';
 
 // Who holds each role a reading names, and whether the scorer's words fit them. The AI reports the words; the phone
@@ -8,8 +10,11 @@ import { batterUp, batting, fielding, type PressGame, type RosterEntry } from '.
 
 export type Role =
   | { kind: 'batter' }
+  /** The batter of an earlier at-bat the same press ended, counting from 0. */
+  | { kind: 'earlier_batter'; index: number }
   | { kind: 'pitcher' }
-  | { kind: 'runner'; base: Base }
+  /** A runner, on `base` before the press, or after the ball in play when `after` is set. */
+  | { kind: 'runner'; base: Base; after?: true }
   | { kind: 'fielder'; position: Position };
 
 export type NameRefusal =
@@ -17,61 +22,87 @@ export type NameRefusal =
   | { kind: 'wrong_role'; role: Role; holder: RosterEntry; other: RosterEntry | null }
   /** Nobody holds the role the words were given to, such as a rover in a nine-fielder game. */
   | { kind: 'nobody'; role: Role }
-  /** The transcript names a player the answer gave no role, so it may have answered by role alone. */
+  /** The words name a player, or a jersey number, that the answer gave no role, so it may have answered by role alone. */
   | { kind: 'unaccounted' };
 
+type Slot = { role: Role; heard: Named };
+const runner = (base: string, after?: true): Role => ({ kind: 'runner', base: Number(base) as Base, ...(after ? { after } : {}) });
+const fielders = (list: (Named & { position: Position })[]): Slot[] => list.map((fielder) => ({ role: { kind: 'fielder', position: fielder.position }, heard: fielder }));
+
 /** Every place the reading names a player, in the order they're checked. Slots with no name or number are the role itself. */
-function namedSlots(reading: AnswerReading): { role: Role; heard: Named }[] {
-  const slots: { role: Role; heard: Named }[] = [
+function namedSlots(reading: AnswerReading): Slot[] {
+  const slots: Slot[] = [
     { role: { kind: 'pitcher' }, heard: reading.pitcher },
-    ...reading.runner_events.map((event) => ({ role: { kind: 'runner', base: Number(event.from) as Base } as Role, heard: event })),
-    ...(reading.ball_in_play?.runners ?? []).map((move) => ({ role: { kind: 'runner', base: Number(move.from) as Base } as Role, heard: move })),
-    ...reading.forced_runners.map((move) => ({ role: { kind: 'runner', base: Number(move.from) as Base } as Role, heard: move })),
-    ...(reading.ball_in_play?.fielders ?? []).map((fielder) => ({ role: { kind: 'fielder', position: fielder.position } as Role, heard: fielder })),
+    ...reading.runner_events.flatMap((event) => [{ role: runner(event.from), heard: event }, ...fielders(event.fielders)]),
+    ...(reading.ball_in_play?.runners ?? []).map((move) => ({ role: runner(move.from), heard: move })),
+    ...reading.forced_runners.map((move) => ({ role: runner(move.from), heard: move })),
+    ...fielders(reading.ball_in_play?.fielders ?? []),
+    ...reading.runner_events_after.flatMap((event) => [{ role: runner(event.from, true), heard: event }, ...fielders(event.fielders)]),
+    ...reading.earlier_batters.map((heard, index) => ({ role: { kind: 'earlier_batter', index } as Role, heard })),
     { role: { kind: 'batter' }, heard: reading.batter },
   ];
   return slots.filter(({ heard }) => heard.name !== null || heard.number !== null);
 }
 
-/** Who holds a role: the batter up at the ball in play, everyone else as they stood before the press. */
-function holderOf(game: PressGame, before: GameState, atBat: GameState, role: Role): RosterEntry | null {
-  const player = role.kind === 'batter' ? batterUp(atBat)
-    : role.kind === 'pitcher' ? before.pitchers[fielding(before)]
-    : role.kind === 'runner' ? before.bases[role.base]?.player
-    : before.lineups[fielding(before)].find((slot) => slot.position === role.position)?.player;
+/** Who holds a role: the batters as the press found them, everyone else as they stood before the press. */
+function holderOf(game: PressGame, before: GameState, mapped: Extract<Mapped, { ok: true }>, role: Role): RosterEntry | null {
+  let player: PlayerRef | undefined;
+  switch (role.kind) {
+    case 'batter': player = batterUp(mapped.atBat); break;
+    case 'earlier_batter': player = mapped.earlier[role.index]; break;
+    case 'pitcher': player = before.pitchers[fielding(before)]; break;
+    case 'runner': player = (role.after ? mapped.afterPlay : before)?.bases[role.base]?.player; break;
+    case 'fielder': player = before.lineups[fielding(before)].find((slot) => slot.position === role.position)?.player; break;
+  }
   return player ? entryFor(game.roster, player) ?? null : null;
 }
 
-/** Words that are also names of things on the field, so a player called Ball or Short doesn't trip the check below. */
-const scoringWords = new Set(['ball', 'strike', 'foul', 'out', 'home', 'first', 'second', 'third', 'short', 'left', 'right',
-  'center', 'field', 'run', 'runs', 'hit', 'base', 'safe', 'fly', 'pop', 'line', 'walk', 'steal', 'play', 'double', 'triple', 'single']);
+/** Words that are also things on the field or everyday talk, so they don't count as a near spelling of a name. */
+const plainWords = new Set(['ball', 'strike', 'foul', 'out', 'home', 'first', 'second', 'third', 'short', 'left', 'right',
+  'center', 'field', 'run', 'runs', 'hit', 'hits', 'base', 'safe', 'fly', 'pop', 'line', 'walk', 'steal', 'play', 'double',
+  'triple', 'single', 'most', 'past', 'part', 'with', 'what', 'that', 'then', 'they', 'this', 'there', 'nice', 'great', 'good',
+  'come', 'gone', 'here', 'yeah', 'okay', 'well', 'whoa', 'wait', 'sorry', 'over', 'back', 'down', 'deep', 'hard', 'fast']);
 
 /**
- * The first named slot whose words don't fit the player in that role, or a batting player named in the transcript
- * that the answer gave no role. Null when every name fits.
+ * Whether the words name a player, or a jersey number, that no slot accounts for. Answering by role loses which name
+ * was said, so this doesn't trust the slots. Speech-to-text capitalizes names, so when the words have capitals, every
+ * capitalized word that is a roster name, or spelled nearly like a surname ("Parker"), must show up in some slot or
+ * among the names the scorer took back; "off the wall" stays a wall. A "number 8" must show up too.
  */
-export function checkNames(game: PressGame, before: GameState, atBat: GameState, reading: AnswerReading, transcript: string): NameRefusal | null {
+function unaccounted(game: PressGame, reading: AnswerReading, slots: Slot[], transcript: string): boolean {
+  // A name counts as taken back only when a correction follows it: "Cole, no, I mean Shah".
+  const said = normalize(transcript);
+  const takenBack = reading.taken_back.filter((heard) => heard.name !== null && words(heard.name).every((word) =>
+    new RegExp(`\\b${word}\\b[^.]{0,30}?\\b(?:no|nope|i mean|sorry|wait|actually|make that|scratch that)\\b`).test(said.replace(/['’-]/g, ''))));
+  const reported = [...slots.map(({ heard }) => heard), ...takenBack];
+  const reportedWords = new Set(reported.flatMap((heard) => heard.name ? words(heard.name) : []));
+  const reportedNumbers = new Set(reported.flatMap((heard) => heard.number ? [heard.number] : []));
+  const cased = /\p{Lu}/u.test(transcript);
+  const candidates = (cased ? transcript.match(/\p{Lu}[\p{L}'’-]*/gu) ?? [] : transcript.split(/[^\p{L}'’-]+/u)).flatMap(words);
+  const nameWords = (entry: RosterEntry) => words(entry.name).filter((word, index, all) => index === all.length - 1 || word.length > 1);
+  const names = candidates.some((word) => !reportedWords.has(word) && game.roster.some((entry) =>
+    (nameWords(entry).includes(word) && (cased || !plainWords.has(word))) ||
+    (cased && word.length >= 4 && !plainWords.has(word) && nearly(word, entry))));
+  const numbers = [...normalize(transcript).matchAll(/(?:\bnumber|#|\bno\.?) ?(\d{1,2})\b/g)].map((match) => match[1]!);
+  return names || numbers.some((number) => !reportedNumbers.has(number));
+}
+
+/**
+ * The first named slot whose words don't fit the player in that role, or a player or number in the words that the
+ * answer gave no role. Null when every name fits.
+ */
+export function checkNames(game: PressGame, before: GameState, mapped: Extract<Mapped, { ok: true }>, reading: AnswerReading, transcript: string): NameRefusal | null {
   const slots = namedSlots(reading);
   for (const { role, heard } of slots) {
-    const holder = holderOf(game, before, atBat, role);
+    const holder = holderOf(game, before, mapped, role);
     if (!holder) return { kind: 'nobody', role };
     if (fits(game.roster, holder, heard)) continue;
     // Who the words do name, looking first on the role's own team, since both teams reuse jersey numbers.
-    const side = role.kind === 'batter' || role.kind === 'runner' ? batting(before) : fielding(before);
+    const side = role.kind === 'pitcher' || role.kind === 'fielder' ? fielding(before) : batting(before);
     const others = game.roster.filter((entry) => !samePlayer(entry.player, holder.player));
     const other = namedPlayer(others.filter((entry) => entry.side === side), heard)
       ?? (heard.name !== null ? namedPlayer(others, heard) : null);
     return { kind: 'wrong_role', role, holder, other };
   }
-  // A check that doesn't trust the slots: answering by role loses which name was said, so a batting player's surname in the words must
-  // show up in a slot. Only the batting team's players can be recorded as a batter or runner; a fielder's name can't
-  // save as another player, because plays name fielders by position.
-  const said = new Set(words(transcript));
-  const reported = new Set(slots.flatMap(({ heard }) => heard.name ? words(heard.name) : []));
-  const unaccounted = game.roster.some((entry) => {
-    if (entry.side !== batting(before)) return false;
-    const surname = words(entry.name).at(-1);
-    return surname !== undefined && surname.length >= 3 && !scoringWords.has(surname) && said.has(surname) && !reported.has(surname);
-  });
-  return unaccounted ? { kind: 'unaccounted' } : null;
+  return unaccounted(game, reading, slots, transcript) ? { kind: 'unaccounted' } : null;
 }

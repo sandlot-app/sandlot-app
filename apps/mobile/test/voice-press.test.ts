@@ -8,8 +8,8 @@ import { createVoiceApi, type VoiceApi } from '../src/voice/voice-api.ts';
 import { fakeApi, fakeMic, fakeSocket, session, tick, timeouts } from './voice-fakes.ts';
 
 const nobody = { name: null, number: null };
-const double: Answer = { result: 'play', fix_last: false, readings: [{ batter: { name: 'Darcy', number: null }, pitcher: nobody, pitches: [], runner_events: [], forced_runners: [],
-  ball_in_play: { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners: [] } }] };
+const double: Answer = { result: 'play', fix_last: false, readings: [{ batter: { name: 'Darcy', number: null }, earlier_batters: [], pitcher: nobody, pitches: [], runner_events: [], runner_events_after: [], forced_runners: [], taken_back: [],
+  ball_in_play: { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners: [], batter_out_first: false } }] };
 
 import { context } from './voice-fakes.ts';
 

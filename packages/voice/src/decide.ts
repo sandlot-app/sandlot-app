@@ -3,7 +3,7 @@ import type { Base, Command, Position, RejectCode } from '@sandlot/engine';
 import type { Answer, AnswerReading } from './answer.ts';
 import { toCommands } from './commands.ts';
 import { readBack } from './explain.ts';
-import type { Local } from './local.ts';
+import { normalize, type Local } from './local.ts';
 import { checkNames, type NameRefusal } from './names.ts';
 import { passesRunner, type PressGame } from './state.ts';
 
@@ -76,19 +76,25 @@ export function rejectMessage(code: RejectCode): string {
 }
 
 /** Why one reading can't save. */
-type Refusal = NameRefusal | { kind: 'no_runner'; base: Base } | { kind: 'engine'; code: RejectCode } | { kind: 'passes' };
+type Refusal = NameRefusal | { kind: 'no_runner'; base: Base } | { kind: 'engine'; code: RejectCode } | { kind: 'passes' } | { kind: 'unusable' };
 
 function refusalMessage(refusal: Refusal, transcript: string): string {
   switch (refusal.kind) {
     case 'no_runner': return `No runner on ${baseWords[refusal.base]}.`;
     case 'engine': return rejectMessage(refusal.code);
     case 'passes': return "A runner can't pass the runner ahead of them.";
+    case 'unusable': return messages.unusable;
     case 'unaccounted': return messages.unclear(transcript);
-    case 'nobody': return refusal.role.kind === 'fielder' ? `Nobody is playing ${positionWords[refusal.role.position]}.`
-      : refusal.role.kind === 'runner' ? `No runner on ${baseWords[refusal.role.base]}.` : 'Nobody is pitching.';
+    case 'nobody': {
+      const { role } = refusal;
+      if (role.kind === 'fielder') return `Nobody is playing ${positionWords[role.position]}.`;
+      if (role.kind === 'runner') return `No runner on ${baseWords[role.base]}.`;
+      if (role.kind === 'pitcher') return 'Nobody is pitching.';
+      return messages.unclear(transcript);
+    }
     case 'wrong_role': {
       const { role, holder, other } = refusal;
-      const where = role.kind === 'batter' ? 'is up' : role.kind === 'pitcher' ? 'is pitching'
+      const where = role.kind === 'batter' ? 'is up' : role.kind === 'earlier_batter' ? 'was up' : role.kind === 'pitcher' ? 'is pitching'
         : role.kind === 'runner' ? `is on ${baseWords[role.base]}` : `is playing ${positionWords[role.position]}`;
       return `${holder.name} ${where}${other ? `, not ${other.name}` : ''}.`;
     }
@@ -106,7 +112,7 @@ function check(press: Press, reading: AnswerReading): { ok: true; reading: Readi
   if (!start.ok) return { ok: false, refusal: { kind: 'engine', code: start.code } };
   const mapped = toCommands(game, start.state, reading);
   if (!mapped.ok) return { ok: false, refusal: mapped.why };
-  const names = checkNames(game, start.state, mapped.atBat, reading, press.transcript);
+  const names = checkNames(game, start.state, mapped, reading, press.transcript);
   if (names) return { ok: false, refusal: names };
   const result = applyGroup(game.setup, game.events, mapped.commands);
   if (!result.ok) return { ok: false, refusal: { kind: 'engine', code: result.code } };
@@ -116,10 +122,19 @@ function check(press: Press, reading: AnswerReading): { ok: true; reading: Readi
 
 const same = (a: Command[], b: Command[]) => JSON.stringify(a) === JSON.stringify(b);
 
+/**
+ * A press that starts the way a correction does ("no, that was a double", "actually, a triple"), right after a play,
+ * is treated as a fix even when the answer doesn't say so, so a fix never saves as a new play. "No. 17" is a number.
+ */
+function soundsLikeAFix(press: Press): boolean {
+  const opening = /^(?:no|nope|actually|wait|sorry|correction|i mean|make that|scratch that|that was)\b(?![ .]*\d)/;
+  return opening.test(normalize(press.transcript)) && press.game.events.some((event) => event.command.kind !== 'game');
+}
+
 function fromAnswer(press: Press, answer: Answer): Decision {
   if (answer.result === 'not_a_play') return { kind: 'message', message: messages.notAPlay };
   if (answer.result === 'unclear') return { kind: 'message', message: messages.unclear(press.transcript) };
-  if (answer.fix_last) return { kind: 'message', message: messages.fixNotYet };
+  if (answer.fix_last || soundsLikeAFix(press)) return { kind: 'message', message: messages.fixNotYet };
   const checked = answer.readings.map((reading) => check(press, reading));
   const accepted = checked.flatMap((result) => result.ok ? [result.reading] : [])
     .filter((reading, index, all) => all.findIndex((other) => same(other.commands, reading.commands)) === index);

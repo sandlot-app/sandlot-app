@@ -63,8 +63,8 @@ test('a voice play saves once, against the game the press started on', async () 
 const nobody = { name: null, number: null };
 const said = (name: string) => ({ name, number: null });
 const double = (batter: string, runners: NonNullable<AnswerReading['ball_in_play']>['runners']): AnswerReading => ({
-  batter: said(batter), pitcher: nobody, pitches: [], runner_events: [], forced_runners: [],
-  ball_in_play: { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners },
+  batter: said(batter), earlier_batters: [], pitcher: nobody, pitches: [], runner_events: [], runner_events_after: [], forced_runners: [], taken_back: [],
+  ball_in_play: { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners, batter_out_first: false },
 });
 const answering = (transcript: string, answer: Answer | null): Result<Parsed> => ({ ok: true, value: { transcript, answer } });
 const play = (reading: AnswerReading): Answer => ({ result: 'play', fix_last: false, readings: [reading] });

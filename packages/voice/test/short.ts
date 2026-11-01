@@ -13,12 +13,19 @@
 
 export type ShortReading = {
   batter?: string;
+  /** Batters of earlier at-bats in the press, in order: ["Shah"]. */
+  earlier?: string[];
   pitcher?: string;
   p?: string[];
-  bip?: { o: string; t?: string; f?: string[]; b: string; r?: string[] };
+  /** `first`: the batter was out before any runner. */
+  bip?: { o: string; t?: string; f?: string[]; b: string; r?: string[]; first?: true };
   ev?: string[];
+  /** Runner events after the ball in play, by the base after it: "stolen_base:1>2:Soto". */
+  after?: string[];
   /** Runners named who were only forced along by a walk or hit by pitch: "1:Soto". */
   fr?: string[];
+  /** Names the scorer took back. */
+  back?: string[];
 };
 
 export type Short = ShortReading & {
@@ -37,20 +44,36 @@ function move(text: string) {
   return { from, to, ...named(said) };
 }
 
+/** "caught_stealing:1>out:Diaz" or with fielders after a "|": "caught_stealing:1>out:Diaz|C:Ortiz,SS". */
+function event(text: string) {
+  const [main, fielders] = text.split('|');
+  const [kind, ...rest] = main!.split(':');
+  return { event: kind, ...move(rest.join(':')), fielders: (fielders ? fielders.split(',') : []).map(fielder) };
+}
+
+function fielder(text: string) {
+  const [position, said] = text.split(':');
+  return { position, ...named(said) };
+}
+
 function reading(short: ShortReading) {
   return {
     batter: named(short.batter),
+    earlier_batters: (short.earlier ?? []).map(named),
     pitcher: named(short.pitcher),
     pitches: short.p ?? [],
     ball_in_play: short.bip ? {
       outcome: short.bip.o,
       trajectory: short.bip.t ?? null,
-      fielders: (short.bip.f ?? []).map((text) => { const [position, said] = text.split(':'); return { position, ...named(said) }; }),
+      fielders: (short.bip.f ?? []).map(fielder),
       batter_to: short.bip.b,
       runners: (short.bip.r ?? []).map(move),
+      batter_out_first: short.bip.first ?? false,
     } : null,
-    runner_events: (short.ev ?? []).map((text) => { const [event, ...rest] = text.split(':'); return { event, ...move(rest.join(':')) }; }),
+    runner_events: (short.ev ?? []).map(event),
+    runner_events_after: (short.after ?? []).map(event),
     forced_runners: (short.fr ?? []).map((text) => { const [from, said] = text.split(':'); return { from, ...named(said) }; }),
+    taken_back: (short.back ?? []).map(named),
   };
 }
 

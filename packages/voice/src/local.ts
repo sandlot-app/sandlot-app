@@ -50,7 +50,7 @@ export type Local = { kind: 'empty' } | { kind: 'undo' } | { kind: 'answer'; ans
 
 const nobody = { name: null, number: null };
 const pitchesOnly = (pitches: AnswerReading['pitches']): AnswerReading =>
-  ({ batter: nobody, pitcher: nobody, pitches, ball_in_play: null, runner_events: [], forced_runners: [] });
+  ({ batter: nobody, earlier_batters: [], pitcher: nobody, pitches, ball_in_play: null, runner_events: [], runner_events_after: [], forced_runners: [], taken_back: [] });
 
 /**
  * What the phone can read on its own, or null when the press needs the AI. A single bare "strike" keeps its

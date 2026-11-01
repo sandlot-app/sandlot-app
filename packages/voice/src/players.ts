@@ -2,8 +2,20 @@ import type { PlayerRef } from '@sandlot/engine';
 import type { Named } from './answer.ts';
 import type { RosterEntry } from './state.ts';
 
-/** A name's words, lower case, letters only, with any "'s" dropped: "D. Park's" is ["d", "park"]. */
-export const words = (name: string) => name.toLowerCase().replace(/['’]s\b/g, '').replace(/[^\p{L} ]/gu, ' ').split(/\s+/).filter(Boolean);
+const suffixes = new Set(['jr', 'sr', 'ii', 'iii', 'iv']);
+
+/**
+ * A name's words, lower case, letters only. A "'s" is dropped, apostrophes and hyphens inside a name close up, and a
+ * Jr or III at the end goes, so "D. Park's" is ["d", "park"] and "R. D'Souza Jr." is ["r", "dsouza"].
+ */
+export function words(name: string): string[] {
+  const list = name.toLowerCase().replace(/['’]s\b/g, '').replace(/(\p{L})['’-](?=\p{L})/gu, '$1').replace(/[^\p{L} ]/gu, ' ').split(/\s+/).filter(Boolean);
+  while (list.length > 1 && suffixes.has(list.at(-1)!)) list.pop();
+  return list;
+}
+
+/** A first name said in full must match a first name known in full; either one as an initial matches its first letter. */
+const sameFirst = (said: string, known: string) => said.length > 1 && known.length > 1 ? said === known : said[0] === known[0];
 
 export const samePlayer = (a: PlayerRef, b: PlayerRef) => a.kind === b.kind && a.id === b.id;
 
@@ -38,7 +50,7 @@ export function exactly(heard: string, entry: RosterEntry): boolean {
   const said = words(heard);
   const known = words(entry.name);
   if (!said.length || !known.length) return false;
-  if (said.at(-1) === known.at(-1)) return said.length === 1 || said[0]![0] === known[0]![0];
+  if (said.at(-1) === known.at(-1)) return said.length === 1 || sameFirst(said[0]!, known[0]!);
   return said.length === 1 && known.length > 1 && known[0]!.length > 1 && said[0] === known[0];
 }
 
@@ -47,10 +59,11 @@ export function exactly(heard: string, entry: RosterEntry): boolean {
  * at least 3 letters and at most 2 more ("Parker" for "Park"), or they are one letter apart and both have at least 4
  * ("Ruis"). A first initial said with it must still match.
  */
-function nearly(heard: string, entry: RosterEntry): boolean {
+export function nearly(heard: string, entry: RosterEntry): boolean {
   const said = words(heard);
   const known = words(entry.name);
-  if (said.length > 1 && said[0]![0] !== known[0]?.[0]) return false;
+  if (!said.length || !known.length) return false;
+  if (said.length > 1 && !sameFirst(said[0]!, known[0]!)) return false;
   const [a, b] = [said.at(-1) ?? '', known.at(-1) ?? ''];
   const [short, long] = a.length <= b.length ? [a, b] : [b, a];
   return (short.length >= 3 && long.length - short.length <= 2 && long.startsWith(short)) || (short.length >= 4 && distance(a, b) === 1);

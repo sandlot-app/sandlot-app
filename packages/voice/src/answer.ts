@@ -26,23 +26,36 @@ export type DestinationKey = typeof destinations[number];
  */
 export type Named = { name: string | null; number: string | null };
 
+type Fielder = Named & { position: typeof positions[number] };
+type AnswerEvent = Named & { event: typeof runnerEvents[number]; from: BaseKey; to: DestinationKey; fielders: Fielder[] };
+
 /** One whole way the press could have gone. Every runner is keyed by the base they were on when the press began. */
 export type AnswerReading = {
+  /** The batter of the last at-bat in the press. */
   batter: Named;
+  /** The batters of earlier at-bats the press's pitches ended, in order ("Shah strikes out, then Diaz walks"). Usually empty. */
+  earlier_batters: Named[];
   pitcher: Named;
   /** Pitches before any ball in play, in order. Never the pitch that was hit. */
   pitches: (typeof pitchResults[number])[];
   ball_in_play: null | {
     outcome: typeof outcomes[number];
     trajectory: typeof trajectories[number] | null;
-    fielders: (Named & { position: typeof positions[number] })[];
+    fielders: Fielder[];
     batter_to: DestinationKey;
     /** Where every runner on base ended up. */
     runners: (Named & { from: BaseKey; to: DestinationKey })[];
+    /** True when the batter was put out before any runner on the play, as on a 3-6 double play. */
+    batter_out_first: boolean;
   };
-  runner_events: (Named & { event: typeof runnerEvents[number]; from: BaseKey; to: DestinationKey })[];
+  /** Runner events before any ball in play. */
+  runner_events: AnswerEvent[];
+  /** Runner events after the ball in play ("Soto singles, he steals second"), keyed by the base the runner was on after it. */
+  runner_events_after: AnswerEvent[];
   /** Runners the scorer named who moved only because a walk or hit by pitch forced them along. The engine moves them. */
   forced_runners: (Named & { from: BaseKey })[];
+  /** Names the scorer said and then took back ("Cole, no, I mean Shah"). They name nobody in the play. */
+  taken_back: Named[];
 };
 
 /** A play has one reading, a question two (the likelier first), anything else none. There is no field for notes. */
@@ -62,31 +75,42 @@ const named = {
   number: nullable({ type: 'string', description: 'The jersey number the scorer used for this player, as digits. Null if none.' }),
 };
 
+const fielderSchema = object({ position: oneOf(positions), ...named });
+const runnerEventSchema = object({ event: oneOf(runnerEvents), from: oneOf(bases), to: oneOf(destinations), ...named, fielders: { type: 'array', items: fielderSchema } });
+
 const readingSchema = object({
-  batter: object(named, 'How the scorer named the batter.'),
+  batter: object(named, 'How the scorer named the batter of the last at-bat in the press.'),
+  earlier_batters: { type: 'array', items: object(named), description: 'How the scorer named the batters of earlier at-bats the pitches in this press ended, in order. Usually empty.' },
   pitcher: object(named, 'How the scorer named the pitcher.'),
   pitches: { type: 'array', items: oneOf(pitchResults), description: 'Pitches before any ball in play, in order. Not the pitch that was hit.' },
   ball_in_play: nullable(object({
     outcome: oneOf(outcomes),
     trajectory: nullable(oneOf(trajectories)),
-    fielders: { type: 'array', items: object({ position: oneOf(positions), ...named }), description: 'Fielders who handled the ball, in order.' },
+    fielders: { type: 'array', items: fielderSchema, description: 'Fielders who handled the ball, in order.' },
     batter_to: oneOf(destinations, 'Where the batter ended up.'),
     runners: {
       type: 'array',
       items: object({ from: oneOf(bases), to: oneOf(destinations), ...named }),
       description: 'Where every runner on base before the press ended up, keyed by the base they started on.',
     },
+    batter_out_first: { type: 'boolean', description: 'True only when the batter was put out before any runner on the play, as on a 3-6 double play.' },
   }, 'Set when the batter put the ball in play. Null otherwise.')),
   runner_events: {
     type: 'array',
-    items: object({ event: oneOf(runnerEvents), from: oneOf(bases), to: oneOf(destinations), ...named }),
-    description: 'Steals, caught stealing, pickoffs, wild pitches, passed balls and advances on an error, by the base the runner was on.',
+    items: runnerEventSchema,
+    description: 'Steals, caught stealing, pickoffs, wild pitches, passed balls and advances on an error before any ball in play, by the base the runner was on.',
+  },
+  runner_events_after: {
+    type: 'array',
+    items: runnerEventSchema,
+    description: 'The same, after the ball in play, by the base the runner was on after it. Usually empty.',
   },
   forced_runners: {
     type: 'array',
     items: object({ from: oneOf(bases), ...named }),
     description: 'Runners the scorer named who moved only because a walk or hit by pitch forced them along, by the base they were on.',
   },
+  taken_back: { type: 'array', items: object(named), description: 'Names the scorer said and then took back. Usually empty.' },
 });
 
 /** Strict Structured Outputs schema: every field required, null for "not said", no extra fields. Notes come last. */
@@ -98,7 +122,7 @@ export const answerSchema = object({
 });
 
 /** Limits a real press never reaches. Past them the answer is malformed, not trimmed. */
-const limits = { pitches: 12, runnerEvents: 6, fielders: 6, name: 40 } as const;
+const limits = { pitches: 12, runnerEvents: 6, fielders: 6, names: 4, name: 40 } as const;
 
 type Raw = Record<string, unknown>;
 const isObject = (value: unknown): value is Raw => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -128,38 +152,54 @@ function readMove(raw: unknown): (Named & { from: BaseKey; to: DestinationKey })
   return who && { from: raw.from, to: raw.to, ...who };
 }
 
+function readFielder(raw: unknown): Fielder | null {
+  if (!isObject(raw) || !isOneOf(positions, raw.position)) return null;
+  const who = readNamed(raw);
+  return who && { position: raw.position, ...who };
+}
+
+function readEvents(raw: unknown): AnswerEvent[] | null {
+  const events = list(raw, limits.runnerEvents, (item) => {
+    const move = readMove(item);
+    const fielders = isObject(item) ? list(item.fielders, limits.fielders, readFielder) : null;
+    return move && fielders && isObject(item) && isOneOf(runnerEvents, item.event) ? { event: item.event, ...move, fielders } : null;
+  });
+  return events && distinctFrom(events) ? events : null;
+}
+
 function readBallInPlay(raw: unknown): AnswerReading['ball_in_play'] | undefined {
   if (raw === null) return null;
   if (!isObject(raw) || !isOneOf(outcomes, raw.outcome) || !isOneOf(destinations, raw.batter_to)) return undefined;
   if (raw.trajectory !== null && !isOneOf(trajectories, raw.trajectory)) return undefined;
-  const fielders = list(raw.fielders, limits.fielders, (item) => {
-    if (!isObject(item) || !isOneOf(positions, item.position)) return null;
-    const who = readNamed(item);
-    return who && { position: item.position, ...who };
-  });
+  const fielders = list(raw.fielders, limits.fielders, readFielder);
   const runners = list(raw.runners, 3, readMove);
-  if (!fielders || !runners || !distinctFrom(runners)) return undefined;
-  return { outcome: raw.outcome, trajectory: raw.trajectory, fielders, batter_to: raw.batter_to, runners };
+  if (!fielders || !runners || !distinctFrom(runners) || typeof raw.batter_out_first !== 'boolean') return undefined;
+  return { outcome: raw.outcome, trajectory: raw.trajectory, fielders, batter_to: raw.batter_to, runners, batter_out_first: raw.batter_out_first };
 }
 
 function readReading(raw: unknown): AnswerReading | null {
   if (!isObject(raw)) return null;
   const batter = readNamed(raw.batter);
   const pitcher = readNamed(raw.pitcher);
+  const earlier = list(raw.earlier_batters, 3, readNamed);
   const pitches = list(raw.pitches, limits.pitches, (item) => isOneOf(pitchResults, item) ? item : null);
   const ballInPlay = readBallInPlay(raw.ball_in_play);
-  const events = list(raw.runner_events, limits.runnerEvents, (item) => {
-    const move = readMove(item);
-    return move && isObject(item) && isOneOf(runnerEvents, item.event) ? { event: item.event, ...move } : null;
-  });
+  const events = readEvents(raw.runner_events);
+  const after = readEvents(raw.runner_events_after);
   const forced = list(raw.forced_runners, 3, (item) => {
     if (!isObject(item) || !isOneOf(bases, item.from)) return null;
     const who = readNamed(item);
     return who && { from: item.from, ...who };
   });
-  if (!batter || !pitcher || !pitches || ballInPlay === undefined || !events || !distinctFrom(events) || !forced || !distinctFrom(forced)) return null;
+  const takenBack = list(raw.taken_back, limits.names, readNamed);
+  if (!batter || !pitcher || !earlier || !pitches || ballInPlay === undefined || !events || !after || !forced || !distinctFrom(forced) || !takenBack) return null;
   if (!pitches.length && !ballInPlay && !events.length) return null;
-  return { batter, pitcher, pitches, ball_in_play: ballInPlay, runner_events: events, forced_runners: forced };
+  // Events after the ball in play need one to come after.
+  if (after.length && !ballInPlay) return null;
+  return {
+    batter, earlier_batters: earlier, pitcher, pitches, ball_in_play: ballInPlay,
+    runner_events: events, runner_events_after: after, forced_runners: forced, taken_back: takenBack,
+  };
 }
 
 /**
