@@ -1,0 +1,230 @@
+appId: host.exp.Exponent
+---
+# #28: the scorer sets both lineups in Game setup, is refused a start with no pitcher, fixes it, starts, then reads the saved
+# log with an undone play in it and finds it again after reopening. Needs a phone with no saved local game.
+- runFlow: _ready.yaml
+- assertVisible:
+    id: "start-game"
+- tapOn:
+    id: "start-game"
+# Game setup: Start is off, the half is pre-filled, and the rows say Not set yet.
+- extendedWaitUntil:
+    visible:
+      id: "start-setup"
+    timeout: 15000
+- assertVisible: "New game"
+- assertVisible: "Set both lineups to start"
+- assertVisible:
+    id: "start-setup"
+    enabled: false
+- assertVisible: "Second half since Oct 1, so pitchers can get 9 outs a day. Change it if your league switched on another date."
+- assertVisible:
+    id: "lineup-summary-home"
+    text: "Not set yet"
+- takeScreenshot: setup-empty
+- tapOn:
+    id: "half-first"
+- tapOn:
+    id: "half-second"
+# Hawks lineup: bats only, a position change and back, a drag and back, and the starting pitcher changed and back.
+- tapOn:
+    id: "lineup-home"
+- extendedWaitUntil:
+    visible:
+      id: "save-lineup"
+    timeout: 15000
+- assertVisible: "Hawks lineup"
+- assertVisible: "Everyone here bats, in this order. Drag to reorder, and tap a position to change it."
+- assertVisible: "B. Lane, Bats only. Change position"
+- assertVisible: "Fully rested · 75 pitches available today"
+- takeScreenshot: lineup-hawks-top
+- tapOn:
+    id: "position-1"
+- extendedWaitUntil:
+    visible:
+      id: "position-sheet"
+    timeout: 15000
+- assertVisible: "Swaps with K. Moss"
+- takeScreenshot: lineup-position-sheet
+- tapOn:
+    id: "position-choice-CF"
+- assertVisible: "J. Ruiz, CF. Change position"
+- assertVisible: "K. Moss, SS. Change position"
+- tapOn:
+    id: "position-1"
+- tapOn:
+    id: "position-choice-SS"
+- assertVisible: "J. Ruiz, SS. Change position"
+- assertVisible: "K. Moss, CF. Change position"
+- swipe:
+    from:
+      id: "drag-handle-0"
+    direction: DOWN
+    duration: 800
+- assertNotVisible: "Reorder K. Moss, batting 1"
+- assertVisible: "Reorder K. Moss, batting .*"
+- takeScreenshot: lineup-reordered
+- swipe:
+    from:
+      text: "Reorder K. Moss, batting .*"
+    direction: UP
+    duration: 800
+- assertVisible: "Reorder K. Moss, batting 1"
+# The starting pitcher: M. Ortiz takes the mound, then T. Nguyen gets it back.
+- scrollUntilVisible:
+    element:
+      id: "change-pitcher"
+- tapOn:
+    id: "change-pitcher"
+- extendedWaitUntil:
+    visible:
+      id: "pitcher-sheet"
+    timeout: 15000
+- takeScreenshot: lineup-pitcher-sheet
+- tapOn:
+    id: "pitcher-choice-home-2"
+- assertVisible: "Choose M. Ortiz"
+- tapOn:
+    id: "pitcher-confirm"
+- assertVisible:
+    id: "starting-pitcher"
+    text: ".*M. Ortiz.*"
+- tapOn:
+    id: "change-pitcher"
+- tapOn:
+    id: "pitcher-choice-home-1"
+- tapOn:
+    id: "pitcher-confirm"
+- assertVisible:
+    id: "starting-pitcher"
+    text: ".*T. Nguyen.*"
+# Everyone on the roster is already in the lineup, so there is nobody to add.
+- scrollUntilVisible:
+    element:
+      id: "add-player"
+- tapOn:
+    id: "add-player"
+- assertVisible: "Everyone on the roster is already in the lineup."
+- takeScreenshot: lineup-add-sheet
+- tapOn: "Cancel"
+- scrollUntilVisible:
+    element:
+      id: "save-lineup"
+- takeScreenshot: lineup-hawks-bottom
+- tapOn:
+    id: "save-lineup"
+# Back on Game setup the Hawks row reads as the Figma frame shows it and Start is still off.
+- extendedWaitUntil:
+    visible:
+      id: "lineup-summary-home"
+      text: "10 players · T. Nguyen pitching"
+    timeout: 15000
+- assertVisible:
+    id: "lineup-summary-away"
+    text: "Not set yet"
+- assertVisible:
+    id: "start-setup"
+    enabled: false
+- takeScreenshot: setup-hawks-set
+# Marlins lineup: nobody pitching is saved, and Start is refused with the engine's reason.
+- tapOn:
+    id: "lineup-away"
+- extendedWaitUntil:
+    visible:
+      id: "save-lineup"
+    timeout: 15000
+- assertVisible: "Marlins lineup"
+- tapOn:
+    id: "position-0"
+- tapOn:
+    id: "position-choice-Bats only"
+- assertVisible:
+    id: "starting-pitcher-none"
+- scrollUntilVisible:
+    element:
+      id: "save-lineup"
+- tapOn:
+    id: "save-lineup"
+- extendedWaitUntil:
+    visible:
+      id: "lineup-summary-away"
+      text: "9 players"
+    timeout: 15000
+- assertVisible: "Start game"
+- tapOn:
+    id: "start-setup"
+- extendedWaitUntil:
+    visible:
+      id: "setup-message"
+      text: "Each team needs a starting pitcher. Choose one for the team that has none."
+    timeout: 15000
+- takeScreenshot: setup-refused
+- tapOn:
+    id: "lineup-away"
+- scrollUntilVisible:
+    element:
+      id: "change-pitcher"
+- tapOn:
+    id: "change-pitcher"
+- tapOn:
+    id: "pitcher-choice-away-1"
+- tapOn:
+    id: "pitcher-confirm"
+- scrollUntilVisible:
+    element:
+      id: "save-lineup"
+- tapOn:
+    id: "save-lineup"
+- extendedWaitUntil:
+    visible:
+      id: "lineup-summary-away"
+      text: "9 players · J. Soto pitching"
+    timeout: 15000
+- assertVisible:
+    id: "start-setup"
+    text: "Start game"
+    enabled: true
+- takeScreenshot: setup-ready
+- tapOn:
+    id: "start-setup"
+# The game starts from what was saved. One ball and an undo, then the log keeps the undone play.
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "scorer-undo"
+      enabled: true
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- tapOn:
+    id: "tab-plays"
+- extendedWaitUntil:
+    visible: "Undone"
+    timeout: 15000
+- takeScreenshot: plays-undone
+# Close the game and open it again: the same game and the same log.
+- tapOn:
+    id: "games-navigation"
+- extendedWaitUntil:
+    visible:
+      id: "resume-game"
+    timeout: 15000
+- tapOn:
+    id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+- tapOn:
+    id: "tab-plays"
+- extendedWaitUntil:
+    visible: "Undone"
+    timeout: 15000
+- takeScreenshot: plays-undone-reopened
+- tapOn:
+    id: "games-navigation"
