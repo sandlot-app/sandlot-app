@@ -3,8 +3,10 @@ import { test } from 'node:test';
 import type { ParseResult } from '@sandlot/voice';
 import { Clip, MAX_CLIP_BYTES, SAMPLE_RATE, toBase64 } from '../src/voice/pcm.ts';
 import { startPress, type Mic, type PressUpdate } from '../src/voice/press.ts';
+import { liveTimeouts } from '../src/voice/realtime.ts';
+import { READ_LIMIT_MS } from '../src/voice/voice-controller.ts';
 import type { Socket } from '../src/voice/realtime.ts';
-import { createVoiceApi, type VoiceApi } from '../src/voice/voice-api.ts';
+import { createVoiceApi, REQUEST_TIMEOUT_MS, type VoiceApi } from '../src/voice/voice-api.ts';
 import { fakeApi, fakeMic, fakeSocket, session, tick, timeouts } from './voice-fakes.ts';
 
 const context = { batting: ['L. Darcy'], fielding: ['A. Kindle'], runners: [] };
@@ -214,6 +216,49 @@ test('#88: a mic that fails after the second tap still ends the press, with the 
   const result = await done;
   assert.deepEqual(updates.map((update) => update.kind), ['ended', 'failed']);
   assert.equal(result.kind === 'failed' && result.failure, 'microphone');
+});
+
+test('#88: a slow stream gives way after finalMs in all, so the recording fallback always gets its turn', async () => {
+  const mic = fakeMic();
+  const api = fakeApi();
+  // The socket never opens. On their own, the stream's waits would add up to openMs + finalMs.
+  const press = startPress({ mic, api, openSocket: () => fakeSocket(), timeouts: { openMs: 60, finalMs: 40 } }, input, () => {});
+  await tick();
+  mic.push([1, 0, 2, 0]);
+  press.release();
+  await new Promise((resolve) => setTimeout(resolve, 75));
+  assert.equal(api.parsed.length, 1, 'the recording has gone to voice-parse by now');
+  assert.ok('audio' in api.parsed[0]!);
+});
+
+test('#88: the waits fit inside the read limit, so a slow stream can still reach the fallback and its answer', () => {
+  assert.ok(liveTimeouts.finalMs + REQUEST_TIMEOUT_MS < READ_LIMIT_MS, 'live words, then one voice-parse call, then the limit');
+});
+
+test('#88: dropping a press stops its voice-parse call, so a dropped press spends nothing more', async () => {
+  const mic = fakeMic();
+  const api = fakeApi({ ok: false, failure: 'voice_unavailable' });
+  const { press } = run(mic, api, fakeSocket());
+  await tick();
+  mic.push([1, 0, 2, 0]);
+  press.release();
+  await new Promise((resolve) => setTimeout(resolve, timeouts.openMs + 10));
+  assert.equal(api.signals.length, 1);
+  assert.equal(api.signals[0]?.aborted, false);
+  press.cancel();
+  assert.equal(api.signals[0]?.aborted, true);
+});
+
+test('#88: voice-api stops a request when the signal it was given fires', async () => {
+  const abort = new AbortController();
+  const api = createVoiceApi({
+    url: 'https://p.supabase.co', key: 'k', token: async () => 't',
+    fetch: (_, init) => new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new Error('aborted')))),
+  });
+  const pending = api.parse({ transcript: 'ball', context }, abort.signal);
+  await tick();
+  abort.abort();
+  assert.equal((await pending).ok, false);
 });
 
 test('sliding off cancels the press: nothing is heard, sent or parsed', async () => {

@@ -18,7 +18,8 @@ export type Parsed = { transcript: string; parsed: ParseResult | null };
 
 export type VoiceApi = {
   session(names: string[]): Promise<Result<Session>>;
-  parse(body: ParseBody): Promise<Result<Parsed>>;
+  /** `signal` stops the call when the scorer's press is dropped, so it spends nothing more. */
+  parse(body: ParseBody, signal?: AbortSignal): Promise<Result<Parsed>>;
 };
 
 type Fetch = (url: string, init: { method: 'POST'; headers: Record<string, string>; body: string; signal: AbortSignal }) =>
@@ -66,13 +67,19 @@ function parsed(value: unknown): Parsed | null {
   return null;
 }
 
-export function createVoiceApi({ url, key, token, fetch, timeoutMs = 25_000 }: ApiConfig): VoiceApi {
-  async function call<T>(name: string, body: unknown, read: (value: unknown) => T | null): Promise<Result<T>> {
+/** How long one voice function call may take. After the live words' time, it still fits inside the read limit (READ_LIMIT_MS). */
+export const REQUEST_TIMEOUT_MS = 9_000;
+
+export function createVoiceApi({ url, key, token, fetch, timeoutMs = REQUEST_TIMEOUT_MS }: ApiConfig): VoiceApi {
+  async function call<T>(name: string, body: unknown, read: (value: unknown) => T | null, signal?: AbortSignal): Promise<Result<T>> {
     for (const fresh of [false, true]) {
       const access = await token(fresh).catch(() => null);
       if (!access) return { ok: false, failure: 'auth_unavailable' };
       const abort = new AbortController();
       const timer = setTimeout(() => abort.abort(), timeoutMs);
+      const stop = () => abort.abort();
+      signal?.addEventListener('abort', stop);
+      if (signal?.aborted) stop();
       try {
         const response = await fetch(`${url}/functions/v1/${name}`, {
           method: 'POST',
@@ -89,12 +96,13 @@ export function createVoiceApi({ url, key, token, fetch, timeoutMs = 25_000 }: A
         return { ok: false, failure: abort.signal.aborted ? 'timeout' : 'offline' };
       } finally {
         clearTimeout(timer);
+        signal?.removeEventListener('abort', stop);
       }
     }
     return { ok: false, failure: 'unauthenticated' };
   }
   return {
     session: (names) => call('voice-session', { names }, session),
-    parse: (body) => call('voice-parse', body, parsed),
+    parse: (body, signal) => call('voice-parse', body, parsed, signal),
   };
 }

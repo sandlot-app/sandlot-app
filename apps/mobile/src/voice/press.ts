@@ -33,6 +33,8 @@ export type VoiceDeps = { mic: Mic; api: VoiceApi; openSocket: OpenSocket; timeo
 export type PressInput = { names: string[]; context: ParseContext };
 export type PressHandle = { release(): void; cancel(): void };
 
+const later = (ms: number) => new Promise<null>((resolve) => setTimeout(() => resolve(null), ms));
+
 const nothing = (): PressUpdate => ({ kind: 'heard', transcript: '', parsed: parsePhrase('') });
 
 export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update: PressUpdate) => void): PressHandle {
@@ -44,6 +46,8 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
   let wrongRate = false;
   /** Set once a release stops waiting for the socket, so a late session opens nothing. */
   let gaveUp = false;
+  /** Stops a voice-parse call when the press is dropped. */
+  const stopping = new AbortController();
 
   const emit = (update: PressUpdate) => { if (!cancelled) onUpdate(update); };
   const stopMic = () => {
@@ -92,9 +96,17 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
   async function heard(transcript: string) {
     const local = parsePhrase(transcript);
     if (isEmptyTranscript(transcript) || local.kind !== 'unclear') return emit({ kind: 'heard', transcript, parsed: local });
-    const result = await deps.api.parse({ transcript, context: input.context });
+    const result = await deps.api.parse({ transcript, context: input.context }, stopping.signal);
     // When voice-parse can't help, route() still says "Didn't understand" and points to the buttons.
     emit({ kind: 'heard', transcript, parsed: result.ok && result.value.parsed ? result.value.parsed : local });
+  }
+
+  async function liveWords(): Promise<string | null> {
+    // A short press can end before voice-session answers, so it waits a little for the socket.
+    await Promise.race([sessionReady, later(timeouts.openMs)]);
+    gaveUp = true;
+    const stream = live as Live | null;
+    return stream && !cancelled ? stream.finish() : null;
   }
 
   async function release() {
@@ -106,18 +118,15 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
     if (!(await micReady)) return emit({ kind: 'failed', failure: 'microphone' });
     if (wrongRate) return emit({ kind: 'failed', failure: 'voice_unavailable' });
     if (!clip.bytes) return emit(nothing());
-    // A short press can end before voice-session answers, so it waits a little for the socket.
-    await Promise.race([sessionReady, new Promise((resolve) => setTimeout(resolve, timeouts.openMs))]);
+    // The live words get finalMs in all, however they spend it, so the recording fallback always has time for its turn.
+    const streamed = await Promise.race([liveWords(), later(timeouts.finalMs)]);
     gaveUp = true;
-    const stream = live as Live | null;
-    if (cancelled) return;
-    const streamed = stream ? await stream.finish() : null;
-    stream?.close();
+    (live as Live | null)?.close();
     if (cancelled) return;
     // A blank live transcript gets the same one retry as a stream that failed: the recording goes to voice-parse before
     // the scorer hears "Didn't catch that".
     if (streamed !== null && !isEmptyTranscript(streamed)) return heard(streamed);
-    const result = await deps.api.parse({ audio: toBase64(clip.join()), context: input.context });
+    const result = await deps.api.parse({ audio: toBase64(clip.join()), context: input.context }, stopping.signal);
     if (!result.ok) return emit({ kind: 'failed', failure: result.failure });
     if (!result.value.parsed) return emit(nothing());
     emit({ kind: 'heard', transcript: result.value.transcript, parsed: result.value.parsed });
@@ -128,6 +137,7 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
     cancel() {
       if (cancelled) return;
       cancelled = true;
+      stopping.abort();
       if (!released) stopMic();
       released = true;
       live?.close();

@@ -275,6 +275,7 @@ test('#88: the press behind one that timed out still saves', async () => {
 test('#88: a forgotten second tap: a play followed by stray talk does not save a play the phone cannot read', async () => {
   // With no pause ending, a scorer who says "ball" and forgets to tap sends everything heard until 30 s. The phone's
   // reader doesn't guess: this goes to the AI reader, and when that can't help, nothing saves and the scorer is told.
+  // What the AI reader itself does with stray talk is for the real-speech test (#101) and the reader (#103).
   const { say, plays, views } = await scorer();
   (await say())('ball nice swing two outs come on Marco');
   await settle();

@@ -21,6 +21,12 @@ export type VoiceView = {
   message: string | null;
 };
 
+/**
+ * How long an ended press may take to be read. The scoring buttons wait for it, so it can't be long: pitches keep coming.
+ * It holds the live words' time (liveTimeouts.finalMs) and one voice-parse call (REQUEST_TIMEOUT_MS), with a second over.
+ */
+export const READ_LIMIT_MS = 15_000;
+
 export type VoiceControllerDeps = {
   /** Null when voice isn't set up on this phone. */
   voice: VoiceDeps | null;
@@ -31,7 +37,6 @@ export type VoiceControllerDeps = {
   now(): number;
   /** How long `saved` stays up after a voice play saves. */
   savedMs?: number;
-  /** How long an ended press may take to be read. The scoring buttons wait for it, so it can't be long: pitches keep coming. */
   readLimitMs?: number;
   onChange(view: VoiceView): void;
 };
@@ -43,7 +48,7 @@ type Answer = Exclude<PressUpdate, { kind: 'words' } | { kind: 'ended' }> | null
 type Choosing = { card: Extract<VoiceCard, { kind: 'choose' }>; readings: Reading[]; pressed: Pressed };
 type Ended = { handle: PressHandle; answer(answer: Answer): void };
 
-export function createVoiceController({ voice, game, record, now, savedMs = 1500, readLimitMs = 10_000, onChange }: VoiceControllerDeps) {
+export function createVoiceController({ voice, game, record, now, savedMs = 1500, readLimitMs = READ_LIMIT_MS, onChange }: VoiceControllerDeps) {
   /** The press the mic is open for. */
   let open: PressHandle | null = null;
   let words = '';
