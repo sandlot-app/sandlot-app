@@ -1,7 +1,5 @@
-import { fromModel, parserInstructions, parserSchema, type ParserContext } from '../../../packages/voice/src/model.ts';
-import { isEmptyTranscript, parsePhrase } from '../../../packages/voice/src/parse.ts';
-import type { ParseResult } from '../../../packages/voice/src/types.ts';
-import { names, type OpenAi, reply, type Reply, unavailable } from '../_shared/voice.ts';
+import { modelRequest, readContext, readLocally, readModelReply } from '../../../packages/voice/src/server.ts';
+import { type OpenAi, reply, type Reply, unavailable } from '../_shared/voice.ts';
 
 export const SAMPLE_RATE = 24000;
 /** 30 seconds of 16-bit mono audio, the longest press (A2). */
@@ -40,28 +38,6 @@ function decode(base64: string): Uint8Array | null {
   }
 }
 
-function context(value: unknown): ParserContext | null {
-  if (!value || typeof value !== 'object') return null;
-  const raw = value as Record<string, unknown>;
-  const batting = names(raw.batting);
-  const fielding = names(raw.fielding);
-  const runners = names(raw.runners, 3);
-  return batting && fielding && runners ? { batting, fielding, runners } : null;
-}
-
-/** The text the Responses API returned, from its output message. */
-function outputText(response: unknown): string | null {
-  const output = (response as { output?: unknown } | null)?.output;
-  if (!Array.isArray(output)) return null;
-  for (const item of output) {
-    for (const part of (item as { content?: unknown }).content as unknown[] ?? []) {
-      const { type, text } = part as { type?: unknown; text?: unknown };
-      if (type === 'output_text' && typeof text === 'string') return text;
-    }
-  }
-  return null;
-}
-
 async function transcribe(openai: OpenAi, model: string, pcm: Uint8Array): Promise<string | null> {
   const form = new FormData();
   form.append('model', model);
@@ -73,39 +49,18 @@ async function transcribe(openai: OpenAi, model: string, pcm: Uint8Array): Promi
   return typeof result?.text === 'string' ? result.text : null;
 }
 
-async function parse(openai: OpenAi, model: string, transcript: string, game: ParserContext): Promise<ParseResult | null> {
-  const response = await openai('/v1/responses', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      model,
-      instructions: parserInstructions(game),
-      input: transcript,
-      max_output_tokens: 800,
-      store: false,
-      text: { format: { type: 'json_schema', name: 'plays', strict: true, schema: parserSchema } },
-    }),
-  }).catch(() => null);
-  if (!response?.ok) return null;
-  const text = outputText(await response.json().catch(() => null));
-  if (text === null) return { kind: 'unclear' };
-  try {
-    return fromModel(JSON.parse(text));
-  } catch {
-    return { kind: 'unclear' };
-  }
-}
-
 /**
- * The server half of a press the phone couldn't finish alone. With `audio` it transcribes the clip first (A4/A5, the
- * slow-connection fallback). Then the local grammar reads the words, and the parser model gets only what it can't read.
- * The result is the same ParseResult the phone routes; the model only proposes, and `route` and the engine decide.
+ * The server half of every press the phone can't read alone. It checks the game the phone sent, transcribes a clip if
+ * it got one (A4/A5, the slow-connection fallback), asks the model once with the whole game in view, and returns the
+ * answer with the model's notes already gone. It never decides anything: the phone maps the answer to commands and
+ * the engine decides (rule 6). `answer` is null for an empty transcript, for words the phone reads itself (pitch
+ * calls, a lone undo), and for a reply that was refused, cut off or broke the schema.
  */
 export async function parseVoice(body: unknown, openai: OpenAi, models: Models): Promise<Reply> {
   if (!body || typeof body !== 'object') return reply(400, { error: 'invalid' });
   const raw = body as Record<string, unknown>;
-  const game = context(raw.context);
-  if (!game) return reply(400, { error: 'invalid' });
+  const context = readContext(raw.context);
+  if (!context) return reply(400, { error: 'invalid' });
   let transcript: string | null;
   if (typeof raw.transcript === 'string') {
     if (raw.transcript.length > MAX_TRANSCRIPT) return reply(400, { error: 'invalid' });
@@ -119,9 +74,12 @@ export async function parseVoice(body: unknown, openai: OpenAi, models: Models):
   } else {
     return reply(400, { error: 'invalid' });
   }
-  if (isEmptyTranscript(transcript)) return reply(200, { transcript, parsed: null });
-  const local = parsePhrase(transcript);
-  if (local.kind !== 'unclear') return reply(200, { transcript, parsed: local });
-  const parsed = await parse(openai, models.parser, transcript, game);
-  return parsed ? reply(200, { transcript, parsed }) : unavailable;
+  if (readLocally(transcript)) return reply(200, { transcript, answer: null });
+  const response = await openai('/v1/responses', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(modelRequest(models.parser, transcript, context)),
+  }).catch(() => null);
+  if (!response?.ok) return unavailable;
+  return reply(200, { transcript, answer: readModelReply(await response.json().catch(() => null)) });
 }

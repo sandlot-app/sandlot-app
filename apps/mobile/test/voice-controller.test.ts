@@ -5,13 +5,15 @@ import { openOfflineGame, type DemoAction, type SavedGame } from '../src/scoring
 import { SAMPLE_RATE } from '../src/voice/pcm.ts';
 import { createVoiceController, type VoiceView } from '../src/voice/voice-controller.ts';
 import { connect } from './database.ts';
+import type { Answer, AnswerReading, PressContext } from '@sandlot/voice';
+import type { ParseBody, Parsed, Result } from '../src/voice/voice-api.ts';
 import { fakeApi, fakeMic, fakeSocket, tick, timeouts } from './voice-fakes.ts';
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, timeouts.openMs + timeouts.finalMs + 30));
-const idle: VoiceView = { listening: false, reading: 0, saved: false, card: null, message: null };
+const idle: VoiceView = { listening: false, reading: 0, saved: false, card: null, message: null, banner: null };
 
 /** A started offline game, a controller on it, and a fake mic and socket for each press. */
-async function scorer(voiceOn = true, gate?: Promise<boolean>, wait = timeouts, flaky = false) {
+async function scorer(voiceOn = true, gate?: Promise<boolean>, wait = timeouts, flaky = false, parse?: Result<Parsed>) {
   const session = await openOfflineGame(connect(':memory:'), { newId: randomUUID, now: () => '2026-10-26T17:00:00.000Z' });
   if (session.kind !== 'ready') throw new Error('Session must open');
   const started = await session.record({ kind: 'start' });
@@ -31,8 +33,9 @@ async function scorer(voiceOn = true, gate?: Promise<boolean>, wait = timeouts, 
   const mic = fakeMic();
   let socket = fakeSocket();
   const views: VoiceView[] = [];
+  const api = fakeApi(undefined, parse);
   const controller = createVoiceController({
-    voice: voiceOn ? { mic, api: fakeApi(), openSocket: () => (socket = fakeSocket()), timeouts: wait } : null,
+    voice: voiceOn ? { mic, api, openSocket: () => (socket = fakeSocket()), timeouts: wait } : null,
     game: () => game,
     record,
     now: () => Date.parse('2026-10-26T17:01:00.000Z'),
@@ -53,7 +56,7 @@ async function scorer(voiceOn = true, gate?: Promise<boolean>, wait = timeouts, 
   }
   const plays = () => game.events.slice(started.game.events.length);
   const commands = () => plays().map((event) => event.command);
-  return { controller, record, recorded, views, say, plays, commands, mic, socket: () => socket, game: () => game };
+  return { controller, record, recorded, views, say, plays, commands, mic, socket: () => socket, game: () => game, sent: () => api.parsed as Extract<ParseBody, { transcript: string }>[] };
 }
 
 const lost = "That voice play didn't save. Say it again or tap to score.";
@@ -64,6 +67,77 @@ test('a voice play saves once, against the game the press started on', async () 
   await settle();
   assert.deepEqual(plays().map((event) => [event.source, event.command]), [['voice', { kind: 'pitch', result: 'swinging_strike' }]]);
   assert.equal(recorded.length, 1);
+});
+
+const nobody = { name: null, number: null };
+const said = (name: string) => ({ name, number: null });
+const double = (batter: string, runners: NonNullable<AnswerReading['ball_in_play']>['runners']): AnswerReading => ({
+  batter: said(batter), earlier_batters: [], pitcher: nobody, pitches: [], runner_events: [], runner_events_after: [], forced_runners: [], taken_back: [],
+  ball_in_play: { outcome: 'double', trajectory: null, fielders: [], batter_to: '2', runners, batter_out_first: false },
+});
+const answering = (transcript: string, answer: Answer | null): Result<Parsed> => ({ ok: true, value: { transcript, answer } });
+const play = (reading: AnswerReading): Answer => ({ result: 'play', fix_last: false, readings: [reading] });
+const sorted = (commands: unknown[]) => commands.map((command) => (command as { kind: string }).kind);
+
+/** A walk to J. Soto, so L. Darcy is up with Soto on first. */
+async function walked(scorerOf: Awaited<ReturnType<typeof scorer>>) {
+  for (let ball = 0; ball < 4; ball += 1) await scorerOf.record({ kind: 'pitch', result: 'ball' });
+}
+
+test('#103: a whole play said in one press goes to the AI with the game, saves once, and the banner names each runner', async () => {
+  const words = 'Darcy rips one to the gap and Soto comes around to score';
+  const scoring = await scorer(true, undefined, timeouts, false, answering(words, play(double('Darcy', [{ from: '1', to: 'home', ...said('Soto') }]))));
+  await walked(scoring);
+  (await scoring.say())(words);
+  await settle();
+  const context: PressContext = scoring.sent()[0]!.context;
+  assert.equal(scoring.sent()[0]!.transcript, words);
+  assert.deepEqual([context.batter.name, context.runners['1']?.name], ['L. Darcy', 'J. Soto']);
+  assert.deepEqual(sorted(scoring.plays().filter((event) => event.source === 'voice').map((event) => event.command)), ['pitch', 'ball_in_play']);
+  assert.equal(scoring.views.at(-1)?.banner, 'L. Darcy doubles, J. Soto scores');
+  assert.equal(scoring.views.at(-1)?.message, null);
+  assert.equal(scoring.game().state.score.away, 1);
+});
+
+test('#103: a question shows both readings, each checked by the engine, and the one tapped saves', async () => {
+  const words = 'Darcy doubles and the runner scores';
+  const question: Answer = { result: 'question', fix_last: false, readings: [
+    double('Darcy', [{ from: '1', to: '3', ...nobody }]), double('Darcy', [{ from: '1', to: 'home', ...nobody }])] };
+  const scoring = await scorer(true, undefined, timeouts, false, answering(words, question));
+  await walked(scoring);
+  (await scoring.say())(words);
+  await settle();
+  const card = scoring.views.at(-1)?.card;
+  assert.equal(card?.kind, 'choose');
+  assert.deepEqual(card?.kind === 'choose' && card.choices, ['L. Darcy doubles, J. Soto to 3rd', 'L. Darcy doubles, J. Soto scores']);
+  assert.equal(scoring.plays().filter((event) => event.source === 'voice').length, 0, 'nothing saves before a tap');
+  scoring.controller.choose(1);
+  await settle();
+  assert.equal(scoring.game().state.score.away, 1);
+});
+
+test('#103: a name in the wrong role saves nothing, and the line says who is up', async () => {
+  const scoring = await scorer(true, undefined, timeouts, false, answering('Vance doubles', play(double('Vance', []))));
+  await walked(scoring);
+  (await scoring.say())('Vance doubles');
+  await settle();
+  assert.equal(scoring.plays().filter((event) => event.source === 'voice').length, 0);
+  assert.equal(scoring.views.at(-1)?.message, 'L. Darcy is up, not C. Vance.');
+});
+
+test('#103: a fix, an answer voice-parse could not use, and a timeout each save nothing and point to taps', async () => {
+  const fix: Answer = { result: 'play', fix_last: true, readings: [double('Soto', [])] };
+  for (const [parse, line] of [
+    [answering('no, that was a double', fix), "Fixing a play by voice isn't ready yet. Tap Undo, then say the play again."],
+    [answering('Soto rips one', null), "Couldn't read that. Tap to score."],
+    [{ ok: false, failure: 'timeout' }, "That took too long and didn't save. Say it again or tap to score."],
+  ] as const) {
+    const scoring = await scorer(true, undefined, timeouts, false, parse);
+    (await scoring.say())('Soto rips one');
+    await settle();
+    assert.deepEqual(scoring.plays(), []);
+    assert.equal(scoring.views.at(-1)?.message, line);
+  }
 });
 
 test('#88: a touch of any length opens the mic and nothing but a second tap or 30 s closes it', async () => {
@@ -153,7 +227,7 @@ test('#88: two queued presses both save, in the order they ended, each against t
 });
 
 test('#88: a scoring-button tap drops the open press, and a press that already ended still saves', async () => {
-  const { controller, mic, say, plays, views, socket } = await scorer();
+  const { controller, mic, say, plays, views, socket } = await scorer(true, undefined, { openMs: 30, finalMs: 2000 });
   const hearFirst = await say();
   controller.tap();
   await tick();

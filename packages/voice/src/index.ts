@@ -1,8 +1,7 @@
-export * from './types.ts';
-export { parsePhrase, isEmptyTranscript } from './parse.ts';
-export { route, rejectMessage, type Press } from './route.ts';
-export { readBack } from './explain.ts';
-export { classify } from './classify.ts';
-export { echoMismatch } from './echo.ts';
-export type { PressGame } from './resolve.ts';
-export { fromModel, parserInstructions, parserSchema, type ParserContext } from './model.ts';
+// The phone's side of voice. voice-parse imports server.ts instead.
+export type { Answer, AnswerReading } from './answer.ts';
+export { readAnswer } from './answer.ts';
+export { pressContext, type PressContext } from './context.ts';
+export { decide, type Decision, type Heard, type Press, type Reading } from './decide.ts';
+export { isEmptyTranscript, readLocally } from './local.ts';
+export type { PressGame, RosterEntry } from './state.ts';

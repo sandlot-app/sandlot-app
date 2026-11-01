@@ -41,7 +41,7 @@ export type DemoAction =
   | { kind: 'runner_play'; at: string; expectedRevision: number;
       event: 'steal' | 'wild_pitch' | 'passed_ball' | 'pickoff';
       moves: { runner: PlayerRef; to: Destination }[] }
-  /** A reading the scorer said, as route() proposed it. The engine checks it like any other play (rule 6). */
+  /** A reading the scorer said, as decide() proposed it. The engine checks it like any other play (rule 6). */
   | { kind: 'voice'; at: string; expectedRevision: number; commands: Command[] };
 
 export type SavedGame = {

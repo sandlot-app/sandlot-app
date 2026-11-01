@@ -107,6 +107,7 @@ export default function ScoreScreen() {
   const dock = (
     <View style={largeText ? null : styles.dock} onLayout={(event) => setDockHeight(event.nativeEvent.layout.height)}>
       {voice.message ? <Text testID="voice-message" style={styles.message} accessibilityLiveRegion="polite">{voice.message}</Text>
+        : voice.banner ? <Text testID="voice-banner" style={styles.banner} accessibilityLiveRegion="polite">{voice.banner}</Text>
         : view.kind === 'ready' && view.problem && view.message ? <Text testID="action-message" style={styles.message} accessibilityLiveRegion="polite">{view.message}</Text> : null}
       <GameStatus />
       {voice.card ? <TranscriptCard card={voice.card} onChoose={voice.choose} /> : null}
@@ -176,6 +177,7 @@ const styles = createStyles({
   dock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   belowBar: { backgroundColor: colors['surface/card'] },
   message: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/2'], padding: sizes['space/3'], borderRadius: sizes['radius/md'], backgroundColor: colors['surface/warning'], color: colors['text/primary'] },
+  banner: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/2'], padding: sizes['space/3'], borderRadius: sizes['radius/md'], backgroundColor: colors['surface/voice'], color: colors['text/primary'] },
   pressed: { opacity: 0.55 },
   homeButton: { minHeight: 48, padding: sizes['space/4'] },
   homeLabel: { color: colors['action/primary'], fontSize: 15, fontWeight: '600' },

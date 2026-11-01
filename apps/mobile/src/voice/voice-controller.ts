@@ -1,14 +1,14 @@
 import type { Command } from '@sandlot/engine';
-import { route, type Reading } from '@sandlot/voice';
+import { decide, type PressGame, type Reading } from '@sandlot/voice';
 import type { VoiceCard } from '../../scorer-ui';
 import type { DemoAction, SavedGame } from '../scoring/offline-game.ts';
-import { choiceLabels, failureMessage, outcome, pressGame, pressInput, unsavedMessage } from './outcome.ts';
+import { choiceLabels, failureMessage, pressGame, pressInput, unsavedMessage } from './outcome.ts';
 import { startPress, type PressHandle, type PressUpdate, type VoiceDeps } from './press.ts';
 
 // The scoring screen's voice state, kept out of React so tests can drive it: the Transcript Card while the mic is open,
-// while a press is read or while it waits for a choice, and a line for anything that falls back to taps. One tap opens
-// the mic and a second ends it, or 30 s does (ADR 0007). Ended presses queue: each is read on its own, but they save in
-// the order they ended. Every save goes through `record`, so the engine checks it (rule 6).
+// while a press is read or while it waits for a choice, and a line for the banner of a saved play or anything that falls
+// back to taps. One tap opens the mic and a second ends it, or 30 s does (ADR 0007). Ended presses queue: each is read on
+// its own, but they save in the order they ended. Every save goes through `record`, so the engine checks it (rule 6).
 
 export type VoiceView = {
   /** The mic is open. */
@@ -18,7 +18,10 @@ export type VoiceView = {
   /** A voice play just saved: the bar says so for a moment, then the button comes back. */
   saved: boolean;
   card: VoiceCard | null;
+  /** A line about something that didn't save. */
   message: string | null;
+  /** What a voice play just saved. */
+  banner: string | null;
 };
 
 /**
@@ -42,7 +45,7 @@ export type VoiceControllerDeps = {
 };
 
 /** What one press saves against: when it started, and the game it started on. */
-type Pressed = { at: number; revision: number };
+type Pressed = { at: number; revision: number; snapshot: PressGame };
 /** What a press ended with: its result, or null when the scorer dropped it. */
 type Answer = Exclude<PressUpdate, { kind: 'words' } | { kind: 'ended' }> | null;
 type Choosing = { card: Extract<VoiceCard, { kind: 'choose' }>; readings: Reading[]; pressed: Pressed };
@@ -54,6 +57,7 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
   let words = '';
   let choosing: Choosing | null = null;
   let message: string | null = null;
+  let banner: string | null = null;
   /** Presses that ended and haven't saved yet, so a teardown can drop them. */
   const ended = new Set<Ended>();
   /** What the Transcript Card says while those presses are read: the newest one's words. */
@@ -68,7 +72,7 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
   let turn = 0;
   /** Counts teardowns, so a press that ended before one never saves after it. */
   let generation = 0;
-  /** The last play voice saved, for route()'s duplicate guard (D4). A tap or an undo clears it. */
+  /** The last play voice saved, for decide()'s duplicate guard (D4). A tap or an undo clears it. */
   let previous: { commands: Command[]; at: number } | undefined;
 
   const view = (): VoiceView => ({
@@ -79,6 +83,7 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
       ? { kind: 'listening', words }
       : choosing?.card ?? (ended.size ? { kind: 'reading', words: readingWords } : null),
     message,
+    banner,
   });
   const publish = () => onChange(view());
 
@@ -110,13 +115,20 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
     return done;
   }
 
-  const save = async (commands: Command[], pressed: Pressed) => {
+  const save = async (reading: Reading, pressed: Pressed) => {
+    const { commands } = reading;
     const born = generation;
+    const mine = turn;
     const done = await commit({ kind: 'voice', at: new Date(pressed.at).toISOString(), expectedRevision: pressed.revision, commands }, pressed);
     // The play is in the book either way, but a screen that was torn down meanwhile isn't told.
     if (done && born === generation) {
       previous = { commands, at: pressed.at };
       showSaved();
+      // The banner says what the engine recorded, until the scorer moves on.
+      if (mine === turn) {
+        message = null;
+        banner = reading.banner;
+      }
     }
   };
 
@@ -133,36 +145,41 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
   function refused(mine: number) {
     if (mine !== turn) return;
     message = unsavedMessage;
+    banner = null;
     publish();
   }
 
-  /** Where a press saves from: on top of our own latest save when nothing else has saved since, else where it started. */
+  /**
+   * What a press is read and saved against. It's the game it started on, the same game the AI was shown. A press behind
+   * another voice press of ours goes on top of that press, unless anything else has saved since.
+   */
   function pinned(from: Pressed): Pressed {
     const current = game();
-    return { at: from.at, revision: lastOwnRevision !== null && current?.revision === lastOwnRevision ? lastOwnRevision : from.revision };
+    return lastOwnRevision !== null && current?.revision === lastOwnRevision
+      ? { at: from.at, revision: lastOwnRevision, snapshot: pressGame(current) }
+      : from;
   }
 
   async function settle(answer: Answer, from: Pressed) {
     // This press's own result replaces any earlier line.
     message = null;
+    banner = null;
     if (!answer) return;
     if (answer.kind === 'failed') {
       message = failureMessage(answer.failure);
       return;
     }
-    const current = game();
-    if (!current) return;
     const base = pinned(from);
-    const result = outcome(route({ ...pressGame(current), transcript: answer.transcript, at: from.at, previous }, answer.parsed));
-    if (result.kind === 'save') await save(result.commands, base);
-    else if (result.kind === 'undo') {
+    const decision = decide({ game: base.snapshot, transcript: answer.transcript, at: from.at, previous }, answer.heard);
+    if (decision.kind === 'save') await save(decision.reading, base);
+    else if (decision.kind === 'undo') {
       previous = undefined;
       // Pinned like a save, so an undo said before another save never takes that save back.
       await commit({ kind: 'undo', expectedRevision: base.revision }, base);
-    } else if (result.kind === 'message') message = result.message;
+    } else if (decision.kind === 'message') message = decision.message;
     else choosing = {
-      card: { kind: 'choose', heading: result.heading, words: answer.transcript, choices: choiceLabels(result.choices), note: result.note },
-      readings: result.choices,
+      card: { kind: 'choose', heading: decision.heading, words: answer.transcript, choices: choiceLabels(decision.readings), note: decision.note },
+      readings: decision.readings,
       pressed: base,
     };
   }
@@ -203,6 +220,7 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
     const current = game();
     if (!current) return;
     choosing = null;
+    banner = null;
     if (!voice) {
       // The bar still answers the touch, so the scorer learns at once to use the buttons.
       message = failureMessage('voice_unavailable');
@@ -210,12 +228,14 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
     }
     message = null;
     words = '';
-    const from: Pressed = { at: now(), revision: current.revision };
+    // The press is read against the game it started on, the same game the AI is shown.
+    const snapshot = pressGame(current);
+    const from: Pressed = { at: now(), revision: current.revision, snapshot };
     let answered: (answer: Answer) => void = () => {};
     const answer = new Promise<Answer>((resolve) => { answered = resolve; });
     let handle: PressHandle | null = null;
     const closeIfOpen = () => { if (handle && open === handle) finish(handle, from, answer, answered); };
-    handle = startPress(voice, pressInput(current), (update) => {
+    handle = startPress(voice, pressInput(snapshot), (update) => {
       if (update.kind === 'words') {
         if (open === handle) {
           words = update.words;
@@ -238,6 +258,7 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
     open = null;
     choosing = null;
     message = null;
+    banner = null;
     previous = undefined;
     saved = false;
     clearTimeout(savedTimer);
@@ -259,7 +280,7 @@ export function createVoiceController({ voice, game, record, now, savedMs = 1500
       choosing = null;
       publish();
       const born = generation;
-      void save(picked.commands, pressed).catch(() => { message = unsavedMessage; }).then(() => { if (born === generation) publish(); });
+      void save(picked, pressed).catch(() => { message = unsavedMessage; }).then(() => { if (born === generation) publish(); });
     },
     /**
      * The phone's mic is ready, such as after the scorer allowed it in Settings, so a "can't use the microphone" line

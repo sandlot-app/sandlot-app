@@ -290,7 +290,7 @@ function Spinner() {
   return <Animated.View accessible={false} style={[styles.spinner, turnTransform(turn)]} />;
 }
 
-/** Floats above the Scorer Bar while voice is in use: Listening, Got it, or Not sure. */
+/** Floats above the Scorer Bar while voice is in use: Listening, Reading, or Not sure. */
 export function TranscriptCard({ card, onChoose }: { card: VoiceCard; onChoose: (index: number) => void }) {
   const status = card.kind === 'listening' ? 'Listening…' : card.kind === 'reading' ? 'Reading…' : card.heading;
   return (
