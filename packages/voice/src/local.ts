@@ -103,6 +103,9 @@ export function readLocally(transcript: string): Local | null {
   for (const part of parts) {
     const read = pitchesIn(part);
     if (!read) return null;
+    // "Foul ball, strike two" may only be saying the count the foul made. A count said after another pitch goes to the AI.
+    const after = words.at(-1);
+    if (after && after !== 'swinging' && after !== 'looking' && /\b(?:one|two|three|1|2|3)$/.test(part) && /^(?:a )?(?:ball|strike)\b/.test(part)) return null;
     words.push(...read);
   }
   const pitches = joinStrikes(words);

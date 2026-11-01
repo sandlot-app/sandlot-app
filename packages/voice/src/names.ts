@@ -2,7 +2,7 @@ import type { Base, GameState, PlayerRef, Position } from '@sandlot/engine';
 import type { AnswerReading, Named } from './answer.ts';
 import type { Mapped } from './commands.ts';
 import { normalize } from './local.ts';
-import { entryFor, fits, namedPlayer, nearly, samePlayer, words } from './players.ts';
+import { entryFor, fits, namedPlayer, samePlayer, words } from './players.ts';
 import { batterUp, batting, fielding, type PressGame, type RosterEntry } from './state.ts';
 
 // Who holds each role a reading names, and whether the scorer's words fit them. The AI reports the words; the phone
@@ -64,16 +64,30 @@ const plainWords = new Set(['ball', 'strike', 'foul', 'out', 'home', 'first', 's
   'come', 'gone', 'here', 'yeah', 'okay', 'well', 'whoa', 'wait', 'sorry', 'over', 'back', 'down', 'deep', 'hard', 'fast']);
 
 /**
+ * A capitalized word spelled like a surname with up to two more or fewer letters at the end, sharing at least four
+ * ("Parker" for "Park"). Stricter than the name policy's near match, because here any word in the press could match.
+ */
+function startsLike(word: string, surname: string): boolean {
+  const [short, long] = word.length <= surname.length ? [word, surname] : [surname, word];
+  return short.length >= 4 && long.length - short.length <= 2 && long.startsWith(short);
+}
+
+/**
  * Whether the words name a player, or a jersey number, that no slot accounts for. Answering by role loses which name
  * was said, so this doesn't trust the slots. Speech-to-text capitalizes names, so when the words have capitals, every
  * capitalized word that is a roster name, or spelled nearly like a surname ("Parker"), must show up in some slot or
  * among the names the scorer took back; "off the wall" stays a wall. A "number 8" must show up too.
  */
 function unaccounted(game: PressGame, reading: AnswerReading, slots: Slot[], transcript: string): boolean {
-  // A name counts as taken back only when a correction follows it: "Cole, no, I mean Shah".
-  const said = normalize(transcript);
-  const takenBack = reading.taken_back.filter((heard) => heard.name !== null && words(heard.name).every((word) =>
-    new RegExp(`\\b${word}\\b[^.]{0,30}?\\b(?:no|nope|i mean|sorry|wait|actually|make that|scratch that)\\b`).test(said.replace(/['’-]/g, ''))));
+  // A name counts as taken back only when the words take it back: "not Cole", or "Cole, no, I mean Shah", where a
+  // correction follows it and then a name the answer gave a role. Otherwise it could hide a name the answer misplaced.
+  const said = normalize(transcript).replace(/['’-]/g, '');
+  const slotWords = new Set(slots.flatMap(({ heard }) => heard.name ? words(heard.name) : []));
+  const takenBack = reading.taken_back.filter((heard) => heard.name !== null && words(heard.name).every((word) => {
+    if (new RegExp(`\\bnot ${word}\\b`).test(said)) return true;
+    const after = said.match(new RegExp(`\\b${word}\\b[^.]{0,30}?\\b(?:no|nope|i mean|sorry|wait|actually|make that|scratch that)\\b(.{0,30})`))?.[1];
+    return after !== undefined && words(after).some((next) => slotWords.has(next));
+  }));
   const reported = [...slots.map(({ heard }) => heard), ...takenBack];
   const reportedWords = new Set(reported.flatMap((heard) => heard.name ? words(heard.name) : []));
   const reportedNumbers = new Set(reported.flatMap((heard) => heard.number ? [heard.number] : []));
@@ -82,7 +96,7 @@ function unaccounted(game: PressGame, reading: AnswerReading, slots: Slot[], tra
   const nameWords = (entry: RosterEntry) => words(entry.name).filter((word, index, all) => index === all.length - 1 || word.length > 1);
   const names = candidates.some((word) => !reportedWords.has(word) && game.roster.some((entry) =>
     (nameWords(entry).includes(word) && (cased || !plainWords.has(word))) ||
-    (cased && word.length >= 4 && !plainWords.has(word) && nearly(word, entry))));
+    (cased && !plainWords.has(word) && startsLike(word, nameWords(entry).at(-1)!))));
   const numbers = [...normalize(transcript).matchAll(/(?:\bnumber|#|\bno\.?) ?(\d{1,2})\b/g)].map((match) => match[1]!);
   return names || numbers.some((number) => !reportedNumbers.has(number));
 }

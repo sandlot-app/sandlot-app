@@ -109,13 +109,14 @@ const isObject = (value: unknown): value is Raw => typeof value === 'object' && 
 const whole = (value: unknown, min: number, max: number): value is number => Number.isInteger(value) && (value as number) >= min && (value as number) <= max;
 
 /**
- * A name is up to four words of letters, digits and .'’-, at most 40 characters, with no line breaks or other
+ * A name is up to four words of letters, digits and .'’- ("A.J." counts as one), at most 40 characters, with no line breaks or other
  * symbols. That keeps a name looking like a name, so it can carry little more than a name into the prompt.
  */
 function readPerson(raw: unknown): Person | null {
   if (!isObject(raw) || typeof raw.name !== 'string' || typeof raw.number !== 'string') return null;
   const words = raw.name.split(' ');
-  if (!raw.name.trim() || raw.name.length > 40 || words.length > 4 || !words.every((word) => /^[\p{L}\p{N}'’-]+\.?$/u.test(word))) return null;
+  const nameWord = (word: string) => /^(?:\p{L}\.)+$/u.test(word) || /^[\p{L}\p{N}'’-]+\.?$/u.test(word);
+  if (!raw.name.trim() || raw.name.length > 40 || words.length > 4 || !words.every(nameWord)) return null;
   if (!/^\d{0,3}$/.test(raw.number)) return null;
   return { name: raw.name, number: raw.number };
 }

@@ -5,7 +5,8 @@ import { toCommands } from './commands.ts';
 import { readBack } from './explain.ts';
 import { normalize, type Local } from './local.ts';
 import { checkNames, type NameRefusal } from './names.ts';
-import { passesRunner, type PressGame } from './state.ts';
+import { entryFor, fits } from './players.ts';
+import { batterUp, passesRunner, type PressGame } from './state.ts';
 
 // Everything after a press ends, in one pure function: what was heard (the phone's own reading or the AI's answer)
 // goes in with the game the press started on, and what the screen does comes out. The engine decides what's legal
@@ -126,16 +127,28 @@ const same = (a: Command[], b: Command[]) => JSON.stringify(a) === JSON.stringif
  * A press that starts the way a correction does ("no, that was a double", "actually, a triple"), right after a play,
  * is treated as a fix even when the answer doesn't say so, so a fix never saves as a new play. "No. 17" is a number.
  */
-function soundsLikeAFix(press: Press): boolean {
-  const opening = /^(?:no|nope|actually|wait|sorry|correction|i mean|make that|scratch that|that was)\b(?![ .]*\d)/;
-  return opening.test(normalize(press.transcript)) && press.game.events.some((event) => event.command.kind !== 'game');
+function soundsLikeAFix(press: Press, answer: Answer): boolean {
+  // "Oh no, Soto beans her" is a cheer, not a correction, so "oh" counts only before "wait".
+  const opening = /^(?:no|nope|actually|wait|oh,? wait|oops|my bad|sorry|correction|i mean|make that|change that|scratch that|that was|it was|hold on)\b(?![ .]*\d)/;
+  if (!opening.test(normalize(press.transcript))) return false;
+  if (!press.game.events.some((event) => event.command.kind !== 'game')) return false;
+  // "Wait, Cole singles" names the batter up, so it's a new play, not a fix of the last one.
+  const start = replay(press.game.setup, press.game.events);
+  const batter = start.ok ? batterUp(start.state) : undefined;
+  const holder = batter && entryFor(press.game.roster, batter);
+  const named = answer.readings[0]?.batter;
+  return !(holder && named && (named.name !== null || named.number !== null) && fits(press.game.roster, holder, named));
 }
 
 function fromAnswer(press: Press, answer: Answer): Decision {
   if (answer.result === 'not_a_play') return { kind: 'message', message: messages.notAPlay };
   if (answer.result === 'unclear') return { kind: 'message', message: messages.unclear(press.transcript) };
-  if (answer.fix_last || soundsLikeAFix(press)) return { kind: 'message', message: messages.fixNotYet };
+  if (answer.fix_last || soundsLikeAFix(press, answer)) return { kind: 'message', message: messages.fixNotYet };
   const checked = answer.readings.map((reading) => check(press, reading));
+  // The names said are the same in every reading. A reading refused for a name means the answer misplaced it, so
+  // no reading of that answer saves.
+  const misnamed = checked.find((result) => !result.ok && (result.refusal.kind === 'wrong_role' || result.refusal.kind === 'unaccounted'));
+  if (misnamed && !misnamed.ok) return { kind: 'message', message: refusalMessage(misnamed.refusal, press.transcript) };
   const accepted = checked.flatMap((result) => result.ok ? [result.reading] : [])
     .filter((reading, index, all) => all.findIndex((other) => same(other.commands, reading.commands)) === index);
   if (!accepted.length) {

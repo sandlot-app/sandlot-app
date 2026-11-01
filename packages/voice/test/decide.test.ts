@@ -96,6 +96,8 @@ describe('the context the phone sends', () => {
     const context = pressContext(game);
     expect(context.batter.name).toBe('Player 7');
     expect(context.runners['1']?.name).toBe('Mike Moose Darcy sub');
+    const initials = pressContext({ ...game, roster: game.roster.map((entry) => entry.name === 'Player #7' ? { ...entry, name: 'A.J. Soto' } : entry) });
+    expect(readContext(JSON.parse(JSON.stringify(initials)))?.batter.name).toBe('A.J. Soto');
     expect(readContext(JSON.parse(JSON.stringify(context)))).not.toBeNull();
     const long = append(game, 'pitches', Array.from({ length: 30 }, () => ({ kind: 'pitch', result: 'foul' }) as const));
     const fitted = pressContext(long).lastPlay!;
@@ -124,6 +126,9 @@ describe('what the phone reads alone', () => {
     ['Swing and a miss, strike two', [['swinging_strike']]],
     ['Strike looking, strike', [['called_strike', 'called_strike'], ['called_strike', 'swinging_strike']]],
     ['Ball?', 'to the AI'],
+    ['Foul ball, strike two', 'to the AI'],
+    ['Foul tip, strike three', 'to the AI'],
+    ['Ball two', [['ball']]],
     ['Soto singles', 'to the AI'],
     ['scratch that', 'undo'],
   ] as const)('%s', (transcript, expected) => {
