@@ -1,0 +1,11 @@
+name: A Fix with no replacement removes the play
+cite: Sandlot docs/design/spec-update-fix-and-delay.md, Remove this play is a Fix with no replacement; GLOSSARY.md Fix; issue 102
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: ball }
+  - - { kind: pitch, result: called_strike }
+  - - { kind: correct, target: play-2, replacement: [] }
+then:
+  count: { balls: 1, strikes: 0, pitches: 1 }
+  pitchCounts: { home-1: 1, away-1: 0 }

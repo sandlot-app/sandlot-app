@@ -1,0 +1,9 @@
+name: A Fix's replacement holds only play commands, never an undo or another Fix
+cite: Sandlot docs/contract.md Fix; GLOSSARY.md Play; issue 102
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: ball }
+  - - { kind: correct, target: play-1, replacement: [{ kind: undo, target: play-1 }] }
+then:
+  rejected: correct_replacement_not_a_play

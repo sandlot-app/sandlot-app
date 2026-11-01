@@ -1,0 +1,22 @@
+name: A Fix of the walk-off play reopens the game
+cite: Sandlot docs/design/spec-update-fix-and-delay.md and the Fix a play spec, fixing after Final; Moraga Mustang rules revised February 2024 D.16;
+  Official Baseball Rules 7.01(e); issue 102
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: bottom
+  count: { balls: 3, strikes: 1, pitches: 4 }
+  bases:
+    1: { player: { kind: player, id: home-2 }, chargedTo: { kind: opponent, id: away-1 } }
+    2: { player: { kind: player, id: home-3 }, chargedTo: { kind: opponent, id: away-1 } }
+    3: { player: { kind: player, id: home-4 }, chargedTo: { kind: opponent, id: away-1 } }
+  score: { home: 2, away: 2 }
+when:
+  - - { kind: pitch, result: ball }
+  - - { kind: correct, target: play-1, replacement: [{ kind: pitch, result: foul }] }
+then:
+  status: in_progress
+  score: { home: 2, away: 2 }
+  count: { balls: 3, strikes: 2, pitches: 5 }
+  nextBatter: { home: 0, away: 0 }

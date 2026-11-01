@@ -1,0 +1,10 @@
+name: A Fix cannot target a play older than the latest
+cite: Sandlot docs/contract.md Fix; issue 102 (fixes of older plays stay in issue 41)
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: ball }
+  - - { kind: pitch, result: called_strike }
+  - - { kind: correct, target: play-1, replacement: [{ kind: pitch, result: foul }] }
+then:
+  rejected: correct_not_latest

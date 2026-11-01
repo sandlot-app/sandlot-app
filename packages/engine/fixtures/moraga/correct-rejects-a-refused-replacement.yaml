@@ -1,0 +1,12 @@
+name: A Fix whose replacement breaks the rules is refused with the engine's reason
+cite: Sandlot docs/contract.md Fix and Reject reasons; Official Baseball Rules 5.06 a runner must be on base to advance; issue 102
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: ball }
+  - - kind: correct
+      target: play-1
+      replacement:
+        - { kind: runner, event: stolen_base, runner: { kind: opponent, id: away-1 }, to: 2 }
+then:
+  rejected: runner_not_on_base
