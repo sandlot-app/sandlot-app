@@ -131,9 +131,10 @@ const same = (a: Command[], b: Command[]) => JSON.stringify(a) === JSON.stringif
  */
 function soundsLikeAFix(press: Press, answer: Answer): boolean {
   const { game, transcript } = press;
-  const text = normalize(transcript).replace(/^[,;. ]+/, '');
-  // "No way!" and "No!" are cheers, and "oh" counts only before "wait" ("Oh no, Soto beans her" is a cheer too).
-  if (/^\W*no\s*(?:!|way\b)/i.test(transcript)) return false;
+  let text = normalize(transcript).replace(/^[,;. ]+/, '');
+  // "No!" and "No way" are cheers, so what comes after them decides: "No! That was a double." is still a fix. And
+  // "oh" counts only before "wait" ("Oh no, Soto beans her" is a cheer too).
+  if (/^\W*no\s*(?:!|way\b)/i.test(transcript)) text = text.replace(/^no(?: way)?[,;. ]*/, '');
   const opening = /^(?:no|nope|actually|wait|oh,? wait|oops|whoops|my bad|sorry|correction|i mean|make that|make it|change that|scratch that|strike that|undo that|hold on|hang on|that was|it was)\b(?![ .]*\d)/;
   const notA = /\bnot an? (?:single|double|triple|home run|homer|walk|strikeout|ball|strike|out|error)\b/;
   if (!opening.test(text) && !notA.test(text)) return false;
@@ -143,13 +144,15 @@ function soundsLikeAFix(press: Press, answer: Answer): boolean {
   // "Wait, Cole singles" names a new batter who is up now, so it's a new play. The name has to be in the words, and
   // the batter has to have changed since the last play, or it's the last play being fixed.
   const now = stateAfter(game, []);
+  // standingPlays hands back the game's own event objects, so indexOf finds where the last play starts.
   const then = stateAfter({ ...game, events: game.events.slice(0, game.events.indexOf(last[0]!)) }, []);
   const batter = now && batterUp(now);
   const before = then && batterUp(then);
   const holder = batter && entryFor(game.roster, batter);
   const named = answer.readings[0]?.batter;
   const said = new Set(words(transcript));
-  const inWords = named !== undefined && (named.name !== null ? words(named.name).every((word) => said.has(word)) : named.number !== null && text.includes(named.number));
+  const inWords = named !== undefined && (named.name !== null ? words(named.name).every((word) => said.has(word))
+    : named.number !== null && new RegExp(`\\b${named.number}\\b`).test(text));
   const newBatter = Boolean(batter && before && !samePlayer(batter, before));
   return !(holder && named && inWords && newBatter && fits(game.roster, holder, named));
 }

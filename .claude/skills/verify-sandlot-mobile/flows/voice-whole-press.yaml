@@ -44,7 +44,7 @@ appId: host.exp.Exponent
       text: ".* ${output.waiting + 1} plays? saved on this phone"
     timeout: 15000
 - assertVisible:
-    id: "voice-message"
+    id: "voice-banner"
     text: ".* doubles.*"
 - assertNotVisible:
     id: "voice-card"

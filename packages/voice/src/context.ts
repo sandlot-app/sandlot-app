@@ -33,12 +33,25 @@ export type PressContext = {
 const unknownPlayer: Person = { name: 'Unknown player', number: '' };
 
 /**
+ * One word of a name, the one rule both sides use: initials with their dots ("A.J."), or letters, digits and '’-
+ * with at most one dot at the end ("Jr.", "O'Neil"). It must hold a letter or digit.
+ */
+export const isNameWord = (word: string) =>
+  /[\p{L}\p{N}]/u.test(word) && (/^(?:\p{L}\.)+$/u.test(word) || /^[\p{L}\p{N}'’-]+\.?$/u.test(word));
+
+/**
  * A display name in the shape voice-parse accepts: up to four words of letters, digits and .'’-, at most 40
  * characters. Anything else is dropped, so a name like "Player #7" goes as "Player 7" rather than failing the press.
  */
 function cleanName(name: string): string {
-  const kept = name.replace(/[^\p{L}\p{N} .'’-]/gu, ' ').replace(/\.(?=\p{L}{2})/gu, '. ').split(/\s+/).filter((word) => /[\p{L}\p{N}]/u.test(word)).slice(0, 4).join(' ').slice(0, 40).trim();
-  return kept || unknownPlayer.name;
+  const kept: string[] = [];
+  for (const raw of name.replace(/[^\p{L}\p{N} .'’-]/gu, ' ').replace(/\.(?=\p{L}{2})/gu, '. ').split(/\s+/)) {
+    // "A.J" gets its last dot; any other dot that isn't the end of a word goes ("O.'Neil", "Jr..").
+    const word = /^(?:\p{L}\.)+\p{L}$/u.test(raw) ? `${raw}.` : isNameWord(raw) ? raw : raw.replace(/\./g, '');
+    if (!isNameWord(word) || kept.length === 4 || [...kept, word].join(' ').length > 40) continue;
+    kept.push(word);
+  }
+  return kept.join(' ') || unknownPlayer.name;
 }
 const cleanNumber = (number: string) => /^\d{1,3}$/.test(number) ? number : '';
 
@@ -115,8 +128,7 @@ const whole = (value: unknown, min: number, max: number): value is number => Num
 function readPerson(raw: unknown): Person | null {
   if (!isObject(raw) || typeof raw.name !== 'string' || typeof raw.number !== 'string') return null;
   const words = raw.name.split(' ');
-  const nameWord = (word: string) => /^(?:\p{L}\.)+$/u.test(word) || /^[\p{L}\p{N}'’-]+\.?$/u.test(word);
-  if (!raw.name.trim() || raw.name.length > 40 || words.length > 4 || !words.every(nameWord)) return null;
+  if (!raw.name.trim() || raw.name.length > 40 || words.length > 4 || !words.every(isNameWord)) return null;
   if (!/^\d{0,3}$/.test(raw.number)) return null;
   return { name: raw.name, number: raw.number };
 }

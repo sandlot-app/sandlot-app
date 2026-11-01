@@ -85,7 +85,7 @@ test('#103: a whole play said in one press goes to the AI with the game, saves o
   assert.equal(scoring.sent()[0]!.transcript, words);
   assert.deepEqual([context.batter.name, context.runners['1']?.name], ['L. Darcy', 'J. Soto']);
   assert.deepEqual(sorted(scoring.plays().filter((event) => event.source === 'voice').map((event) => event.command)), ['pitch', 'ball_in_play']);
-  assert.deepEqual(scoring.views.at(-1), { listening: false, card: null, message: 'L. Darcy doubles, J. Soto scores' });
+  assert.deepEqual(scoring.views.at(-1), { listening: false, card: null, message: null, banner: 'L. Darcy doubles, J. Soto scores' });
   assert.equal(scoring.game().state.score.away, 1);
 });
 
@@ -138,7 +138,7 @@ test('a tap after letting go takes over: the voice result that arrives later sav
   hear('strike swinging');
   await settle();
   assert.deepEqual(plays().map((event) => [event.source, event.command]), [['tap', { kind: 'pitch', result: 'called_strike' }]], 'one strike, not two');
-  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null, banner: null });
 });
 
 test('a save from anywhere else while a press is read makes the press stale, so it never writes on top', async () => {
@@ -184,7 +184,7 @@ test('D4: the same play said again right after an undo saves, because the undo c
 test('with voice off, a touch shows the unavailable line and no Listening card', async () => {
   const { controller, views } = await scorer(false);
   controller.start();
-  assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Voice is unavailable right now. Tap to score.' });
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: 'Voice is unavailable right now. Tap to score.', banner: null });
 });
 
 const lost = 'The last voice play didn\'t save. Say it again or tap to score.';
@@ -203,7 +203,8 @@ test('#65: holding the bar again before the last result arrives says the last pl
   hearSecond('ball');
   await settle();
   assert.deepEqual(plays().map((event) => event.command), [{ kind: 'pitch', result: 'ball' }], 'only the new press saves');
-  assert.equal(views.at(-1)?.message, 'Ball → count 1–0', 'the new press\'s banner');
+  assert.equal(views.at(-1)?.message, null);
+  assert.equal(views.at(-1)?.banner, 'Ball → count 1–0', 'the new press\'s banner');
 
   const again = await scorer();
   const lostFirst = await again.hold();
@@ -213,7 +214,8 @@ test('#65: holding the bar again before the last result arrives says the last pl
   hearReplacement('ball');
   await settle();
   assert.deepEqual(again.plays().map((event) => event.command), [{ kind: 'pitch', result: 'ball' }]);
-  assert.equal(again.views.at(-1)?.message, 'Ball → count 1–0', 'the lost line gives way to the replacement press\'s banner');
+  assert.equal(again.views.at(-1)?.message, null, 'the lost line gives way to the replacement press\'s banner');
+  assert.equal(again.views.at(-1)?.banner, 'Ball → count 1–0');
 });
 
 test('#65: a refusal that lands after the scorer moved on stays quiet', async () => {
@@ -224,7 +226,7 @@ test('#65: a refusal that lands after the scorer moved on stays quiet', async ()
   controller.dismiss();
   answer(false);
   await settle();
-  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null, banner: null });
 });
 
 test('#65: a voice play the engine refuses as stale says it didn\'t save', async () => {
@@ -268,5 +270,5 @@ test('#65: tearing the controller down mid-press puts the bar back to idle', asy
   await hold();
   controller.start();
   controller.dispose();
-  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null });
+  assert.deepEqual(views.at(-1), { listening: false, card: null, message: null, banner: null });
 });

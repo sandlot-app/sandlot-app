@@ -1,12 +1,12 @@
 # Voice scoring
 
-The scorer holds the Voice Bar, says a pitch or a play, and lets go. While held, the Transcript Card shows the live words. Pitch calls and a lone "undo" are read on the phone; anything else goes to the AI with the whole game in view (ADR 0007). A legal play saves, and the line under the bar becomes a banner naming each runner's result, built from what the engine recorded. An unclear press shows "Not sure — which one?" with big choices, and nothing saves until one is tapped. Sliding off the bar cancels the press. Anything voice can't handle shows one line, and the pitch buttons keep working.
+The scorer holds the Voice Bar, says a pitch or a play, and lets go. While held, the Transcript Card shows the live words. Pitch calls and a lone "undo" are read on the phone; anything else goes to the AI with the whole game in view (ADR 0007). A legal play saves, and a banner above the bar names each runner's result, built from what the engine recorded. An unclear press shows "Not sure — which one?" with big choices, and nothing saves until one is tapped. Sliding off the bar cancels the press. Anything voice can't handle shows one line, and the pitch buttons keep working.
 
 ## Sub-features
 
 - `voice-save` saves a simple play on release ("strike swinging"). The status line and the Undo label name it (`voice-bar`, `waiting-plays`, `scorer-undo`).
 - `voice-live` shows the Listening card with the live words while the bar is held (`voice-card`, `voice-status`, `voice-words`). Nothing reads the words until the press ends, so there is no Got it state any more.
-- `voice-whole-press` (#103) saves a whole play said in one press with its banner (`voice-message`), refuses a name in the wrong role with a line saying who is up, and shows two readings when "the runner" could mean either of two runners.
+- `voice-whole-press` (#103) saves a whole play said in one press with its banner (`voice-banner`, in the voice color rather than the warning one), refuses a name in the wrong role with a line saying who is up, and shows two readings when "the runner" could mean either of two runners.
 - `voice-not-sure` shows the readings as choices and saves only the one tapped (`voice-choice-0`, `voice-choice-1`).
 - `voice-cancel` saves nothing when the finger slides off the bar.
 - `voice-fallback` shows one line (`voice-message`) when voice can't help, such as "Voice is unavailable right now. Tap to score." A press the engine refuses because the game moved says "That voice play didn't save. Say it again or tap to score." Holding the bar again before the last result arrives says "The last voice play didn't save. Say it again or tap to score." These are covered by the app's controller tests, not the Maestro flow, because the stub answers too fast to overlap two presses.

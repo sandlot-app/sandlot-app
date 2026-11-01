@@ -255,6 +255,10 @@ describe('the third-round review', () => {
     expect(run(afterSingle(), transcript, short).decision).toEqual(fixNotYet);
   });
 
+  it.each(['No! That was a double.', 'No!! It was a double', 'No way, that was a double'])('"%s" is a correction after the cheer', (transcript) => {
+    expect(run(afterSingle(), transcript, { bip: { o: 'double', f: ['LF'], b: '2' } }).decision).toEqual(fixNotYet);
+  });
+
   it('naming a batter who was already up for the last play is still a fix', () => {
     const game = withLastPlay(buildGame({ outs: 0, up: 'N. Cole' }), { p: ['ball'] });
     expect(run(game, 'Actually, Cole swung at that one.', { batter: 'Cole', p: ['swinging_strike'] }).decision).toEqual(fixNotYet);
