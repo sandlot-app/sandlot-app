@@ -44,8 +44,15 @@ appId: host.exp.Exponent
     id: "voice-message"
 - takeScreenshot: mic-ready
 
-# 2. A press saves a play, and the bar goes back to "Mic ready" because the screen is still open.
-- longPressOn:
+# 2. A press (tap, speak, tap) saves a play, and the bar goes back to "Mic ready" because the screen is still open.
+- tapOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-words"
+      text: ".*swing.*"
+    timeout: 15000
+- tapOn:
     id: "voice-bar"
 - extendedWaitUntil:
     visible:

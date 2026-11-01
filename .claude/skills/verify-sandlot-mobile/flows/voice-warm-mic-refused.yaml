@@ -43,7 +43,7 @@ appId: host.exp.Exponent
 - takeScreenshot: mic-refused
 
 # 2. A press says why it can't listen, and saves nothing.
-- longPressOn:
+- tapOn:
     id: "voice-bar"
 - extendedWaitUntil:
     visible:

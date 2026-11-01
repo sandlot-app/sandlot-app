@@ -35,7 +35,7 @@ appId: host.exp.Exponent
     timeout: 15000
 - assertVisible:
     id: "voice-bar"
-    text: "Hold to score by voice"
+    text: "Tap to score by voice"
 - takeScreenshot: mic-first-open-line
 
 # Then the mic comes on, and the line goes.
