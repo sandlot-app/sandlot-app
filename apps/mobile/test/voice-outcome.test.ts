@@ -70,9 +70,9 @@ test('a voice action can\'t carry lineups, the start or an undo, and stale press
 test('a press sends the lineup\'s display names, split by side, with the runners on base', async () => {
   const { session, game } = await started();
   const input = pressInput(game);
-  assert.equal(input.names.length, 18);
+  assert.equal(input.names.length, 19, 'nine Marlins and ten Hawks');
   assert.equal(input.context.batting[0], 'J. Soto', 'the away team bats first');
-  assert.equal(input.context.fielding[0], 'T. Nguyen');
+  assert.equal(input.context.fielding[0], 'K. Moss', 'the Hawks leadoff batter');
   assert.deepEqual(input.context.runners, []);
   let current = game;
   for (let ball = 0; ball < 4; ball += 1) {

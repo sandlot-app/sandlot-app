@@ -1,6 +1,5 @@
 import { battingLines } from '@sandlot/engine';
-import type { BattingLine, Event, GameState, PlayerRef, Position, TeamSide } from '@sandlot/engine';
-import { demoSetup } from '../scoring/demo-game.ts';
+import type { BattingLine, Event, GameSetup, GameState, PlayerRef, Position, TeamSide } from '@sandlot/engine';
 import { appearances, type Appearance } from '../scoring/play-log.ts';
 
 // What a stat sticker or stat card shows for one child's game (GLOSSARY: Stat card; Figma section 221:13593).
@@ -97,6 +96,7 @@ const positionNames: Record<Position, string> = {
 };
 
 export type GameShareInput = {
+  setup: GameSetup;
   events: Event[];
   state: GameState;
   player: PlayerRef;
@@ -108,8 +108,8 @@ export type GameShareInput = {
 };
 
 /** The child's share, or null when they had no plate appearance in the game. */
-export function gameShare({ events, state, player, side, names, team, division }: GameShareInput): GameShare | null {
-  const line = battingLines(demoSetup, events)[player.id];
+export function gameShare({ setup, events, state, player, side, names, team, division }: GameShareInput): GameShare | null {
+  const line = battingLines(setup, events)[player.id];
   if (!line || line.plateAppearances === 0) return null;
   const first = events[0]?.at ?? new Date(0).toISOString();
   const position = state.lineups[side].find((slot) => slot.player.id === player.id)?.position ?? null;
@@ -120,6 +120,6 @@ export function gameShare({ events, state, player, side, names, team, division }
     season: seasonOf(first),
     stats: statCells(line),
     gameLine: gameLine(line),
-    bestPlay: bestPlay(appearances(events, player)),
+    bestPlay: bestPlay(appearances(setup, events, player)),
   };
 }

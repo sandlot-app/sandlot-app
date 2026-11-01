@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
+import type { PlayerRef } from '@sandlot/engine';
+import { demoLineups } from '../src/scoring/demo-game.ts';
 import { openOfflineGame, type DemoAction, type SavedGame } from '../src/scoring/offline-game.ts';
 import { playLog } from '../src/scoring/play-log.ts';
 import { connect } from './database.ts';
@@ -132,4 +134,30 @@ test('a runner play during an at-bat is a row in that at-bat', async () => {
   assert.deepEqual(up.rows.map((row) => [row.number, row.mark, row.label, row.count]),
     [[1, 'ball', 'Ball', '1–0'], [null, null, 'J. Soto steals 2nd', null]]);
   assert.equal(up.detail, 'Pitch 2 · runner on 2nd');
+});
+
+test('a game started from chosen lineups reads its own batting order, and an undo leaves the saved history and a reopened log the same', async () => {
+  const database = connect(':memory:');
+  const opened = await openOfflineGame(database, { newId: randomUUID, now: () => '2026-10-26T17:00:00.000Z' });
+  if (opened.kind !== 'ready') throw new Error('Session must open');
+  const marlins = (['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'] as const)
+    .map((position, index) => ({ player: { kind: 'opponent', id: `away-${9 - index}` } as PlayerRef, position }));
+  const started = await opened.record({ kind: 'start', half: 'first', lineups: { home: demoLineups.home, away: marlins } });
+  if (started.kind !== 'saved') throw new Error('The game must start');
+  for (let pitch = 0; pitch < 3; pitch += 1) await opened.record({ kind: 'pitch', result: 'called_strike' });
+  await opened.record({ kind: 'pitch', result: 'ball' });
+  const before = await database.all('SELECT * FROM local_events ORDER BY seq');
+  const undone = await opened.record({ kind: 'undo' });
+  if (undone.kind !== 'saved') throw new Error('The undo must save');
+
+  const [top] = playLog(undone.game);
+  assert.deepEqual(top!.atBats.map((atBat) => [atBat.title, atBat.inProgress]),
+    [['H. Lin at bat', true], ['M. Webb strikes out looking.', false]], 'away-9 leads off this lineup');
+  assert.deepEqual(top!.atBats[0]!.rows.map((row) => [row.label, row.undone]), [['Ball', true]]);
+  assert.deepEqual((await database.all('SELECT * FROM local_events ORDER BY seq')).slice(0, before.length), before);
+
+  const reopened = await openOfflineGame(database, { newId: randomUUID, now: () => '2026-10-26T17:05:00.000Z' });
+  if (reopened.kind !== 'ready' || !reopened.game) throw new Error('The game must reopen');
+  assert.deepEqual(playLog(reopened.game), playLog(undone.game));
+  await database.close();
 });

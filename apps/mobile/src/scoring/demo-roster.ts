@@ -20,6 +20,7 @@ const demoPlayers: Record<string, { number: string; name: string }> = {
   'home-7': { number: '9', name: 'R. Hale' },
   'home-8': { number: '1', name: 'K. Moss' },
   'home-9': { number: '22', name: 'E. Brooks' },
+  'home-10': { number: '18', name: 'B. Lane' },
   'away-1': { number: '17', name: 'J. Soto' },
   'away-2': { number: '3', name: 'L. Darcy' },
   'away-3': { number: '8', name: 'C. Vance' },
@@ -36,6 +37,11 @@ export const demoChild = { player: { kind: 'player', id: 'home-6' } as PlayerRef
 
 /** The demo game's division, as the games list and stat card show it. */
 export const demoDivision = 'Mustang';
+
+/** A roster player's short name, before any lineup exists, or their ID when the demo roster doesn't know them. */
+export function rosterName(player: PlayerRef): string {
+  return demoPlayers[player.id]?.name ?? player.id;
+}
 
 /** The jersey number and short name a screen shows for a player, falling back to their batting order. */
 export function playerDisplay(state: GameState, side: TeamSide, player: PlayerRef): { number: string; name: string } {

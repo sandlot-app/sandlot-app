@@ -2,12 +2,16 @@ process.env.TZ = 'America/Los_Angeles'; // shortDate and seasonOf read the phone
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
-import type { PlayerId, PlayerRef } from '@sandlot/engine';
+import type { LineupSlot, PlayerId, PlayerRef, Position } from '@sandlot/engine';
+import { demoLineups } from '../src/scoring/demo-game.ts';
 import { openOfflineGame, type DemoAction, type SavedGame } from '../src/scoring/offline-game.ts';
 import { bestPlay, gameLine, gameShare, seasonOf, shortDate, statCells } from '../src/share/game-share.ts';
 import { connect } from './database.ts';
 
 const at = '2026-10-24T18:01:00.000Z';
+// The Hawks batting home-1 to home-9 in order, so Javier Ruiz (home-6) bats sixth in every script below.
+const hawksInOrder: LineupSlot[] = (['P', 'C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF'] as Position[])
+  .map((position, index) => ({ player: { kind: 'player', id: `home-${index + 1}` as PlayerId }, position }));
 
 async function scorer() {
   const session = await openOfflineGame(connect(':memory:'), { newId: randomUUID, now: () => '2026-10-24T18:00:00.000Z' });
@@ -19,7 +23,7 @@ async function scorer() {
     game = result.game;
     return game;
   };
-  await save({ kind: 'start' });
+  await save({ kind: 'start', lineups: { home: hawksInOrder, away: demoLineups.away } });
   const strikeouts = async (batters: number) => {
     for (let pitch = 0; pitch < batters * 3; pitch += 1) await save({ kind: 'pitch', result: 'called_strike' });
   };
@@ -68,7 +72,7 @@ test('a game share reads the child’s line, position and best play from the sav
   await s.hit('double', 'CF');
   await s.strikeouts(1); // home-7
   const game = s.game();
-  const share = gameShare({ events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
+  const share = gameShare({ setup: game.setup, events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
   assert.ok(share);
   assert.equal(share.position, 'SHORTSTOP');
   assert.deepEqual(share.stats, [{ label: 'AB', value: 1 }, { label: 'H', value: 1 }, { label: '2B', value: 1 }]);
@@ -89,11 +93,11 @@ test('an undone hit doesn’t count, and a child with no plate appearance gets n
   await s.save({ kind: 'undo' });
   await s.strikeouts(1); // Javier strikes out instead
   const game = s.game();
-  const share = gameShare({ events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
+  const share = gameShare({ setup: game.setup, events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
   assert.ok(share);
   assert.deepEqual(share.stats, [{ label: 'AB', value: 1 }, { label: 'H', value: 0 }]);
   assert.equal(share.bestPlay, null);
-  const nobody = gameShare({ events: game.events, state: game.state, player: player('home-9'), side: 'home', names, ...context });
+  const nobody = gameShare({ setup: game.setup, events: game.events, state: game.state, player: player('home-9'), side: 'home', names, ...context });
   assert.equal(nobody, null);
 });
 
@@ -118,7 +122,7 @@ test('appearances read walks, hit by pitches and strikeouts, and agree with batt
   await s.save({ kind: 'pitch', result: 'hit_by_pitch' }); // Javier, bases loaded
   await s.strikeouts(1); // home-7
   const game = s.game();
-  const found = appearances(game.events, javier);
+  const found = appearances(game.setup, game.events, javier);
   assert.deepEqual(found.map((item) => [item.result, item.inning]), [['walk', 2], ['hit_by_pitch', 4]]);
   const line = battingLines(demoSetup, game.events)[javier.id]!;
   assert.equal(line.walks, found.filter((item) => item.result === 'walk').length);
@@ -146,12 +150,12 @@ test('a strikeout that ends the half is still a finished plate appearance', asyn
   await s.strikeouts(1); // home-5
   await s.strikeouts(1); // Javier
   const game = s.game();
-  const found = appearances(game.events, javier);
+  const found = appearances(game.setup, game.events, javier);
   assert.deepEqual(found.map((item) => item.result), ['single', 'strikeout']);
   const line = battingLines(demoSetup, game.events)[javier.id]!;
   assert.equal(line.strikeouts, 1);
   assert.equal(line.plateAppearances, found.length);
-  const share = gameShare({ events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
+  const share = gameShare({ setup: game.setup, events: game.events, state: game.state, player: javier, side: 'home', names, ...context });
   assert.deepEqual(share?.stats, [{ label: 'AB', value: 2 }, { label: 'H', value: 1 }]);
   assert.equal(share?.gameLine, '1 FOR 2');
 });

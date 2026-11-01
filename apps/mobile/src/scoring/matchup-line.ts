@@ -1,6 +1,5 @@
 import { battingLines, type BattingLine, type PlayerRef, type RuleSet } from '@sandlot/engine';
 import { tokens } from '@sandlot/tokens';
-import { demoSetup } from './demo-game.ts';
 import type { SavedGame } from './offline-game.ts';
 
 export type PitchTone = 'normal' | 'warning' | 'danger';
@@ -45,12 +44,12 @@ export function ticketLines(game: SavedGame): {
   const { state } = game;
   const batting = state.half === 'top' ? 'away' : 'home';
   const fielding = state.half === 'top' ? 'home' : 'away';
-  const lines = battingLines(demoSetup, game.events);
+  const lines = battingLines(game.setup, game.events);
   const up = state.lineups[batting][state.nextBatter[batting]]?.player;
   const pitcher = state.pitchers[fielding];
   return {
     lines,
     batter: up ? { player: up, stat: batterStat(lines[up.id]) } : null,
-    pitcher: pitcher ? { player: pitcher, count: pitchLine(state.pitchCounts[pitcher.id] ?? 0, demoSetup.rules.pitchCountLimits) } : null,
+    pitcher: pitcher ? { player: pitcher, count: pitchLine(state.pitchCounts[pitcher.id] ?? 0, game.setup.rules.pitchCountLimits) } : null,
   };
 }

@@ -1,7 +1,6 @@
 import type { Command, TeamSide } from '@sandlot/engine';
 import type { Decision, PressGame, Reading, RosterEntry } from '@sandlot/voice';
 import type { VoiceCard } from '../../scorer-ui';
-import { demoSetup } from '../scoring/demo-game.ts';
 import { playerDisplay } from '../scoring/demo-roster.ts';
 import type { SavedGame } from '../scoring/offline-game.ts';
 import type { PressInput } from './press.ts';
@@ -77,7 +76,7 @@ export function roster(game: SavedGame): RosterEntry[] {
 }
 
 export function pressGame(game: SavedGame): PressGame {
-  return { setup: demoSetup, events: game.events, roster: roster(game) };
+  return { setup: game.setup, events: game.events, roster: roster(game) };
 }
 
 export function pressInput(game: SavedGame): PressInput {

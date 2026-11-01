@@ -21,7 +21,7 @@ export default function ShareRoute() {
   if (sample) return __DEV__ ? <ShareScreen key={game} share={sample} onClose={close} /> : <Redirect href="/" />;
   const saved = game === 'synced' ? games.synced : games.local;
   const share = saved && saved.state.status === 'final' ? gameShare({
-    events: saved.events, state: saved.state, player: demoChild.player, side: demoChild.side,
+    setup: saved.setup, events: saved.events, state: saved.state, player: demoChild.player, side: demoChild.side,
     names: { first: demoChild.first, last: demoChild.last, number: playerDisplay(saved.state, demoChild.side, demoChild.player).number },
     team: demoTeams[demoChild.side].name, division: demoDivision,
   }) : null;
