@@ -40,7 +40,9 @@ const marlins: PlayerRef[] = positions.map((_, index) => ({
   kind: 'opponent',
   id: `away-${index + 1}` as OpponentId,
 }));
-const roster: Record<TeamSide, PlayerRef[]> = { away: hawks, home: marlins };
+/** Everyone on each team's roster, whichever season half the game is set up for. */
+export const demoRoster: Record<TeamSide, PlayerRef[]> = { away: hawks, home: marlins };
+const roster = demoRoster;
 
 /** The demo game's setup for `half`: the demo roster under that half's Mustang rules. */
 export function gameSetup(half: SeasonHalf): GameSetup {

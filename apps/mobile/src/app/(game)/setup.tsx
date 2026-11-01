@@ -30,8 +30,14 @@ export default function GameSetupScreen() {
   const start = async () => {
     setRejection(null);
     setStarting(true);
-    const result = await startSetup(draft);
-    setStarting(false);
+    let result: Awaited<ReturnType<typeof startSetup>> = 'unavailable';
+    try {
+      result = await startSetup(draft);
+    } catch {
+      result = 'unavailable';
+    } finally {
+      setStarting(false);
+    }
     if (result === 'started') router.replace('/score');
     else if (result === 'unavailable') setRejection({ text: 'The game couldn’t start. Try again.', draft });
     else setRejection({ text: startRejection(draft, result.rejected), draft });

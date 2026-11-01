@@ -1,6 +1,6 @@
 import { applyGroup } from '@sandlot/engine';
 import type { LineupSlot, PlayerRef, Position, RejectCode, TeamSide } from '@sandlot/engine';
-import { demoLineups, gameSetup } from './demo-game.ts';
+import { demoLineups, demoRoster, gameSetup } from './demo-game.ts';
 import type { SeasonHalf } from './demo-game.ts';
 import { demoTeams, rosterDisplay, rosterName } from './demo-roster.ts';
 import type { DemoAction, ServerGame } from './offline-game.ts';
@@ -108,7 +108,7 @@ export function removeFromLineup(slots: LineupSlot[], index: number): LineupSlot
 
 /** Roster players not in the lineup, in roster order. */
 export function benchPlayers(side: TeamSide, slots: LineupSlot[]): PlayerRef[] {
-  return gameSetup('second').roster[side].filter((player) => !slots.some((slot) => same(slot.player, player)));
+  return demoRoster[side].filter((player) => !slots.some((slot) => same(slot.player, player)));
 }
 
 /** Adds `player` from the roster to the end of the batting order, without a position. */
