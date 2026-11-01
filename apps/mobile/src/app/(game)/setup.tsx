@@ -34,6 +34,7 @@ export default function GameSetupScreen() {
     try {
       result = await startSetup(draft);
     } catch {
+      console.error('Sandlot could not start the game.');
       result = 'unavailable';
     } finally {
       setStarting(false);

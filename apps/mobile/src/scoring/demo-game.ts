@@ -42,11 +42,10 @@ const marlins: PlayerRef[] = positions.map((_, index) => ({
 }));
 /** Everyone on each team's roster, whichever season half the game is set up for. */
 export const demoRoster: Record<TeamSide, PlayerRef[]> = { away: hawks, home: marlins };
-const roster = demoRoster;
 
 /** The demo game's setup for `half`: the demo roster under that half's Mustang rules. */
 export function gameSetup(half: SeasonHalf): GameSetup {
-  return { rules: presets[seasonHalfPresets[half]], roster, pitcherOutsEarlierToday: {} };
+  return { rules: presets[seasonHalfPresets[half]], roster: demoRoster, pitcherOutsEarlierToday: {} };
 }
 
 /** Development and sample data use the second half. */
