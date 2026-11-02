@@ -1,5 +1,6 @@
+import postgres from 'postgres';
 import { createClient } from '@supabase/supabase-js';
-import { type GetUser, type OpenAi, signedIn } from './voice.ts';
+import { type Access, type GetUser, type OpenAi, signedIn } from './voice.ts';
 
 // The deployed side of a voice function: Supabase sign-in and the OpenAI key from the function's secrets.
 
@@ -19,4 +20,12 @@ export function openAi(): OpenAi | null {
     headers: { ...init.headers, authorization: `Bearer ${key}` },
     signal: AbortSignal.timeout(10_000),
   });
+}
+
+export const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { prepare: false, max: 1 });
+
+export async function admit(userId: string, scope: 'voice' | 'sync'): Promise<Access> {
+  const [row] = await sql<{ access: Access }[]>`select private.admit_request(${userId}::uuid, ${scope}) as access`;
+  if (!row || !['allowed', 'forbidden', 'limited'].includes(row.access)) throw new Error('Admission unavailable');
+  return row.access;
 }

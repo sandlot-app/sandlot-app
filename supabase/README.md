@@ -65,3 +65,13 @@ psql "$SUPABASE_DB_URL" -q -v pins="$pins" -v ids=<game id>,<game id> -f supabas
 Generate `pins` from an up-to-date `main` that matches the deployed `sync-events`. The script compares games only against the pins it's given, so pins from an older or newer checkout would list current games as stale. It prints the pins it uses first. Connect directly or through the session pooler on port 5432, not the transaction pooler on 6543.
 
 The first command changes nothing. Check its pins and list before running the second. Deletion runs in one transaction and refuses the whole list if any ID is unknown or names a game on the current pins. It removes each game's sessions, groups and events, and prints what it deleted and the games still on older pins. Record both lists on #21. The anonymous scorer accounts stay, and the seed script makes a new game for the rehearsal.
+
+## Security admission and bounded uploads
+
+Apply the request-admission migration before deploying the updated voice or sync functions. The functions fail closed if that migration or their database connection is unavailable. No function deployment or hosted migration is performed by this code change.
+
+Voice requires an authenticated user who holds a current scoring epoch on at least one game. Both voice functions reserve the same 30-request fixed-minute quota through `private.admit_request`. Sync reserves a separate 120-request quota. The database clock and atomic upsert make the quota consistent across function instances. Counters hold only user ID, scope, minute and count, with at most two rows per existing user. Clients cannot read, reset or invoke them. A fixed-minute quota allows bursts across a minute boundary; it is not a spending cap.
+
+Sync reads at most 262,144 UTF-8 bytes and voice reads at most 1,500,000 bytes. The streaming reader cancels oversized bodies before parsing. Current-schema uploads reject extra fields, oversized identifiers, arrays and nesting. Existing accepted retries still receive their acknowledgment after scoring handoff when their original user resends them; another user without current scoring cannot probe stored groups.
+
+Before any real children's game, Christian must verify hosted scorer provisioning, anonymous-sign-in protections, actual OpenAI spending controls and zero data retention. `store: false` does not establish zero retention. Client-secret expiry only limits when a Realtime connection starts, not how long a connected session can run. The current transcription API has no documented shorter server-enforced duration setting. Names remain bounded and role-labeled as ADR 0007 requires; transcription keywords remain last names only. Audio, names, prompts and secrets are never logged by these boundaries.
