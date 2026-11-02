@@ -53,4 +53,8 @@ OPENAI_API_KEY=<your key> pnpm --filter @sandlot/mobile voice-loop ~/Downloads/s
 
 Prints one JSON line. `--direct` asks OpenAI itself; `--noise-reduction`, `--delay` and `--prompt` need it. Without `--direct` the loop uses the deployed `voice-session`, like the phone, and needs `ENV_FILE=apps/mobile/.env.local` (it signs in as a new anonymous user and keeps the token in `.token.json`, which git ignores). Exit 0 for right, 1 for anything else, 2 for misuse, 3 when no session started.
 
+Hosted mode uses its own anonymous identity, not the phone's scorer identity. Once #77's scorer authorization is deployed, hosted mode requires that identity to be provisioned as a current scorer. A 403 is expected otherwise. Use direct mode for noise-setting comparisons; do not relax the endpoint's scorer check to make this tool work.
+
+A batch exit code alone does not prove a successful measurement. Check the failed counts and missing timings in its tables before comparing settings.
+
 `phrases.ts` prints how the phone's parser reads what the transcriber might return for these phrases.
