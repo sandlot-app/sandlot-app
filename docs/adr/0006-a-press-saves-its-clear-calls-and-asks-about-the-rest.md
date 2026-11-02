@@ -1,5 +1,7 @@
 # A press saves its clear calls and asks only about the rest
 
+Status: replaced by [ADR 0007](0007-the-ai-reads-the-whole-press.md) on 2026-10-31, and never shipped.
+
 When a press holds several calls and one isn't clear, the clear, legal calls before it save at once as the press's Play, with the banner and undo. Only the rest goes on one "Not sure" card. This replaces rule B6 of September's voice edge-case spec, which isn't in the repo: when any call in a press couldn't be recorded, nothing saved, and a button offered to save the calls before it. Natural speech puts many calls in one press, so all-or-nothing made one fumbled word cost the whole press. The plan's rule that no wrong play saves without a confirm still holds, because only clear, legal calls save on their own.
 
 ## Considered Options

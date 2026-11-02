@@ -1,4 +1,4 @@
-import { isEmptyTranscript } from '@sandlot/voice';
+import { readLocally } from '@sandlot/voice';
 
 // What a transcript counts as, next to the words a clip really says (issue #86). The loop never prints a transcript, so
 // this verdict is all a run leaves behind (AGENTS.md rule 5: player names stay out of logs).
@@ -11,7 +11,7 @@ export type Expected = { phrase: string; names: string[] };
  * - `name-dropped`: the other words are there, in order, but a player's name is not. A misheard name lands here too,
  *   since the phone can't use it either.
  * - `wrong`: some words came back, but neither of the above.
- * - `blank`: nothing, or only filler. The phone's own check (`isEmptyTranscript`), so it is the "Didn't catch that" case.
+ * - `blank`: nothing, or only filler. The phone's own reader (`readLocally`), so it is the "Didn't catch that" case.
  */
 export type Verdict = 'right' | 'name-dropped' | 'wrong' | 'blank';
 
@@ -32,7 +32,7 @@ function inOrder(hay: string[], needle: string[]): boolean {
 const count = (hay: string[], word: string) => hay.filter((each) => each === word).length;
 
 export function classify(expected: Expected, transcript: string): Verdict {
-  if (isEmptyTranscript(transcript)) return 'blank';
+  if (readLocally(transcript)?.kind === 'empty') return 'blank';
   const heard = words(transcript);
   const said = words(expected.phrase);
   if (contains(heard, said)) return 'right';

@@ -6,7 +6,7 @@ import { useVoiceDeps } from './voice-service';
 /** The scoring screen's voice state. The controller does the work; this keeps it in step with React. */
 export function useVoice(game: SavedGame | null, record: (action: DemoAction) => Promise<boolean>) {
   const voice = useVoiceDeps();
-  const [view, setView] = useState<VoiceView>({ listening: false, card: null, message: null });
+  const [view, setView] = useState<VoiceView>({ listening: false, card: null, message: null, banner: null });
   // A press outlives the render it started in, so it reads the newest game and saves through the newest record().
   const latest = useRef({ voice, game, record });
   useEffect(() => { latest.current = { voice, game, record }; });

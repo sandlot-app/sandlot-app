@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
-import { route } from '@sandlot/voice';
+import { decide, readLocally } from '@sandlot/voice';
 import { openOfflineGame, type SavedGame } from '../src/scoring/offline-game.ts';
-import { choiceLabels, failureMessage, liveCard, outcome, pressGame, pressInput } from '../src/voice/outcome.ts';
+import { choiceLabels, failureMessage, pressGame, pressInput } from '../src/voice/outcome.ts';
 import { connect } from './database.ts';
 
 async function started() {
@@ -14,14 +14,14 @@ async function started() {
   return { session, game: result.game };
 }
 
-const said = (game: SavedGame, transcript: string) => route({ ...pressGame(game), transcript, at: 0 });
+const said = (game: SavedGame, transcript: string) => decide({ game: pressGame(game), transcript, at: 0 }, readLocally(transcript)!);
 
 test('"strike swinging" saves through the engine as a voice play', async () => {
   const { session, game } = await started();
-  const result = outcome(said(game, 'strike swinging'));
+  const result = said(game, 'strike swinging');
   assert.equal(result.kind, 'save');
   if (result.kind !== 'save') return;
-  const saved = await session.record({ kind: 'voice', at: '2026-10-26T17:01:00.000Z', expectedRevision: game.revision, commands: result.commands });
+  const saved = await session.record({ kind: 'voice', at: '2026-10-26T17:01:00.000Z', expectedRevision: game.revision, commands: result.reading.commands });
   assert.equal(saved.kind, 'saved');
   if (saved.kind !== 'saved') return;
   assert.deepEqual(saved.game.state.count, { balls: 0, strikes: 1, pitches: 1 });
@@ -30,29 +30,12 @@ test('"strike swinging" saves through the engine as a voice play', async () => {
   assert.equal(JSON.stringify(play).includes('Darcy') || JSON.stringify(play).includes('Soto'), false, 'events carry IDs, never names (rule 5)');
 });
 
-test('while held, words that would save show Got it with the read-back; words that need a choice keep listening', async () => {
+test('"strike" asks which one, and nothing saves until a choice', async () => {
   const { game } = await started();
-  assert.deepEqual(liveCard(said(game, 'strike swinging'), 'strike swinging'),
-    { kind: 'got_it', words: 'strike swinging', result: 'Strike swinging → count 0–1', tone: 'strike' });
-  assert.deepEqual(liveCard(said(game, 'ball'), 'ball'), { kind: 'got_it', words: 'ball', result: 'Ball → count 1–0', tone: 'ball' });
-  assert.deepEqual(liveCard(said(game, 'strike'), 'strike'), { kind: 'listening', words: 'strike' });
-});
-
-test('C3: "strike" asks which one, and nothing saves until a choice', async () => {
-  const { game } = await started();
-  const result = outcome(said(game, 'strike'));
+  const result = said(game, 'strike');
   assert.equal(result.kind, 'choose');
   if (result.kind !== 'choose') return;
-  assert.equal(result.heading, 'Not sure — which one?');
-  assert.deepEqual(choiceLabels(result.choices), ['Strike looking', 'Strike swinging']);
-  assert.equal(result.note, 'Looking or swinging? Tap one, or use the buttons below. Nothing is saved yet.');
-});
-
-test('the other decisions fall back to one line, or to undo', async () => {
-  const { game } = await started();
-  assert.deepEqual(outcome(said(game, '')), { kind: 'message', message: "Didn't catch that. Hold and try again, or tap to score." });
-  assert.deepEqual(outcome(said(game, 'zorp the flibber')), { kind: 'message', message: 'Didn\'t understand "zorp the flibber". Tap to score.' });
-  assert.deepEqual(outcome(said(game, 'scratch that')), { kind: 'undo' });
+  assert.deepEqual(choiceLabels(result.readings), ['Strike looking', 'Strike swinging']);
   assert.equal(failureMessage('voice_unavailable'), 'Voice is unavailable right now. Tap to score.', 'the contract\'s A10 wording');
 });
 
@@ -67,23 +50,26 @@ test('a voice action can\'t carry lineups, the start or an undo, and stale press
   assert.equal(stale.kind, 'stale');
 });
 
-test('a press sends the lineup\'s display names, split by side, with the runners on base', async () => {
+test('a press sends the display names, and the game by role with jersey numbers, and no player IDs', async () => {
   const { session, game } = await started();
-  const input = pressInput(game);
+  const input = pressInput(pressGame(game));
   assert.equal(input.names.length, 18);
-  assert.equal(input.context.batting[0], 'J. Soto', 'the away team bats first');
-  assert.equal(input.context.fielding[0], 'T. Nguyen');
-  assert.deepEqual(input.context.runners, []);
+  assert.equal(input.context.batter.name, 'J. Soto', 'the away team bats first');
+  assert.equal(input.context.pitcher?.name, 'T. Nguyen');
+  assert.deepEqual(input.context.runners, {});
+  assert.equal(JSON.stringify(input).includes('"id"'), false);
   let current = game;
   for (let ball = 0; ball < 4; ball += 1) {
     const saved = await session.record({ kind: 'pitch', result: 'ball' });
     if (saved.kind === 'saved') current = saved.game;
   }
-  assert.deepEqual(pressInput(current).context.runners, ['J. Soto']);
+  const after = pressInput(pressGame(current)).context;
+  assert.equal(after.runners['1']?.name, 'J. Soto');
+  assert.equal(after.lastPlay, 'J. Soto walks');
 });
 
 test('a choice keeps every clause, and shows the whole read-back when two short labels would match', () => {
-  const reading = (readBack: string) => ({ commands: [], readBack });
+  const reading = (banner: string) => ({ commands: [], banner });
   assert.deepEqual(choiceLabels([reading('Ball → count 1–0 · Ball → count 2–0')]), ['Ball · Ball'], 'a two-pitch part names both pitches');
   assert.deepEqual(choiceLabels([reading('Hit by pitch → J. Soto to 1st')]), ['Hit by pitch → J. Soto to 1st'], 'only the count is dropped');
   assert.deepEqual(choiceLabels([reading('Ball → count 3–0'), reading('Ball → count 2–0')]), ['Ball → count 3–0', 'Ball → count 2–0']);

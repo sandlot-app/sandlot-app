@@ -18,7 +18,7 @@ Every field maps to something we make or write. Fields only a founder can answer
 | What you're making | Drafted from the lead and the family features in plan.md: voice scoring today, and every scored play becomes a tagged clip that grows into a highlights and recruiting network | Claude drafts, Christian edits |
 | Who writes code | Christian and Kevin, each directing Claude Code and Codex. No code from non-founders. | Claude drafts |
 | Tech stack, AI models and coding tools | Expo, React Native, TypeScript, Supabase, OpenAI speech-to-text, an AI parser model, a hosted streaming service, Claude Code and Codex | Claude drafts |
-| Are people using the product | The parents who scored a game with Sandlot before the deadline, and what they said | Both |
+| Are people using the product | One Moraga Mustangs parent who tried the app and what they said in their own words, plus Christian scoring the demo game himself. We say exactly that and no more. | Both |
 | Competitors and what we understand | GameChanger, Bleacher Notes, Rizzler and the rest, after we try Bleacher Notes ourselves. GameChanger's scoring is free, and it charges families to follow games. | Claude drafts, Christian edits |
 | How you'll make money | "Scoring and following the game are free. Families pay for video and highlights of their own kid, for less than GameChanger charges just to watch." Verified scout access and sponsors come later. Details in plan.md under Pricing. | Christian, with a Claude draft |
 | Other ideas | Ideas from the brainstorm that didn't make the plan | Christian |
@@ -71,7 +71,7 @@ Everything the scorer and the family touch is real. Only setup that a reviewer n
 | 7. Live streaming and the clip | A hosted service that records, a second phone with an existing streaming app, a player on the live page, the score overlay, a `recordings` table with the clock offset, and one clip of one play shown next to the stat card | Kevin | Our own broadcaster, clips of every play, automatic clock matching |
 | 8. Game stat card | One child's line as an image, shared from the phone's share sheet | Christian | Card designs for other divisions |
 | Mock-ups | Design frames of the league's top-plays feed and a scout's view, labeled as what comes next | Christian | The real feed and scout access, milestones 14 and 16 |
-| 9. YC demo | Real parents trying the app, the demo video, the founder video, the written answers, the submitted application | Both | |
+| 9. YC demo | One real parent trying the app, the demo video, the founder video, the written answers, the submitted application | Both | |
 
 ## The shared contract
 
@@ -95,7 +95,7 @@ Each step ends in a check. Christian's and Kevin's steps run side by side, and t
 7. **Stat card.** Done when the card matches the box score.
 8. **The clip** (Kevin). Done when a clip cut from a test recording, using a play's `at` and a hand-entered offset, shows the whole play, and appears on the live page next to the stat card.
 9. **Mock-ups** (Christian). Done when the feed and scout-view frames are made from the adult footage and labeled as what comes next.
-10. **Put Sandlot in front of real parents.** At least three parents who keep score score an inning or more with the app, live or from video. Done when we have their names, what they scored, and what they said in their own words.
+10. **Put Sandlot in front of a real parent.** Christian's uncle, whose child plays in the Moraga Mustangs league, scores an inning or more with the demo, live or from video. Done when we have what he scored and what he said in his own words, and the top one or two complaints are fixed or written down as what comes next. Three parents was the first goal; recruiting them isn't realistic before the deadline, so the answer cites one parent honestly.
 11. **Film and score the demo game live.** Someone claps on camera at the first pitch for the clip's clock offset. One pitcher throws at least 65 pitches, so the pitch-count warning in scene 4 happens for real. Done when the whole game is scored in the app, the live page matches, and the clip of the double shows the play.
 12. **Rehearse the script twice, then record the demo.** Keep a backup take of every scene. Export at 1080p. About 4 Mbps keeps a 2.5-minute video near 75 MB, under the 100 MB limit. At 5 Mbps it would be about 94 MB, too close. Done when the exported file is under 3 minutes and under 100 MB.
 13. **Record the founder video.** One minute, both founders. Done when the file is under 100 MB and both founders approve it.
@@ -112,7 +112,7 @@ Cut in this order:
 4. The offline scene, shortened to a few seconds.
 5. The stat card's styling. A plain card still works.
 
-Never cut voice scoring, the rule rejection, the family live page, the real-parent step or the founder video. The first three are the story. The last two are what the application asks for.
+Never cut voice scoring, the rule rejection, the family live page, the real-parent step (one parent) or the founder video. The first three are the story. The last two are what the application asks for.
 
 ## Demo risks
 
@@ -123,7 +123,7 @@ Never cut voice scoring, the rule rejection, the family live page, the real-pare
 | Footage of children | Film adults only. No youth game footage until consent rules exist. |
 | The live page lags | Measure play-to-page time before recording, and fix anything over a few seconds. |
 | A secret lands in the repo | Keys stay in `.env` files, which git ignores. |
-| No one is using the product yet | Step 8 puts the app in front of at least three real parents before the deadline, and the answer cites them honestly. |
+| No one is using the product yet | Step 10 puts the app in front of one real parent before the deadline, and the answer cites that parent honestly: one parent, not a group. |
 | The product link breaks after we submit | Keep the demo game's live page deployed and unchanged until YC decides. |
 | The clip misses the play | Start the clip 10 to 15 seconds before the play's `at`, check the clap offset on a test recording first, and keep the stat card without the clip as the fallback |
 | The mock-ups look like shipped features | Label them on screen as what comes next, and say so in the written answers |
