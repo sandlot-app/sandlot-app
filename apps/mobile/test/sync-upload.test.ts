@@ -99,6 +99,35 @@ test('with no signal nothing is acknowledged, and the queue picks up where it st
   assert.equal((await uploadWaiting(session, fake.send)).game?.waitingPlays, 0);
 });
 
+test('a rate-limited upload stays queued and resumes with the identical saved play', async () => {
+  const { session, save, database } = await scorer();
+  const fake = fakeServer();
+  await uploadWaiting(session, fake.send);
+  await save({ kind: 'pitch', result: 'ball' });
+  const pending = await session.nextUpload();
+  assert.ok(pending);
+  const sent: UploadRequest[] = [];
+  const limited = await uploadWaiting(session, async (request) => {
+    sent.push(structuredClone(request));
+    return { status: 429, body: { error: 'slow_down' } };
+  });
+  assert.deepEqual(limited.status, { kind: 'waiting' });
+  assert.equal(limited.game, null, 'the rate-limited play was not acknowledged');
+  assert.deepEqual(await session.nextUpload(), pending, 'the exact saved request stays queued');
+  assert.equal(fake.events.length, 3, 'no new play reached the server');
+
+  const resumed = await uploadWaiting(session, async (request, fresh) => {
+    sent.push(structuredClone(request));
+    return fake.send(request, fresh);
+  });
+  assert.deepEqual(sent, [pending, pending], 'retry preserves saved IDs, timestamps, session and events');
+  assert.deepEqual(resumed.status, { kind: 'synced' });
+  assert.equal(resumed.game?.waitingPlays, 0);
+  assert.equal(await session.nextUpload(), null);
+  assert.equal(fake.events.length, 4, 'the retried play was saved once');
+  await database.close();
+});
+
 test('an expired sign-in is refreshed once and the same play is sent again', async () => {
   const { session } = await scorer();
   const fake = fakeServer();
