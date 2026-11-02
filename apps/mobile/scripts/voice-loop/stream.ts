@@ -19,7 +19,7 @@ export type Streamed = {
   finalMs: number;
 };
 
-/** Opens the socket for `url` the way React Native does: the client secret rides along as a subprotocol. */
+/** Node's WebSocket uses a client-secret subprotocol; the phone uses its native Authorization header. */
 function openSocket(url: string, secret: string): Socket {
   const ws = new WebSocket(url, ['realtime', `openai-insecure-api-key.${secret}`]);
   const socket: Socket = { send: (data) => ws.send(data), close: () => ws.close(), onopen: null, onmessage: null, onerror: null, onclose: null };

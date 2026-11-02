@@ -4,7 +4,7 @@ import type { Verdict } from './classify.ts';
 // only, never a transcript.
 
 /** `failed`: the live stream gave no final transcript at all (the phone would fall back to the clip). */
-export type Outcome = Verdict | 'failed';
+export type Outcome = Verdict | 'failed' | 'no-session';
 
 export type Run = {
   setting: string;
@@ -24,7 +24,7 @@ const columns: Record<GroupBy, { title: string; align: '---' | '---:'; of(run: R
   cut: { title: 'first cut (ms)', align: '---:', of: (run) => String(run.cutMs) },
 };
 
-const outcomes: Outcome[] = ['right', 'name-dropped', 'wrong', 'blank', 'failed'];
+const outcomes: Outcome[] = ['right', 'name-dropped', 'wrong', 'blank', 'failed', 'no-session'];
 
 function median(times: number[]): number {
   const sorted = [...times].sort((a, b) => a - b);

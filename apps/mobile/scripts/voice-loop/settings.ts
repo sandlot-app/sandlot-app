@@ -38,16 +38,25 @@ export function withSetting(setting: Setting, send: OpenAi): OpenAi {
   };
 }
 
-export type DirectSession = { ok: true; url: string; secret: string } | { ok: false; why: string };
+export type DirectSession = { ok: true; url: string; secret: string } | { ok: false; failure: 'auth' | 'setting' | 'session'; why: string };
+type SessionFailure = Extract<DirectSession, { ok: false }>;
 
 const safe = (value: unknown) => typeof value === 'string' && /^[\w.[\]-]{1,100}$/.test(value) ? value : null;
 
-/** Status, error code and field of a turned-down request. Never the message, which may echo the key or a name. */
-async function rejection(response: Response): Promise<string> {
-  const { error } = await response.json().catch(() => ({})) as { error?: { code?: unknown; param?: unknown } };
-  const code = safe(error?.code);
-  const param = safe(error?.param);
-  return `HTTP ${response.status}${code ? ` ${code}` : ''}${param ? ` (${param})` : ''}`;
+/** Provider messages may echo audio, names or credentials, so diagnostics use only status, code and field. */
+async function rejection(response: Response, setting: Setting): Promise<SessionFailure> {
+  const body = await response.json().catch(() => null) as { error?: { code?: unknown; param?: unknown } } | null;
+  const code = safe(body?.error?.code);
+  const param = safe(body?.error?.param);
+  const fields = [
+    ...(setting.noiseReduction ? ['session.audio.input.noise_reduction', 'session.audio.input.noise_reduction.type'] : []),
+    ...(setting.delay ? ['session.audio.input.transcription.delay'] : []),
+    ...(setting.prompt ? ['session.audio.input.transcription.prompt'] : []),
+  ];
+  const failure = response.status === 401 || response.status === 403 ? 'auth'
+    : response.status === 400 && (code === 'unknown_parameter' || code === 'invalid_value') && param !== null && fields.includes(param)
+      ? 'setting' : 'session';
+  return { ok: false, failure, why: `HTTP ${response.status}${code ? ` ${code}` : ''}${param ? ` (${param})` : ''}` };
 }
 
 /**
@@ -55,17 +64,17 @@ async function rejection(response: Response): Promise<string> {
  * before voice-session knows it. The key goes in the header and nowhere else.
  */
 export async function directSession(setting: Setting, lineup: string[], apiKey: string, model: string, send: typeof fetch = fetch): Promise<DirectSession> {
-  let why = 'no answer from OpenAI';
+  let failure: SessionFailure = { ok: false, failure: 'session', why: 'no answer from OpenAI' };
   const openai: OpenAi = async (path, init) => {
     const response = await send(`https://api.openai.com${path}`, {
       ...init,
       headers: { ...init.headers, authorization: `Bearer ${apiKey}` },
       signal: AbortSignal.timeout(10_000),
     });
-    why = response.ok ? 'unexpected answer from OpenAI' : await rejection(response.clone());
+    failure = response.ok ? { ok: false, failure: 'session', why: 'unexpected answer from OpenAI' } : await rejection(response.clone(), setting);
     return response;
   };
   const reply = await startSession({ names: lineup }, withSetting(setting, openai), model);
   const { url, secret } = reply.body as { url?: string; secret?: string };
-  return reply.status === 200 && url && secret ? { ok: true, url, secret } : { ok: false, why };
+  return reply.status === 200 && url && secret ? { ok: true, url, secret } : failure;
 }

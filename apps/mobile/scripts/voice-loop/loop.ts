@@ -86,7 +86,7 @@ async function hostedSession(): Promise<DirectSession> {
   }
   if (!token) {
     const signUp = await fetch(`${base}/auth/v1/signup`, { method: 'POST', headers: { apikey: publishable, 'content-type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(10_000) });
-    if (!signUp.ok) return { ok: false, why: `sign-in ${signUp.status}` };
+    if (!signUp.ok) return { ok: false, failure: 'auth', why: `sign-in ${signUp.status}` };
     const body = await signUp.json() as { access_token: string; expires_at: number };
     writeFileSync(cache, JSON.stringify(body));
     token = body.access_token;
@@ -97,7 +97,7 @@ async function hostedSession(): Promise<DirectSession> {
     body: JSON.stringify({ names: LINEUP }),
     signal: AbortSignal.timeout(10_000),
   });
-  if (!response.ok) return { ok: false, why: `voice-session ${response.status}` };
+  if (!response.ok) return { ok: false, failure: 'session', why: `voice-session ${response.status}` };
   const { url, secret } = await response.json() as { url: string; secret: string };
   return { ok: true, url, secret };
 }

@@ -41,9 +41,11 @@ Run it from the repo root. It prints progress to the terminal (no clip names, no
 
 Without a key it says so and stops before reading any clip.
 
-Reading the tables: `right` has every word, in order (crowd chatter around it is fine); `name-dropped` has the other words but not a player's name (a misheard name counts too); `wrong` is some other words; `blank` is nothing, or only filler (the phone's `isEmptyTranscript`); `failed` is no final transcript at all. Times are milliseconds from the release to the final transcript.
+Reading the tables: `right` has every word, in order (crowd chatter around it is fine); `name-dropped` has the other words but not a player's name (a misheard name counts too); `wrong` is some other words; `blank` is nothing, or only filler according to the phone's local reader; `failed` means a session opened but its stream produced no final transcript; `no-session` means a session could not be started. Times are milliseconds from the release to the final transcript.
 
-If OpenAI turns a setting down (for example, the API reference lists `delay` for `gpt-realtime-whisper` only, while the transcription guide lists it for `gpt-live-transcribe`), the batch prints its status, error code and field under the tables and skips that setting's other runs.
+The stream uses the phone's five-second final-transcript wait. A correct transcript arriving later counts as `failed`, including for `delay_high`. The Node harness authenticates its WebSocket with a client-secret subprotocol; the phone's native WebSocket uses an Authorization header.
+
+Only a 400 `unknown_parameter` or `invalid_value` reply naming an experimental field that the setting actually supplied removes that setting from the comparison. The batch prints the status, code and field and skips its remaining runs. A 401 or 403 stops the batch with exit 2 and an authentication diagnostic. Other session-start failures, including 408, 409, 429 and server failures, count as `no-session`; the remaining cases still run.
 
 ## One clip
 
@@ -55,6 +57,6 @@ Prints one JSON line. `--direct` asks OpenAI itself; `--noise-reduction`, `--del
 
 Hosted mode uses its own anonymous identity, not the phone's scorer identity. Once #77's scorer authorization is deployed, hosted mode requires that identity to be provisioned as a current scorer. A 403 is expected otherwise. Use direct mode for noise-setting comparisons; do not relax the endpoint's scorer check to make this tool work.
 
-A batch exit code alone does not prove a successful measurement. Check the failed counts and missing timings in its tables before comparing settings.
+A batch exit code alone does not prove a successful measurement. Check the `failed` and `no-session` counts and missing timings in its tables before comparing settings.
 
 `phrases.ts` prints how the phone's parser reads what the transcriber might return for these phrases.

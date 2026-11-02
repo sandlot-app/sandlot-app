@@ -57,7 +57,6 @@ const seconds = cases.reduce((sum, each) => sum + readPcm(clipPath(dir, each.cli
 console.error(`${total} runs (${settings.length} settings x ${cases.length} cases), about ${Math.ceil(seconds / 60)} minutes.`);
 
 const runs: Run[] = [];
-/** Settings OpenAI turned down: the reason, and no more runs for them. A busy answer (429) is not a turn-down. */
 const turnedDown = new Map<string, string>();
 let done = 0;
 for (const { clip, noise, cutMs } of cases) {
@@ -66,11 +65,13 @@ for (const { clip, noise, cutMs } of cases) {
     done += 1;
     if (turnedDown.has(setting.name)) continue;
     const session = await directSession(setting, LINEUP, key, values.model);
-    let run: Run = { setting: setting.name, noise, cutMs, outcome: 'failed', finalMs: null };
+    let run: Run = { setting: setting.name, noise, cutMs, outcome: 'no-session', finalMs: null };
     if (session.ok) {
       const { transcript, finalMs } = await streamClip(session, pcm, chunkMs);
-      if (transcript !== null) run = { ...run, outcome: classify(clip, transcript), finalMs };
-    } else if (session.why.startsWith('HTTP 4') && !session.why.startsWith('HTTP 429')) {
+      run = { ...run, outcome: transcript === null ? 'failed' : classify(clip, transcript), finalMs: transcript === null ? null : finalMs };
+    } else if (session.failure === 'auth') {
+      fail(`OpenAI authentication failed (${session.why}). Check the key and project access before comparing settings.`);
+    } else if (session.failure === 'setting') {
       turnedDown.set(setting.name, session.why);
       console.error(`[${done}/${total}] ${setting.name}: OpenAI turned it down (${session.why}); skipping the rest of its runs`);
       continue;
