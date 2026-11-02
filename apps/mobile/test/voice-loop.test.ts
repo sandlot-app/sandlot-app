@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { test } from 'node:test';
 import type { OpenAi } from '../../../supabase/functions/_shared/voice.ts';
 import { REALTIME_URL, startSession } from '../../../supabase/functions/voice-session/handler.ts';
@@ -101,9 +103,9 @@ test('asking OpenAI directly sends the key as a header only, and hands back the 
 test('a setting OpenAI turns down is reported by status, code and field, never by its message or the key', async () => {
   const { send } = fakeFetch(400, { error: { code: 'unknown_parameter', param: 'session.audio.input.transcription.delay', message: 'Bad value, key sk-test-key, for "J. Soto"' } });
   const result = await directSession({ name: 'slow', delay: 'high' }, ['J. Soto'], 'sk-test-key', 'gpt-live-transcribe', send);
-  assert.deepEqual(result, { ok: false, why: 'HTTP 400 unknown_parameter (session.audio.input.transcription.delay)' });
+  assert.deepEqual(result, { ok: false, failure: 'setting', why: 'HTTP 400 unknown_parameter (session.audio.input.transcription.delay)' });
   const broken = await directSession({ name: 'today' }, [], 'sk-test-key', 'gpt-live-transcribe', (() => Promise.reject(new Error('offline sk-test-key'))) as typeof fetch);
-  assert.deepEqual(broken, { ok: false, why: 'no answer from OpenAI' });
+  assert.deepEqual(broken, { ok: false, failure: 'session', why: 'no answer from OpenAI' });
 });
 
 // Seam 5: the loop and the batch stop with a clear message when there is no key.
@@ -148,24 +150,115 @@ const runs: Run[] = [
 
 test('the table counts each kind of result apart, and gives the middle and slowest time to the final transcript', () => {
   assert.equal(buildTable(runs, ['setting']), [
-    '| setting | runs | right | name-dropped | wrong | blank | failed | median final (ms) | slowest final (ms) |',
-    '|---|---:|---:|---:|---:|---:|---:|---:|---:|',
-    '| today | 4 | 2 | 1 | 0 | 1 | 0 | 900 | 1200 |',
-    '| far_field | 3 | 1 | 0 | 1 | 0 | 1 | 1100 | 1500 |',
+    '| setting | runs | right | name-dropped | wrong | blank | failed | no-session | median final (ms) | slowest final (ms) |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '| today | 4 | 2 | 1 | 0 | 1 | 0 | 0 | 900 | 1200 |',
+    '| far_field | 3 | 1 | 0 | 1 | 0 | 1 | 0 | 1100 | 1500 |',
   ].join('\n'));
 });
 
 test('the table can split by crowd noise and by the audio cut off the start, keeping the order the runs happened in', () => {
   assert.equal(buildTable(runs, ['setting', 'noise', 'cut']), [
-    '| setting | crowd noise | first cut (ms) | runs | right | name-dropped | wrong | blank | failed | median final (ms) | slowest final (ms) |',
-    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
-    '| today | clean | 0 | 2 | 2 | 0 | 0 | 0 | 0 | 900 | 1000 |',
-    '| today | crowd | 600 | 2 | 0 | 1 | 0 | 1 | 0 | 900 | 1200 |',
-    '| far_field | clean | 0 | 1 | 1 | 0 | 0 | 0 | 0 | 700 | 700 |',
-    '| far_field | crowd | 600 | 2 | 0 | 0 | 1 | 0 | 1 | 1500 | 1500 |',
+    '| setting | crowd noise | first cut (ms) | runs | right | name-dropped | wrong | blank | failed | no-session | median final (ms) | slowest final (ms) |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
+    '| today | clean | 0 | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 900 | 1000 |',
+    '| today | crowd | 600 | 2 | 0 | 1 | 0 | 1 | 0 | 0 | 900 | 1200 |',
+    '| far_field | clean | 0 | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 700 | 700 |',
+    '| far_field | crowd | 600 | 2 | 0 | 0 | 1 | 0 | 1 | 0 | 1500 | 1500 |',
   ].join('\n'));
 });
 
 test('a group where nothing finished has no time to show', () => {
-  assert.equal(buildTable([run('prompt', 'clean', 0, 'failed', null)], ['setting']).split('\n')[2], '| prompt | 1 | 0 | 0 | 0 | 0 | 1 | - | - |');
+  assert.equal(buildTable([run('prompt', 'clean', 0, 'failed', null)], ['setting']).split('\n')[2], '| prompt | 1 | 0 | 0 | 0 | 0 | 1 | 0 | - | - |');
+});
+
+
+test('direct session failures distinguish auth, attempted settings and other session failures', async () => {
+  const setting = { name: 'slow', delay: 'high' } as const;
+  for (const status of [401, 403]) {
+    const result = await directSession(setting, [], 'fake-key', 'm', fakeFetch(status, { error: { code: 'invalid_api_key' } }).send);
+    assert.deepEqual(result, { ok: false, failure: 'auth', why: `HTTP ${status} invalid_api_key` });
+  }
+  const parameter = { error: { code: 'unknown_parameter', param: 'session.audio.input.transcription.delay' } };
+  assert.deepEqual(await directSession(setting, [], 'fake-key', 'm', fakeFetch(400, parameter).send), {
+    ok: false, failure: 'setting', why: 'HTTP 400 unknown_parameter (session.audio.input.transcription.delay)',
+  });
+  for (const [candidate, status, error] of [
+    [{ name: 'today' }, 400, parameter],
+    [setting, 409, parameter],
+    [setting, 400, { error: { code: 'invalid_value', param: 'session.audio.input.transcription.model' } }],
+    [setting, 400, { error: { code: 'insufficient_quota', param: 'session.audio.input.transcription.delay' } }],
+  ] as const) {
+    const result = await directSession(candidate, [], 'fake-key', 'm', fakeFetch(status, error).send);
+    assert.equal(result.ok, false);
+    assert.equal(!result.ok && 'failure' in result ? result.failure : undefined, 'session');
+  }
+});
+
+function batchWithReplies(statuses: number[], error: { code: string; param: string | null } = { code: 'temporary_error', param: null }, setting = 'today') {
+  const folder = mkdtempSync(join(tmpdir(), 'sandlot-noise-'));
+  const preload = join(folder, 'fake-openai.mjs');
+  try {
+    for (const clip of ['ball', 'nguyen-walks', 'darcy-singles', 'soto-hits-ruiz']) {
+      for (const noise of ['clean', 'noisy']) writeFileSync(join(folder, `${clip}.${noise}.pcm`), new Uint8Array(48));
+    }
+    writeFileSync(preload, `
+      let calls = 0;
+      const statuses = ${JSON.stringify(statuses)};
+      globalThis.fetch = async () => {
+        const status = statuses[calls++] ?? statuses.at(-1);
+        return new Response(JSON.stringify(status === 200
+          ? { value: 'ek_fake', expires_at: 1800000060 }
+          : { error: { ...${JSON.stringify(error)}, message: 'private provider message' } }), { status });
+      };
+      globalThis.WebSocket = class {
+        constructor() { setTimeout(() => this.onopen?.(), 0); }
+        send(data) {
+          if (JSON.parse(data).type === 'input_audio_buffer.commit') this.onmessage?.({ data: JSON.stringify({
+            type: 'conversation.item.input_audio_transcription.completed', transcript: 'Ball.'
+          }) });
+        }
+        close() {}
+      };
+      process.on('exit', () => console.error('TEST_SESSION_CALLS=' + calls));
+    `);
+    return spawnSync(process.execPath, ['--experimental-strip-types', '--no-warnings', '--import', preload,
+      join(import.meta.dirname, '../scripts/voice-loop/batch.ts'), '--clips', folder, '--settings', setting,
+      '--cuts', '0', '--chunk-ms', '1'], {
+      env: { PATH: process.env.PATH, NODE_ENV: 'test', OPENAI_API_KEY: 'fake-key' }, encoding: 'utf8', timeout: 15000,
+    });
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
+}
+
+test('batch stops on authentication errors without claiming a setting was rejected', () => {
+  for (const status of [401, 403]) {
+    const result = batchWithReplies([status], { code: 'invalid_api_key', param: null });
+    assert.equal(result.status, 2, result.stderr);
+    assert.match(result.stderr, /authentication/i);
+    assert.match(result.stderr, /TEST_SESSION_CALLS=1/);
+    assert.doesNotMatch(result.stdout + result.stderr, /turned it down|private provider message/);
+  }
+});
+
+test('batch counts a one-off session conflict separately and continues every remaining case', () => {
+  const result = batchWithReplies([409, 200]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stderr, /TEST_SESSION_CALLS=8/);
+  assert.match(result.stdout, /no-session/);
+  assert.match(result.stdout, /\| today \| 8 \| 1 \| 0 \| 6 \| 0 \| 0 \| 1 \|/);
+  assert.doesNotMatch(result.stdout + result.stderr, /turned it down|private provider message/);
+});
+
+test('batch only suppresses an attempted experimental setting for a parameter rejection', () => {
+  const rejected = batchWithReplies([400], { code: 'unknown_parameter', param: 'session.audio.input.noise_reduction' }, 'far_field');
+  assert.equal(rejected.status, 1, rejected.stderr);
+  assert.match(rejected.stderr, /TEST_SESSION_CALLS=1/);
+  assert.match(rejected.stderr, /turned it down/);
+  const model = batchWithReplies([400], { code: 'invalid_value', param: 'session.audio.input.transcription.model' });
+  assert.equal(model.status, 0, model.stderr);
+  assert.match(model.stderr, /TEST_SESSION_CALLS=8/);
+  assert.match(model.stdout, /\| today \| 8 \| 0 \| 0 \| 0 \| 0 \| 0 \| 8 \| - \| - \|/);
+  assert.doesNotMatch(model.stdout + model.stderr, /turned it down|private provider message/);
 });
