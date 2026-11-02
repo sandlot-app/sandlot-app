@@ -1,3 +1,4 @@
+import { syncEndpoint } from './endpoint.ts';
 import { deepStrictEqual, strictEqual } from 'node:assert/strict';
 import { type Base, contentHash, type Store, type StoredGroup, syncEvents, type UploadRequest } from './handler.ts';
 import { sampleHalfInning, sampleSetup } from '../../../packages/engine/scripts/sample-events.ts';
@@ -139,10 +140,10 @@ Deno.test('a concurrent upload from a user who is not the scorer returns stale_s
   deepStrictEqual(base.events, request().events);
 });
 
-Deno.test('a saved group uploaded again by another user returns id_conflict', async () => {
+Deno.test('a saved group does not reveal its existence to another user', async () => {
   const { store, groups, base } = memoryStore();
   deepStrictEqual(await syncEvents(USER, request(), store), { ok: true, revision: 1 });
-  deepStrictEqual(await syncEvents(OTHER_USER, request(), store), { ok: false, code: 'id_conflict' });
+  deepStrictEqual(await syncEvents(OTHER_USER, request(), store), { ok: false, code: 'stale_session' });
   strictEqual(groups.size, 1);
   deepStrictEqual(base.events, request().events);
 });
@@ -280,24 +281,14 @@ Deno.test('malformed commands are invalid before any store access', async () => 
   }
 });
 
-Deno.test('saved retries retain hashes of unknown command and nested fields', async () => {
+Deno.test('unknown command fields are refused even on a retry of an old stored payload', async () => {
   const { store, groups, base } = memoryStore();
   const body = request();
-  body.events[0].command = {
-    kind: 'correct', target: body.events[0].group,
-    replacement: [{
-      kind: 'runner', event: 'stolen_base', to: 2,
-      runner: Object.assign({ kind: 'player' as const, id: 'player-1' as PlayerId }, { note: ['retained'] }),
-    }],
-  };
-  Object.assign(body.events[0].command, { future: { retained: true } });
-  const originalHash = await contentHash(body.events);
-  groups.set(body.events[0].group, { userId: USER, contentHash: originalHash, ackRevision: 1 });
-  deepStrictEqual(await syncEvents(USER, body, store), { ok: true, revision: 1 });
+  Object.assign(body.events[0].command, { privateNote: 'must not be published' });
+  groups.set(body.events[0].group, { userId: USER, contentHash: await contentHash(body.events), ackRevision: 1 });
+  deepStrictEqual(await syncEvents(USER, body, store), { ok: false, code: 'invalid' });
   deepStrictEqual(base.events, []);
   strictEqual(base.revision, 0);
-  Object.assign(body.events[0].command, { future: { retained: false } });
-  deepStrictEqual(await syncEvents(USER, body, store), { ok: false, code: 'id_conflict' });
 });
 
 Deno.test('input the database cannot store is invalid before it reaches the database', async () => {
@@ -470,4 +461,80 @@ Deno.test('a game pinned to a different engine version is unsupported_version', 
   strictEqual(groups.size, 0);
   deepStrictEqual(base.events, []);
   strictEqual(base.revision, 0);
+});
+
+Deno.test('sync rejects unknown nested fields instead of publishing them', () => {
+  const body = structuredClone(request()) as unknown as { events: Array<{ command: Record<string, unknown> }> };
+  body.events[0].command['privateName'] = 'must not be published';
+  deepStrictEqual(parseUploadRequest(body), { ok: false, code: 'invalid' });
+});
+
+Deno.test('sync rejects extreme nesting without overflowing the parser', () => {
+  let nested: unknown = 'leaf';
+  for (let i = 0; i < 10_000; i++) nested = { nested };
+  const body = structuredClone(request()) as unknown as { events: Array<{ command: Record<string, unknown> }> };
+  body.events[0].command['extra'] = nested;
+  deepStrictEqual(parseUploadRequest(body), { ok: false, code: 'invalid' });
+});
+
+Deno.test('sync caps player IDs and array sizes before hashing or replay', () => {
+  const body = structuredClone(request()) as unknown as { events: Array<{ command: unknown }> };
+  body.events[0].command = { kind: 'runner', event: 'stolen_base', runner: { kind: 'player', id: 'x'.repeat(129) }, to: 2 };
+  deepStrictEqual(parseUploadRequest(body), { ok: false, code: 'invalid' });
+  body.events[0].command = { kind: 'correct', target: 'earlier', replacement: Array(1000).fill({ kind: 'pitch', result: 'ball' }) };
+  deepStrictEqual(parseUploadRequest(body), { ok: false, code: 'invalid' });
+});
+
+Deno.test('a non-scorer cannot distinguish another users stored group', async () => {
+  const memory = memoryStore();
+  await syncEvents(USER, request(), memory.store);
+  deepStrictEqual(await syncEvents(OTHER_USER, request(), memory.store), { ok: false, code: 'stale_session' });
+});
+
+Deno.test('sync HTTP quota failures do not read a body or access saved groups', async () => {
+  const { store, reads } = memoryStore();
+  let lookups = 0;
+  const guarded = { ...store, findGroup: async () => { lookups++; return null; } };
+  for (const [access, status] of [
+    [() => Promise.resolve('limited' as const), 429],
+    [() => Promise.reject(new Error('database down')), 503],
+  ] as const) {
+    const handle = syncEndpoint({ getUser: () => Promise.resolve({ userId: USER, unavailable: false }), access,
+      store: guarded, invalidData: () => false });
+    const response = await handle(new Request('http://localhost/sync', { method: 'POST',
+      headers: { authorization: 'Bearer token' }, body: 'not json' }));
+    strictEqual(response.status, status);
+  }
+  strictEqual(lookups, 0);
+  strictEqual(reads.base, 0);
+});
+
+Deno.test('sync HTTP rejects oversized UTF-8 bytes and accepts a valid group', async () => {
+  const { store } = memoryStore();
+  const handle = syncEndpoint({ getUser: () => Promise.resolve({ userId: USER, unavailable: false }),
+    access: () => Promise.resolve('allowed'), store, invalidData: () => false });
+  const postBody = (body: string) => new Request('http://localhost/sync', { method: 'POST',
+    headers: { authorization: 'Bearer token' }, body });
+  strictEqual((await handle(postBody(JSON.stringify({ text: '😀'.repeat(70_000) })))).status, 413);
+  const response = await handle(postBody(JSON.stringify(request())));
+  strictEqual(response.status, 200);
+  deepStrictEqual(await response.json(), { revision: 1 });
+});
+
+Deno.test('sync cancels oversized chunked uploads before store access', async () => {
+  const { store } = memoryStore();
+  let canceled = false;
+  let reads = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) { controller.enqueue(new Uint8Array(200_000)); },
+    cancel() { canceled = true; },
+  });
+  const handle = syncEndpoint({ getUser: () => Promise.resolve({ userId: USER, unavailable: false }),
+    access: () => Promise.resolve('allowed'), invalidData: () => false,
+    store: { ...store, findGroup: async () => { reads++; return null; } } });
+  const response = await handle(new Request('http://localhost/sync', { method: 'POST',
+    headers: { authorization: 'Bearer token' }, body: stream }));
+  strictEqual(response.status, 413);
+  strictEqual(canceled, true);
+  strictEqual(reads, 0);
 });

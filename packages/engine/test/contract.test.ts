@@ -186,7 +186,7 @@ describe('parseUploadRequest', () => {
         expect(parseUploadRequest(upload({ ...examples.runner, runner: { kind, id } }))).toEqual(invalidUpload);
       }
       const command = { ...examples.runner, runner: { kind, id: 'x'.repeat(129) } };
-      expect(parseUploadRequest(upload(command))).toEqual(parsed(upload(command)));
+      expect(parseUploadRequest(upload(command))).toEqual(invalidUpload);
     }
     expect(parseUploadRequest(upload({ kind: 'game', control: { kind: 'start', umpireStart: '' } }))).toEqual(invalidUpload);
   });
@@ -280,9 +280,30 @@ describe('parseUploadRequest', () => {
     for (const command of [null, false, 1, 'pitch', [], {}]) expect(parseUploadRequest(upload(command))).toEqual(invalidUpload);
   });
 
-  it('preserves unknown command and nested fields used by existing content hashes', () => {
+  it('rejects an extra field at each envelope and nested record independently', () => {
+    for (const command of commands) {
+      const body = upload(command);
+      const records = [[], ...fieldPaths(body).filter((path) => {
+        let value: unknown = body;
+        for (const key of path) value = (value as Record<string, unknown>)[key];
+        return typeof value === 'object' && value !== null && !Array.isArray(value);
+      })];
+      for (const path of records) {
+        expect(parseUploadRequest(changeField(body, [...path, 'privateNote'], true, 'never publish')), path.join('.')).toEqual(invalidUpload);
+      }
+    }
+  });
+
+  it('rejects excessive nesting and long timestamps without overflowing', () => {
+    let nested: unknown = { kind: 'pitch', result: 'ball' };
+    for (let index = 0; index < 10_000; index++) nested = { kind: 'correct', target: 'play', replacement: [nested] };
+    expect(parseUploadRequest(upload(nested))).toEqual(invalidUpload);
+    expect(parseUploadRequest(changeField(upload(), ['events', '0', 'at'], true, 'x'.repeat(129)))).toEqual(invalidUpload);
+  });
+
+  it('rejects unknown command and nested fields instead of publishing them (#77)', () => {
     for (const command of commands.map(withExtras)) {
-      expect(parseUploadRequest(upload(command))).toEqual(parsed(upload(command)));
+      expect(parseUploadRequest(upload(command))).toEqual(invalidUpload);
     }
   });
 
