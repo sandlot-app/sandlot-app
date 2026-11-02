@@ -188,6 +188,9 @@ The phone takes one action for each error:
 | Network failure | none | Retry the same request later |
 | Server error | 5xx | Retry the same request later |
 | `unauthenticated` | 401 | Refresh the token, then retry |
+| `slow_down` | 429 | Keep the saved play queued and retry later |
+| `sync_unavailable` | 503 | Keep the saved play queued and retry later |
+| `too_long` | 413 | Stop the queue. The phone sent a request that exceeds the size limit. |
 | `invalid` | 400 | Stop the queue. The phone has a bug. |
 | `rejected` | 422 | Stop the queue and show that sync is stuck. The response carries the engine's reject code as `reason`. |
 | `id_conflict` | 409 | Stop the queue. The phone has a bug. |

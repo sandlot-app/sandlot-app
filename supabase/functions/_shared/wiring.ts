@@ -22,7 +22,7 @@ export function openAi(): OpenAi | null {
   });
 }
 
-export const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { prepare: false, max: 1 });
+export const sql = postgres(Deno.env.get('SUPABASE_DB_URL')!, { prepare: false });
 
 export async function admit(userId: string, scope: 'voice' | 'sync'): Promise<Access> {
   const [row] = await sql<{ access: Access }[]>`select private.admit_request(${userId}::uuid, ${scope}) as access`;
