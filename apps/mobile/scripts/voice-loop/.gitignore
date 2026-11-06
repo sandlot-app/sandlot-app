@@ -1,0 +1,8 @@
+# Audio stays out of git unless Christian says otherwise (issue #86). Once committed, it is in every clone's history for good.
+audio/
+*.pcm
+*.aiff
+*.wav
+
+# A signed-in session token for the hosted voice-session (loop.ts, hosted mode).
+.token.json
