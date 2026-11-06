@@ -1,0 +1,60 @@
+.fd {
+  .fd-saved--undone {
+    background: rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 0 0 1px rgba(16, 35, 28, 0.08);
+  }
+
+  .fdx-fade {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    background: #f4f1e8;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.42s ease;
+  }
+
+  .fdx-fade[data-on] {
+    opacity: 1;
+  }
+
+  .fd-tap {
+    transition: transform 0.15s ease;
+  }
+
+  .fd-tap[data-pressed] .fd-tap__btn {
+    transform: scale(0.92);
+  }
+
+  .fd-tap__btn {
+    transition: transform 0.18s ease;
+  }
+
+  /* Count dots: green balls, yellow strikes, red outs, the same colors as the buttons */
+  .fdx-dots {
+    display: inline-flex;
+    gap: 5px;
+  }
+
+  .fdx-dots i {
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--fdx-dot-off, rgba(16, 35, 28, 0.12));
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .fdx-dots--ball i[data-on] { background: #2fb862; }
+  .fdx-dots--strike i[data-on] { background: #f2ac16; }
+  .fdx-dots--out i[data-on] { background: #e5484d; }
+
+  .fdx-dots i[data-on] {
+    animation: fdx-pop 0.42s cubic-bezier(0.3, 1.6, 0.5, 1);
+  }
+}
+
+@keyframes fdx-pop {
+  0% { transform: scale(0.3); }
+  100% { transform: scale(1); }
+}

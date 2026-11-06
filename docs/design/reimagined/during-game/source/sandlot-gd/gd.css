@@ -1,0 +1,394 @@
+/* During the game: the scorer's side tools. Every rule is scoped to .gd. */
+.gd {
+  /* Maya has already scored, so only who is on the bases is drawn */
+  .bp-plane > .bp-runner:nth-last-child(2) {
+    display: none;
+  }
+
+  /* Anything the cursor taps gives a little */
+  [data-target]:not(.fd-mic):not(.fd-tap) {
+    transition: transform 0.15s ease, background 0.25s ease, box-shadow 0.25s ease, color 0.25s ease;
+    will-change: transform;
+  }
+
+  [data-target][data-pressed]:not(.fd-mic):not(.fd-tap) {
+    transform: scale(0.95);
+  }
+
+  .gd-ico {
+    flex: none;
+  }
+
+  /* The bug is a solid card, so a dimmed field behind it never shows through */
+  .tv-bug {
+    background: #fdfdfb;
+  }
+
+  /* ---- A status pill hanging under the score bug ---- */
+  .gd-pill {
+    position: absolute;
+    top: 164px;
+    left: 50%;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 14px 0 11px;
+    border-radius: 15px;
+    background: #ddf2e3;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.08), 0 6px 14px rgba(16, 35, 28, 0.16);
+    color: #14633f;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 30px;
+    white-space: nowrap;
+    transform: translateX(-50%);
+    transition: background 0.4s ease, color 0.4s ease, opacity 0.4s ease, transform 0.5s cubic-bezier(0.3, 0.8, 0.2, 1);
+  }
+
+  .gd-pill[data-hide] {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+  }
+
+  .gd-pill[data-tone='warn'] {
+    background: #fbd25e;
+    color: #4a3300;
+  }
+
+  .gd-pill[data-tone='busy'] {
+    background: rgba(255, 255, 255, 0.96);
+    color: #14633f;
+  }
+
+  .gd-pill[data-tone='dark'] {
+    background: #10231c;
+    color: #fff;
+  }
+
+  .gd-pill__in {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 30px;
+  }
+
+  .gd-spin {
+    animation: gd-spin 1s linear infinite;
+  }
+
+  /* ---- The sheet and the big tiles (from the approved Big buttons scorer) ---- */
+  .gd-sheet {
+    position: absolute;
+    top: 570px;
+    right: 0;
+    bottom: -140px;
+    left: 0;
+    z-index: 3;
+    border-radius: 30px 30px 0 0;
+    background: #f7f4ec;
+    box-shadow: 0 -8px 30px rgba(8, 40, 22, 0.18);
+  }
+
+  .gd-top {
+    position: absolute;
+    top: 580px;
+    right: 18px;
+    left: 18px;
+    z-index: 3;
+    display: grid;
+    align-items: center;
+    height: 58px;
+  }
+
+  .gd-top > .ss-states {
+    display: grid;
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .gd-top .ss-states__item {
+    justify-content: center;
+  }
+
+  .gd-top .ss-states__item > * {
+    flex: 1;
+  }
+
+  .gd-askrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+  }
+
+  .gd-askrow[data-more] {
+    justify-content: space-between;
+    padding-left: 4px;
+  }
+
+  .gd-ask {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .gd-crumb {
+    display: inline-flex;
+    padding: 3px 9px;
+    border-radius: 9px;
+    background: rgba(16, 35, 28, 0.07);
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.6);
+  }
+
+  .gd-morebtn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 7px;
+    height: 44px;
+    padding: 0 17px 0 12px;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.07), 0 6px 14px rgba(16, 35, 28, 0.08);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .gd-deck {
+    position: absolute;
+    top: 644px;
+    right: 16px;
+    left: 16px;
+    z-index: 3;
+    height: 120px;
+  }
+
+  .gd-grid {
+    display: grid;
+    gap: 8px;
+    height: 120px;
+  }
+
+  .gd-grid--2 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+
+  .gd-tile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.07), 0 6px 14px rgba(16, 35, 28, 0.07);
+    font-size: 17px;
+    font-weight: 700;
+    color: #10231c;
+  }
+
+  .gd-tile--go {
+    background: radial-gradient(circle at 50% 20%, #ff9447, var(--fd-orange) 70%);
+    color: #fff;
+  }
+
+  .gd-dot {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .gd-dot--ball { background: #2fb862; }
+  .gd-dot--strike { background: #f2ac16; }
+  .gd-dot--foul { background: #a3aaa6; }
+
+  .gd-status {
+    position: absolute;
+    top: 774px;
+    right: 0;
+    left: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  .gd-status svg {
+    color: #2f9e5b;
+  }
+
+  /* ---- The saved play, with its one-step fix ---- */
+  .gd-result {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px 10px 8px 12px;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.06), 0 10px 28px rgba(16, 35, 28, 0.1);
+  }
+
+  .gd-result__tick {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--fd-green);
+    color: #fff;
+  }
+
+  .gd-result__text {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+    text-align: left;
+  }
+
+  .gd-result__title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 20px;
+  }
+
+  .gd-result__sub {
+    font-size: 13px;
+    line-height: 17px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gd-undo {
+    flex: none;
+    padding: 8px 13px;
+    border-radius: 16px;
+    background: rgba(255, 117, 25, 0.12);
+    color: #d65a06;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  /* ---- Things that sit over the scorer ---- */
+  /* Dims the field, never the score bug: the bug stays the TV graphic that is always on */
+  .gd-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: rgba(16, 35, 28, 0.36);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s ease;
+  }
+
+  .gd-scrim[data-on] {
+    opacity: 1;
+  }
+
+  .gd-grab {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 5px;
+    margin-left: -19px;
+    border-radius: 3px;
+    background: rgba(16, 35, 28, 0.16);
+  }
+
+  .gd-sh-head {
+    position: absolute;
+    top: 22px;
+    right: 16px;
+    left: 16px;
+    padding-left: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+  }
+
+  .gd-sh-title {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 32px;
+    letter-spacing: -0.015em;
+  }
+
+  .gd-round {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(16, 35, 28, 0.07);
+    color: #5a6a63;
+  }
+
+  .gd-round--ghost {
+    background: none;
+  }
+
+  .gd-ask--big {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .gd-glabel {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 16px;
+    text-transform: uppercase;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  /* A chip with the player's number: ours orange, theirs navy */
+  .gd-num {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #ff9447, var(--fd-orange) 70%);
+    box-shadow: inset 0 0 0 2.5px #fff, 0 2px 6px rgba(8, 40, 22, 0.22);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 800;
+  }
+
+  .gd-num--away {
+    background: radial-gradient(circle at 40% 35%, #3b62a8, #25447e 70%);
+  }
+
+  .gd-btn {
+    display: grid;
+    place-items: center;
+    height: 54px;
+    border-radius: 27px;
+    background: radial-gradient(circle at 50% 20%, #ff9447, var(--fd-orange) 70%);
+    box-shadow: 0 8px 18px rgba(255, 117, 25, 0.3);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+  }
+}
+
+@keyframes gd-spin {
+  to { transform: rotate(360deg); }
+}

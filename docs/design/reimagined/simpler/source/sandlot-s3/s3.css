@@ -1,0 +1,748 @@
+/* Sandlot, simpler (Start a game, Me, Team). Builds on the onboarding and
+   team rules (.ob-page, .ob-tabs, .gt-sheet, .gt-toast, .gt-switch); every
+   rule here is scoped to .s3. */
+.s3 {
+  & .ss-stage {
+    --s3-ink: #10231c;
+    --s3-card: 0 1px 2px rgba(16, 35, 28, 0.06), 0 12px 26px -10px rgba(16, 35, 28, 0.16);
+  }
+
+  /* ---- rising and popping in ---- */
+  .s3-rise {
+    opacity: 0;
+    transform: translateY(30px);
+    will-change: transform;
+  }
+
+  .s3-rise[data-in] {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.5s ease var(--d, 0s), transform 0.9s cubic-bezier(0.25, 0.8, 0.25, 1) var(--d, 0s);
+  }
+
+  .s3-pop {
+    display: grid;
+    opacity: 0;
+    transform: scale(0.35);
+    will-change: transform;
+  }
+
+  .s3-pop[data-in] {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.2s ease var(--d, 0s), transform 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) var(--d, 0s);
+  }
+
+  .s3-page {
+    padding: 56px 16px 0;
+    box-sizing: border-box;
+  }
+
+  .s3-card {
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: var(--s3-card);
+  }
+
+  .s3-link {
+    font-size: 15px;
+    font-weight: 700;
+    color: #d65a06;
+  }
+
+  .s3-big {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 60px;
+    border-radius: 30px;
+    background: radial-gradient(circle at 50% 20%, #ff9447, var(--fd-orange) 70%);
+    box-shadow: 0 10px 22px rgba(255, 117, 25, 0.32);
+    color: #fff;
+    font-size: 18px;
+    font-weight: 700;
+    transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
+    will-change: transform;
+  }
+
+  .s3-big[data-pressed] {
+    transform: scale(0.96);
+  }
+
+  .s3-big[data-done] {
+    background: #2f9e5b;
+    box-shadow: 0 10px 22px rgba(47, 158, 91, 0.32);
+  }
+
+  .s3-big__in {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    width: 148px;
+    height: 22px;
+  }
+
+  .s3-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #78837d;
+  }
+
+  .s3-more[data-pressed],
+  .s3-link[data-pressed] {
+    opacity: 0.6;
+  }
+
+  /* ================= Start a game ================= */
+  .s3-nav {
+    display: flex;
+    align-items: center;
+    height: 44px;
+  }
+
+  .s3-setup .ob-h1 {
+    margin: 8px 4px 0;
+  }
+
+  .s3-sub {
+    margin: 6px 4px 0;
+    font-size: 15px;
+    line-height: 20px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .s3-game {
+    position: relative;
+    display: grid;
+    gap: 10px;
+    margin-top: 24px;
+    padding: 22px 22px 22px;
+    border-radius: 26px;
+    overflow: hidden;
+    background: linear-gradient(160deg, #17664e, var(--fd-green) 60%);
+    box-shadow: 0 12px 30px rgba(12, 76, 57, 0.28);
+    color: #fff;
+  }
+
+  /* the Rec field as a quiet watermark (same art as Home), drawn behind the words */
+  .s3-game::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: -30px;
+    width: 200px;
+    height: 160px;
+    opacity: 0.3;
+    background: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 160'><path d='M100 150 L-4 46 Q100 -40 204 46 Z' fill='%2356a04b'/><path d='M-4 46 Q100 -40 204 46' fill='none' stroke='%23f4c430' stroke-width='3'/><path d='M100 152 L52 104 Q100 44 148 104 Z' fill='%23c8915f'/><path d='M100 146 L-4 42 M100 146 L204 42' stroke='white' stroke-opacity='0.85' stroke-width='1.2'/><rect x='124.5' y='114.5' width='7' height='7' fill='white' transform='rotate(45 128 118)'/><rect x='96.5' y='86.5' width='7' height='7' fill='white' transform='rotate(45 100 90)'/><rect x='68.5' y='114.5' width='7' height='7' fill='white' transform='rotate(45 72 118)'/></svg>") no-repeat center / contain;
+    pointer-events: none;
+  }
+
+  .s3-game__when {
+    position: relative;
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .s3-game__vs {
+    position: relative;
+    font-size: 32px;
+    line-height: 38px;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  }
+
+  .s3-game__vs i {
+    font-style: normal;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .s3-game__chips {
+    position: relative;
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .s3-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.14);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .s3-lineup {
+    margin-top: 16px;
+    padding: 20px 14px 20px;
+  }
+
+  .s3-lineup__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+
+  .s3-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  .s3-lineup__title {
+    margin: 6px 4px 0;
+    font-size: 20px;
+    line-height: 26px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .s3-chips {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+  }
+
+  .s3-chips .gt-num {
+    box-sizing: border-box;
+  }
+
+  .s3-sep {
+    height: 1px;
+    margin: 20px 4px;
+    background: rgba(16, 35, 28, 0.08);
+  }
+
+  .s3-pitch {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 4px;
+  }
+
+  .s3-pitch__text {
+    font-size: 17px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .s3-pitch__text i {
+    font-style: normal;
+    font-weight: 600;
+    color: #1f7a45;
+  }
+
+  .s3-note {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 14px 14px;
+    border-radius: 20px;
+    background: rgba(37, 68, 126, 0.09);
+  }
+
+  .s3-note__icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: #25447e;
+    color: #fff;
+  }
+
+  .s3-note__text {
+    font-size: 15px;
+    line-height: 20px;
+    font-weight: 500;
+    color: #25447e;
+  }
+
+  .s3-note__text b {
+    font-weight: 700;
+  }
+
+  .s3-foot {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 0 16px 34px;
+    box-sizing: border-box;
+  }
+
+  .s3-foot .s3-more {
+    height: 44px;
+    margin-top: 4px;
+  }
+
+  /* the quiet batting-order list behind "Edit lineup" */
+  .s3-sheet__top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 4px;
+  }
+
+  .s3-sheet__top .gt-h2 {
+    margin: 0;
+  }
+
+  .s3-hint {
+    font-size: 14px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .s3-elist {
+    margin-top: 10px;
+  }
+
+  .s3-erow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 46px;
+    padding: 0 4px;
+    box-sizing: border-box;
+  }
+
+  .s3-erow + .s3-erow {
+    border-top: 1px solid rgba(16, 35, 28, 0.07);
+  }
+
+  .s3-erow__n {
+    width: 14px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(16, 35, 28, 0.4);
+  }
+
+  .s3-erow__name {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .s3-erow__grip {
+    display: grid;
+    color: #aab1ad;
+  }
+
+  .s3-sheet .gt-btn--main {
+    margin-top: 16px;
+  }
+
+  .s3-sheet .gt-btn {
+    height: 56px;
+    border-radius: 28px;
+  }
+
+  /* ================= Me ================= */
+  .s3-me .gt-title {
+    height: 44px;
+  }
+
+  .s3-me .ob-label {
+    margin: 26px 4px 12px;
+  }
+
+  .s3-me .s3-label--first {
+    margin-top: 16px;
+  }
+
+  .s3-maya {
+    padding: 22px 22px 0;
+  }
+
+  .s3-maya__top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .s3-maya__text {
+    display: grid;
+    gap: 2px;
+  }
+
+  .s3-maya__text b {
+    font-size: 26px;
+    line-height: 30px;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  }
+
+  .s3-maya__text small {
+    font-size: 14px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .s3-switchrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    height: 80px;
+    margin-top: 20px;
+    border-top: 1px solid rgba(16, 35, 28, 0.08);
+  }
+
+  .s3-switchrow span:first-child {
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .s3-priv {
+    display: grid;
+    gap: 14px;
+    padding: 20px 22px 22px;
+  }
+
+  .s3-priv__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .s3-tile {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: rgba(12, 76, 57, 0.1);
+    color: var(--fd-green);
+  }
+
+  .s3-priv__text {
+    margin: 0;
+    font-size: 19px;
+    line-height: 27px;
+    font-weight: 500;
+  }
+
+  .s3-priv__text span {
+    display: block;
+  }
+
+  .s3-priv__text b {
+    font-weight: 800;
+  }
+
+  .s3-acct {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 20px 22px;
+  }
+
+  .s3-ava {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--fd-green);
+    color: #fff;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .s3-acct__text {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+  }
+
+  .s3-acct__text b {
+    font-size: 18px;
+    font-weight: 800;
+  }
+
+  .s3-acct__text small {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: #7f8a85;
+  }
+
+  .s3-pill {
+    flex: none;
+    padding: 10px 16px;
+    border-radius: 18px;
+    background: rgba(16, 35, 28, 0.07);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--fd-green);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+
+  .s3-pill[data-pressed] {
+    background: rgba(16, 35, 28, 0.13);
+    transform: scale(0.96);
+  }
+
+  .s3-delwrap {
+    position: absolute;
+    right: 0;
+    bottom: 116px;
+    left: 0;
+  }
+
+  .s3-del {
+    display: block;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: #cf3b40;
+    transition: opacity 0.2s ease;
+  }
+
+  .s3-del[data-pressed] {
+    opacity: 0.55;
+  }
+
+  .s3-opts {
+    display: grid;
+    margin-top: 14px;
+  }
+
+  .s3-opt {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 0;
+  }
+
+  .s3-opt + .s3-opt {
+    border-top: 1px solid rgba(16, 35, 28, 0.08);
+  }
+
+  .s3-opt__text {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+  }
+
+  .s3-opt__text b {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .s3-opt__text small {
+    font-size: 14px;
+    line-height: 19px;
+    color: rgba(16, 35, 28, 0.58);
+  }
+
+  .s3-opt__go {
+    display: grid;
+    color: #b0b6b2;
+  }
+
+  .s3-opt .s3-tile {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f4f1e8;
+    color: #4a5a53;
+  }
+
+  .s3-keep {
+    margin-top: 16px;
+  }
+
+  /* ================= Team ================= */
+  .s3-team .gt-team {
+    margin-top: 14px;
+    padding: 20px 18px;
+  }
+
+  .s3-team .gt-record {
+    font-size: 12px;
+  }
+
+  .s3-team .gt-record b {
+    font-size: 32px;
+    line-height: 34px;
+  }
+
+  .s3-team .gt-sect {
+    margin: 22px 4px 12px;
+  }
+
+  .s3-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.6);
+  }
+
+  .s3-legend i {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--fd-orange);
+  }
+
+  .s3-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .s3-kid {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 78px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: var(--s3-card);
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .s3-mark {
+    position: absolute;
+    top: 7px;
+    right: 7px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .s3-mark__dot,
+  .s3-mark__ok {
+    position: absolute;
+    border-radius: 50%;
+    transition: transform 0.45s cubic-bezier(0.3, 1.6, 0.5, 1), opacity 0.2s ease;
+  }
+
+  .s3-mark__dot {
+    inset: 3px;
+    background: var(--fd-orange);
+  }
+
+  .s3-mark__ok {
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: #2f9e5b;
+    color: #fff;
+    opacity: 0;
+    transform: scale(0.2);
+  }
+
+  .s3-mark[data-joined] .s3-mark__dot {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+
+  .s3-mark[data-joined] .s3-mark__ok {
+    opacity: 1;
+    transform: none;
+  }
+
+  .s3-team .s3-big {
+    margin-top: 20px;
+  }
+
+  .s3-team .s3-more {
+    height: 44px;
+    margin-top: 6px;
+  }
+
+  /* Copy icon and "Copied" share one cell and cross-fade */
+  .s3-swap {
+    display: grid;
+    flex: none;
+    justify-items: end;
+    align-items: center;
+  }
+
+  .s3-swap > * {
+    grid-area: 1 / 1;
+    transition: opacity 0.25s ease;
+  }
+
+  .s3-copy {
+    display: grid;
+    color: #8b948f;
+  }
+
+  .s3-swap[data-done] .s3-copy,
+  .s3-swap:not([data-done]) .s3-copied {
+    opacity: 0;
+  }
+
+  .s3-linkline {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 500;
+    color: rgba(16, 35, 28, 0.7);
+    white-space: nowrap;
+  }
+
+  .s3-linkline b {
+    font-weight: 700;
+    color: var(--s3-ink);
+  }
+
+  .s3-copied {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    width: 72px;
+    height: 18px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #1f7a45;
+  }
+
+  .s3-textbtn {
+    margin-top: 14px;
+  }
+
+  .s3-textbtn .gt-btn {
+    height: 56px;
+    border-radius: 28px;
+  }
+
+  /* A closed sheet is out of the picture, not just off the screen */
+  .gt-sheet {
+    visibility: hidden;
+    transition: transform 0.6s cubic-bezier(0.3, 0.8, 0.2, 1), visibility 0s linear 0.6s;
+  }
+
+  .gt-sheet[data-open] {
+    visibility: visible;
+    transition: transform 0.6s cubic-bezier(0.3, 0.8, 0.2, 1), visibility 0s;
+  }
+}

@@ -1,0 +1,15 @@
+.sp-list { display: grid; gap: 64px; }
+.sp-pair { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; gap: 32px; align-items: start; }
+.sp-copy h2 { margin: 0 0 4px; font-size: 30px; letter-spacing: -0.02em; color: #0c4c39; }
+.sp-copy .sc-body b { color: #10231c; }
+.sp-demos { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.sp-demos figure { margin: 0; }
+.sp-demos figcaption { margin: 0 0 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(16, 35, 28, 0.45); }
+.sp-demos figcaption[data-new] { color: #ff7519; }
+.sp-demo { max-width: 440px; }
+@media (max-width: 1100px) {
+  .sp-pair { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .sp-demos { grid-template-columns: 1fr; }
+}
