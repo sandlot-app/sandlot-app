@@ -1,0 +1,6 @@
+/* Group s2: the simple Fix and More. Every rule is scoped to .s2. */
+.s2 {
+  .s2-ico {
+    flex: none;
+  }
+}

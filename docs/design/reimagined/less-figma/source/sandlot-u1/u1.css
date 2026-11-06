@@ -1,0 +1,683 @@
+/* Sandlot, less like Figma: the Game day board and Before first pitch. Builds on ob.css (the Shell,
+   .ob-page, .ob-h1, the tab bar), youth.css (the Rec field) and fan.css (the orange chip, the Live tag).
+   Every rule is scoped to .u1. */
+.u1 {
+  /* ================= Game day board ================= */
+  .u1-games {
+    --u1-ease: cubic-bezier(0.3, 0.75, 0.1, 1);
+  }
+
+  .u1-title {
+    position: absolute;
+    top: 58px;
+    right: 16px;
+    left: 20px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 44px;
+  }
+
+  .u1-following {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 13px 0 11px;
+    box-sizing: border-box;
+    border-radius: 17px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.08), 0 4px 10px rgba(16, 35, 28, 0.05);
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .u1-following i {
+    width: 4px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--fd-orange);
+  }
+
+  .u1-following b {
+    margin-left: -3px;
+    font-weight: 800;
+    color: #10231c;
+  }
+
+
+  /* ---- The live card: a little field with the score bug on it ---- */
+  .u1-slot {
+    position: absolute;
+    top: 108px;
+    left: 16px;
+    width: 370px;
+    height: 408px;
+    border-radius: 26px;
+    background: #4d9445;
+    box-shadow: 0 14px 34px rgba(12, 76, 57, 0.3), 0 2px 4px rgba(16, 35, 28, 0.1);
+  }
+
+  .u1-live {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    clip-path: inset(108px 16px calc(100% - 516px) 16px round 26px);
+    transform-origin: 201px 312px;
+    will-change: transform;
+    transition: clip-path 0.66s var(--u1-ease), transform 0.2s ease;
+  }
+
+  .u1-live[data-open] {
+    clip-path: inset(-2px -2px calc(0% - 2px) -2px round calc(var(--ss-screen-r, 44px) + 2px));
+  }
+
+  .u1-slot[data-pressed] ~ .u1-live:not([data-open]) {
+    transform: scale(0.985);
+  }
+
+  /* The scene is laid out as the full screen and scaled down onto the card; opened it settles at 1 */
+  .u1-zoom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 402px;
+    height: 874px;
+    transform-origin: 0 0;
+    will-change: transform;
+    transform: translate(48.2px, 79.4px) scale(0.76);
+    transition: transform 0.66s var(--u1-ease);
+  }
+
+  .u1-live[data-open] .u1-zoom {
+    transform: none;
+  }
+
+  /* Sky and hills run past the screen's edges so the card's sides have more of them */
+  .u1-zoom .bp-sky,
+  .u1-zoom .yf-hills {
+    right: -300px;
+    left: -300px;
+  }
+
+  /* The two runners are a touch bigger on the card, so they read at its scale */
+  .u1-zoom .bp-runner__chip {
+    width: 35px;
+    height: 35px;
+    font-size: 15px;
+    transition: width 0.66s var(--u1-ease), height 0.66s var(--u1-ease), font-size 0.66s var(--u1-ease);
+  }
+
+  .u1-live[data-open] .u1-zoom .bp-runner__chip {
+    width: 30px;
+    height: 30px;
+    font-size: 13px;
+  }
+
+  .u1-zoom .bp-runner__name {
+    font-size: 14px;
+    transition: font-size 0.66s var(--u1-ease);
+  }
+
+  .u1-live[data-open] .u1-zoom .bp-runner__name {
+    font-size: 12px;
+  }
+
+  /* The score bug at its own size: at the top of the card, then at the top of the screen */
+  .u1-live .tv-bug {
+    top: 118px;
+    right: 26px;
+    left: 26px;
+    transition: top 0.66s var(--u1-ease), right 0.66s var(--u1-ease), left 0.66s var(--u1-ease);
+  }
+
+  .u1-live[data-open] .tv-bug {
+    top: 64px;
+    right: 14px;
+    left: 14px;
+  }
+
+  /* The score is the number that matters: bigger on the card. Scaled, never resized, so the rolling digits stay put */
+  .u1-live .tv-team__runs {
+    will-change: transform;
+    transform-origin: 100% 50%;
+    transform: scale(1.22);
+    transition: transform 0.66s var(--u1-ease);
+  }
+
+  .u1-live[data-open] .tv-team__runs {
+    transform: none;
+  }
+
+  /* The Live tag sits under the bug; it glides on a transform */
+  .u1-live .fn-live {
+    top: 168px;
+    left: 16px;
+    will-change: transform;
+    transform: translate(10px, 54px);
+    transition: transform 0.66s var(--u1-ease);
+  }
+
+  .u1-live[data-open] .fn-live {
+    transform: none;
+  }
+
+  /* Orange flag: Maya scored */
+  .u1-flag {
+    position: absolute;
+    top: 440px;
+    left: 214px;
+    z-index: 4;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 15px;
+    border-radius: 20px;
+    background: var(--fd-orange);
+    box-shadow: 0 8px 20px rgba(214, 90, 6, 0.4), 0 2px 4px rgba(16, 35, 28, 0.15);
+    font-size: 14px;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(-12px) scale(0.92);
+    transform-origin: 20% 100%;
+    will-change: transform;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .u1-flag::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 18px;
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    background: var(--fd-orange);
+    transform: rotate(45deg);
+  }
+
+  .u1-flag[data-on] {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.4s ease, transform 0.55s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  /* The sheet under the full-screen game slides up as it opens */
+  .u1-sheet {
+    position: absolute;
+    top: 612px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    padding: 26px 18px 0;
+    box-sizing: border-box;
+    border-radius: 30px 30px 0 0;
+    background: #f7f4ec;
+    box-shadow: 0 -8px 30px rgba(8, 40, 22, 0.18);
+    will-change: transform;
+    transform: translateY(300px);
+    transition: transform 0.4s ease;
+  }
+
+  .u1-sheet[data-open] {
+    transform: none;
+    transition: transform 0.6s var(--u1-ease) 0.12s;
+  }
+
+  .u1-follow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-left: 12px;
+  }
+
+  .u1-follow__who {
+    display: grid;
+    gap: 1px;
+  }
+
+  .u1-follow__name {
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  .u1-follow__sub {
+    font-size: 14px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .u1-play {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    margin-top: 6px;
+    padding: 0 12px;
+    border-radius: 14px;
+    font-size: 15px;
+    color: rgba(16, 35, 28, 0.75);
+  }
+
+  .u1-follow + .u1-play {
+    margin-top: 16px;
+  }
+
+  .u1-play[data-hot] {
+    background: #fff;
+    box-shadow: inset 3px 0 0 var(--fd-orange), 0 4px 14px rgba(16, 35, 28, 0.08);
+    color: #10231c;
+  }
+
+  .u1-play__score {
+    margin-left: auto;
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: rgba(16, 35, 28, 0.45);
+  }
+
+  .u1-play b {
+    font-weight: 800;
+    color: #d65a06;
+  }
+
+  .u1-play__inn {
+    flex: none;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(16, 35, 28, 0.07);
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  /* ---- Ticket stubs: the next games, a row you swipe ---- */
+  .u1-stubs {
+    position: absolute;
+    top: 526px;
+    right: 0;
+    left: 0;
+    height: 126px;
+    overflow: hidden;
+  }
+
+  .u1-strip {
+    display: flex;
+    gap: 16px;
+    padding: 4px 16px 10px;
+    will-change: transform;
+    transition: transform 0.62s cubic-bezier(0.2, 0.8, 0.25, 1);
+  }
+
+  .u1-strip[data-drag] {
+    transition: none;
+  }
+
+  .u1-stub {
+    flex: none;
+    width: 164px;
+    height: 110px;
+    filter: drop-shadow(0 1px 1.5px rgba(16, 35, 28, 0.12)) drop-shadow(0 6px 10px rgba(16, 35, 28, 0.09));
+  }
+
+  /* The notches where the stub tears off */
+  .u1-stub__body {
+    display: grid;
+    grid-template-columns: 58px 1fr;
+    height: 100%;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #fffdf6;
+    -webkit-mask:
+      radial-gradient(circle 8px at 58px 0, transparent 7.5px, #000 8.5px),
+      radial-gradient(circle 8px at 58px 100%, transparent 7.5px, #000 8.5px);
+    -webkit-mask-composite: source-in;
+    mask:
+      radial-gradient(circle 8px at 58px 0, transparent 7.5px, #000 8.5px),
+      radial-gradient(circle 8px at 58px 100%, transparent 7.5px, #000 8.5px);
+    mask-composite: intersect;
+  }
+
+  .u1-stub__date {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 3px;
+    background: #fbf1dc;
+    color: var(--fd-green);
+  }
+
+  .u1-stub__date b {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 32px;
+    letter-spacing: -0.02em;
+  }
+
+  .u1-stub__mon,
+  .u1-stub__dow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .u1-stub__mon {
+    color: #d65a06;
+  }
+
+  .u1-stub__dow {
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  /* The perforation */
+  .u1-stub__info {
+    position: relative;
+    display: grid;
+    align-content: center;
+    gap: 1px;
+    padding: 0 10px 0 14px;
+    border-left: 2px dashed rgba(16, 35, 28, 0.3);
+  }
+
+  .u1-stub__vs {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 14px;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  .u1-stub__opp {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  .u1-stub__time {
+    margin-top: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 16px;
+    color: #d65a06;
+  }
+
+  .u1-stub__field {
+    font-size: 12px;
+    line-height: 15px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  /* ---- Scoreboard plates: the last games, like the numbers on the outfield board ---- */
+  .u1-plates {
+    position: absolute;
+    top: 660px;
+    right: 16px;
+    left: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .u1-plate {
+    position: relative;
+    display: grid;
+    gap: 5px;
+    padding: 9px 10px 10px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #165f48, var(--fd-green));
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.12), 0 8px 16px rgba(12, 76, 57, 0.22);
+    color: #fff;
+  }
+
+  .u1-plate__date {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .u1-plate__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .u1-plate__code {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .u1-plate__num {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 26px;
+    border-radius: 7px;
+    background: rgba(0, 0, 0, 0.28);
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.35);
+    font-size: 19px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+  }
+
+  .u1-plate__num[data-win] {
+    background: #fff;
+    box-shadow: none;
+    color: var(--fd-green);
+  }
+
+  /* ================= Before first pitch ================= */
+  .u1-pre .bp-runner {
+    display: none;
+  }
+
+  .u1-bug0 .tv-team__name {
+    color: #10231c;
+  }
+
+  .u1-bug0 .tv-count {
+    min-width: 104px;
+  }
+
+  .u1-bug0 .tv-inning {
+    gap: 5px;
+  }
+
+  .u1-bug0 .tv-inning svg {
+    color: var(--fd-orange);
+  }
+
+  .u1-bug0 .tv-label {
+    width: auto;
+    font-size: 12.5px;
+  }
+
+  /* The pennant counts down to first pitch */
+  .u1-pennant {
+    position: absolute;
+    top: 170px;
+    left: 20px;
+    z-index: 3;
+    filter: drop-shadow(0 3px 5px rgba(8, 40, 22, 0.28));
+  }
+
+  .u1-pennant__pole {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 196px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #f9d65a, #f4c430 55%, #d9a91c);
+  }
+
+  .u1-pennant__flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 36px;
+    margin-left: 4px;
+    padding: 0 26px 0 13px;
+    box-sizing: border-box;
+    background: linear-gradient(180deg, #17664e, var(--fd-green));
+    -webkit-clip-path: polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%);
+    clip-path: polygon(0 0, 100% 0, 88% 50%, 100% 100%, 0 100%);
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  .u1-note {
+    position: absolute;
+    bottom: 46px;
+    left: 50%;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 13px 0 10px;
+    box-sizing: border-box;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 2px 8px rgba(16, 35, 28, 0.15);
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.7);
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+
+  .u1-note svg {
+    color: #8c9590;
+  }
+
+  /* The camera looks over the first-base side: the field sits left and low, the line-up has the right */
+  .u1-pre .bp-stadium {
+    top: 230px;
+    left: -139px;
+  }
+
+  .u1-pre .yf-hills {
+    top: 190px;
+  }
+
+  /* The right-hand bleachers would sit behind the line-up */
+  .u1-pre .yf-bleach:not(.yf-bleach ~ .yf-bleach) {
+    display: none;
+  }
+
+  /* The dugout: a dark floor, a roof lifted over it, so its near wall shows under the roof */
+  .u1-dugout {
+    position: absolute;
+    top: 484.4px;
+    left: 367px;
+    width: 117.6px;
+    height: 39.2px;
+    transform-style: preserve-3d;
+  }
+
+  .u1-dugout::before {
+    content: '';
+    position: absolute;
+    inset: -2px -8px -10px -2px;
+    border-radius: 12px;
+    background: rgba(8, 40, 22, 0.32);
+    filter: blur(5px);
+  }
+
+  .u1-dugout__in {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    background: #1d2b26;
+  }
+
+  /* Its front board stands up toward the camera, under the roof */
+  .u1-dugout__wall {
+    position: absolute;
+    top: 9.2px;
+    left: 0;
+    display: grid;
+    align-content: end;
+    justify-items: center;
+    width: 100%;
+    height: 30px;
+    padding-bottom: 6px;
+    box-sizing: border-box;
+    border-radius: 0 0 4px 4px;
+    background: linear-gradient(180deg, #1f5a45, #17483a);
+    box-shadow: inset 0 -3px 0 var(--fd-orange);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+    transform-origin: 50% 100%;
+    transform: rotateX(-55deg);
+  }
+
+  .u1-dugout__roof {
+    position: absolute;
+    inset: -5px -6px 3px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #4a9a78, #2f6f55);
+    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18);
+    transform: translateZ(31px);
+  }
+
+  /* The Mustangs run out of the dugout and line up along the first-base line */
+  .u1-lu {
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(0.35, 0.1, 0.25, 1);
+  }
+
+  /* Room above the chip, so its glow is not cut by the layer's edge */
+  .u1-lu .bp-stand {
+    padding-top: 26px;
+  }
+
+  .u1-lu .bp-stand,
+  .u1-lu .bp-shadow {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .u1-lu[data-out] .bp-stand,
+  .u1-lu[data-out] .bp-shadow {
+    opacity: 1;
+  }
+
+  .u1-lu .bp-runner__name b {
+    margin-right: 5px;
+    font-weight: 800;
+    color: #ffb27a;
+  }
+
+  .u1-lu__chip {
+    transition: box-shadow 0.7s ease;
+  }
+
+  .u1-lu[data-out] .u1-lu__chip {
+    animation: u1-hop 0.34s ease-in-out var(--u1-hops, 3);
+  }
+
+  .u1-lu[data-glow] .u1-lu__chip {
+    box-shadow: inset 0 0 0 2.5px #fff, 0 0 0 4px rgba(255, 148, 71, 0.55), 0 0 16px 7px rgba(255, 140, 40, 0.85);
+  }
+}
+
+@keyframes u1-hop {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}

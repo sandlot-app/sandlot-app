@@ -1,0 +1,565 @@
+@import '../sandlot-shared/shared.css';
+
+/* Sandlot concept 1, Field Day. Every rule is scoped to this example. */
+.fd {
+  & .ss-stage {
+    --fd-orange: #ff7519;
+    --fd-green: #0c4c39;
+    --fd-grass: #4c9a48;
+    --fd-dirt: #cf9463;
+    --fd-ui: cubic-bezier(0.3, 0.75, 0.1, 1);
+    overflow: hidden;
+    border-radius: 14px;
+    background: #f3efe6;
+  }
+
+  .fd-wash {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(60% 45% at 50% 0%, rgba(255, 117, 25, 0.16), transparent 70%),
+      radial-gradient(70% 55% at 50% 100%, rgba(76, 154, 72, 0.18), transparent 70%);
+  }
+
+  .fd-phone {
+    position: absolute;
+    top: 40px;
+    left: 50px;
+  }
+
+  .ss-stage[data-layout='compact'] .fd-phone {
+    top: 32px;
+    left: 16px;
+  }
+
+  .fd-app {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: #f4f1e8;
+    font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif;
+    color: #10231c;
+  }
+
+  .fd-sky {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 420px;
+    background: linear-gradient(180deg, #d7ecfb 0%, #e9f3f4 55%, #f4f1e8 100%);
+  }
+
+  /* ---- Scoreboard: today's green pill, quieter ---- */
+
+  .fd-board {
+    position: absolute;
+    top: 66px;
+    right: 16px;
+    left: 16px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    padding: 0 20px;
+    border-radius: 30px;
+    background: linear-gradient(180deg, #145c46, var(--fd-green));
+    box-shadow: 0 8px 24px rgba(12, 76, 57, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .fd-board__team {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: rgba(255, 255, 255, 0.62);
+  }
+
+  .fd-board__runs {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    color: #fff;
+  }
+
+  .fd-board__mid {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .fd-board__lines {
+    display: grid;
+    gap: 1px;
+  }
+
+  .fd-board__inning {
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 19px;
+  }
+
+  .fd-board__count {
+    font-size: 13px;
+    line-height: 16px;
+    color: rgba(255, 255, 255, 0.65);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- The field, in a broadcast view ---- */
+
+  .fd-stadium {
+    position: absolute;
+    top: 30px;
+    left: -79px;
+    width: 560px;
+    height: 560px;
+    perspective: 820px;
+    perspective-origin: 50% -20%;
+  }
+
+  .fd-plane {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform-origin: 50% 84%;
+    transform: rotateX(50deg);
+  }
+
+  .fd-art .sl-field__foul { fill: #3f8a3d; }
+  .fd-art .sl-field__grass { fill: var(--fd-grass); }
+  .fd-art .sl-field__stripes rect { fill: rgba(255, 255, 255, 0.075); }
+  .fd-art .sl-field__track { fill: none; stroke: var(--fd-green); stroke-width: 7; stroke-linejoin: round; }
+  .fd-art .sl-field__dirt { fill: var(--fd-dirt); }
+  .fd-art .sl-field__infield { fill: var(--fd-grass); }
+  .fd-art .sl-field__chalk { fill: none; stroke: rgba(255, 255, 255, 0.9); stroke-width: 1.6; }
+  .fd-art .sl-field__base { fill: #fff; }
+  .fd-art .sl-field__rubber { fill: #fff; }
+
+  /* The ball's track on the grass, drawn as the ball travels */
+  .fd-track {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    transition: opacity 0.35s ease;
+  }
+
+  .fd-track[data-ball='ready'] {
+    opacity: 0;
+    transition: none;
+  }
+
+  .fd-track path {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.6);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  .fd-track:not([data-ball='ready']) path {
+    animation: fd-draw 1.25s cubic-bezier(0.2, 0.55, 0.35, 1) forwards;
+  }
+
+  .fd-track[data-ball='gone'] {
+    opacity: 0;
+  }
+
+  .fd-track:not([data-ball='ready']) path {
+    stroke-dashoffset: 0;
+  }
+
+  .fd-ball:not([data-ball='ready']) {
+    offset-distance: 100%;
+  }
+
+
+  .fd-ball {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    transform-style: preserve-3d;
+    offset-distance: 0%;
+    offset-rotate: 0deg;
+    offset-anchor: 0 0;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .fd-ball:not([data-ball='ready']) {
+    animation: fd-fly 1.25s cubic-bezier(0.2, 0.55, 0.35, 1) forwards;
+  }
+
+  .fd-ball[data-ball='hit'] {
+    opacity: 1;
+    transition: none;
+  }
+
+
+  .fd-ball__shadow {
+    position: absolute;
+    left: -6px;
+    top: -3px;
+    width: 12px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(8, 40, 22, 0.35);
+    filter: blur(1px);
+  }
+
+  .fd-ball__lift {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-style: preserve-3d;
+  }
+
+  .fd-ball:not([data-ball='ready']) .fd-ball__lift {
+    animation: fd-lift 1.25s linear forwards;
+  }
+
+  /* A line drive: up quickly, down onto the grass, one small hop */
+
+  .fd-ball__body {
+    position: absolute;
+    left: -8px;
+    top: -16px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    transform-origin: 50% 100%;
+    transform: rotateX(-50deg);
+    background: radial-gradient(circle at 35% 30%, #fff 0 35%, #e9e4da 70%, #c9c1b1 100%);
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 0 14px rgba(255, 255, 255, 0.9);
+  }
+
+  /* A ring at the plate when the run comes in */
+  .fd-burst {
+    position: absolute;
+    left: 280px;
+    top: 462px;
+    width: 0;
+    height: 0;
+  }
+
+  .fd-burst::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: -16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid var(--fd-orange);
+    opacity: 0;
+  }
+
+  .fd-burst[data-on]::before {
+    animation: fd-burst 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) 1.55s forwards;
+  }
+
+
+  /* Runners stand up off the grass and run the base path */
+  .fd-runner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    offset-anchor: 0 0;
+    transform-style: preserve-3d;
+  }
+
+  .fd-runner__shadow {
+    position: absolute;
+    left: -10px;
+    top: -4px;
+    width: 20px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(8, 40, 22, 0.3);
+  }
+
+  .fd-runner__stand {
+    will-change: transform;
+    position: absolute;
+    left: -40px;
+    bottom: 0;
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    width: 80px;
+    transform-origin: 50% 100%;
+    transform: rotateX(-50deg) translateY(-3px);
+    transition: opacity 0.35s ease;
+  }
+
+  .fd-runner__name {
+    padding: 1px 7px;
+    border-radius: 8px;
+    background: rgba(8, 40, 22, 0.55);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+
+  .fd-runner__chip {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--fd-orange);
+    box-shadow: inset 0 0 0 2.5px #fff, 0 3px 8px rgba(8, 40, 22, 0.3);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .fd-runner[data-scored] .fd-runner__stand,
+  .fd-runner[data-scored] .fd-runner__shadow {
+    opacity: 0;
+    transition: opacity 0.4s ease 1.75s;
+  }
+
+  .fd-sheet {
+    position: absolute;
+    top: 536px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 30px 30px 0 0;
+    background: #f7f4ec;
+    box-shadow: 0 -8px 30px rgba(8, 40, 22, 0.18);
+  }
+
+  /* ---- Caption: hint, then the words, then the saved play ---- */
+
+  .fd-caption {
+    position: absolute;
+    top: 552px;
+    right: 20px;
+    left: 20px;
+    display: grid;
+    height: 78px;
+    align-items: center;
+  }
+
+  .fd-caption > .ss-states {
+    width: 100%;
+  }
+
+  .fd-hint {
+    font-size: 17px;
+    font-weight: 500;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  .fd-said {
+    display: block;
+    max-width: 330px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 23px;
+    font-weight: 700;
+    line-height: 29px;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .fd-saved {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 14px 14px 16px;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.06), 0 10px 28px rgba(16, 35, 28, 0.1);
+  }
+
+  .fd-saved__tick {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--fd-green);
+    color: #fff;
+  }
+
+  .fd-saved__text {
+    display: grid;
+    flex: 1;
+    gap: 3px;
+    text-align: left;
+  }
+
+  .fd-saved__title {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 21px;
+  }
+
+  .fd-saved__sub {
+    font-size: 14px;
+    line-height: 18px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .fd-undo {
+    flex: none;
+    padding: 9px 14px;
+    border-radius: 18px;
+    background: rgba(255, 117, 25, 0.12);
+    color: #d65a06;
+    font-size: 15px;
+    font-weight: 700;
+    transition: transform 0.15s ease;
+  }
+
+  .fd-undo[data-pressed] {
+    transform: scale(0.94);
+  }
+
+  /* ---- The one button ---- */
+
+  .fd-status {
+    position: absolute;
+    top: 762px;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  .fd-status svg {
+    color: #2f9e5b;
+  }
+
+  .fd-controls {
+    position: absolute;
+    top: 640px;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 34px;
+  }
+
+  .fd-micwrap {
+    position: relative;
+    width: 92px;
+    height: 92px;
+  }
+
+  .fd-tap {
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    margin-top: 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.6);
+  }
+
+  .fd-tap__btn {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.08), 0 6px 16px rgba(16, 35, 28, 0.08);
+  }
+
+  .fd-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+  }
+
+  .fd-dot--ball { background: #3cc46b; }
+  .fd-dot--strike { background: #f5b82e; }
+
+  .fd-mic {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 30%, #ff9a4d, var(--fd-orange) 70%);
+    box-shadow: 0 10px 24px rgba(255, 117, 25, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    color: #fff;
+    transition: transform 0.45s var(--fd-ui), background 0.3s ease;
+  }
+
+  .fd-mic[data-pressed] {
+    transform: scale(0.93);
+  }
+
+  .fd-mic[data-mic='listening'] {
+    transform: scale(1.08);
+  }
+
+  .fd-ring {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid var(--fd-orange);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .fd-ring[data-on] {
+    animation: fd-ring 1.5s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+  }
+
+  .fd-ring--late[data-on] {
+    animation-delay: 0.75s;
+  }
+
+
+}
+
+@keyframes fd-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes fd-fly {
+  to { offset-distance: 100%; }
+}
+
+@keyframes fd-lift {
+  0% { transform: translateZ(4px); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  42% { transform: translateZ(62px); animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4); }
+  86% { transform: translateZ(0); animation-timing-function: ease-out; }
+  93% { transform: translateZ(9px); animation-timing-function: ease-in; }
+  100% { transform: translateZ(0); }
+}
+
+@keyframes fd-burst {
+  0% { transform: scale(0.4); opacity: 0.95; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+@keyframes fd-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
