@@ -1,5 +1,5 @@
 import { deepStrictEqual, strictEqual } from 'node:assert/strict';
-import { lastNames, names, rateLimit, signedIn, voiceEndpoint, type OpenAi } from '../_shared/voice.ts';
+import { lastNames, names, signedIn, voiceEndpoint, type Access, type OpenAi } from '../_shared/voice.ts';
 import { REALTIME_URL, SCORING_WORDS, startSession } from './handler.ts';
 
 type Call = { path: string; body: unknown };
@@ -63,7 +63,7 @@ Deno.test('A10: an OpenAI failure or a bad answer is "voice unavailable", so the
 
 const handled = async () => ({ status: 200, body: { ok: true } });
 const endpoint = (userId: string | null, unavailable = false, allow = () => true) =>
-  voiceEndpoint({ getUser: () => Promise.resolve({ userId, unavailable }), allow, now: () => 0 }, handled);
+  voiceEndpoint({ getUser: () => Promise.resolve({ userId, unavailable }), access: () => Promise.resolve(allow() ? 'allowed' : 'limited') }, handled);
 const post = (body = '{}', headers: Record<string, string> = { authorization: 'Bearer token' }) =>
   new Request('http://localhost/voice', { method: 'POST', body, headers });
 
@@ -80,20 +80,43 @@ Deno.test('voice endpoints refuse bodies that are not JSON or are too long', asy
   strictEqual((await endpoint('user-1')(post(JSON.stringify({ audio: 'a'.repeat(1_600_000) })))).status, 413);
 });
 
-Deno.test('the rate limit lets each phone make 30 requests a minute', async () => {
-  const allow = rateLimit(30, 60_000);
-  for (let index = 0; index < 30; index++) strictEqual(allow('user-1', index), true);
-  strictEqual(allow('user-1', 100), false);
-  strictEqual(allow('user-2', 100), true);
-  strictEqual(allow('user-1', 60_000), true);
-  strictEqual((await endpoint('user-1', false, () => false)(post())).status, 429);
+Deno.test('only a current scorer reaches billable voice work', async () => {
+  let calls = 0;
+  const create = (access: () => Promise<Access>) => voiceEndpoint({
+    getUser: () => Promise.resolve({ userId: 'user-1', unavailable: false }),
+    access,
+  }, async () => { calls++; return handled(); });
+  strictEqual((await create(() => Promise.resolve('forbidden'))(post())).status, 403);
+  strictEqual(calls, 0);
+  strictEqual((await create(() => Promise.resolve('allowed'))(post())).status, 200);
+  strictEqual(calls, 1);
 });
 
-Deno.test('the rate limit forgets users with no recent requests', () => {
-  const recent = new Map<string, number[]>();
-  const allow = rateLimit(30, 60_000, recent);
-  allow('user-1', 0);
-  allow('user-2', 30_000);
-  allow('user-2', 70_000);
-  deepStrictEqual([...recent.keys()], ['user-2']);
+Deno.test('voice quota and admission outages fail closed before the handler', async () => {
+  let calls = 0;
+  const create = (access: () => Promise<Access>) => voiceEndpoint({
+    getUser: () => Promise.resolve({ userId: 'user-1', unavailable: false }),
+    access,
+  }, async () => { calls++; return handled(); });
+  strictEqual((await create(() => Promise.resolve('limited'))(post())).status, 429);
+  strictEqual((await create(() => Promise.reject(new Error('database down')))(post())).status, 503);
+  strictEqual(calls, 0);
+});
+
+Deno.test('voice cancels an oversized chunked body before reading it all', async () => {
+  let pulls = 0;
+  let canceled = false;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      pulls++;
+      if (pulls <= 4) controller.enqueue(new Uint8Array(800_000).fill(97));
+      else controller.close();
+    },
+    cancel() { canceled = true; },
+  });
+  const request = new Request('http://localhost/voice', { method: 'POST', body: stream,
+    headers: { authorization: 'Bearer token' } });
+  strictEqual((await endpoint('user-1')(request)).status, 413);
+  strictEqual(canceled, true);
+  strictEqual(pulls < 4, true);
 });

@@ -1,0 +1,17 @@
+flow: rate-limit-pro
+result: PASS
+commit: eda7a389e7912f48dbe6c8187cb589fe2d9ed6d7
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+flow: rate-limit-se-combined
+result: PASS
+commit: eda7a389e7912f48dbe6c8187cb589fe2d9ed6d7
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+
+ios: 26.5
+scope: real Expo Go UI, engine, SQLite, synthetic localhost sync backend; no hosted auth or database security claim
+retry-proof: both full request traces were identical across five 429 replies and one accepted retry; one pitch saved, revision 4
+method: sequential devices; one Metro worker; SE one Maestro session; temporary verifier edits restored
+proof-release: https://github.com/sandlot-app/sandlot-app/releases/tag/proof-77
