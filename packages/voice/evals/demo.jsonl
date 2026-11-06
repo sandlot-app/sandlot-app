@@ -52,8 +52,8 @@
 {"id":"correction-actually","sit":{"outs":0,"up":"J. Soto"},"transcript":"ball, actually strike looking","answer":{"p":["called_strike"]},"expect":{"do":"save","banner":"Strike looking → count 0–1"}}
 {"id":"undo","sit":{"outs":0,"up":"J. Soto"},"transcript":"scratch that","expect":{"do":"undo"}}
 {"id":"undo-2","sit":{"outs":0,"up":"J. Soto"},"transcript":"take that back","expect":{"do":"undo"}}
-{"id":"empty","sit":{"outs":0,"up":"J. Soto"},"transcript":"   ","expect":{"do":"message","message":"Didn't catch that. Hold and try again, or tap to score."}}
-{"id":"filler","sit":{"outs":0,"up":"J. Soto"},"transcript":"um, uh","expect":{"do":"message","message":"Didn't catch that. Hold and try again, or tap to score."}}
+{"id":"empty","sit":{"outs":0,"up":"J. Soto"},"transcript":"   ","expect":{"do":"message","message":"Didn't catch that. Tap the bar and say it again, or use the buttons."}}
+{"id":"filler","sit":{"outs":0,"up":"J. Soto"},"transcript":"um, uh","expect":{"do":"message","message":"Didn't catch that. Tap the bar and say it again, or use the buttons."}}
 {"id":"question","sit":{"outs":0,"up":"J. Soto"},"transcript":"who's up next","answer":{"result":"not_a_play"},"expect":{"do":"message","message":"That wasn't a play, so nothing was saved."}}
 {"id":"crowd","sit":{"outs":0,"up":"J. Soto"},"transcript":"Go go go!","answer":{"result":"not_a_play"},"expect":{"do":"message","message":"That wasn't a play, so nothing was saved."}}
 {"id":"unknown","sit":{"outs":0,"up":"J. Soto"},"transcript":"he tagged and took two","answer":{"result":"unclear"},"expect":{"do":"message","message":"Didn't understand \"he tagged and took two\". Tap to score."}}

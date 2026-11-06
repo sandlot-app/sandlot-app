@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Answer } from '@sandlot/voice';
+import { readLocally } from '@sandlot/voice';
 import { Clip, MAX_CLIP_BYTES, SAMPLE_RATE, toBase64 } from '../src/voice/pcm.ts';
 import { startPress, type Mic, type PressUpdate } from '../src/voice/press.ts';
+import { liveTimeouts } from '../src/voice/realtime.ts';
+import { READ_LIMIT_MS } from '../src/voice/voice-controller.ts';
 import type { Socket } from '../src/voice/realtime.ts';
-import { createVoiceApi, type VoiceApi } from '../src/voice/voice-api.ts';
+import { createVoiceApi, REQUEST_TIMEOUT_MS, type VoiceApi } from '../src/voice/voice-api.ts';
 import { fakeApi, fakeMic, fakeSocket, session, tick, timeouts } from './voice-fakes.ts';
 
 const nobody = { name: null, number: null };
@@ -21,7 +24,7 @@ function run(mic: Mic, api: VoiceApi, socket: Socket) {
   const done = new Promise<PressUpdate>((resolve) => { settle = resolve; });
   const press = startPress({ mic, api, openSocket: () => socket, timeouts }, input, (update) => {
     updates.push(update);
-    if (update.kind !== 'words') settle(update);
+    if (update.kind !== 'words' && update.kind !== 'ended') settle(update);
   });
   return { press, updates, done };
 }
@@ -119,6 +122,48 @@ for (const [name, setup] of [
   });
 }
 
+/** A press that streams, lets go, and gets this final transcript. */
+async function finishWith(transcript: string, api: ReturnType<typeof fakeApi>) {
+  const mic = fakeMic();
+  const socket = fakeSocket();
+  const { press, done } = run(mic, api, socket);
+  await tick();
+  socket.open();
+  mic.push([1, 0, 2, 0]);
+  press.release();
+  await tick();
+  socket.server({ type: 'conversation.item.input_audio_transcription.completed', transcript });
+  return done;
+}
+
+test('a blank live transcript is retried once with the recording, and what that hears is what the press heard', async () => {
+  for (const blank of ['', '  ', 'um']) {
+    const api = fakeApi(undefined, { ok: true, value: { transcript: 'ball', answer: null } });
+    const result = await finishWith(blank, api);
+    assert.deepEqual(api.parsed, [{ audio: toBase64(Uint8Array.from([1, 0, 2, 0])), context }]);
+    assert.deepEqual(result, { kind: 'heard', transcript: 'ball', heard: readLocally('ball') });
+  }
+});
+
+test('when the retry is blank too the press heard nothing, so decide() says it didn\'t catch that, after one retry only', async () => {
+  const api = fakeApi(undefined, { ok: true, value: { transcript: '', answer: null } });
+  const result = await finishWith('', api);
+  assert.equal(api.parsed.length, 1);
+  assert.equal(result.kind === 'heard' && result.transcript, '');
+  assert.equal(result.kind === 'heard' && result.heard.kind, 'empty');
+});
+
+test('when the retry itself fails the scorer hears why, not "didn\'t catch that"', async () => {
+  const result = await finishWith('', fakeApi(undefined, { ok: false, failure: 'offline' }));
+  assert.deepEqual(result, { kind: 'failed', failure: 'offline' });
+});
+
+test('words on the live transcript are never retried', async () => {
+  const api = fakeApi();
+  await finishWith('ball', api);
+  assert.equal(api.parsed.length, 0);
+});
+
 test('A10: a clip voice-parse refuses falls back to taps with the reason', async () => {
   for (const failure of ['slow_down', 'too_long', 'voice_unavailable', 'timeout', 'offline'] as const) {
     const mic = fakeMic();
@@ -151,18 +196,87 @@ test('a press with no audio at all is empty and calls nothing', async () => {
   assert.equal(api.parsed.length, 0);
 });
 
-test('A2: a press stops itself at 15 seconds and keeps exactly 15 seconds of audio', async () => {
+test('A2: a press stops itself at 30 seconds and keeps exactly 30 seconds of audio', async () => {
   const mic = fakeMic();
   const api = fakeApi({ ok: false, failure: 'voice_unavailable' }, { ok: true, value: { transcript: 'ball', answer: null } });
   const { done } = run(mic, api, fakeSocket());
   await tick();
   const second = new Array<number>(SAMPLE_RATE * 2).fill(1);
-  for (let index = 0; index < 16; index += 1) mic.push(second);
+  for (let index = 0; index < 31; index += 1) mic.push(second);
   await done;
   assert.equal(mic.stopped, 1);
   const body = api.parsed[0];
   assert.ok(body && 'audio' in body);
   assert.equal(body.audio.length, Math.ceil(MAX_CLIP_BYTES / 3) * 4);
+  assert.equal(MAX_CLIP_BYTES, 30 * SAMPLE_RATE * 2, 'the longest press is 30 seconds, not 15');
+});
+
+test('#88: a press says it ended as soon as a second tap or 30 seconds close the mic, before it has an answer', async () => {
+  const tapped = run(fakeMic(), fakeApi(), fakeSocket());
+  await tick();
+  tapped.press.release();
+  assert.deepEqual(tapped.updates.map((update) => update.kind), ['ended'], 'ended comes first, and only once');
+  await tapped.done;
+  assert.equal(tapped.updates.filter((update) => update.kind === 'ended').length, 1);
+
+  const mic = fakeMic();
+  const long = run(mic, fakeApi(), fakeSocket());
+  await tick();
+  const second = new Array<number>(SAMPLE_RATE * 2).fill(1);
+  for (let index = 0; index < 30; index += 1) mic.push(second);
+  assert.deepEqual(long.updates.map((update) => update.kind), ['ended'], 'the 30 s limit ends it with no tap');
+  await long.done;
+});
+
+test('#88: a mic that fails after the second tap still ends the press, with the microphone line, so nothing waits forever', async () => {
+  const { press, updates, done } = run(fakeMic(false), fakeApi(), fakeSocket());
+  press.release();
+  const result = await done;
+  assert.deepEqual(updates.map((update) => update.kind), ['ended', 'failed']);
+  assert.equal(result.kind === 'failed' && result.failure, 'microphone');
+});
+
+test('#88: a slow stream gives way after finalMs in all, so the recording fallback always gets its turn', async () => {
+  const mic = fakeMic();
+  const api = fakeApi();
+  // The socket never opens. On their own, the stream's waits would add up to openMs + finalMs.
+  const press = startPress({ mic, api, openSocket: () => fakeSocket(), timeouts: { openMs: 60, finalMs: 40 } }, input, () => {});
+  await tick();
+  mic.push([1, 0, 2, 0]);
+  press.release();
+  await new Promise((resolve) => setTimeout(resolve, 75));
+  assert.equal(api.parsed.length, 1, 'the recording has gone to voice-parse by now');
+  assert.ok('audio' in api.parsed[0]!);
+});
+
+test('#88: the waits fit inside the read limit, so a slow stream can still reach the fallback and its answer', () => {
+  assert.ok(liveTimeouts.finalMs + REQUEST_TIMEOUT_MS < READ_LIMIT_MS, 'live words, then one voice-parse call, then the limit');
+});
+
+test('#88: dropping a press stops its voice-parse call, so a dropped press spends nothing more', async () => {
+  const mic = fakeMic();
+  const api = fakeApi({ ok: false, failure: 'voice_unavailable' });
+  const { press } = run(mic, api, fakeSocket());
+  await tick();
+  mic.push([1, 0, 2, 0]);
+  press.release();
+  await new Promise((resolve) => setTimeout(resolve, timeouts.openMs + 10));
+  assert.equal(api.signals.length, 1);
+  assert.equal(api.signals[0]?.aborted, false);
+  press.cancel();
+  assert.equal(api.signals[0]?.aborted, true);
+});
+
+test('#88: voice-api stops a request when the signal it was given fires', async () => {
+  const abort = new AbortController();
+  const api = createVoiceApi({
+    url: 'https://p.supabase.co', key: 'k', token: async () => 't',
+    fetch: (_, init) => new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new Error('aborted')))),
+  });
+  const pending = api.parse({ transcript: 'ball', context }, abort.signal);
+  await tick();
+  abort.abort();
+  assert.equal((await pending).ok, false);
 });
 
 test('sliding off cancels the press: nothing is heard, sent or parsed', async () => {

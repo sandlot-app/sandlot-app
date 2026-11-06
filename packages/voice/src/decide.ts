@@ -41,7 +41,7 @@ export type Decision =
   | { kind: 'message'; message: string };
 
 export const messages = {
-  empty: "Didn't catch that. Hold and try again, or tap to score.",
+  empty: "Didn't catch that. Tap the bar and say it again, or use the buttons.",
   unusable: "Couldn't read that. Tap to score.",
   notAPlay: "That wasn't a play, so nothing was saved.",
   unclear: (transcript: string) => `Didn't understand "${transcript.trim()}". Tap to score.`,

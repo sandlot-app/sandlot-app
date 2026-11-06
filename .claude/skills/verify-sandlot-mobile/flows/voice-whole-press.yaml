@@ -36,7 +36,16 @@ appId: host.exp.Exponent
 - evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 
 # 1. A whole play in one press saves once, and the banner names each runner's result.
-- longPressOn:
+- tapOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Listening…"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
     id: "voice-bar"
 - extendedWaitUntil:
     visible:
@@ -51,7 +60,16 @@ appId: host.exp.Exponent
 - takeScreenshot: voice-whole-play-banner
 
 # 2. A name in the wrong role saves nothing, and the line says who is up.
-- longPressOn:
+- tapOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Listening…"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
     id: "voice-bar"
 - extendedWaitUntil:
     visible:
@@ -78,7 +96,16 @@ appId: host.exp.Exponent
     timeout: 15000
 
 # 3. "The runner" with two runners on shows both readings, and nothing saves until a tap.
-- longPressOn:
+- tapOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Listening…"
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 4000
+- tapOn:
     id: "voice-bar"
 - extendedWaitUntil:
     visible:

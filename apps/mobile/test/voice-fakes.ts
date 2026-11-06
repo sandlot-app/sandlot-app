@@ -45,10 +45,12 @@ export function fakeSocket() {
 
 export function fakeApi(sessionResult: Result<Session> = { ok: true, value: session }, parseResult: Result<Parsed> = { ok: true, value: { transcript: '', answer: null } }) {
   const parsed: ParseBody[] = [];
-  const api: VoiceApi & { parsed: ParseBody[] } = {
+  const signals: (AbortSignal | undefined)[] = [];
+  const api: VoiceApi & { parsed: ParseBody[]; signals: (AbortSignal | undefined)[] } = {
     parsed,
+    signals,
     session: async () => sessionResult,
-    parse: async (body) => { parsed.push(body); return parseResult; },
+    parse: async (body, signal) => { parsed.push(body); signals.push(signal); return parseResult; },
   };
   return api;
 }

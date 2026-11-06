@@ -8,7 +8,6 @@ import type { VoiceFailure } from './voice-api.ts';
 
 // The voice words the controller shows that decide() doesn't own, and the game a press is read against.
 
-export const lostMessage = "The last voice play didn't save. Say it again or tap to score.";
 export const unsavedMessage = "That voice play didn't save. Say it again or tap to score.";
 
 export function failureMessage(failure: VoiceFailure): string {
@@ -16,6 +15,7 @@ export function failureMessage(failure: VoiceFailure): string {
     case 'microphone': return 'Sandlot can’t use the microphone. Allow it in Settings, or tap to score.';
     case 'slow_down': return 'Too many voice plays at once. Tap to score for now.';
     case 'too_long': return 'That was too long to read. Tap to score.';
+    case 'timeout': return "That took too long and didn't save. Say it again or tap to score.";
     case 'unauthenticated':
     case 'auth_unavailable': return 'Sign-in is busy right now. Tap to score for now.';
     default: return 'Voice is unavailable right now. Tap to score.';

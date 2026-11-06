@@ -31,7 +31,7 @@ appId: host.exp.Exponent
     id: "pitch-in-play"
 - assertVisible:
     id: "scorer-more"
-- assertVisible: "Hold to score by voice"
+- assertVisible: "Tap to score by voice"
 - takeScreenshot: matchup-ticket
 - copyTextFrom:
     id: "pitch-total"

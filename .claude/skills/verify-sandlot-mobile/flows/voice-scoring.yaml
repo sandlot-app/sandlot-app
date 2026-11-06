@@ -1,5 +1,6 @@
 appId: host.exp.Exponent
-# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="strike swinging|strike". See features/voice-scoring.md.
+# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="strike swinging|strike|ball" and EXPO_PUBLIC_VOICE_STUB_READ_MS=2500.
+# See features/voice-scoring.md.
 ---
 - runFlow:
     when:
@@ -29,34 +30,83 @@ appId: host.exp.Exponent
     visible:
       id: "voice-bar"
     timeout: 15000
-- assertVisible: "Hold to score by voice"
+- assertVisible: "Tap to score by voice"
 - takeScreenshot: voice-idle
 - copyTextFrom:
     id: "waiting-plays"
 - evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
 
-# 1. "strike swinging" reads as a play while held, and releasing saves it.
-- longPressOn:
+# 1. One tap opens the mic, "strike swinging" shows as live words, a second tap ends the press and the play saves.
+- tapOn:
     id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-words"
+      text: ".*swing.*"
+    timeout: 15000
+- assertVisible:
+    id: "voice-status"
+    text: "Listening…"
+- assertVisible:
+    id: "voice-bar"
+    text: "Listening… tap to finish"
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting} plays? saved on this phone"
+- takeScreenshot: voice-listening
+- tapOn:
+    id: "voice-bar"
+# The play is being read: a spinner and no button, and nothing has saved yet.
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+      text: "Reading your play…"
+    timeout: 5000
+- assertVisible:
+    id: "voice-status"
+    text: "Reading…"
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting} plays? saved on this phone"
+- takeScreenshot: voice-reading
+# The scoring buttons wait while a play is read, so a tap on Ball does nothing and "strike swinging" is the only play.
+- tapOn:
+    id: "pitch-ball"
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting} plays? saved on this phone"
+# Then a plain "Saved", and the button comes back.
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
       text: ".* ${output.waiting + 1} plays? saved on this phone"
     timeout: 15000
+- takeScreenshot: voice-saved
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+      text: "Tap to score by voice"
+    timeout: 15000
 - assertNotVisible:
     id: "voice-card"
 - assertVisible: "Undo · Strike"
-- assertVisible: "Hold to score by voice"
-- takeScreenshot: voice-saved
+- takeScreenshot: voice-button-back
 
 # 2. "strike" could be looking or swinging, so nothing saves until a choice.
-- longPressOn:
+- tapOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-words"
+      text: ".*strike.*"
+    timeout: 15000
+- tapOn:
     id: "voice-bar"
 - extendedWaitUntil:
     visible:
       id: "voice-status"
       text: "Not sure — which one?"
-    timeout: 15000
+    timeout: 20000
 - assertVisible: "“strike”"
 - assertVisible: "Strike looking"
 - assertVisible: "Strike swinging"
@@ -75,33 +125,82 @@ appId: host.exp.Exponent
     id: "voice-card"
 - takeScreenshot: voice-chosen
 
-# 3. Sliding off the bar cancels the press, and nothing saves.
-- swipe:
-    from:
-      id: "voice-bar"
-    direction: UP
-    duration: 1500
-- waitForAnimationToEnd:
-    timeout: 3000
+# 3. A scoring-button tap while the mic is open drops that press: only the tapped Ball saves, and "ball" said to the
+# stub is never saved as a second play.
+- tapOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Listening…"
+    timeout: 15000
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 3} plays? saved on this phone"
+    timeout: 15000
 - assertNotVisible:
     id: "voice-card"
+- assertVisible: "Undo · Ball"
+- assertVisible:
+    id: "voice-bar"
+    text: "Tap to score by voice"
+- waitForAnimationToEnd:
+    timeout: 3000
 - assertVisible:
     id: "waiting-plays"
-    text: ".* ${output.waiting + 2} plays? saved on this phone"
-- takeScreenshot: voice-cancelled
+    text: ".* ${output.waiting + 3} plays? saved on this phone"
+- takeScreenshot: voice-dropped
 
-# Put the game back: undo both voice plays.
+# 4. With no second tap, the press ends by itself at 30 s and is read: the stub hears "ball".
+- tapOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Listening…"
+    timeout: 15000
+- extendedWaitUntil:
+    visible:
+      id: "voice-status"
+      text: "Reading…"
+    timeout: 50000
+- takeScreenshot: voice-limit-reading
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 4} plays? saved on this phone"
+    timeout: 20000
+- assertVisible: "Undo · Ball"
+
+# Put the game back: undo the four plays (three voice, one tapped ball).
 - tapOn:
     id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: ".* ${output.waiting + 3} plays? saved on this phone"
+      text: ".* ${output.waiting + 5} plays? saved on this phone"
     timeout: 15000
 - tapOn:
     id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "waiting-plays"
-      text: ".* ${output.waiting + 4} plays? saved on this phone"
+      text: ".* ${output.waiting + 6} plays? saved on this phone"
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 7} plays? saved on this phone"
+    timeout: 15000
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 8} plays? saved on this phone"
     timeout: 15000

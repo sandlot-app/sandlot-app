@@ -62,7 +62,7 @@ export default function ScoreScreen() {
   const { fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const game = view.kind === 'ready' || view.kind === 'saving' || view.kind === 'blocked' ? view.game : null;
-  const voice = useVoice(game, record);
+  const voice = useVoice(game, record, tab === 'field');
   const halves = useMemo(() => (tab === 'plays' && game ? playLog(game) : []), [tab, game]);
 
   if (!game)
@@ -79,6 +79,8 @@ export default function ScoreScreen() {
   const state = game.state;
   const saving = view.kind === 'saving';
   const enabled = view.kind === 'ready' && state.status !== 'final';
+  // While a voice play is read the scoring buttons wait too, so a tap can't save under it and leave the play stale.
+  const reading = voice.reading > 0;
   const largeText = fontScale > 1.35;
   const lastPlay = game.lastPlay ? playLabel(game.lastPlay) : '';
   const sync: SyncState = syncLine({
@@ -111,9 +113,9 @@ export default function ScoreScreen() {
       {voice.card ? <TranscriptCard card={voice.card} onChoose={voice.choose} /> : null}
       <View onLayout={(event) => setBarHeight(event.nativeEvent.layout.height)}>
         <ScorerBar sync={sync} onPitch={onPitch} onUndo={() => { voice.dismiss(); void record({ kind: 'undo' }); }}
-          onMore={() => { voice.dismiss(); setDraft({ kind: 'more', game }); }} disabled={!enabled}
-          voice={<VoiceBar listening={voice.listening} disabled={!enabled} onStart={voice.start} onRelease={voice.release} onCancel={voice.cancel} testID="voice-bar" />}
-          undoDisabled={view.kind !== 'ready' || !game.canUndo} testID="scorer-bar" syncTestID="waiting-plays" />
+          onMore={() => { voice.dismiss(); setDraft({ kind: 'more', game }); }} disabled={!enabled || reading}
+          voice={<VoiceBar phase={voice.phase} mic={voice.mic} disabled={!enabled} onTap={voice.tap} testID="voice-bar" />}
+          undoDisabled={view.kind !== 'ready' || !game.canUndo || reading} testID="scorer-bar" syncTestID="waiting-plays" />
         <View style={[styles.belowBar, spacerHeight(belowBarSpace(Platform.OS, insets.bottom))]} />
       </View>
     </View>
