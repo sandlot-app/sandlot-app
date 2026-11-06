@@ -1,0 +1,49 @@
+appId: host.exp.Exponent
+# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="strike swinging" EXPO_PUBLIC_VOICE_STUB_MIC=undetermined.
+# See features/voice-scoring.md.
+---
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+
+# The first time a scoring screen opens, one line explains the mic before it is asked for.
+- extendedWaitUntil:
+    visible:
+      id: "voice-message"
+      text: "Sandlot listens only while you're on this screen, and only sends what you say after you press."
+    timeout: 15000
+- assertVisible:
+    id: "voice-bar"
+    text: "Hold to score by voice"
+- takeScreenshot: mic-first-open-line
+
+# Then the mic comes on, and the line goes.
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+      text: "Mic ready.*"
+    timeout: 15000
+- assertNotVisible:
+    id: "voice-message"
+- takeScreenshot: mic-first-open-ready

@@ -35,7 +35,9 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Sandlot listens only while you hold the voice bar, to score the play you say."
+          "microphonePermission": "Sandlot listens only while you're on the scoring screen, and only sends what you say after you press the voice bar.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
         }
       ],
       "expo-sharing",

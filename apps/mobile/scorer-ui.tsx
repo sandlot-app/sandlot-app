@@ -2,6 +2,7 @@ import { tokens } from '@sandlot/tokens';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Animated, Easing, Image, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { MicIcon, MoreHorizontalIcon } from './src/components/icons.tsx';
+import { barView, type MicStatus } from './src/voice/mic-status.ts';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
@@ -208,10 +209,13 @@ export type VoiceCard =
 
 /**
  * Hold to score by voice. Touch-down starts listening, release applies, and sliding off the bar cancels. The bar keeps
- * the touch while held, so a scroll can't steal it.
+ * the touch while held, so a scroll can't steal it. Idle, it says what the mic is doing: "Mic ready" while the warm mic
+ * listens, or why it isn't (ADR 0005).
  */
-export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCancel, testID }: {
+export function VoiceBar({ listening, mic = 'off', disabled = false, onStart, onRelease, onCancel, testID }: {
   listening: boolean;
+  /** What the phone's mic is doing between presses. */
+  mic?: MicStatus;
   disabled?: boolean;
   onStart: () => void;
   onRelease: () => void;
@@ -250,12 +254,13 @@ export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCa
       onPanResponderTerminate: cancel,
     });
   }, [scale]);
-  return <Animated.View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={listening ? 'Listening' : 'Hold to score by voice'}
+  const { label, accessibilityLabel, lines } = barView(mic, listening);
+  return <Animated.View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={accessibilityLabel}
     accessibilityState={{ disabled, busy: listening }} onLayout={(event) => { size.current = event.nativeEvent.layout; }}
     style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, pressTransform(scale)]} testID={testID}>
     {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
     {/* Larger system text shrinks the label to fit the bar, down to 80%, instead of cutting it off. */}
-    <Text style={styles.voiceLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{listening ? 'Listening…' : 'Hold to score by voice'}</Text>
+    <Text style={styles.voiceLabel} numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
   </Animated.View>;
 }
 
@@ -346,7 +351,7 @@ const styles = createStyles({
   dimmed: { opacity: 0.4 },
   voiceBar: { flex: 1, minWidth: 0, height: 52, borderRadius: sizes['radius/full'], backgroundColor: colors['scoreboard/bg'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/2'], paddingHorizontal: sizes['space/4'] },
   voiceListening: { borderWidth: 2, borderColor: colors['scoreboard/text-muted'] },
-  voiceLabel: { ...textStyles['Body/Strong'], fontWeight: '500', letterSpacing: 0.075, color: colors['scoreboard/text'], flexShrink: 1 },
+  voiceLabel: { ...textStyles['Body/Strong'], fontWeight: '500', letterSpacing: 0.075, color: colors['scoreboard/text'], flexShrink: 1, textAlign: 'center' },
   liveDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['status/live'] },
   unsureDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
   card: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/3'], backgroundColor: colors['text/primary'], borderWidth: 1, borderColor: colors['border/glass'], borderRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingVertical: sizes['space/3'], gap: sizes['space/3'], shadowColor: colors['chip/label/halo'], shadowOpacity: 0.18, shadowRadius: sizes['radius/md'], shadowOffset: { width: 0, height: 8 }, elevation: 6 },
