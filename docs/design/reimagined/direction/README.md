@@ -60,7 +60,7 @@ These are the direction's colors. **They are not in `@sandlot/tokens` yet.** The
 ## Open decisions before screen tickets
 
 - **Video plan prices.** $4.99 a month and $39.99 a year (and "Save 33%") are samples until Kevin's streaming cost test sets the price. The mockup labels them "Sample prices, not final" on screen. Don't copy them into product UI or App Store text.
-- **The stand-in photo.** `live-stream.jpg` is a real youth-game photo Christian supplied. It stands in for live video on the streaming screens and for clips on Top plays, Recruiting and the Video plan. Before this direction is shared outside the team or used as an implementation reference for those screens, Christian decides whether to keep it or replace it with a synthetic or fully anonymized still.
+- **The stand-in photo.** `live-stream.jpg` is a real youth-game photo Christian supplied. It stands in for live video on the streaming screens and for clips on Top plays, Recruiting and the Video plan. Christian chose to keep it for now (2026-11-06). Revisit before this direction is shared outside the team: keep it, or replace it with a synthetic or fully anonymized still.
 - **Long names.** The mockups use short first names. Check long names and numbers against the Figma Stress test before building each screen.
 
 The mockups are built with the stageshow kit (React and CSS), not Expo. They show the look and motion; the real screens get built in `apps/mobile`.
