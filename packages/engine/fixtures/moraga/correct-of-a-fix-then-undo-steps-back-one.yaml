@@ -1,0 +1,12 @@
+name: A Fix of a Fix replaces it, and Undo brings back the first Fix, not the original
+cite: Sandlot GLOSSARY.md Fix and Undo; docs/contract.md Fix, the latest play that stands is the one a Fix targets, as for Undo; issue 102
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: ball }
+  - - { kind: correct, target: play-1, replacement: [{ kind: pitch, result: called_strike }] }
+  - - { kind: correct, target: play-2, replacement: [{ kind: pitch, result: swinging_strike }, { kind: pitch, result: foul }] }
+  - - { kind: undo, target: play-3 }
+then:
+  count: { balls: 0, strikes: 1, pitches: 1 }
+  pitchCounts: { home-1: 1, away-1: 0 }

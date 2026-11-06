@@ -161,7 +161,7 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 ## Version pins
 
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
-- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.1'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
+- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.2.0'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
 - Local verification compares that artifact with the current engine and fixtures. CI also compares it with the trusted PR base or main-push predecessor and rejects changed results without an engine-version increase. [Engine verification](engine-verification.md) describes the commands and the initial release baseline.
 - Each upload carries `schemaVersion`. The server returns `unsupported_version` when it differs from the server's `EVENT_SCHEMA_VERSION` or from the game's pinned `schema_version`. The parser checks it before any command, so an old-format request returns `unsupported_version`, not `invalid`.
 - The server also returns `unsupported_version` for a game pinned to a different engine version. Milestone 6 still requires the phone to refuse scoring under mismatched pins.
@@ -174,6 +174,15 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 - An undo group holds only the `undo` command. A group that mixes it with other commands is rejected with `undo_must_be_alone`.
 - Undo works before the game starts too, so it can take back the start or a lineup. When no group is left to undo, it is rejected with `nothing_to_undo`.
 - An undo group cannot itself be undone. The demo has no redo.
+
+## Fix
+
+- A Fix is an ordinary group with one `correct` command: `{ kind: 'correct', target, replacement }`. The earlier play's events are never changed or removed. The Fix is a new group after them.
+- Like Undo, a Fix targets the latest group that is not already undone. Fixes of older plays stay in [#41](https://github.com/sandlot-app/sandlot-app/issues/41). An older, undone or unknown target is rejected with `correct_not_latest`. A group that mixes a Fix with other commands, an undo included, is rejected with `correct_must_be_alone`.
+- The replacement is a list of play commands. The engine plays it from the game as it stood just before the target play, and the result is the game from then on. If the engine refuses the replacement, the Fix is rejected with the replacement's own reason, and the game stays as it was. A replacement that holds an undo or another Fix is rejected with `correct_replacement_not_a_play`. An empty replacement removes the play and leaves the game exactly as it stood before it, as an Undo of that play does.
+- A Fix can also follow the game's end, because it replays the game from just before the target play. Closing the book is not built yet.
+- Undo after a Fix reverses the Fix: the Fix group is the latest group, so it is the one Undo targets, and the original play counts again. A Fix of a Fix replaces the first Fix, and Undo then brings back the first Fix.
+- A Fix's replacement is not a play of its own for Undo, so Undo targets the Fix group's ID, never the original play's.
 
 ## Errors
 
@@ -215,6 +224,9 @@ A `rejected` response's `reason` is one of the engine's reject codes, `REJECT_CO
 | `undo_must_be_alone` | it mixes an undo with other commands |
 | `cannot_undo_undo` | an undo targets another undo |
 | `nothing_to_undo` | an undo comes when no group is left to undo |
+| `correct_must_be_alone` | it mixes a Fix with other commands |
+| `correct_not_latest` | a Fix targets a group that isn't the latest active one: an older play, an undone play, or one that doesn't exist |
+| `correct_replacement_not_a_play` | a Fix's replacement holds an undo or another Fix |
 | `game_over` | the game has already ended |
 | `invalid_runner_destination` | a runner goes backward or stays, a caught stealing or pickoff isn't an out, or a stolen base is |
 | `stealing_home_not_allowed` | a runner steals home where the rules allow scoring only on a passed ball |

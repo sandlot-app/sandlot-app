@@ -1,0 +1,10 @@
+name: A Fix cannot target a play that was undone
+cite: Sandlot docs/contract.md Fix and Undo; issue 102
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: ball }
+  - - { kind: undo, target: play-1 }
+  - - { kind: correct, target: play-1, replacement: [{ kind: pitch, result: foul }] }
+then:
+  rejected: correct_not_latest

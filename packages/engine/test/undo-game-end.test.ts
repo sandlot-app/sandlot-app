@@ -130,7 +130,6 @@ describe('undo and game end through the event log', () => {
       { kind: 'game', control: { kind: 'start', umpireStart: at } },
       { kind: 'game', control: { kind: 'end_half', reason: 'manual' } },
       { kind: 'game', control: { kind: 'end_game', reason: 'called' } },
-      { kind: 'correct', target, replacement: [] },
       { kind: 'runner', event: 'missed_base', runner: home(99), to: 'out' },
     ];
     for (const command of commands) expect(applyGroup(book.pins, book.events, [command])).toEqual({ ok: false, code: 'game_over' });
