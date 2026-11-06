@@ -324,6 +324,7 @@ function Page() {
         <div className="dr-notes">
           <div className="dr-note">
             <h3>Colors</h3>
+            <p className="dr-files">Not in <code>@sandlot/tokens</code> yet: update the tokens first, then build screens from token names, never raw hex.</p>
             <div className="dr-swatches">
               {COLORS.map(([name, hex, use]) => (
                 <span key={hex} className="dr-swatch">
@@ -351,7 +352,7 @@ function Page() {
           <div className="dr-note">
             <h3>Rules</h3>
             <ul>
-              <li>Youth field, not a stadium: no stands, crowds or light towers.</li>
+              <li>Youth field, not a stadium: chain-link, trees and small bleachers; no grandstands, crowds or light towers.</li>
               <li>The mic is tap once, never hold.</li>
               <li>A described play saves without asking; a banner and one Undo fix it.</li>
               <li>Ball and Strike are always one tap.</li>

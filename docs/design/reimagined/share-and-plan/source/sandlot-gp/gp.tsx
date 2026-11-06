@@ -568,6 +568,7 @@ export function Plus() {
                   Scores, play-by-play and stat cards stay free
                 </div>
 
+                <span className="gp-sample">Sample prices, not final</span>
                 <div className="gp-plans">
                   <span className="gp-plan" data-target="plan-month" data-on={s.plan === 'month' || undefined}>
                     <span className="gp-plan__top"><span className="gp-plan__name">Monthly</span></span>
@@ -598,7 +599,7 @@ export function Plus() {
                 <span className="gp-pw__disc"><Icon name="check-circle" size={92} /></span>
                 <span className="gp-pw__oktitle">You’re in</span>
                 <span className="gp-pw__oksub">Free for 7 days, then {s.plan === 'year' ? '$39.99 a year' : '$4.99 a month'}.</span>
-                <span className="gp-pw__oksub gp-pw__oksub--dim">Covers your whole family.</span>
+                <span className="gp-pw__oksub gp-pw__oksub--dim">Covers your whole family. Sample prices, not final.</span>
               </div>
             </div>
             <div className="fdx-fade" data-on={s.fade || undefined} />

@@ -1079,3 +1079,20 @@
   70% { opacity: 1; transform: scale(1); }
   100% { opacity: 0; transform: scale(1.12); }
 }
+
+/* The prices are placeholders until the streaming cost test; the screen says so */
+.gp {
+  .gp-sample {
+    align-self: flex-start;
+    margin: 2px 0 -4px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px dashed rgba(160, 106, 0, 0.6);
+    background: rgba(242, 172, 22, 0.12);
+    color: #8a5a00;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}

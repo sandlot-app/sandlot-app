@@ -32,27 +32,35 @@ Our players are orange chips with the number and a dark name pill under them; th
 
 ## Colors
 
-| Name | Hex | Used for |
-|---|---|---|
-| Sandlot orange | #FF7519 | Mic, our runners, Undo, In play |
-| Sandlot green | #0C4C39 | Headings, saved tick |
-| Ball | #2FB862 | Ball button and dots |
-| Strike | #F2AC16 | Strike button and dots |
-| Out | #E5484D | Out dots |
-| Hawks navy | #25447E | The other team's fielders |
-| Grass | #56A04B | Field |
-| Infield dirt | #C8915F | Rec infield |
-| Fence cap | #F4C430 | Chain-link top |
-| Paper | #F4F1E8 | Bottom sheet, pages |
+These are the direction's colors. **They are not in `@sandlot/tokens` yet.** The implementation loop's Done rule says screens use tokens only, never raw hex, so the first ticket in this direction updates the tokens (`packages/tokens/figma-variables.json`, then regenerate). Screen tickets come after it and use the token names, never the hex values below.
+
+| Name | Hex | Used for | Token today | Change |
+|---|---|---|---|---|
+| Sandlot orange | #FF7519 | Mic, our runners, Undo, In play | `logo/emblem` #FF7519; `action/primary` is still blue #1D5FD6 | Make the primary action orange |
+| Sandlot green | #0C4C39 | Headings, saved tick | `logo/background` #0C4C39 | Same, reuse it |
+| Ball | #2FB862 | Ball button and dots | `count/ball` #5CCB76 | Update |
+| Strike | #F2AC16 | Strike button and dots | `count/strike` #F5C04A | Update |
+| Out | #E5484D | Out dots | `count/out` #EF5A4C | Update |
+| Hawks navy | #25447E | The other team's chips | none | Add |
+| Grass | #56A04B | Field | `field/grass` #3B7A3A | Update |
+| Infield dirt | #C8915F | Rec infield | `field/dirt` #C4855A | Update |
+| Fence cap | #F4C430 | Chain-link top | none | Add |
+| Paper | #F4F1E8 | Bottom sheet, pages | `surface/page` #F7F5EF | Update |
 
 ## Rules
 
-- Youth field, not a stadium: no stands, crowds or light towers.
+- Youth field, not a stadium: a chain-link fence, trees and small aluminum bleachers, as on the Rec field. No grandstands, crowds or light towers.
 - The mic is tap once, never hold.
 - A described play saves without asking; a banner and one Undo fix it.
 - Ball and Strike are always one tap.
 - Every play runs on the field so the scorer can see it's right.
 - Names show on screen only; saved data refers to players by ID.
 - Streaming is landscape. The video's score comes from the scorer's phone, never typed by the streamer.
+
+## Open decisions before screen tickets
+
+- **Video plan prices.** $4.99 a month and $39.99 a year (and "Save 33%") are samples until Kevin's streaming cost test sets the price. The mockup labels them "Sample prices, not final" on screen. Don't copy them into product UI or App Store text.
+- **The stand-in photo.** `live-stream.jpg` is a real youth-game photo Christian supplied. It stands in for live video on the streaming screens and for clips on Top plays, Recruiting and the Video plan. Before this direction is shared outside the team or used as an implementation reference for those screens, Christian decides whether to keep it or replace it with a synthetic or fully anonymized still.
+- **Long names.** The mockups use short first names. Check long names and numbers against the Figma Stress test before building each screen.
 
 The mockups are built with the stageshow kit (React and CSS), not Expo. They show the look and motion; the real screens get built in `apps/mobile`.
