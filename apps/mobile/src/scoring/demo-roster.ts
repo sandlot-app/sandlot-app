@@ -3,12 +3,29 @@ import type { GameState, PlayerRef, TeamSide } from '@sandlot/engine';
 // Display names for the demo game, from the design's sample game. They stay in presentation:
 // events, stats and logs refer to players by ID only.
 // The family live page keeps its own copy of these team names and jersey numbers, without the names, in
-// apps/web/src/roster.ts (PR #73). Rename or renumber a demo player in both places.
+// apps/web/src/roster.ts (PR #73). Rename or renumber a demo player in both places. The Hawks are the away side and
+// their IDs are `home-N`, the Marlins the home side with `away-N` (see demo-game.ts).
 
 export const demoTeams: Record<TeamSide, { name: string; short: string }> = {
-  home: { name: 'Hawks', short: 'HAW' },
-  away: { name: 'Marlins', short: 'MAR' },
+  away: { name: 'Hawks', short: 'HAW' },
+  home: { name: 'Marlins', short: 'MAR' },
 };
+
+type Lineups = Pick<GameState, 'lineups'>['lineups'];
+const holdsHawks = (side: TeamSide, lineups: Lineups) => lineups[side].some((slot) => slot.player.kind === 'player');
+
+/**
+ * The team names for a game's sides. The Hawks are the team the family follows, so they are the side that holds `player`s.
+ * Games saved before the sample moved to Hawks-away have them at home, so the sides are read from the lineups, not assumed.
+ */
+export function teamsOf(lineups: Lineups): typeof demoTeams {
+  return childSideOf(lineups) === 'home' ? { home: demoTeams.away, away: demoTeams.home } : demoTeams;
+}
+
+/** The side the demo family's child plays on in a game: the Hawks' side. */
+export function childSideOf(lineups: Lineups): TeamSide {
+  return holdsHawks('home', lineups) && !holdsHawks('away', lineups) ? 'home' : 'away';
+}
 
 const demoPlayers: Record<string, { number: string; name: string }> = {
   'home-1': { number: '15', name: 'T. Nguyen' },
@@ -20,6 +37,7 @@ const demoPlayers: Record<string, { number: string; name: string }> = {
   'home-7': { number: '9', name: 'R. Hale' },
   'home-8': { number: '1', name: 'K. Moss' },
   'home-9': { number: '22', name: 'E. Brooks' },
+  'home-10': { number: '18', name: 'B. Lane' },
   'away-1': { number: '17', name: 'J. Soto' },
   'away-2': { number: '3', name: 'L. Darcy' },
   'away-3': { number: '8', name: 'C. Vance' },
@@ -31,11 +49,21 @@ const demoPlayers: Record<string, { number: string; name: string }> = {
   'away-9': { number: '21', name: 'M. Webb' },
 };
 
-/** The demo family's child, whose stat stickers and card the family shares after a Final game. */
-export const demoChild = { player: { kind: 'player', id: 'home-6' } as PlayerRef, side: 'home' as TeamSide, first: 'Javier', last: 'Ruiz' };
+/** The demo family's child, whose stat stickers and card the family shares after a Final game. Their side is `childSideOf`. */
+export const demoChild = { player: { kind: 'player', id: 'home-6' } as PlayerRef, first: 'Javier', last: 'Ruiz' };
 
 /** The demo game's division, as the games list and stat card show it. */
 export const demoDivision = 'Mustang';
+
+/** A roster player's short name, before any lineup exists, or their ID when the demo roster doesn't know them. */
+export function rosterName(player: PlayerRef): string {
+  return rosterDisplay(player).name;
+}
+
+/** The jersey number and short name Game setup shows for a roster player, before any lineup exists. */
+export function rosterDisplay(player: PlayerRef): { number: string; name: string } {
+  return demoPlayers[player.id] ?? { number: '', name: player.id };
+}
 
 /** The jersey number and short name a screen shows for a player, falling back to their batting order. */
 export function playerDisplay(state: GameState, side: TeamSide, player: PlayerRef): { number: string; name: string } {

@@ -8,12 +8,23 @@ import { pins } from './helpers.ts';
 const SRC = join(import.meta.dirname, '../src');
 
 describe('rosterFor', () => {
-  it('names the demo game Marlins at Hawks and its players by jersey number', () => {
+  it('names the engine sample game Marlins at Hawks and its players by jersey number', () => {
     const roster = rosterFor(pins().setup);
 
     expect(roster.teams).toMatchObject({ away: { name: 'Marlins' }, home: { name: 'Hawks' } });
     expect(roster.number('away-1')).toBe('17');
     expect(roster.label('home-1')).toBe('#15');
+  });
+
+  it('names the phone’s demo game Hawks at Marlins, with all ten Hawks numbered', () => {
+    const hawks = Array.from({ length: 10 }, (_, index) => ({ kind: 'player', id: `home-${index + 1}` as PlayerId }) as const);
+    const marlins = Array.from({ length: 9 }, (_, index) => ({ kind: 'opponent', id: `away-${index + 1}` as OpponentId }) as const);
+    const roster = rosterFor({ roster: { away: hawks, home: marlins } });
+
+    expect(roster.teams).toMatchObject({ away: { name: 'Hawks', short: 'HAW' }, home: { name: 'Marlins', short: 'MAR' } });
+    expect(roster.numbered).toBe(true);
+    expect(roster.label('home-10')).toBe('#18');
+    expect(roster.number('away-1')).toBe('17');
   });
 
   it('calls any other game Away and Home and gives its players no number', () => {

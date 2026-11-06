@@ -28,6 +28,9 @@ Reached from the Game list when the scorer starts a game.
   - Tapping a position changes it, and dragging reorders the batting order.
 - **Starting pitcher:** the selected pitcher as a Bench Player Row ("Fully rested · 75 pitches available today"), with "Change starting pitcher" below.
 - **Add a player from the roster:** adds a player to this game's lineup from the existing roster. Roster editing itself is out of scope (#25).
+- **Position list** `262:14318`: tapping a position pill opens a sheet with every position (P, C, 1B, 2B, 3B, SS, LF, CF, RF) and "Bats only", the batter's own marked with a check. A position another player holds says "Swaps with <name>". A separate card under it, **Not playing today** ("Takes <name> out of today's lineup"), takes the batter out of this game's lineup.
+- **Add a player** `262:14532`: the sheet behind "Add a player from the roster" lists the roster players not in the lineup (a player taken out with Not playing today comes back here), tapped to add, last in the order and with no position. With nobody to add it reads "Everyone on the roster is already in the lineup."
+- **Empty states** (no frame; copy only): an emptied batting order reads "Nobody is in the batting order yet.", and the starting pitcher sheet with nobody in the lineup reads "Add a player to the lineup first."
 - **Save lineup** returns to Game setup.
 
 ### Sample lineup

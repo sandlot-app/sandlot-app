@@ -3,7 +3,7 @@ import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { createStyles } from '../../../style';
-import { demoChild, demoDivision, demoTeams, playerDisplay } from '../../scoring/demo-roster.ts';
+import { childSideOf, demoChild, demoDivision, playerDisplay, teamsOf } from '../../scoring/demo-roster.ts';
 import { useOfflineGame } from '../../scoring/use-offline-game.tsx';
 import { gameShare } from '../../share/game-share.ts';
 import { sampleShares } from '../../share/sample-share.ts';
@@ -20,10 +20,11 @@ export default function ShareRoute() {
   // Keyed by game, so opening the picker for another game starts fresh: name off, Poster picked.
   if (sample) return __DEV__ ? <ShareScreen key={game} share={sample} onClose={close} /> : <Redirect href="/" />;
   const saved = game === 'synced' ? games.synced : games.local;
+  const childSide = saved ? childSideOf(saved.state.lineups) : 'away';
   const share = saved && saved.state.status === 'final' ? gameShare({
-    events: saved.events, state: saved.state, player: demoChild.player, side: demoChild.side,
-    names: { first: demoChild.first, last: demoChild.last, number: playerDisplay(saved.state, demoChild.side, demoChild.player).number },
-    team: demoTeams[demoChild.side].name, division: demoDivision,
+    setup: saved.setup, events: saved.events, state: saved.state, player: demoChild.player, side: childSide,
+    names: { first: demoChild.first, last: demoChild.last, number: playerDisplay(saved.state, childSide, demoChild.player).number },
+    team: teamsOf(saved.state.lineups)[childSide].name, division: demoDivision,
   }) : null;
   if (share) return <ShareScreen key={game} share={share} onClose={close} />;
   return <SafeAreaView style={styles.screen}>

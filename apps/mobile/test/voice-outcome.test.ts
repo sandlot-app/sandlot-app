@@ -53,9 +53,9 @@ test('a voice action can\'t carry lineups, the start or an undo, and stale press
 test('a press sends the display names, and the game by role with jersey numbers, and no player IDs', async () => {
   const { session, game } = await started();
   const input = pressInput(pressGame(game));
-  assert.equal(input.names.length, 18);
-  assert.equal(input.context.batter.name, 'J. Soto', 'the away team bats first');
-  assert.equal(input.context.pitcher?.name, 'T. Nguyen');
+  assert.equal(input.names.length, 19, 'nine Marlins and ten Hawks');
+  assert.equal(input.context.batter.name, 'K. Moss', 'the away team, the Hawks, bats first');
+  assert.equal(input.context.pitcher?.name, 'J. Soto', 'the Marlins pitcher');
   assert.deepEqual(input.context.runners, {});
   assert.equal(JSON.stringify(input).includes('"id"'), false);
   let current = game;
@@ -64,8 +64,8 @@ test('a press sends the display names, and the game by role with jersey numbers,
     if (saved.kind === 'saved') current = saved.game;
   }
   const after = pressInput(pressGame(current)).context;
-  assert.equal(after.runners['1']?.name, 'J. Soto');
-  assert.equal(after.lastPlay, 'J. Soto walks');
+  assert.equal(after.runners['1']?.name, 'K. Moss');
+  assert.equal(after.lastPlay, 'K. Moss walks');
 });
 
 test('a choice keeps every clause, and shows the whole read-back when two short labels would match', () => {

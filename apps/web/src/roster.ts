@@ -13,7 +13,8 @@ export type Roster = {
 
 // Games don't store team names or jersey numbers yet. The demo game's come from
 // apps/mobile/src/scoring/demo-roster.ts, numbers only.
-const DEMO_TEAMS: Roster['teams'] = { home: { name: 'Hawks', short: 'HAW' }, away: { name: 'Marlins', short: 'MAR' } };
+const HAWKS = { name: 'Hawks', short: 'HAW' };
+const MARLINS = { name: 'Marlins', short: 'MAR' };
 
 const DEMO_JERSEYS: Readonly<Record<string, string>> = {
   'home-1': '15',
@@ -25,6 +26,7 @@ const DEMO_JERSEYS: Readonly<Record<string, string>> = {
   'home-7': '9',
   'home-8': '1',
   'home-9': '22',
+  'home-10': '18',
   'away-1': '17',
   'away-2': '3',
   'away-3': '8',
@@ -45,8 +47,12 @@ const SIDES: Roster['teams'] = { home: { name: 'Home', short: 'HOM' }, away: { n
 export function rosterFor(setup: Pick<GameSetup, 'roster'>): Roster {
   const players = [...setup.roster.away, ...setup.roster.home];
   if (players.length > 0 && players.every((player) => Object.hasOwn(DEMO_JERSEYS, player.id))) {
+    // The Hawks are the team the family follows, so their players are `player`s and the Marlins' are `opponent`s. The
+    // phone's sample game has the Hawks away; the engine's sample half-inning has them at home. Either way the page
+    // names a side by who is on it.
+    const hawksAway = setup.roster.away.some((player) => player.kind === 'player');
     return {
-      teams: DEMO_TEAMS,
+      teams: hawksAway ? { away: HAWKS, home: MARLINS } : { away: MARLINS, home: HAWKS },
       numbered: true,
       number: (id) => (Object.hasOwn(DEMO_JERSEYS, id) ? DEMO_JERSEYS[id]! : id),
       label: (id) => (Object.hasOwn(DEMO_JERSEYS, id) ? `#${DEMO_JERSEYS[id]}` : id),

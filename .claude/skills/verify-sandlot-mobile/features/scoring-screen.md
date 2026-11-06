@@ -13,7 +13,7 @@ The scorer's Field tab, built to the Figma frames "Scorer — Field tab (milesto
 
 ## How to get to it (user POV)
 
-- Tap Start demo game or Continue scoring from Your games.
+- Tap Start demo game (then save both lineups and tap Start game, as in lineups.md) or Continue scoring from Your games.
 
 ## Driving it with Maestro
 

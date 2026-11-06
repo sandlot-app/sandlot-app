@@ -5,7 +5,7 @@ Opening Sandlot shows Your games. The single demo slot either starts a preloaded
 ## Sub-features
 
 - `home-open` draws the Sandlot brand and Your games.
-- `home-start` offers Start demo game only before a game has been saved.
+- `home-start` offers Start demo game only before a game has been saved. It opens Game setup (see lineups.md).
 - `home-resume` offers Continue scoring for the existing local game.
 - `home-blocked` preserves unreadable or incompatible saved data and pauses scoring.
 
