@@ -1,8 +1,10 @@
 appId: host.exp.Exponent
 ---
-# Opens the sticker picker with a tile picked, the name switch on and an ink
-# chip selected, in both inks, so the selected-state colors can be compared
-# before and after a token change. Saves nothing.
+# Opens the sticker picker and shows its selected states in the same two
+# states as the Figma frames "Share · Pick stickers": the default (white ink,
+# name off, poster picked), then black ink, name on, jersey and team picked.
+# Use it to compare selected-state colors before and after a token change.
+# Saves nothing.
 - runFlow:
     when:
       visible:
@@ -30,17 +32,31 @@ appId: host.exp.Exponent
           visible:
             id: "share-tile-poster"
           timeout: 15000
-# The poster starts picked and the white ink starts selected. Turn the name on.
+# Default: the poster is picked, the white ink is selected, the name is off.
 - assertVisible: "1 picked"
+- assertVisible:
+    id: "share-ink-white"
+    selected: true
+- assertVisible:
+    id: "share-tile-poster"
+    text: "Poster sticker, Hawks, number 6.*"
+- takeScreenshot: share-default
+# The name switch's state shows in each tile's label: the name replaces the team.
 - tapOn:
     id: "share-show-name"
 - assertVisible:
-    id: "share-show-name"
-    checked: true
-- takeScreenshot: share-white-ink
+    id: "share-tile-poster"
+    text: "Poster sticker, Javier Ruiz, number 6.*"
 - tapOn:
     id: "share-ink-black"
 - assertVisible:
     id: "share-ink-black"
     selected: true
-- takeScreenshot: share-black-ink
+- tapOn:
+    id: "share-tile-poster"
+- tapOn:
+    id: "share-tile-jersey"
+- tapOn:
+    id: "share-tile-team"
+- assertVisible: "2 picked"
+- takeScreenshot: share-black-name-on

@@ -32,7 +32,7 @@ Our players are orange chips with the number and a dark name pill under them; th
 
 ## Colors
 
-These are the direction's colors. **They are not in `@sandlot/tokens` yet.** The implementation loop's Done rule says screens use tokens only, never raw hex, so the first ticket in this direction updates the tokens (`packages/tokens/figma-variables.json`, then regenerate). Screen tickets come after it and use the token names, never the hex values below.
+These are the direction's colors. They are in `@sandlot/tokens` since #112 (2026-11-07); the "Token today" column shows the values from before it. The implementation loop's Done rule says screens use tokens only, never raw hex, so screen tickets use the token names, never the hex values below.
 
 | Name | Hex | Used for | Token today | Change |
 |---|---|---|---|---|

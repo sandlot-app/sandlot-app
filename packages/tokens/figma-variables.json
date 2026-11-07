@@ -655,6 +655,7 @@
           "name": "text/on-accent",
           "type": "COLOR",
           "scopes": [
+            "SHAPE_FILL",
             "TEXT_FILL"
           ],
           "values": {
