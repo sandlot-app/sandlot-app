@@ -1,0 +1,36 @@
+appId: host.exp.Exponent
+---
+# Opens the sticker picker with a tile picked, the name switch on and an ink
+# chip selected, in both inks, so the selected-state colors can be compared
+# before and after a token change. Saves nothing.
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible:
+      id: "open-share-sample"
+    timeout: 15000
+- tapOn:
+    id: "open-share-sample"
+- extendedWaitUntil:
+    visible:
+      id: "share-tile-poster"
+    timeout: 15000
+# The poster starts picked and the white ink starts selected. Turn the name on.
+- assertVisible: "1 picked"
+- tapOn:
+    id: "share-show-name"
+- assertVisible:
+    id: "share-show-name"
+    checked: true
+- takeScreenshot: share-white-ink
+- tapOn:
+    id: "share-ink-black"
+- assertVisible:
+    id: "share-ink-black"
+    selected: true
+- takeScreenshot: share-black-ink
