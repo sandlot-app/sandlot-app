@@ -10,16 +10,26 @@ appId: host.exp.Exponent
     commands:
       - tapOn:
           id: "games-navigation"
+# Wait for the saved game card, so the home screen has finished loading
+# before the tap. A tap during that first load can be dropped.
 - extendedWaitUntil:
-    visible:
-      id: "open-share-sample"
+    visible: "Start demo game|Continue scoring"
     timeout: 15000
-- tapOn:
-    id: "open-share-sample"
-- extendedWaitUntil:
-    visible:
-      id: "share-tile-poster"
-    timeout: 15000
+- waitForAnimationToEnd
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              id: "share-tile-poster"
+          commands:
+            - tapOn:
+                id: "open-share-sample"
+      - extendedWaitUntil:
+          visible:
+            id: "share-tile-poster"
+          timeout: 15000
 # The poster starts picked and the white ink starts selected. Turn the name on.
 - assertVisible: "1 picked"
 - tapOn:
