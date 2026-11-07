@@ -50,6 +50,7 @@ test('committed outputs carry the Field Day direction colors', () => {
     'chip-opponent-text': '#FFFFFF',
     'text-on-action': '#14201B',
     'text-link': '#A84706',
+    'action-strong': '#A84706',
   };
   for (const [name, hex] of Object.entries(expected)) assert.match(css, new RegExp(`--color-${name}:\\s*${hex};`));
 });

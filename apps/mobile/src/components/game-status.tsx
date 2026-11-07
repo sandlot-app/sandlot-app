@@ -16,7 +16,7 @@ export function GameStatus() {
   if (view.kind === 'loading')
     return (
       <View style={styles.status}>
-        <ActivityIndicator color={colors['action/primary']} />
+        <ActivityIndicator color={colors['action/strong']} />
         <Text style={styles.message}>Opening your saved game…</Text>
       </View>
     );

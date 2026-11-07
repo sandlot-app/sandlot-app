@@ -9,6 +9,7 @@ export const tokens = {
       colors: {
         "action/primary": "#FF7519" as ColorToken,
         "action/soft": "#E7EEFB" as ColorToken,
+        "action/strong": "#A84706" as ColorToken,
         "border/glass": "#FFFFFF1A" as ColorToken,
         "border/subtle": "#D9DDD9" as ColorToken,
         "border/warning": "#F5C04A" as ColorToken,

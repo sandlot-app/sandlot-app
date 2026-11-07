@@ -42,6 +42,21 @@
           }
         },
         {
+          "name": "action/strong",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "description": "Selected-state graphics on light backgrounds: outlines, switch tracks, small marks, spinners. A deeper orange, because action/primary is 2.69:1 on white. Icons on it use text/on-accent.",
+          "values": {
+            "Light": {
+              "alias": "Primitives/orange/700"
+            }
+          }
+        },
+        {
           "name": "border/glass",
           "type": "COLOR",
           "scopes": [

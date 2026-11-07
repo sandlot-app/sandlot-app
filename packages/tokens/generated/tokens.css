@@ -2,6 +2,7 @@
 :root, :root[data-theme="Light"] {
   --color-action-primary: #FF7519;
   --color-action-soft: #E7EEFB;
+  --color-action-strong: #A84706;
   --color-border-glass: #FFFFFF1A;
   --color-border-subtle: #D9DDD9;
   --color-border-warning: #F5C04A;
