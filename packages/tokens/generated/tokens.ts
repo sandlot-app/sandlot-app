@@ -54,6 +54,7 @@ export const tokens = {
         "surface/voice": "#E3EEE9" as ColorToken,
         "surface/warning": "#FDF1CC" as ColorToken,
         "text/danger": "#B42318" as ColorToken,
+        "text/link": "#A84706" as ColorToken,
         "text/on-accent": "#FFFFFF" as ColorToken,
         "text/on-action": "#14201B" as ColorToken,
         "text/primary": "#14201B" as ColorToken,

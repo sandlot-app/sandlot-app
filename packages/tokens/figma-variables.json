@@ -623,6 +623,19 @@
           }
         },
         {
+          "name": "text/link",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "description": "Link-style actions on the page and cards. A deeper orange, because action/primary as text is 2.38:1 on the page.",
+          "values": {
+            "Light": {
+              "alias": "Primitives/orange/700"
+            }
+          }
+        },
+        {
           "name": "text/on-accent",
           "type": "COLOR",
           "scopes": [
@@ -911,6 +924,14 @@
           "scopes": [],
           "values": {
             "Value": "#C85A0C"
+          }
+        },
+        {
+          "name": "orange/700",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#A84706"
           }
         },
         {
