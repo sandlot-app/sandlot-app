@@ -635,6 +635,20 @@
           }
         },
         {
+          "name": "text/on-action",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "description": "Labels and icons on action/primary fills. Dark, because white on the orange is 2.69:1.",
+          "values": {
+            "Light": {
+              "alias": "Primitives/ink/900"
+            }
+          }
+        },
+        {
           "name": "text/primary",
           "type": "COLOR",
           "scopes": [

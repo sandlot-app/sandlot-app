@@ -164,7 +164,7 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
           </View>
           <View style={styles.chip}><Text style={styles.chipText}>{label}</Text></View>
           <View style={[styles.mark, on ? styles.markOn : ink === 'white' ? styles.markOffDark : styles.markOffLight]}>
-            {on ? <CheckIcon color={colors['surface/card']} size={14} /> : null}
+            {on ? <CheckIcon color={colors['text/on-action']} size={14} /> : null}
           </View>
         </Pressable>;
       })}

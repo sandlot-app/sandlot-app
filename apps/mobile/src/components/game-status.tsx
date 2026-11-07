@@ -53,6 +53,6 @@ const styles = createStyles({
     backgroundColor: colors['action/primary'],
     alignItems: 'center',
   },
-  retryLabel: { fontSize: 16, fontWeight: '600', color: colors['surface/card'] },
+  retryLabel: { fontSize: 16, fontWeight: '600', color: colors['text/on-action'] },
   pressed: { opacity: 0.7 },
 });

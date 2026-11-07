@@ -195,6 +195,6 @@ const styles = createStyles({
     padding: sizes['space/4'],
     alignItems: 'center',
   },
-  buttonLabel: { fontSize: 17, fontWeight: '600', color: colors['surface/card'] },
+  buttonLabel: { fontSize: 17, fontWeight: '600', color: colors['text/on-action'] },
   pressed: { opacity: 0.65 },
 });
