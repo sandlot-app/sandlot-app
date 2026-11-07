@@ -1,12 +1,19 @@
 import { tokens } from '@sandlot/tokens';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing, Image, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { MicIcon, MoreHorizontalIcon } from './src/components/icons.tsx';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AccessibilityInfo, Animated, Easing, Image, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { CheckIcon, MicIcon, MoreHorizontalIcon } from './src/components/icons.tsx';
+import { barView, type BarPhase, type MicStatus } from './src/voice/mic-status.ts';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
 const dragTransform = (translateY: number) => ({ transform: [{ translateY }] });
 const pressTransform = (scale: Animated.Value) => ({ transform: [{ scale }] });
+/** The voice button growing back out of the line it left: it fades in and widens from the middle as it presses. */
+const growTransform = (scale: Animated.Value, grow: Animated.Value) => ({
+  opacity: grow,
+  transform: [{ scale }, { scaleX: grow.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }],
+});
+const turnTransform = (turn: Animated.Value) => ({ transform: [{ rotate: turn.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] });
 
 /** Figma's Voice Bar press: ease to 0.98 on touch-down and back on release. */
 function easePress(scale: Animated.Value, held: boolean) {
@@ -172,12 +179,14 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, voice, disabled = fal
 }) {
   const [choosingStrike, setChoosingStrike] = useState(false);
   const recordPitch = (pitch: Pitch) => { setChoosingStrike(false); onPitch(pitch); };
+  // A strike said by voice is saved while the chooser could still be open, so it closes rather than invite a second one.
+  useEffect(() => { if (disabled) setChoosingStrike(false); }, [disabled]);
   return <View style={styles.scorerBar} testID={testID}>
     {choosingStrike ? <View style={styles.strikeControls}>
       <View style={styles.strikeChooser}>
         <Text style={styles.strikeHeading}>Strike —</Text>
-        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-looking')} style={styles.strikeOption} testID="strike-looking"><Text style={styles.pitchLabel}>Looking</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-swinging')} style={styles.strikeOption} testID="strike-swinging"><Text style={styles.pitchLabel}>Swinging</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => recordPitch('strike-looking')} style={[styles.strikeOption, disabled && styles.dimmed]} testID="strike-looking"><Text style={styles.pitchLabel}>Looking</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={() => recordPitch('strike-swinging')} style={[styles.strikeOption, disabled && styles.dimmed]} testID="strike-swinging"><Text style={styles.pitchLabel}>Swinging</Text></Pressable>
       </View>
       <View style={styles.strikeProgress}><View style={styles.strikeProgressFill} /></View>
     </View> : null}
@@ -203,65 +212,87 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, voice, disabled = fal
 /** What the Transcript Card shows while voice is in use. */
 export type VoiceCard =
   | { kind: 'listening'; words: string }
+  /** The mic is closed and the play is being read. */
+  | { kind: 'reading'; words: string }
   /** Nothing is saved until the scorer taps a choice. */
   | { kind: 'choose'; heading: string; words: string; choices: string[]; note: string };
 
 /**
- * Hold to score by voice. Touch-down starts listening, release applies, and sliding off the bar cancels. The bar keeps
- * the touch while held, so a scroll can't steal it.
+ * Tap to score by voice. A touch of any length opens the mic and the next touch ends it: no hold. Idle, it says what the
+ * mic is doing: "Tap to score by voice", or why it can't listen (ADR 0005). While a play is read the button leaves and
+ * a spinner with "Reading your play…" stands in its place, then a plain "Saved", then the button grows back.
  */
-export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCancel, testID }: {
-  listening: boolean;
+export function VoiceBar({ phase, mic = 'off', disabled = false, onTap, testID }: {
+  /** Reading and saved show a line with no button; idle and listening show the button. */
+  phase: BarPhase;
+  /** What the phone's mic is doing between presses. */
+  mic?: MicStatus;
   disabled?: boolean;
-  onStart: () => void;
-  onRelease: () => void;
-  onCancel: () => void;
+  onTap: () => void;
   testID?: string;
 }) {
-  const latest = useRef({ disabled, onStart, onRelease, onCancel });
-  useEffect(() => { latest.current = { disabled, onStart, onRelease, onCancel }; });
-  const size = useRef({ width: 0, height: 0 });
-  const held = useRef(false);
+  const listening = phase === 'listening';
+  const reading = phase === 'reading';
+  const { label, accessibilityLabel, lines, button } = barView(mic, phase);
+  const latest = useRef({ disabled, onTap });
+  useEffect(() => { latest.current = { disabled, onTap }; });
   const [scale] = useState(() => new Animated.Value(1));
-  const responder = useMemo(() => {
-    const cancel = () => {
-      if (!held.current) return;
-      held.current = false;
-      easePress(scale, false);
-      latest.current.onCancel();
-    };
-    return PanResponder.create({
-      onStartShouldSetPanResponder: () => !latest.current.disabled,
-      onPanResponderTerminationRequest: () => false,
-      onPanResponderGrant: () => {
-        held.current = true;
-        easePress(scale, true);
-        latest.current.onStart();
-      },
-      onPanResponderMove: (_, gesture) => {
-        if (Math.abs(gesture.dy) > size.current.height || Math.abs(gesture.dx) > size.current.width / 2) cancel();
-      },
-      onPanResponderRelease: () => {
-        if (!held.current) return;
-        held.current = false;
-        easePress(scale, false);
-        latest.current.onRelease();
-      },
-      onPanResponderTerminate: cancel,
-    });
-  }, [scale]);
-  return <Animated.View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={listening ? 'Listening' : 'Hold to score by voice'}
-    accessibilityState={{ disabled, busy: listening }} onLayout={(event) => { size.current = event.nativeEvent.layout; }}
-    style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, pressTransform(scale)]} testID={testID}>
+  const [grow] = useState(() => new Animated.Value(1));
+  const before = useRef(phase);
+  // Before paint, so the button never shows once at full size before it grows.
+  useLayoutEffect(() => {
+    const away = before.current === 'reading' || before.current === 'saved';
+    before.current = phase;
+    if (!away || !button) return;
+    // The button comes back out of the line it left, rather than appearing. It left mid-touch, so it comes back unpressed.
+    scale.setValue(1);
+    grow.setValue(0);
+    Animated.timing(grow, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: Platform.OS !== 'web' }).start();
+  }, [phase, button, grow, scale]);
+  // iOS ignores live regions, so the two lines that replace the button are said out loud.
+  useEffect(() => {
+    // Android reads the live region itself, so announcing there would say each line twice.
+    if (!button && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(label);
+  }, [button, label]);
+  const responder = useMemo(() => PanResponder.create({
+    onStartShouldSetPanResponder: () => !latest.current.disabled,
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderGrant: () => {
+      easePress(scale, true);
+      latest.current.onTap();
+    },
+    onPanResponderRelease: () => easePress(scale, false),
+    onPanResponderTerminate: () => easePress(scale, false),
+  }), [scale]);
+  if (!button)
+    return <View accessible accessibilityRole={reading ? 'progressbar' : 'text'} accessibilityLabel={accessibilityLabel}
+      accessibilityLiveRegion="polite" style={styles.voiceStatus} testID={testID}>
+      {reading ? <Spinner /> : <View style={styles.savedDisc}><CheckIcon color={colors['text/on-accent']} size={18} /></View>}
+      <Text style={styles.voiceStatusLabel}>{label}</Text>
+    </View>;
+  return <Animated.View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={accessibilityLabel}
+    accessibilityState={{ disabled, busy: listening }} onAccessibilityTap={() => { if (!latest.current.disabled) latest.current.onTap(); }}
+    style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, growTransform(scale, grow)]} testID={testID}>
     {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
     {/* Larger system text shrinks the label to fit the bar, down to 80%, instead of cutting it off. */}
-    <Text style={styles.voiceLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{listening ? 'Listening…' : 'Hold to score by voice'}</Text>
+    <Text style={styles.voiceLabel} numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
   </Animated.View>;
 }
 
-/** Floats above the Scorer Bar while voice is in use: Listening, or Not sure. */
+/** The ring that turns while a play is read: a pale track with one dark arc. */
+function Spinner() {
+  const [turn] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const loop = Animated.loop(Animated.timing(turn, { toValue: 1, duration: 850, easing: Easing.linear, useNativeDriver: Platform.OS !== 'web' }));
+    loop.start();
+    return () => loop.stop();
+  }, [turn]);
+  return <Animated.View accessible={false} style={[styles.spinner, turnTransform(turn)]} />;
+}
+
+/** Floats above the Scorer Bar while voice is in use: Listening, Reading, or Not sure. */
 export function TranscriptCard({ card, onChoose }: { card: VoiceCard; onChoose: (index: number) => void }) {
-  const status = card.kind === 'listening' ? 'Listening…' : card.heading;
+  const status = card.kind === 'listening' ? 'Listening…' : card.kind === 'reading' ? 'Reading…' : card.heading;
   return (
     <View style={styles.card} accessibilityLiveRegion="polite" testID="voice-card">
       <View style={styles.cardHead}>
@@ -278,7 +309,7 @@ export function TranscriptCard({ card, onChoose }: { card: VoiceCard; onChoose: 
         </Pressable>)}
       </View> : null}
       <Text style={styles.cardHint}>
-        {card.kind === 'listening' ? 'Say a pitch or a play · release when done' : card.note}
+        {card.kind === 'listening' ? 'Say a pitch or a play · tap to finish' : card.kind === 'reading' ? 'Hold on, your play is being read' : card.note}
       </Text>
     </View>
   );
@@ -345,8 +376,12 @@ const styles = createStyles({
   undoIcon: { width: 22, height: 22, tintColor: colors['text/primary'] },
   dimmed: { opacity: 0.4 },
   voiceBar: { flex: 1, minWidth: 0, height: 52, borderRadius: sizes['radius/full'], backgroundColor: colors['scoreboard/bg'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/2'], paddingHorizontal: sizes['space/4'] },
+  voiceStatus: { flex: 1, minWidth: 0, height: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/3'] },
+  voiceStatusLabel: { ...textStyles['Body/Strong'], fontWeight: '500', color: colors['text/primary'], flexShrink: 1, textAlign: 'center' },
+  spinner: { width: 28, height: 28, borderRadius: sizes['radius/full'], borderWidth: 3, borderColor: colors['border/subtle'], borderTopColor: colors['scoreboard/bg'] },
+  savedDisc: { width: 28, height: 28, borderRadius: sizes['radius/full'], backgroundColor: colors['count/ball'], alignItems: 'center', justifyContent: 'center' },
   voiceListening: { borderWidth: 2, borderColor: colors['scoreboard/text-muted'] },
-  voiceLabel: { ...textStyles['Body/Strong'], fontWeight: '500', letterSpacing: 0.075, color: colors['scoreboard/text'], flexShrink: 1 },
+  voiceLabel: { ...textStyles['Body/Strong'], fontWeight: '500', letterSpacing: 0.075, color: colors['scoreboard/text'], flexShrink: 1, textAlign: 'center' },
   liveDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['status/live'] },
   unsureDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
   card: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/3'], backgroundColor: colors['text/primary'], borderWidth: 1, borderColor: colors['border/glass'], borderRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingVertical: sizes['space/3'], gap: sizes['space/3'], shadowColor: colors['chip/label/halo'], shadowOpacity: 0.18, shadowRadius: sizes['radius/md'], shadowOffset: { width: 0, height: 8 }, elevation: 6 },

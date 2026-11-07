@@ -228,7 +228,7 @@ When the queue stops, the phone shows how many plays are waiting, for example "3
 
 Two functions serve voice scoring. Both need a signed-in phone (an anonymous sign-in is enough for the demo), allow 30 requests a minute per user, and return `502 voice_unavailable` when OpenAI fails, which the phone treats as "Voice is unavailable right now. Tap to score." (A10). Neither writes to the database or logs a request body, a transcript, an answer or a name: bodies carry display names, jersey numbers and what was said (rule 5). The scorer-lock check (A8) and the monthly limit (A9) wait until the phone uploads games (#29).
 
-The phone gives each request its own timeout, about 25 seconds, because a clip goes through two OpenAI calls, and on a timeout it falls back to taps. A `401` can also come from the Supabase gateway before the function runs, with the gateway's own body, so the phone branches on the status, not the `error` code.
+The phone gives each request its own timeout, 9 seconds, because the scoring buttons wait while a press is read (at most 15 seconds, live words included), and on a timeout it falls back to taps. A `401` can also come from the Supabase gateway before the function runs, with the gateway's own body, so the phone branches on the status, not the `error` code.
 
 **Cost.** The per-user rate limit and the 60-second secret are not a spending cap. The secret only limits when a session can start: once connected, OpenAI keeps a transcription session open for up to 60 minutes, so the phone closes the socket when the scorer lets go. A hard monthly budget on the OpenAI project is the real cap, and setting it is a required step before the first deploy, until the monthly limit (A9) arrives with #29.
 
@@ -236,7 +236,7 @@ The phone gives each request its own timeout, about 25 seconds, because a clip g
 
 **`voice-session`** starts one press's live transcription. The phone sends `{ names: string[] }`, the lineup's display names (at most 40). A list that isn't all text is `invalid`. The server drops any name it can't use, then asks OpenAI for a client secret that must be used within 60 seconds and opens only a `gpt-live-transcribe` transcription session, with the last names and scoring words as keywords. It returns `{ url, secret, expiresAt, sampleRate }`. The phone streams 16-bit mono PCM at `sampleRate` to `url` with that secret. The server's key never leaves the server.
 
-**`voice-parse`** reads every press the phone can't read alone: anything but pitch calls, a lone "undo" or "scratch that", or filler. The phone sends `{ transcript, context }` or, when live streaming didn't connect (A4, A5), `{ audio, context }` with the press's 16-bit mono PCM at 24 kHz in base64, at most 15 seconds (A2). `context` is the game before the press, built on the phone from the same game it will check the answer against:
+**`voice-parse`** reads every press the phone can't read alone: anything but pitch calls, a lone "undo" or "scratch that", or filler. The phone sends `{ transcript, context }` or, when live streaming didn't connect (A4, A5), `{ audio, context }` with the press's 16-bit mono PCM at 24 kHz in base64, at most 30 seconds (A2). `context` is the game before the press, built on the phone from the same game it will check the answer against:
 
 ```ts
 type Person = { name: string; number: string };
@@ -271,10 +271,6 @@ type AnswerReading = {
   runner_events_after: RunnerEvent[];  // after it, keyed by the base the runner was on after it
   forced_runners: (Named & { from: '1' | '2' | '3' })[];  // named runners a walk or hit by pitch forced along
   taken_back: Named[];           // names the scorer said and then took back
-};
-  runner_events: (Named & { event: 'stolen_base' | 'caught_stealing' | 'pickoff' | 'wild_pitch' | 'passed_ball' | 'advance_on_error';
-    from: '1' | '2' | '3'; to: '1' | '2' | '3' | 'home' | 'out' })[];
-  forced_runners: (Named & { from: '1' | '2' | '3' })[];  // named runners a walk or hit by pitch forced along
 };
 type Answer =
   | { result: 'play'; fix_last: boolean; readings: [AnswerReading] }

@@ -2,8 +2,8 @@ import { modelRequest, readContext, readLocally, readModelReply } from '../../..
 import { type OpenAi, reply, type Reply, unavailable } from '../_shared/voice.ts';
 
 export const SAMPLE_RATE = 24000;
-/** 15 seconds of 16-bit mono audio, the longest press (A2). */
-export const MAX_AUDIO_BYTES = 15 * SAMPLE_RATE * 2;
+/** 30 seconds of 16-bit mono audio, the longest press (A2). */
+export const MAX_AUDIO_BYTES = 30 * SAMPLE_RATE * 2;
 const MAX_TRANSCRIPT = 500;
 
 export type Models = { parser: string; clip: string };

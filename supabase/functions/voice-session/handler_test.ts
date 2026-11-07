@@ -77,7 +77,9 @@ Deno.test('voice endpoints need a signed-in phone, and say so when sign-in is do
 
 Deno.test('voice endpoints refuse bodies that are not JSON or are too long', async () => {
   strictEqual((await endpoint('user-1')(post('not json'))).status, 400);
-  strictEqual((await endpoint('user-1')(post(JSON.stringify({ audio: 'a'.repeat(1_600_000) })))).status, 413);
+  // 30 seconds of audio is 1.92 MB of base64, which fits; past 2.5 MB does not.
+  strictEqual((await endpoint('user-1')(post(JSON.stringify({ audio: 'a'.repeat(1_920_000) })))).status, 200);
+  strictEqual((await endpoint('user-1')(post(JSON.stringify({ audio: 'a'.repeat(2_600_000) })))).status, 413);
 });
 
 Deno.test('the rate limit lets each phone make 30 requests a minute', async () => {

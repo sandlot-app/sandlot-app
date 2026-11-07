@@ -30,6 +30,10 @@ test('"strike swinging" saves through the engine as a voice play', async () => {
   assert.equal(JSON.stringify(play).includes('Darcy') || JSON.stringify(play).includes('Soto'), false, 'events carry IDs, never names (rule 5)');
 });
 
+test('#88: running out of time says the play did not save', () => {
+  assert.equal(failureMessage('timeout'), "That took too long and didn't save. Say it again or tap to score.");
+});
+
 test('"strike" asks which one, and nothing saves until a choice', async () => {
   const { game } = await started();
   const result = said(game, 'strike');

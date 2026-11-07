@@ -169,7 +169,7 @@ The September plan wanted SQLite encryption on the phone because it holds kids' 
 
 Voice is the main reason a team would switch, and also the biggest unknown, so a throwaway prototype tests it before the app depends on it. The rule from September stays: the AI proposes a play, and only the engine decides whether it is legal.
 
-1. The scorer taps the mic button once. There is no hold. The mic stays warm on the scoring screen and keeps the second before the touch, so no words are lost ([ADR 0005](adr/0005-the-mic-stays-warm-on-the-scoring-screen.md)).
+1. The scorer taps the mic button once, says the play, and taps again to finish. There is no hold and no pause ending: a second tap, or the 30 second safety limit, closes the mic, and the play is read only then. The mic stays warm on the scoring screen and keeps the second before the touch, so no words are lost ([ADR 0005](adr/0005-the-mic-stays-warm-on-the-scoring-screen.md)).
 2. Speech goes to a transcription service. September's plan chose OpenAI's gpt-live-transcribe, and the prototype confirms that choice or replaces it.
 3. A small parser on the phone handles only pitch calls like "ball" or "foul", and a lone "undo", with no AI. Anything else goes to the AI, which sees the whole game and answers with the whole play's result ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)).
 4. The engine checks the answer. A legal play saves with a banner naming each runner's result, Undo and a one-step fix by voice. A card appears only when two readings are both believable and nothing said picks one, when the same play arrives twice within 3 seconds, or when "confirm everything" is on.

@@ -102,7 +102,7 @@ Deno.test('A6: an empty clip comes back with no parse, so the phone shows "didn\
   deepStrictEqual((await parseVoice({ audio: btoa('\0\0'), context }, openai, models)).body, { transcript: '  ', answer: null });
 });
 
-Deno.test('voice-parse refuses bodies it cannot use, and clips past 15 seconds', async () => {
+Deno.test('voice-parse refuses bodies it cannot use, and clips past 30 seconds', async () => {
   const { openai, calls } = fakeOpenAi({});
   strictEqual((await parseVoice({ transcript: moss }, openai, models)).status, 400);
   strictEqual((await parseVoice({ transcript: moss, context: { batting: ['K. Moss'], fielding: [], runners: [] } }, openai, models)).status, 400, 'the old lists');
