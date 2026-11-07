@@ -1,6 +1,6 @@
 /* DO NOT EDIT. Generated from figma-variables.json. */
 :root, :root[data-theme="Light"] {
-  --color-action-primary: #1D5FD6;
+  --color-action-primary: #FF7519;
   --color-action-soft: #E7EEFB;
   --color-border-glass: #FFFFFF1A;
   --color-border-subtle: #D9DDD9;
@@ -12,17 +12,20 @@
   --color-chip-fielding-text: #14201B;
   --color-chip-label-halo: #0E3328;
   --color-chip-label-text: #FFFFFF;
+  --color-chip-opponent-bg: #25447E;
+  --color-chip-opponent-text: #FFFFFF;
   --color-chip-outline: #0E3328;
-  --color-count-ball: #5CCB76;
+  --color-count-ball: #2FB862;
   --color-count-empty: #B9D3C8;
-  --color-count-out: #EF5A4C;
-  --color-count-strike: #F5C04A;
+  --color-count-out: #E5484D;
+  --color-count-strike: #F2AC16;
   --color-count-well: #0E3328;
   --color-diamond-empty: #B9D3C8;
   --color-diamond-occupied: #F5C04A;
   --color-field-base: #FFFFFF;
-  --color-field-dirt: #C4855A;
-  --color-field-grass: #3B7A3A;
+  --color-field-dirt: #C8915F;
+  --color-field-fence-cap: #F4C430;
+  --color-field-grass: #56A04B;
   --color-field-grass-stripe: #458842;
   --color-field-line: #FFFFFF;
   --color-field-mound: #D49A70;
@@ -40,7 +43,7 @@
   --color-status-reconnecting: #9AA19D;
   --color-surface-card: #FFFFFF;
   --color-surface-glass: #FFFFFF1F;
-  --color-surface-page: #F7F5EF;
+  --color-surface-page: #F4F1E8;
   --color-surface-voice: #E3EEE9;
   --color-surface-warning: #FDF1CC;
   --color-text-danger: #B42318;
