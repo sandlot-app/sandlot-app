@@ -1,0 +1,12 @@
+flow: share-selected-colors
+result: PASS
+commit: 0df09a50e63e1dfe867867ca4484418cbfbe74d6
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+flow: share-selected-colors
+result: PASS
+commit: 0df09a50e63e1dfe867867ca4484418cbfbe74d6
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+
