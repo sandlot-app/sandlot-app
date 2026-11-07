@@ -47,6 +47,10 @@ These are the direction's colors. **They are not in `@sandlot/tokens` yet.** The
 | Fence cap | #F4C430 | Chain-link top | none | Add |
 | Paper | #F4F1E8 | Bottom sheet, pages | `surface/page` #F7F5EF | Update |
 
+Labels and icons on orange fills use `text/on-action` (near-black, 6.24:1), not white: white on #FF7519 is 2.69:1, under every contrast minimum. Link-style actions on the page and cards use `text/link` (#A84706, a deeper orange, 5.21:1 on paper), not `action/primary`, which is 2.38:1 as text. Christian chose both on 2026-11-07 in the tokens PR.
+
+The orange primary replaces the old rule in `docs/design/spec-update-game-states.md` that link-style actions are blue and orange is reserved for "followed". `ring/followed` (#F07A1A) is now almost the same color as `action/primary`, so the first screen ticket that shows a followed player picks a new followed-ring color.
+
 ## Rules
 
 - Youth field, not a stadium: a chain-link fence, trees and small aluminum bleachers, as on the Rec field. No grandstands, crowds or light towers.

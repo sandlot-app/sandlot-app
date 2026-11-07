@@ -178,5 +178,5 @@ const styles = createStyles({
   banner: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/2'], padding: sizes['space/3'], borderRadius: sizes['radius/md'], backgroundColor: colors['surface/voice'], color: colors['text/primary'] },
   pressed: { opacity: 0.55 },
   homeButton: { minHeight: 48, padding: sizes['space/4'] },
-  homeLabel: { color: colors['action/primary'], fontSize: 15, fontWeight: '600' },
+  homeLabel: { color: colors['text/link'], fontSize: 15, fontWeight: '600' },
 });

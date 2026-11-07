@@ -208,7 +208,7 @@ const styles = createStyles({
   caption: {...textStyles.Caption, color: colors['text/secondary']},
   fielderCaption: {...textStyles.Caption, color: colors['text/secondary'], textAlign: 'center'},
   strong: {...textStyles['Body/Strong'], color: colors['text/primary']},
-  link: {...textStyles['Body/Strong'], color: colors['action/primary']},
+  link: {...textStyles['Body/Strong'], color: colors['text/link']},
   outcomeGrid: {flexDirection: 'row', flexWrap: 'wrap', gap: sizes['space/2']},
   outcome: {width: '48%', flexGrow: 1, minHeight: 48, borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/lg'], alignItems: 'center', justifyContent: 'center', paddingHorizontal: sizes['space/2']},
   selected: {backgroundColor: colors['scoreboard/bg'], borderColor: colors['scoreboard/bg']},

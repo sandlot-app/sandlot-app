@@ -22,7 +22,7 @@ test('committed outputs resolve Light aliases and only the exported spacing step
   execFileSync(process.execPath, ['scripts/generate.mjs', '--check'], { cwd: root });
   const css = readFileSync(new URL('../generated/tokens.css', import.meta.url), 'utf8');
   const ts = readFileSync(new URL('../generated/tokens.ts', import.meta.url), 'utf8');
-  assert.match(css, /--color-action-primary:\s*#1D5FD6;/);
+  assert.match(css, /--color-action-primary:\s*#FF7519;/);
   assert.match(css, /--radius-sm:\s*6px;/);
   assert.match(ts, /"Light"/);
   assert.match(ts, /"Body\/Regular"/);
@@ -32,6 +32,26 @@ test('committed outputs resolve Light aliases and only the exported spacing step
     assert.match(ts, new RegExp(`"space/${step}":\\s*\\d+`));
   }
   assert.doesNotMatch(css, /--space-5:/);
+});
+
+test('committed outputs carry the Field Day direction colors', () => {
+  const css = readFileSync(new URL('../generated/tokens.css', import.meta.url), 'utf8');
+  const expected = {
+    'action-primary': '#FF7519',
+    'count-ball': '#2FB862',
+    'count-strike': '#F2AC16',
+    'count-out': '#E5484D',
+    'field-grass': '#56A04B',
+    'field-grass-stripe': '#60A656',
+    'field-dirt': '#C8915F',
+    'field-fence-cap': '#F4C430',
+    'surface-page': '#F4F1E8',
+    'chip-opponent-bg': '#25447E',
+    'chip-opponent-text': '#FFFFFF',
+    'text-on-action': '#14201B',
+    'text-link': '#A84706',
+  };
+  for (const [name, hex] of Object.entries(expected)) assert.match(css, new RegExp(`--color-${name}:\\s*${hex};`));
 });
 
 test('generated TypeScript exports distinct color, spacing and radius token types', () => {
@@ -65,5 +85,5 @@ test('Light output stays Light if the export gains a Dark default', () => withCo
   writeFileSync(path, JSON.stringify(source));
   execFileSync(process.execPath, ['scripts/generate.mjs'], { cwd: directory });
   const css = readFileSync(join(directory, 'generated/tokens.css'), 'utf8');
-  assert.match(css, /--color-action-primary:\s*#1D5FD6;/);
+  assert.match(css, /--color-action-primary:\s*#FF7519;/);
 }));

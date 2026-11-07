@@ -24,7 +24,7 @@
           ],
           "values": {
             "Light": {
-              "alias": "Primitives/blue/600"
+              "alias": "Primitives/brand/orange"
             }
           }
         },
@@ -167,6 +167,32 @@
           }
         },
         {
+          "name": "chip/opponent/bg",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL"
+          ],
+          "description": "The other team's chips on the field.",
+          "values": {
+            "Light": {
+              "alias": "Primitives/navy/700"
+            }
+          }
+        },
+        {
+          "name": "chip/opponent/text",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "values": {
+            "Light": {
+              "alias": "Primitives/white"
+            }
+          }
+        },
+        {
           "name": "chip/outline",
           "type": "COLOR",
           "scopes": [
@@ -187,7 +213,7 @@
           ],
           "values": {
             "Light": {
-              "alias": "Primitives/green/400"
+              "alias": "Primitives/green/500"
             }
           }
         },
@@ -212,7 +238,7 @@
           ],
           "values": {
             "Light": {
-              "alias": "Primitives/red/500"
+              "alias": "Primitives/red/600"
             }
           }
         },
@@ -225,7 +251,7 @@
           ],
           "values": {
             "Light": {
-              "alias": "Primitives/yellow/400"
+              "alias": "Primitives/yellow/500"
             }
           }
         },
@@ -296,6 +322,21 @@
           }
         },
         {
+          "name": "field/fence-cap",
+          "type": "COLOR",
+          "scopes": [
+            "FRAME_FILL",
+            "SHAPE_FILL",
+            "STROKE_COLOR"
+          ],
+          "description": "Top rail of the chain-link fence.",
+          "values": {
+            "Light": {
+              "alias": "Primitives/gold/400"
+            }
+          }
+        },
+        {
           "name": "field/grass",
           "type": "COLOR",
           "scopes": [
@@ -304,7 +345,7 @@
           ],
           "values": {
             "Light": {
-              "alias": "Primitives/grass/600"
+              "alias": "Primitives/grass/400"
             }
           }
         },
@@ -317,9 +358,10 @@
           ],
           "values": {
             "Light": {
-              "alias": "Primitives/grass/500"
+              "alias": "Primitives/grass/300"
             }
-          }
+          },
+          "description": "Mow band, a little lighter than field/grass (the Rec field mockup draws 6% white over the grass)."
         },
         {
           "name": "field/line",
@@ -582,6 +624,19 @@
           }
         },
         {
+          "name": "text/link",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL"
+          ],
+          "description": "Link-style actions on the page and cards. A deeper orange, because action/primary as text is 2.38:1 on the page.",
+          "values": {
+            "Light": {
+              "alias": "Primitives/orange/700"
+            }
+          }
+        },
+        {
           "name": "text/on-accent",
           "type": "COLOR",
           "scopes": [
@@ -590,6 +645,20 @@
           "values": {
             "Light": {
               "alias": "Primitives/white"
+            }
+          }
+        },
+        {
+          "name": "text/on-action",
+          "type": "COLOR",
+          "scopes": [
+            "TEXT_FILL",
+            "SHAPE_FILL"
+          ],
+          "description": "Labels and icons on action/primary fills. Dark, because white on the orange is 2.69:1.",
+          "values": {
+            "Light": {
+              "alias": "Primitives/ink/900"
             }
           }
         },
@@ -703,7 +772,7 @@
           "type": "COLOR",
           "scopes": [],
           "values": {
-            "Value": "#F7F5EF"
+            "Value": "#F4F1E8"
           }
         },
         {
@@ -719,23 +788,31 @@
           "type": "COLOR",
           "scopes": [],
           "values": {
-            "Value": "#C4855A"
+            "Value": "#C8915F"
           }
         },
         {
-          "name": "grass/500",
+          "name": "gold/400",
           "type": "COLOR",
           "scopes": [],
           "values": {
-            "Value": "#458842"
+            "Value": "#F4C430"
           }
         },
         {
-          "name": "grass/600",
+          "name": "grass/300",
           "type": "COLOR",
           "scopes": [],
           "values": {
-            "Value": "#3B7A3A"
+            "Value": "#60A656"
+          }
+        },
+        {
+          "name": "grass/400",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#56A04B"
           }
         },
         {
@@ -755,11 +832,11 @@
           }
         },
         {
-          "name": "green/400",
+          "name": "green/500",
           "type": "COLOR",
           "scopes": [],
           "values": {
-            "Value": "#5CCB76"
+            "Value": "#2FB862"
           }
         },
         {
@@ -827,6 +904,14 @@
           }
         },
         {
+          "name": "navy/700",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#25447E"
+          }
+        },
+        {
           "name": "orange/500",
           "type": "COLOR",
           "scopes": [],
@@ -843,11 +928,27 @@
           }
         },
         {
+          "name": "orange/700",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#A84706"
+          }
+        },
+        {
           "name": "red/500",
           "type": "COLOR",
           "scopes": [],
           "values": {
             "Value": "#EF5A4C"
+          }
+        },
+        {
+          "name": "red/600",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#E5484D"
           }
         },
         {
@@ -920,6 +1021,14 @@
           "scopes": [],
           "values": {
             "Value": "#F5C04A"
+          }
+        },
+        {
+          "name": "yellow/500",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#F2AC16"
           }
         }
       ]
