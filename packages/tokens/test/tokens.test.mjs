@@ -42,6 +42,7 @@ test('committed outputs carry the Field Day direction colors', () => {
     'count-strike': '#F2AC16',
     'count-out': '#E5484D',
     'field-grass': '#56A04B',
+    'field-grass-stripe': '#60A656',
     'field-dirt': '#C8915F',
     'field-fence-cap': '#F4C430',
     'surface-page': '#F4F1E8',

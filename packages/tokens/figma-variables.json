@@ -358,9 +358,10 @@
           ],
           "values": {
             "Light": {
-              "alias": "Primitives/grass/500"
+              "alias": "Primitives/grass/300"
             }
-          }
+          },
+          "description": "Mow band, a little lighter than field/grass (the Rec field mockup draws 6% white over the grass)."
         },
         {
           "name": "field/line",
@@ -799,19 +800,19 @@
           }
         },
         {
+          "name": "grass/300",
+          "type": "COLOR",
+          "scopes": [],
+          "values": {
+            "Value": "#60A656"
+          }
+        },
+        {
           "name": "grass/400",
           "type": "COLOR",
           "scopes": [],
           "values": {
             "Value": "#56A04B"
-          }
-        },
-        {
-          "name": "grass/500",
-          "type": "COLOR",
-          "scopes": [],
-          "values": {
-            "Value": "#458842"
           }
         },
         {

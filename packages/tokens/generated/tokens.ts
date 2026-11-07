@@ -33,7 +33,7 @@ export const tokens = {
         "field/dirt": "#C8915F" as ColorToken,
         "field/fence-cap": "#F4C430" as ColorToken,
         "field/grass": "#56A04B" as ColorToken,
-        "field/grass-stripe": "#458842" as ColorToken,
+        "field/grass-stripe": "#60A656" as ColorToken,
         "field/line": "#FFFFFF" as ColorToken,
         "field/mound": "#D49A70" as ColorToken,
         "icon/bat": "#E3B072" as ColorToken,

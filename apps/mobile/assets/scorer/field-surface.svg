@@ -1,14 +1,14 @@
 <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="Surface">
-<rect id="Stripe" opacity="0.5" x="139.556" width="40.1111" height="390" fill="#458842"/>
-<rect id="Stripe_2" opacity="0.5" x="219.778" width="40.1111" height="390" fill="#458842"/>
-<rect id="Stripe_3" opacity="0.5" x="300" width="40.1111" height="390" fill="#458842"/>
-<rect id="Stripe_4" opacity="0.5" x="380.222" width="40.1111" height="390" fill="#458842"/>
-<rect id="Stripe_5" opacity="0.5" x="460.444" width="40.1111" height="390" fill="#458842"/>
-<path id="Warning track" opacity="0.9" d="M595 300C595 462.924 462.924 595 300 595C137.076 595 5 462.924 5 300C5 137.076 137.076 5 300 5C462.924 5 595 137.076 595 300Z" stroke-width="10" stroke="#C4855A"/>
-<circle id="Infield dirt" cx="300" cy="222" r="106" fill="#C4855A"/>
-<circle id="Home circle" cx="300" cy="296" r="26" fill="#C4855A"/>
-<path id="Infield grass" d="M300 282L364 218L300 154L236 218L300 282Z" fill="#3B7A3A"/>
+<rect id="Stripe" x="139.556" width="40.1111" height="390" fill="#60A656"/>
+<rect id="Stripe_2" x="219.778" width="40.1111" height="390" fill="#60A656"/>
+<rect id="Stripe_3" x="300" width="40.1111" height="390" fill="#60A656"/>
+<rect id="Stripe_4" x="380.222" width="40.1111" height="390" fill="#60A656"/>
+<rect id="Stripe_5" x="460.444" width="40.1111" height="390" fill="#60A656"/>
+<path id="Warning track" opacity="0.9" d="M595 300C595 462.924 462.924 595 300 595C137.076 595 5 462.924 5 300C5 137.076 137.076 5 300 5C462.924 5 595 137.076 595 300Z" stroke-width="10" stroke="#C8915F"/>
+<circle id="Infield dirt" cx="300" cy="222" r="106" fill="#C8915F"/>
+<circle id="Home circle" cx="300" cy="296" r="26" fill="#C8915F"/>
+<path id="Infield grass" d="M300 282L364 218L300 154L236 218L300 282Z" fill="#56A04B"/>
 <path id="Foul line 3B" opacity="0.85" d="M300 296L119.5 115.5" stroke-width="1.5" stroke="white"/>
 <path id="Foul line 1B" opacity="0.85" d="M300 296L480.5 115.5" stroke-width="1.5" stroke="white"/>
 <circle id="Mound" cx="300" cy="222" r="12" fill="#D49A70"/>
