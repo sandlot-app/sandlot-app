@@ -12,20 +12,9 @@ appId: host.exp.Exponent
 - extendedWaitUntil:
     visible: "Start demo game|Continue scoring"
     timeout: 15000
-- runFlow:
-    when:
-      visible:
-        id: "start-game"
-    commands:
-      - tapOn:
-          id: "start-game"
-- runFlow:
-    when:
-      visible:
-        id: "resume-game"
-    commands:
-      - tapOn:
-          id: "resume-game"
+# One tap for either button. A `runFlow: when` that finds nothing waits about 7 s, longer than the line below stays up.
+- tapOn:
+    id: "start-game|resume-game"
 
 # The first time a scoring screen opens, one line explains the mic before it is asked for.
 - extendedWaitUntil:
