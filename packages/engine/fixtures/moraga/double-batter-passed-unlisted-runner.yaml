@@ -1,0 +1,19 @@
+name: A double cannot put the batter on second past the unlisted runner who stays on first
+cite: Official Baseball Rules 5.09(b)(9) (a runner who passes a preceding runner before that runner is out is out),
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf;
+  the engine rejects the play as recorded so the scorer says what happened
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter: { home: 0, away: 2 }
+  bases:
+    "1": { player: { kind: opponent, id: away-2 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: double
+      trajectory: line
+      fielders: [LF]
+      advances: []
+then:
+  rejected: runner_passed

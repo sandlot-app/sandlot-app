@@ -1,4 +1,4 @@
-import { ENGINE_VERSION, EVENT_SCHEMA_VERSION } from '@sandlot/engine';
+import { canReplay, ENGINE_VERSION, EVENT_SCHEMA_VERSION } from '@sandlot/engine';
 import { demoSetup } from '../scoring/demo-game.ts';
 import type { ServerGame } from '../scoring/offline-game.ts';
 
@@ -46,7 +46,8 @@ export async function findServerGame(rows: ServerRows): Promise<ServerGameResult
     const game = await rows.game(session.game_id);
     if (!game) return { kind: 'none' };
     const pins = demoPins();
-    const fits = game.engine_version === pins.engineVersion && game.schema_version === pins.schemaVersion
+    // A new game is pinned to this app's engine, but a game pinned to an older version this engine still replays also fits.
+    const fits = canReplay(game.engine_version) && game.schema_version === pins.schemaVersion
       && canonical(game.rules) === canonical(pins.rules) && canonical(game.setup) === canonical(pins.setup)
       // A new synced game starts from the server's first play, under the game's current scoring session.
       && game.revision === 0 && game.lock_epoch === session.epoch;

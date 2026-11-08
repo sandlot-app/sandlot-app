@@ -49,8 +49,8 @@ export function stubAnswer(transcript: string, context: PressContext): Answer | 
   const home = (from: typeof on[number]) => ({ from, to: 'home' as const, ...nobody });
   switch (transcript.trim().toLowerCase()) {
     case 'double, everybody scores': return play(double(null, on.map(home)));
-    // K. Moss bats eighth for the Hawks, so this is a name in the wrong role unless Moss is up.
-    case 'moss doubles': return play(double('Moss', on.map(home)));
+    // J. Soto pitches for the Marlins while the Hawks bat, so this is a name in the wrong role unless Soto is up.
+    case 'soto doubles': return play(double('Soto', on.map(home)));
     // With two runners on, "the runner" doesn't say which one: the lead runner scores and the other stops at third, or both score.
     case 'double, the runner scores':
       if (on.length !== 2) return play(double(null, on.map(home)));

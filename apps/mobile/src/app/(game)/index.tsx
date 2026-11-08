@@ -73,7 +73,7 @@ function LiveGameCard() {
 }
 
 export default function GamesScreen() {
-  const { view, active, games, open, start } = useOfflineGame();
+  const { view, active, games, open } = useOfflineGame();
   const game = games.local;
   const available = view.kind === 'ready';
 
@@ -123,8 +123,7 @@ export default function GamesScreen() {
                 if (game) {
                   open('local');
                   router.push('/score');
-                } else if (await start('local') === 'started')
-                  router.push('/score');
+                } else router.push('/setup');
               }}
             >
               <Text style={styles.buttonLabel}>

@@ -62,8 +62,9 @@ export function units(commands: Command[]): [number, number][] {
 const rank = (to: Destination): number | null => to === 'out' ? null : to === 'home' ? 4 : to;
 
 /**
- * True when a runner ends up ahead of a runner who started in front of them, which can't happen on one play (the
- * engine doesn't check it). On a ball in play the batter counts too, starting behind everyone.
+ * True when a runner ends up ahead of a runner who started in front of them, which can't happen on one play. The
+ * engine refuses it too (`runner_passed`), so this is a second check that gives the same words. On a ball in play the
+ * batter counts too, starting behind everyone.
  */
 export function passesRunner(game: PressGame, commands: Command[]): boolean {
   return units(commands).some(([start, end]) => {

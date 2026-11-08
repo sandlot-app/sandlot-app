@@ -18,8 +18,7 @@ appId: host.exp.Exponent
       visible:
         id: "start-game"
     commands:
-      - tapOn:
-          id: "start-game"
+      - runFlow: _start-local-game.yaml
 - runFlow:
     when:
       visible:

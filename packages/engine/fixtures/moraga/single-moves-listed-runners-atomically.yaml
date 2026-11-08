@@ -1,5 +1,7 @@
 name: A single moves listed runners together and leaves an unlisted runner on third
-cite: Official Baseball Rules 5.06(a)(1), 5.08(a), 9.06; parent spec 10 runner advances
+cite: Official Baseball Rules 5.06(a)(1), 5.08(a), 5.09(b)(9), 9.06; parent spec 10 runner
+  advances. The runner from second is now tagged out instead of scoring, because scoring
+  would pass the runner who stays on third (5.09(b)(9))
 preset: moraga-mustang-first-half
 started: true
 given:
@@ -16,12 +18,13 @@ when:
       fielders: [LF]
       advances:
         - { runner: { kind: opponent, id: away-3 }, to: 2 }
-        - { runner: { kind: opponent, id: away-2 }, to: home }
+        - { runner: { kind: opponent, id: away-2 }, to: out, outType: non_force }
 then:
   bases:
     1: { player: { kind: opponent, id: away-4 }, chargedTo: { kind: player, id: home-1 } }
     2: { player: { kind: opponent, id: away-3 }, chargedTo: { kind: player, id: home-1 } }
     3: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
-  score: { home: 0, away: 1 }
-  runsThisHalf: 1
+  outs: 1
+  score: { home: 0, away: 0 }
+  runsThisHalf: 0
   nextBatter: { home: 0, away: 4 }

@@ -59,7 +59,7 @@ The page calls `get_snapshot(game_id, after_seq)` and subscribes to updates on i
 - It asks only for events after the last one it holds.
 - It sends one request at a time. A request that takes longer than 10 seconds is cancelled, the page shows "Reconnecting", and the next fetch goes ahead.
 
-The page replays the events through `@sandlot/engine` one play at a time, so each play can show the score after it. If the engine version that recorded the game differs from the page's, or the engine rejects a stored play, the page shows the server's cached state and the plays without per-play scores.
+The page replays the events through `@sandlot/engine` one play at a time, so each play can show the score after it. If the engine cannot replay the version that recorded the game (the page's own, or an older one `canReplay` lists, such as 0.1.1), or the engine rejects a stored play, the page shows the server's cached state and the plays without per-play scores.
 
 Plays name players by ID only. The page never shows a name.
 

@@ -32,4 +32,5 @@ Preconditions:
 - The local and live games are separate files on the phone (`sandlot-games.db`, `sandlot-synced.db`). Never clear app data to reset one.
 - The phone reads its session and game through the `scoring_sessions` and `games` select grants the hosted project has. A local stack from a newer Supabase CLI may not grant them; run `grant select on public.games, public.scoring_sessions, public.events to anon, authenticated;` on that local database only.
 - Reinstalling Expo Go signs the phone in as a new anonymous user, so the seed has to run again for the new phone ID.
+- The demo setup is now the second half with ten Hawks, who are the away side (the design's sample), so its pins changed. A hosted game seeded earlier reads "The server’s demo game can’t take this app’s plays" until it is seeded again with the current `demo-pins`.
 - A seeded game must be fresh (revision 0) and carry the phone's own demo pins, or Start live game says the server's game can't take this app's plays.

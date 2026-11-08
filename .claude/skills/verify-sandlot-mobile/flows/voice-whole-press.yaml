@@ -1,6 +1,6 @@
 appId: host.exp.Exponent
 # #103: the AI reads the whole press. Needs Metro started with
-# EXPO_PUBLIC_VOICE_STUB="double, everybody scores|Moss doubles|double, the runner scores". See features/voice-scoring.md.
+# EXPO_PUBLIC_VOICE_STUB="double, everybody scores|Soto doubles|double, the runner scores". See features/voice-scoring.md.
 # The stub answers like the AI, from the game the phone sends; the controller, decide() and the engine run for real.
 ---
 - runFlow:
@@ -18,8 +18,7 @@ appId: host.exp.Exponent
       visible:
         id: "start-game"
     commands:
-      - tapOn:
-          id: "start-game"
+      - runFlow: _start-local-game.yaml
 - runFlow:
     when:
       visible:
@@ -56,7 +55,7 @@ appId: host.exp.Exponent
 - extendedWaitUntil:
     visible:
       id: "voice-message"
-      text: ".* is up, not K\\. Moss\\."
+      text: ".* is up, not J\\. Soto\\."
     timeout: 15000
 - assertVisible:
     id: "waiting-plays"

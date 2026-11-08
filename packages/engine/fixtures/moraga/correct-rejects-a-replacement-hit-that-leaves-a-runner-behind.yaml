@@ -1,0 +1,24 @@
+name: A Fix whose replacement is a home run that leaves the runner on second behind is refused as runner_passed
+cite: Official Baseball Rules 5.09(b)(9) (a runner who passes a preceding runner before that runner is out is out),
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf;
+  Sandlot docs/contract.md Fix (a replacement is played like any play, so the engine's reason comes back) and Reject reasons; issue 102
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter: { home: 0, away: 2 }
+  bases:
+    "2": { player: { kind: opponent, id: away-2 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - - { kind: pitch, result: in_play }
+    - { kind: ball_in_play, outcome: single, trajectory: line, fielders: [LF], advances: [] }
+  - - kind: correct
+      target: play-1
+      replacement:
+        - { kind: pitch, result: in_play }
+        - kind: ball_in_play
+          outcome: home_run
+          trajectory: line
+          fielders: []
+          advances: []
+then:
+  rejected: runner_passed

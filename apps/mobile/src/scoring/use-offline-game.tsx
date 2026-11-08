@@ -10,6 +10,8 @@ import type { UploadStatus } from '../sync/upload.ts';
 import type { SqlDatabase } from './database.ts';
 import { blockedMessages, gameSummary } from './game-summary.ts';
 import { openNativeDatabase } from './native-database';
+import { startAction } from './game-setup.ts';
+import type { SetupDraft } from './game-setup.ts';
 import { openOfflineGame } from './offline-game.ts';
 import type { DemoAction, OpenResult, SavedGame } from './offline-game.ts';
 
@@ -28,6 +30,7 @@ const retryMs = 15_000;
 
 /** How starting a game went. A live game can't start until the server names this phone a game's scorer. */
 export type StartResult = 'started' | 'none' | 'mismatch' | 'refused' | 'offline' | 'unavailable';
+export type SetupStartResult = 'started' | 'unavailable' | { rejected: RejectCode };
 type ViewState =
   | { kind: 'loading' }
   | {
@@ -58,6 +61,8 @@ type ScoringContext = {
   open(slot: Slot): void;
   /** Starts `slot`'s game and opens it. The live game uses the game and session the server issued this phone. */
   start(slot: Slot): Promise<StartResult>;
+  /** Starts the local game with the season half and lineups the scorer chose in Game setup, or says why the engine refused. */
+  startSetup(setup: SetupDraft): Promise<SetupStartResult>;
   reopen(): void;
 };
 const Context = createContext<ScoringContext | null>(null);
@@ -262,20 +267,16 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
     reopen();
   }
 
-  async function start(slot: Slot): Promise<StartResult> {
+  /** Saves `action` as the start of `slot`'s game, as one play, and opens that game. */
+  async function startWith(slot: Slot, action: DemoAction): Promise<'started' | 'unavailable' | { rejected: RejectCode }> {
     const store = sessions.current[slot];
     if (!store || operation.current) return 'unavailable';
-    let action: DemoAction = { kind: 'start' };
-    if (slot === 'synced') {
-      if (!serverRows) return 'unavailable';
-      const found = await findServerGame(serverRows);
-      if (found.kind !== 'found') return found.kind;
-      action = { kind: 'start', server: found.server };
-    }
     const work = store.record(action);
     operation.current = work;
     try {
-      if ((await work).kind !== 'saved') return 'unavailable';
+      const result = await work;
+      if (result.kind === 'rejected') return { rejected: result.code };
+      if (result.kind !== 'saved') return 'unavailable';
     } finally {
       if (operation.current === work) operation.current = null;
     }
@@ -283,7 +284,21 @@ export function OfflineGameProvider({ children }: PropsWithChildren) {
     return 'started';
   }
 
-  return <Context value={{ view, active, games, upload, uploadSlow, record, open, start, reopen }}>{children}</Context>;
+  async function start(slot: Slot): Promise<StartResult> {
+    let action: DemoAction = { kind: 'start' };
+    if (slot === 'synced') {
+      if (!serverRows) return 'unavailable';
+      const found = await findServerGame(serverRows);
+      if (found.kind !== 'found') return found.kind;
+      action = { kind: 'start', server: found.server };
+    }
+    const result = await startWith(slot, action);
+    return result === 'started' ? 'started' : 'unavailable';
+  }
+
+  const startSetup = (setup: SetupDraft) => startWith('local', startAction(setup));
+
+  return <Context value={{ view, active, games, upload, uploadSlow, record, open, start, startSetup, reopen }}>{children}</Context>;
 }
 
 export function useOfflineGame(): ScoringContext {
@@ -302,6 +317,7 @@ function rejectionMessage(code: RejectCode): string {
     case 'invalid_runner_destination': return 'That runner destination is not allowed. Pickoff requires Out; safe advances must move forward.';
     case 'runner_not_on_base': return 'That runner is no longer on base. Cancel and open the play again.';
     case 'duplicate_runner': return 'Choose one destination for each runner.';
+    case 'runner_passed': return 'A runner cannot pass the runner ahead of them. Check where each runner finished.';
     case 'outs_dont_match_outcome': return 'The selected outs do not match the outcome. Check the runner destinations.';
     case 'batter_destination_missing': return 'Choose where the batter finished before saving.';
     case 'game_over': return 'This game is over. Undo the last play to correct it.';

@@ -54,7 +54,7 @@ The scorer's refresh token is kept in `supabase/.temp/send-samples.json`, so bot
 
 ## Reset the first-connection test games
 
-Schema 2 has no decoder for old uploads, so games pinned to an older engine or schema can't take new plays. Before the schema-2 rehearsal, #21 clears them. `reset-test-games.sql` lists every game whose pins differ from the engine's current pins, then deletes only the IDs you name.
+Schema 2 has no decoder for old uploads, so games pinned to an older schema, or to an engine version the engine no longer replays, can't take new plays. A game pinned to engine 0.1.1 still can (`canReplay`, [Version pins](../docs/contract.md#version-pins)). Before the schema-2 rehearsal, #21 clears the rest. `reset-test-games.sql` lists every game whose pins differ from the engine's current pins, 0.1.1 games included, then deletes only the IDs you name.
 
 ```sh
 pins="$(pnpm -s --filter @sandlot/engine sample-events --pins)"

@@ -70,36 +70,36 @@ const answering = (transcript: string, answer: Answer | null): Result<Parsed> =>
 const play = (reading: AnswerReading): Answer => ({ result: 'play', fix_last: false, readings: [reading] });
 const sorted = (commands: unknown[]) => commands.map((command) => (command as { kind: string }).kind);
 
-/** A walk to J. Soto, so L. Darcy is up with Soto on first. */
+/** A walk to K. Moss, so J. Ruiz is up with Moss on first. */
 async function walked(scorerOf: Awaited<ReturnType<typeof scorer>>) {
   for (let ball = 0; ball < 4; ball += 1) await scorerOf.record({ kind: 'pitch', result: 'ball' });
 }
 
 test('#103: a whole play said in one press goes to the AI with the game, saves once, and the banner names each runner', async () => {
-  const words = 'Darcy rips one to the gap and Soto comes around to score';
-  const scoring = await scorer(true, undefined, answering(words, play(double('Darcy', [{ from: '1', to: 'home', ...said('Soto') }]))));
+  const words = 'Ruiz rips one to the gap and Moss comes around to score';
+  const scoring = await scorer(true, undefined, answering(words, play(double('Ruiz', [{ from: '1', to: 'home', ...said('Moss') }]))));
   await walked(scoring);
   (await scoring.hold())(words);
   await settle();
   const context: PressContext = scoring.sent()[0]!.context;
   assert.equal(scoring.sent()[0]!.transcript, words);
-  assert.deepEqual([context.batter.name, context.runners['1']?.name], ['L. Darcy', 'J. Soto']);
+  assert.deepEqual([context.batter.name, context.runners['1']?.name], ['J. Ruiz', 'K. Moss']);
   assert.deepEqual(sorted(scoring.plays().filter((event) => event.source === 'voice').map((event) => event.command)), ['pitch', 'ball_in_play']);
-  assert.deepEqual(scoring.views.at(-1), { listening: false, card: null, message: null, banner: 'L. Darcy doubles, J. Soto scores' });
+  assert.deepEqual(scoring.views.at(-1), { listening: false, card: null, message: null, banner: 'J. Ruiz doubles, K. Moss scores' });
   assert.equal(scoring.game().state.score.away, 1);
 });
 
 test('#103: a question shows both readings, each checked by the engine, and the one tapped saves', async () => {
-  const words = 'Darcy doubles and the runner scores';
+  const words = 'Ruiz doubles and the runner scores';
   const question: Answer = { result: 'question', fix_last: false, readings: [
-    double('Darcy', [{ from: '1', to: '3', ...nobody }]), double('Darcy', [{ from: '1', to: 'home', ...nobody }])] };
+    double('Ruiz', [{ from: '1', to: '3', ...nobody }]), double('Ruiz', [{ from: '1', to: 'home', ...nobody }])] };
   const scoring = await scorer(true, undefined, answering(words, question));
   await walked(scoring);
   (await scoring.hold())(words);
   await settle();
   const card = scoring.views.at(-1)?.card;
   assert.equal(card?.kind, 'choose');
-  assert.deepEqual(card?.kind === 'choose' && card.choices, ['L. Darcy doubles, J. Soto to 3rd', 'L. Darcy doubles, J. Soto scores']);
+  assert.deepEqual(card?.kind === 'choose' && card.choices, ['J. Ruiz doubles, K. Moss to 3rd', 'J. Ruiz doubles, K. Moss scores']);
   assert.equal(scoring.plays().filter((event) => event.source === 'voice').length, 0, 'nothing saves before a tap');
   scoring.controller.choose(1);
   await settle();
@@ -107,12 +107,13 @@ test('#103: a question shows both readings, each checked by the engine, and the 
 });
 
 test('#103: a name in the wrong role saves nothing, and the line says who is up', async () => {
-  const scoring = await scorer(true, undefined, answering('Vance doubles', play(double('Vance', []))));
+  // Moss goes to third, so the double passes no one: the engine refuses a pass (`runner_passed`) before the names are checked.
+  const scoring = await scorer(true, undefined, answering('Bell doubles', play(double('Bell', [{ from: '1', to: '3', ...said('Moss') }]))));
   await walked(scoring);
-  (await scoring.hold())('Vance doubles');
+  (await scoring.hold())('Bell doubles');
   await settle();
   assert.equal(scoring.plays().filter((event) => event.source === 'voice').length, 0);
-  assert.equal(scoring.views.at(-1)?.message, 'L. Darcy is up, not C. Vance.');
+  assert.equal(scoring.views.at(-1)?.message, 'J. Ruiz is up, not S. Bell.');
 });
 
 test('#103: a fix, an answer voice-parse could not use, and a timeout each save nothing and point to taps', async () => {

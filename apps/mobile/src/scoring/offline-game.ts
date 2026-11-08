@@ -1,8 +1,10 @@
 import {
   applyGroup,
+  canReplay,
   ENGINE_VERSION,
   EVENT_SCHEMA_VERSION,
   parseUploadRequest,
+  presets,
   replay,
 } from '@sandlot/engine';
 import type {
@@ -13,11 +15,16 @@ import type {
   Event,
   EventId,
   GameId,
+  GameSetup,
   GameState,
   GroupId,
+  LineupSlot,
+  OpponentId,
   PitchResult,
+  PlayerId,
   PlayerRef,
   Position,
+  TeamSide,
   Trajectory,
   RejectCode,
   SessionId,
@@ -25,14 +32,33 @@ import type {
   UploadRequest,
 } from '@sandlot/engine';
 import type { SqlConnection, SqlDatabase } from './database.ts';
-import { demoLineups, demoSetup } from './demo-game.ts';
+import { demoLineups, gameSetup } from './demo-game.ts';
+import type { SeasonHalf } from './demo-game.ts';
+
+/**
+ * The setup games saved before the sample moved to the second half and the Hawks moved to the away side were stored
+ * with: first-half rules, a nine-player Hawks roster on the home side and the Marlins on the away side. Such a game
+ * reopens and replays under that stored setup, so it isn't read as corrupt.
+ */
+const legacySetup: GameSetup = {
+  rules: presets['moraga-mustang-first-half'],
+  roster: {
+    home: Array.from({ length: 9 }, (_, index): PlayerRef => ({ kind: 'player', id: `home-${index + 1}` as PlayerId })),
+    away: Array.from({ length: 9 }, (_, index): PlayerRef => ({ kind: 'opponent', id: `away-${index + 1}` as OpponentId })),
+  },
+  pitcherOutsEarlierToday: {},
+};
+const legacySetupJson = JSON.stringify(legacySetup);
 
 /** The game and scoring session the server issued this phone, from the seed script (docs/contract.md, Demo access). */
 export type ServerGame = { gameId: string; sessionId: string; lockEpoch: number };
 
 export type DemoAction =
-  /** With `server`, the new game is the server's game and its plays upload. Without it, the game stays on this phone. */
-  | { kind: 'start'; server?: ServerGame }
+  /**
+   * With `server`, the new game is the server's game and its plays upload. Without it, the game stays on this phone.
+   * `half` and `lineups` are what the scorer chose in Game setup; without them the game is the second-half sample game.
+   */
+  | { kind: 'start'; server?: ServerGame; half?: SeasonHalf; lineups?: Record<TeamSide, LineupSlot[]> }
   | { kind: 'pitch'; result: Exclude<PitchResult, 'in_play'> }
   /** `expectedRevision` pins a spoken undo to the game its press started on. */
   | { kind: 'undo'; expectedRevision?: number }
@@ -46,6 +72,8 @@ export type DemoAction =
 
 export type SavedGame = {
   id: GameId;
+  /** The roster and rules the game was set up with, by player ID. Replay the events with it. */
+  setup: GameSetup;
   revision: number;
   state: GameState;
   /** The saved events, so voice can replay the game when it routes a press. */
@@ -199,8 +227,9 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
   }
   const row = rows[0]!;
   if (rows.length !== 1) throw new SavedDataError('corrupt');
+  // A game keeps the engine version it was saved under; this engine opens it while it still replays that version.
   if (
-    row.engine_version !== ENGINE_VERSION ||
+    !canReplay(row.engine_version) ||
     row.schema_version !== EVENT_SCHEMA_VERSION
   )
     throw new SavedDataError('version');
@@ -208,10 +237,12 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
   if (
     row.context !== (sync ? 'synced' : 'local_demo') ||
     (sync && sync.game_id !== row.id) ||
-    syncRows.length > 1 ||
-    row.setup_json !== JSON.stringify(demoSetup)
+    syncRows.length > 1
   )
     throw new SavedDataError('corrupt');
+  const half = (['first', 'second'] as const).find((option) => row.setup_json === JSON.stringify(gameSetup(option)));
+  const setup = half ? gameSetup(half) : row.setup_json === legacySetupJson ? legacySetup : null;
+  if (!setup) throw new SavedDataError('corrupt');
   const lockEpoch = sync?.lock_epoch ?? 1;
   const groups: Event[][] = [];
   try {
@@ -285,7 +316,7 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
     if (ack.game_id !== row.id || ack.group_id !== pending.group_id || ack.ack_revision !== pending.first_seq + pending.event_count - 1)
       throw new SavedDataError('corrupt');
   });
-  const result = replay(demoSetup, events);
+  const result = replay(setup, events);
   if (!result.ok || result.state.status === 'pregame')
     throw new SavedDataError('corrupt');
   const last = activePlays(groups, row.bootstrap_group).at(-1);
@@ -297,13 +328,14 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
     groups,
     game: {
       id: row.id as GameId,
+      setup,
       revision: events.length,
       state: result.state,
       events,
       waitingPlays: outbox.length - acks.length,
       canUndo: undoTarget(groups, row.bootstrap_group) !== null,
       lastPlay: last?.map((event) => event.command) ?? null,
-      lastPitchNumber: last ? pitchNumber(events, last, result.state) : null,
+      lastPitchNumber: last ? pitchNumber(setup, events, last, result.state) : null,
       context: sync ? { kind: 'synced', sessionId: sync.session_id, lockEpoch } : { kind: 'local_demo' },
     },
   };
@@ -320,9 +352,9 @@ function activePlays(groups: Event[][], bootstrap: string): Event[][] {
 }
 
 /** The pitcher's count after `play`'s pitch. The pitcher is read from the state before the play, since a third out changes sides. */
-function pitchNumber(events: Event[], play: Event[], after: GameState): number | null {
+function pitchNumber(setup: GameSetup, events: Event[], play: Event[], after: GameState): number | null {
   if (!play.some((event) => event.command.kind === 'pitch')) return null;
-  const before = applyGroup(demoSetup, events, [{ kind: 'undo', target: play[0]!.group }]);
+  const before = applyGroup(setup, events, [{ kind: 'undo', target: play[0]!.group }]);
   if (!before.ok) return null;
   const pitcher = before.state.pitchers[before.state.half === 'top' ? 'home' : 'away'];
   return pitcher ? (after.pitchCounts[pitcher.id] ?? null) : null;
@@ -412,6 +444,8 @@ export async function openOfflineGame(
                 result = { kind: 'stale', game: current!.game };
                 return;
               }
+              const setup = current?.game.setup ?? gameSetup((action.kind === 'start' && action.half) || 'second');
+              const lineups = (action.kind === 'start' && action.lineups) || demoLineups;
               let commands: Command[];
               if (action.kind === 'start')
                 commands = [
@@ -420,7 +454,7 @@ export async function openOfflineGame(
                     control: {
                       kind: 'lineup_set',
                       side: 'away',
-                      lineup: demoLineups.away,
+                      lineup: lineups.away,
                     },
                   },
                   {
@@ -428,7 +462,7 @@ export async function openOfflineGame(
                     control: {
                       kind: 'lineup_set',
                       side: 'home',
-                      lineup: demoLineups.home,
+                      lineup: lineups.home,
                     },
                   },
                   { kind: 'game', control: { kind: 'start', umpireStart: at } },
@@ -486,7 +520,7 @@ export async function openOfflineGame(
                 commands = [{ kind: 'undo', target }];
               }
               const accepted = applyGroup(
-                demoSetup,
+                setup,
                 current?.events ?? [],
                 commands,
               );
@@ -505,7 +539,7 @@ export async function openOfflineGame(
                   'INSERT INTO local_games VALUES (1, ?, ?, ?, ?, ?, ?)',
                   [
                     gameId,
-                    JSON.stringify(demoSetup),
+                    JSON.stringify(setup),
                     ENGINE_VERSION,
                     EVENT_SCHEMA_VERSION,
                     server ? 'synced' : 'local_demo',

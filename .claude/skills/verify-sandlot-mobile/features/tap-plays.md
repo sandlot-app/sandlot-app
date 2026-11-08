@@ -12,7 +12,7 @@ From a saved local game, tap In play to choose an outcome, the fielder and runne
 
 ## How to get to it (user POV)
 
-- From Your games, tap Start demo game (`start-game`) or Continue scoring (`resume-game`).
+- From Your games, tap Start demo game (`start-game`, then both lineups and Start game as in lineups.md) or Continue scoring (`resume-game`).
 - From the scorer, tap In play (`pitch-in-play`). Choose a result, select a fielder or Skip, then review every destination and Save play.
 - From the scorer, tap More (`scorer-more`), then Steal attempt (`more-steal`), Wild pitch (`more-wild_pitch`), Passed ball (`more-passed_ball`) or Pickoff (`more-pickoff`).
 - Tap Undo (`scorer-undo`) in the scorer to reverse the most recent saved play.

@@ -8,6 +8,7 @@ PNG exports of the Figma frames and components that tickets point to, so agents 
 | `scorer-more-milestone-4.png` | Scorer — More (milestone 4) `165:11367` |
 | `scorer-game-setup.png` | Scorer — Game setup (milestone 4) `167:11241` |
 | `scorer-lineup-hawks.png` | Scorer — Lineup · Hawks (full length) `168:11244` |
+| (no PNG yet) | Scorer — Lineup · Position list (milestone 4) `262:14318`, and Lineup · Add a player (milestone 4) `262:14532`: the position list with Not playing today, and the roster sheet after a removal |
 | `scorer-in-play-1-outcome.png` | Scorer — In play · 1 Outcome `75:2900` |
 | `scorer-in-play-2-fielder.png` | Scorer — In play · 2 Fielder `75:3162` |
 | `scorer-in-play-3-runners.png` | Scorer — In play · 3 Runners `75:3487` |
