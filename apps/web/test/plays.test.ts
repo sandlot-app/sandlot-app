@@ -99,6 +99,19 @@ describe('buildTimeline', () => {
     expect(afterUndo.state).toMatchObject({ score: { away: 0, home: 0 } });
   });
 
+  it('replays a game pinned to 0.1.1 as it does a current one, since this engine still replays 0.1.1 games', () => {
+    const events = sampleEvents();
+    // A stale server state, so a timeline that fell back to it would show.
+    const cached = { ...serverState(events), score: { away: 7, home: 3 } };
+
+    const older = buildTimeline(pins({ engineVersion: '0.1.1' }), events, cached);
+
+    expect(older).toEqual(buildTimeline(pins(), events, cached));
+    expect(older.state).not.toBe(cached);
+    expect(older.state).toEqual(serverState(events));
+    expect(older.plays.every((play) => play.scoreAfter !== null && play.inning !== null && play.half !== null)).toBe(true);
+  });
+
   it('keeps the plays and the server state when the game was recorded under another engine version', () => {
     const events = sampleEvents();
     const cached = { ...serverState(events), score: { away: 7, home: 3 } };

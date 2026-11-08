@@ -1,0 +1,10 @@
+name: A Fix mixed with an Undo is refused as a Fix that isn't alone
+cite: Sandlot docs/contract.md Fix, a group that mixes a Fix with other commands is rejected; issue 102
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: ball }
+  - - { kind: undo, target: play-1 }
+    - { kind: correct, target: play-1, replacement: [] }
+then:
+  rejected: correct_must_be_alone

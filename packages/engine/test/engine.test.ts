@@ -138,11 +138,53 @@ describe('applyGroup', () => {
     [{ kind: 'runner', event: 'defensive_indifference', runner: away(1), to: 2 }],
     [{ kind: 'batter_out', reason: 'thrown_bat' }],
     [{ kind: 'substitution', side: 'home', change: { kind: 'defensive', in: home(2), position: 'SS' } }],
-    [{ kind: 'correct', target: 'p-2' as GroupId, replacement: [] }],
   ];
   for (const commands of notYet) {
     it(`returns not_implemented for ${commands.map((c) => c.kind).join(' + ')}`, () => {
       expect(applyGroup(setup, started, commands)).toEqual({ ok: false, code: 'not_implemented' });
     });
   }
+});
+
+describe('a Fix', () => {
+  const played = events([
+    ...started.map((event) => [event.command]),
+    [{ kind: 'pitch', result: 'ball' }],
+  ]);
+  const target = played.at(-1)!.group;
+  const fix: Command[] = [{ kind: 'correct', target, replacement: [{ kind: 'pitch', result: 'called_strike' }] }];
+
+  it('leaves the stored events unchanged and counts only the replacement', () => {
+    const before = structuredClone(played);
+    const fixed = applyGroup(setup, played, fix);
+    expect(played).toEqual(before);
+    expect(fixed.ok && { count: fixed.state.count, pitchCounts: fixed.state.pitchCounts }).toEqual({
+      count: { balls: 0, strikes: 1, pitches: 1 },
+      pitchCounts: { 'home-1': 1, 'away-1': 0 },
+    });
+  });
+
+  it('replays to the same game once the Fix is stored beside the play it replaced', () => {
+    const fixed = applyGroup(setup, played, fix);
+    const stored = [...played, ...events([fix]).map((event, i) => ({ ...event, id: `fix-${i}` as EventId, seq: played.length + 1 + i, group: 'fix' as GroupId }))];
+    expect(replay(setup, stored)).toEqual(fixed);
+  });
+
+  it('refuses a replacement the engine refuses, with that replacement\'s own reason', () => {
+    const refused: Command[] = [{ kind: 'correct', target, replacement: [{ kind: 'runner', event: 'wild_pitch', runner: away(1), to: 2 }] }];
+    expect(applyGroup(setup, played, refused)).toEqual({ ok: false, code: 'runner_not_on_base' });
+  });
+
+  it('refuses a replacement that names a player outside the roster', () => {
+    const stranger: PlayerRef = { kind: 'opponent', id: 'away-99' as OpponentId };
+    const refused: Command[] = [{ kind: 'correct', target, replacement: [{ kind: 'runner', event: 'wild_pitch', runner: stranger, to: 2 }] }];
+    expect(applyGroup(setup, played, refused)).toEqual({ ok: false, code: 'unknown_player' });
+  });
+
+  it('refuses a Fix of a play that does not exist', () => {
+    expect(applyGroup(setup, played, [{ kind: 'correct', target: 'nope' as GroupId, replacement: [] }]))
+      .toEqual({ ok: false, code: 'correct_not_latest' });
+    expect(applyGroup(setup, [], [{ kind: 'correct', target, replacement: [] }]))
+      .toEqual({ ok: false, code: 'correct_not_latest' });
+  });
 });

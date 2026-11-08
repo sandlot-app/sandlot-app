@@ -1,0 +1,10 @@
+name: A Fix shares its play with no other command
+cite: Sandlot docs/contract.md Fix, as an undo play holds only the undo; issue 102
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: ball }
+  - - { kind: correct, target: play-1, replacement: [{ kind: pitch, result: foul }] }
+    - { kind: pitch, result: ball }
+then:
+  rejected: correct_must_be_alone

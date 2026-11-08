@@ -1,4 +1,4 @@
-import { applyGroup, ENGINE_VERSION, EVENT_SCHEMA_VERSION, initialState } from '@sandlot/engine';
+import { applyGroup, canReplay, EVENT_SCHEMA_VERSION, initialState } from '@sandlot/engine';
 import type {
   BallInPlayOutcome,
   Base,
@@ -212,6 +212,15 @@ function safeGroupText(commands: Command[], contexts: CommandContext[], playerLa
 
 type Group = { id: GroupId; at: Timestamp; commands: Command[]; start: number };
 
+type StandingGroup = {
+  id: GroupId;
+  original: Group;
+  originalIndex: number;
+  commands: Command[];
+  afterIndex: number;
+  replaced?: StandingGroup;
+};
+
 const ON_FIELD: ReadonlySet<Command['kind']> = new Set(['pitch', 'ball_in_play', 'runner']);
 
 function splitGroups(events: Event[]): Group[] {
@@ -227,7 +236,7 @@ function splitGroups(events: Event[]): Group[] {
 type Replayed = { setup: GameSetup; initial: GameState; after: GameState[] };
 
 function replayEachGroup(pins: Pins, events: Event[], groups: Group[]): Replayed | null {
-  if (pins.engineVersion !== ENGINE_VERSION || pins.schemaVersion !== EVENT_SCHEMA_VERSION) return null;
+  if (!canReplay(pins.engineVersion) || pins.schemaVersion !== EVENT_SCHEMA_VERSION) return null;
   const setup: GameSetup = { ...pins.setup, rules: pins.rules };
   const after: GameState[] = [];
   for (const group of groups) {
@@ -242,9 +251,26 @@ function replayEachGroup(pins: Pins, events: Event[], groups: Group[]): Replayed
 const bookkeeping = (command: Command): boolean =>
   command.kind === 'undo' || (command.kind === 'game' && (command.control.kind === 'lineup_set' || command.control.kind === 'start'));
 
-function undoTarget(group: Group): GroupId | null {
-  const first = group.commands[0];
-  return first?.kind === 'undo' ? first.target : null;
+function standingGroups(groups: Group[]): StandingGroup[] {
+  const standing: StandingGroup[] = [];
+  groups.forEach((group, index) => {
+    const command = group.commands[0];
+    const latest = standing.at(-1);
+    if (group.commands.length === 1 && command?.kind === 'undo') {
+      if (latest?.id === command.target) {
+        standing.pop();
+        if (latest.replaced) standing.push(latest.replaced);
+      }
+      return;
+    }
+    if (group.commands.length === 1 && command?.kind === 'correct' && latest?.id === command.target) {
+      standing.pop();
+      standing.push({ ...latest, id: group.id, commands: command.replacement, afterIndex: index, replaced: latest });
+      return;
+    }
+    standing.push({ id: group.id, original: group, originalIndex: index, commands: group.commands, afterIndex: index });
+  });
+  return standing;
 }
 
 const battingSide = (half: Half): TeamSide => (half === 'top' ? 'away' : 'home');
@@ -315,11 +341,11 @@ export function buildTimeline(pins: Pins, events: Event[], serverState: GameStat
   const groups = splitGroups(events);
   const replayed = replayEachGroup(pins, events, groups);
   const { label } = rosterFor(pins.setup);
-  const undone = new Set(groups.flatMap((group) => undoTarget(group) ?? []));
-  const plays = groups.flatMap((group, index): Play[] => {
-    if (undone.has(group.id) || group.commands.every(bookkeeping)) return [];
-    const before = replayed ? (index === 0 ? replayed.initial : replayed.after[index - 1]) : undefined;
-    const after = replayed?.after[index];
+  const plays = standingGroups(groups).flatMap(({ original, originalIndex, commands, afterIndex }): Play[] => {
+    if (commands.every(bookkeeping)) return [];
+    const group = { ...original, commands };
+    const before = replayed ? (originalIndex === 0 ? replayed.initial : replayed.after[originalIndex - 1]) : undefined;
+    const after = replayed?.after[afterIndex];
     const contexts = replayed && before && after ? commandContexts(replayed, label, events, group, before, after) : [];
     return [
       {
