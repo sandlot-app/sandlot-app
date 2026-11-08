@@ -7,8 +7,8 @@ import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
 /**
- * The Scorer Bar's text grows with the phone's text size up to Extra Extra Extra Large (about 1.35 times), then holds,
- * so the pinned bar never outgrows a small phone at the accessibility sizes above it and every control stays on screen.
+ * The Scorer Bar's text, the Voice Bar's label included, grows with the phone's text size up to Extra Extra Extra Large
+ * (about 1.35 times), then holds, so the pinned bar never outgrows a small phone at the accessibility sizes above it.
  */
 const BAR_TEXT_SCALE = 1.36;
 const dragTransform = (translateY: number) => ({ transform: [{ translateY }] });
@@ -265,7 +265,7 @@ export function VoiceBar({ listening, mic = 'off', disabled = false, onStart, on
     style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, pressTransform(scale)]} testID={testID}>
     {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
     {/* Larger system text shrinks the label to fit the bar, down to 80%, instead of cutting it off. */}
-    <Text style={styles.voiceLabel} numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+    <Text style={styles.voiceLabel} numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={BAR_TEXT_SCALE}>{label}</Text>
   </Animated.View>;
 }
 
