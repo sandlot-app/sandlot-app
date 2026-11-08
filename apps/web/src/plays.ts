@@ -1,4 +1,4 @@
-import { applyGroup, ENGINE_VERSION, EVENT_SCHEMA_VERSION, initialState } from '@sandlot/engine';
+import { applyGroup, canReplay, EVENT_SCHEMA_VERSION, initialState } from '@sandlot/engine';
 import type {
   BallInPlayOutcome,
   Base,
@@ -236,7 +236,7 @@ function splitGroups(events: Event[]): Group[] {
 type Replayed = { setup: GameSetup; initial: GameState; after: GameState[] };
 
 function replayEachGroup(pins: Pins, events: Event[], groups: Group[]): Replayed | null {
-  if (pins.engineVersion !== ENGINE_VERSION || pins.schemaVersion !== EVENT_SCHEMA_VERSION) return null;
+  if (!canReplay(pins.engineVersion) || pins.schemaVersion !== EVENT_SCHEMA_VERSION) return null;
   const setup: GameSetup = { ...pins.setup, rules: pins.rules };
   const after: GameState[] = [];
   for (const group of groups) {

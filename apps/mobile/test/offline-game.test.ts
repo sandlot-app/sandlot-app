@@ -334,6 +334,29 @@ test('rapid taps get an explicit busy result and never duplicate a pitch', async
   await database.close();
 });
 
+test('a game saved under engine 0.1.1 reopens with its plays, takes new ones and stays pinned to 0.1.1', async () => {
+  const database = connect(':memory:');
+  const opened = await openOfflineGame(database, boundary);
+  assert.equal(opened.kind, 'ready');
+  if (opened.kind !== 'ready') return;
+  await opened.record({ kind: 'start' });
+  const pitched = await opened.record({ kind: 'pitch', result: 'ball' });
+  assert.equal(pitched.kind, 'saved');
+  if (pitched.kind !== 'saved') return;
+  await database.exec("UPDATE local_games SET engine_version = '0.1.1'");
+
+  const reopened = await openOfflineGame(database, boundary);
+  assert.equal(reopened.kind, 'ready');
+  if (reopened.kind !== 'ready') return;
+  assert.deepEqual(reopened.game, pitched.game);
+  const next = await reopened.record({ kind: 'pitch', result: 'called_strike' });
+  assert.equal(next.kind, 'saved');
+  if (next.kind === 'saved') assert.deepEqual(next.game.state.count, { balls: 1, strikes: 1, pitches: 2 });
+  const pinned = await database.all<{ engine_version: string }>('SELECT engine_version FROM local_games');
+  assert.deepEqual(pinned.map((row) => row.engine_version), ['0.1.1']);
+  await database.close();
+});
+
 for (const mutation of [
   {
     sql: "UPDATE local_games SET engine_version = 'future'",

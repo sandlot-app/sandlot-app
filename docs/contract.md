@@ -54,7 +54,7 @@ The caller's identity comes from the sign-in token only, never from the request 
    - If the hash or the user differs, return `id_conflict` and stop.
    - If the group is not there, check that the request's session is this user's current session for the game and that its epoch matches the events' `lockEpoch`. If not, return `stale_session` and stop. A caller who does not hold scoring never reaches the engine. `commit_group` checks again under the lock.
 4. Call `get_base(game_id)`. It returns the pins, the revision, and every accepted event in one statement.
-   - If the game's `engineVersion` pin differs from the server's `ENGINE_VERSION`, or its `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
+   - If the engine cannot replay the game's `engineVersion` pin (`canReplay` is false, see [Version pins](#version-pins)), or its `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
 5. If the revision is not the group's first `seq` minus 1, look up the group again. If it is there now, apply the rule in step 3. If it is still missing, return `stale_revision`.
 6. Replay the accepted events and apply the group with the engine. If the engine rejects any command, reject the whole group. The `rejected` response carries the engine's reject code as `reason`.
    - Before it returns `rejected`, look up the group again. If an accepted group with that ID is there now, apply the rule in step 3 instead.
@@ -161,10 +161,14 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 ## Version pins
 
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
-- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.2.0'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
+- The engine exports `EVENT_SCHEMA_VERSION = 2`, `ENGINE_VERSION = '0.2.0'`, `REPLAYABLE_ENGINE_VERSIONS = ['0.2.0', '0.1.1']` and `canReplay(version)`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
+- A new game is pinned to `ENGINE_VERSION`. A game keeps its pin for good, and this engine replays and continues it while `canReplay` accepts that version. The server (`sync-events`), the phone (its saved game and `findServerGame`) and the live page all ask `canReplay`, so one list decides. None of them compares version strings. A version `canReplay` refuses is `unsupported_version` on the server, a blocked saved game or a `mismatch` on the phone, and the server's cached state without per-play scores on the live page.
+- Why 0.1.1 still replays under 0.2.0: engine 0.2.0 changed no existing fixture result. Its lock only gained the twelve `correct-*` fixtures. Engine 0.1.1 rejected every `correct` command as `not_implemented`, so no stored 0.1.1 history holds one, and every history it accepted replays to the same state. `packages/engine/compat/fixture-results-0.1.1.json` is the 0.1.1 lock, frozen byte for byte from commit `53342cc`, and an engine test fails if any fixture in it now gives a different result. A version stays listed only while that test passes. 0.1.0 is not listed, because 0.1.1 changed two of its fixture results and dropped two (the undo reject reasons).
+- A Fix on an older game: the engine does not branch on a game's pin. A game pinned to 0.1.1 continues under 0.2.0's rules and takes a Fix, which 0.1.1 itself would have rejected as `not_implemented`. Its pin stays 0.1.1, and nothing it already holds replays differently. Only a game that holds a Fix needs engine 0.2.0 or newer, so rolling the server or the page back to an older engine would stop that game at its first Fix.
+- When `ENGINE_VERSION` goes up, the outgoing version leaves the list unless it is kept on purpose, with its lock frozen in `compat/` (steps in [Engine verification](engine-verification.md#keep-an-older-version-replaying)). Dropping a version means every game pinned to it stops replaying on the server, the phone and the page, so the PR that drops it says so.
 - Local verification compares that artifact with the current engine and fixtures. CI also compares it with the trusted PR base or main-push predecessor and rejects changed results without an engine-version increase. [Engine verification](engine-verification.md) describes the commands and the initial release baseline.
 - Each upload carries `schemaVersion`. The server returns `unsupported_version` when it differs from the server's `EVENT_SCHEMA_VERSION` or from the game's pinned `schema_version`. The parser checks it before any command, so an old-format request returns `unsupported_version`, not `invalid`.
-- The server also returns `unsupported_version` for a game pinned to a different engine version. Milestone 6 still requires the phone to refuse scoring under mismatched pins.
+- The server also returns `unsupported_version` for a game pinned to an engine version `canReplay` refuses. Milestone 6 still requires the phone to refuse scoring under pins it cannot replay.
 - Joint decision #13 uses schema 2 without an old-request decoder. Existing stored games are first-connection test games. The existing reset workflow must clear those test games before the next full scoring and sync rehearsal. Targets and execution are tracked in [#21](https://github.com/sandlot-app/sandlot-app/issues/21). This local change performs no hosted reset or deployment.
 - Do not rewrite historical events, hashes, or immutable pins. An old offline request retains its original content.
 
@@ -334,7 +338,7 @@ The demo meets every milestone 6 check in Kevin's design, with these changes:
 
 - Scoring handoff has `take_over` and its tests, but no screen.
 - Rejected work has **Discard from here**, but no review screen.
-- A version mismatch refuses to score. There is no upgrade path.
+- A game pinned to an engine version the app cannot replay refuses to score. There is no upgrade path.
 - Corrections to older plays wait for the beta.
 
 Kevin must agree to these changes before they count.

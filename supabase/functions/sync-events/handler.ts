@@ -1,7 +1,7 @@
 import { parseUploadRequest } from '../../../packages/engine/src/contract.ts';
 import { applyGroup, type RejectCode } from '../../../packages/engine/src/engine.ts';
 import type { Event, GameSetup, RuleSet } from '../../../packages/engine/src/types.ts';
-import { ENGINE_VERSION } from '../../../packages/engine/src/version.ts';
+import { canReplay } from '../../../packages/engine/src/version.ts';
 
 export type { UploadRequest } from '../../../packages/engine/src/contract.ts';
 export type UploadEvent = Event;
@@ -102,7 +102,8 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
 
   const base = await store.getBase(first.gameId);
   if (!base) return { ok: false, code: 'invalid' };
-  if (base.engineVersion !== ENGINE_VERSION || base.schemaVersion !== schemaVersion) {
+  // The game keeps the version it was pinned to; this engine replays it while that version is listed as replayable.
+  if (!canReplay(base.engineVersion) || base.schemaVersion !== schemaVersion) {
     return { ok: false, code: 'unsupported_version' };
   }
   // A concurrent request can commit this group after the lookup above, which makes

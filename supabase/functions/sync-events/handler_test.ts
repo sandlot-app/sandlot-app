@@ -463,6 +463,28 @@ Deno.test('after a takeover the new session scores with the new lock epoch', asy
   strictEqual(db.groups.size, 4);
 });
 
+Deno.test('a game pinned to 0.1.1 still takes uploads, since this engine replays 0.1.1 games', async () => {
+  const { store, groups, base } = memoryStore();
+  base.engineVersion = '0.1.1';
+  await sendAll(store, sample.slice(0, 5));
+  strictEqual(groups.size, 5);
+  strictEqual(base.revision, 5);
+  strictEqual(base.engineVersion, '0.1.1');
+});
+
+Deno.test('a Fix on a game pinned to 0.1.1 is applied, as this engine continues the game under its own rules', async () => {
+  const { store, base } = memoryStore();
+  base.engineVersion = '0.1.1';
+  await sendAll(store, sample.slice(0, 4));
+  const fix = request(5, 'fix', [{ kind: 'correct', target: sample[3].events[0].group, replacement: [{ kind: 'pitch', result: 'called_strike' }] }]);
+  deepStrictEqual(await syncEvents(USER, fix, store), { ok: true, revision: 5 });
+  const { rules, ...setup } = sampleSetup();
+  const replayed = replay({ ...setup, rules }, base.events);
+  deepStrictEqual(replayed.ok && replayed.state.count, { balls: 0, strikes: 1, pitches: 1 });
+  deepStrictEqual(base.state, replayed.ok ? replayed.state : null);
+  strictEqual(base.engineVersion, '0.1.1');
+});
+
 Deno.test('a game pinned to a different engine version is unsupported_version', async () => {
   const { store, groups, base } = memoryStore();
   base.engineVersion = '0.0.0';

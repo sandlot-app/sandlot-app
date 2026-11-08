@@ -33,6 +33,15 @@ describe('the family timeline after a Fix', () => {
     expect(after.state?.count).toEqual({ balls: 0, strikes: 1, pitches: 1 });
   });
 
+  it('applies a Fix on a game pinned to 0.1.1, which this engine continues', () => {
+    const original = withPlay(sampleEvents(), 'original', pitch('ball'));
+    const corrected = fix(original, 'fix', 'original', [pitch('called_strike')]);
+    const { plays, state } = buildTimeline(pins({ engineVersion: '0.1.1' }), corrected, null);
+
+    expect(plays.at(-1)).toMatchObject({ group: 'original', text: 'Strike looking' });
+    expect(state).toEqual(serverState(withPlay(sampleEvents(), 'expected', pitch('called_strike'))));
+  });
+
   it('replaces a scoring hit with an out, including its batter, score and clip time', () => {
     const originalAt = '2026-10-25T17:20:00.000Z' as Timestamp;
     const fixedAt = '2026-10-25T17:21:00.000Z' as Timestamp;
