@@ -12,9 +12,26 @@ appId: host.exp.Exponent
 - extendedWaitUntil:
     visible: "Start demo game|Continue scoring"
     timeout: 15000
-# One tap for either button. A `runFlow: when` that finds nothing waits about 7 s, longer than the line below stays up.
-- tapOn:
-    id: "start-game|resume-game"
+# Which button the home screen shows is decided here, before leaving it: a `runFlow: when visible` that finds nothing
+# waits about 7 s, longer than the line below stays up, so no such check may run once the scoring screen is open.
+- evalScript: ${output.fresh = false}
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - evalScript: ${output.fresh = true}
+- runFlow:
+    when:
+      true: ${output.fresh}
+    commands:
+      - runFlow: _start-local-game.yaml
+- runFlow:
+    when:
+      true: ${!output.fresh}
+    commands:
+      - tapOn:
+          id: "resume-game"
 
 # The first time a scoring screen opens, one line explains the mic before it is asked for.
 - extendedWaitUntil:
