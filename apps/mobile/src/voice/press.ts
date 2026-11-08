@@ -1,13 +1,14 @@
-import { isEmptyTranscript, parsePhrase, type ParseResult } from '@sandlot/voice';
+import { readLocally, type Heard, type PressContext } from '@sandlot/voice';
 import { Clip, SAMPLE_RATE, toBase64 } from './pcm.ts';
 import { liveTimeouts, openLive, type Live, type LiveTimeouts, type OpenSocket } from './realtime.ts';
-import type { ParseContext, Session, VoiceApi, VoiceFailure } from './voice-api.ts';
+import type { Session, VoiceApi, VoiceFailure } from './voice-api.ts';
 
 // One hold of the voice bar. The mic starts on touch-down, before any connection opens, so no words are lost
 // (plan, Voice scoring step 1). Live words stream while the scorer holds. On release the final transcript is read
-// by the phone's own grammar, and voice-parse reads only what that grammar can't. When streaming didn't connect,
-// the recorded clip goes to voice-parse instead (spec A4, A5). Nothing here saves a play: the caller routes what
-// was heard through route(), and the engine decides (rule 6).
+// by the phone only when it's pitch calls or a lone undo; anything else goes to voice-parse, where the AI reads the
+// whole press with the game in view (ADR 0007). When streaming didn't connect, the recorded clip goes to voice-parse
+// instead (spec A4, A5). Nothing here saves a play: the caller passes what was heard to decide(), and the engine
+// decides (rule 6).
 
 export type Mic = {
   /** Starts capture. Resolves false when the scorer hasn't allowed the microphone. */
@@ -17,14 +18,14 @@ export type Mic = {
 
 export type PressUpdate =
   | { kind: 'words'; words: string }
-  | { kind: 'heard'; transcript: string; parsed: ParseResult }
+  | { kind: 'heard'; transcript: string; heard: Heard }
   | { kind: 'failed'; failure: VoiceFailure };
 
 export type VoiceDeps = { mic: Mic; api: VoiceApi; openSocket: OpenSocket; timeouts?: LiveTimeouts };
-export type PressInput = { names: string[]; context: ParseContext };
+export type PressInput = { names: string[]; context: PressContext };
 export type PressHandle = { release(): void; cancel(): void };
 
-const nothing = (): PressUpdate => ({ kind: 'heard', transcript: '', parsed: parsePhrase('') });
+const nothing = (): PressUpdate => ({ kind: 'heard', transcript: '', heard: { kind: 'empty' } });
 
 export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update: PressUpdate) => void): PressHandle {
   const timeouts = deps.timeouts ?? liveTimeouts;
@@ -81,11 +82,11 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
   });
 
   async function heard(transcript: string) {
-    const local = parsePhrase(transcript);
-    if (isEmptyTranscript(transcript) || local.kind !== 'unclear') return emit({ kind: 'heard', transcript, parsed: local });
+    const local = readLocally(transcript);
+    if (local) return emit({ kind: 'heard', transcript, heard: local });
     const result = await deps.api.parse({ transcript, context: input.context });
-    // When voice-parse can't help, route() still says "Didn't understand" and points to the buttons.
-    emit({ kind: 'heard', transcript, parsed: result.ok && result.value.parsed ? result.value.parsed : local });
+    if (!result.ok) return emit({ kind: 'failed', failure: result.failure });
+    emit({ kind: 'heard', transcript, heard: result.value.answer ? { kind: 'answer', answer: result.value.answer } : { kind: 'unusable' } });
   }
 
   async function release() {
@@ -106,8 +107,8 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
     if (streamed !== null) return heard(streamed);
     const result = await deps.api.parse({ audio: toBase64(clip.join()), context: input.context });
     if (!result.ok) return emit({ kind: 'failed', failure: result.failure });
-    if (!result.value.parsed) return emit(nothing());
-    emit({ kind: 'heard', transcript: result.value.transcript, parsed: result.value.parsed });
+    const { transcript, answer } = result.value;
+    emit({ kind: 'heard', transcript, heard: readLocally(transcript) ?? (answer ? { kind: 'answer', answer } : { kind: 'unusable' }) });
   }
 
   return {

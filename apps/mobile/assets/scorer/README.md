@@ -14,4 +14,6 @@ The Field tab artwork comes from Sandlot's [Figma Field tab (milestone 4)](https
 | `logo-emblem.svg` | Logo / Emblem (124:7447) | 64 × 64 |
 | `glove.svg` | Icon/Glove (41:950), with its shadow, from the [Plays tab](https://www.figma.com/design/J8F4zRkkV63ji3AYhcHHwA?node-id=69-1895) scoreboard | 16.07 × 17.21 |
 
-Each PNG and its `@2x` and `@3x` copies rasterize that SVG with transparent backgrounds, rendered by headless Chrome. The artwork is fixed in Figma (its colors aren't tokens), so it ships as images rather than redrawn shapes.
+Each PNG and its `@2x` and `@3x` copies rasterize that SVG with transparent backgrounds, rendered by headless Chrome. The artwork ships as images rather than redrawn shapes.
+
+The icons' colors aren't tokens. The field surface is different: in Figma its layers are bound to the `field/*` color variables, but the exported SVG and PNGs bake in the hex values. So whenever a color the surface uses changes (`field/grass`, `field/grass-stripe`, `field/dirt`, `field/mound`, `field/line`, `field/base`, or the bases' outline color), update the hex values in `field-surface.svg` (or re-export 21:265) and re-render the three PNGs. Otherwise the picture and the `field/grass` paint behind it won't match.

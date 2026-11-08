@@ -164,7 +164,7 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
           </View>
           <View style={styles.chip}><Text style={styles.chipText}>{label}</Text></View>
           <View style={[styles.mark, on ? styles.markOn : ink === 'white' ? styles.markOffDark : styles.markOffLight]}>
-            {on ? <CheckIcon color={colors['surface/card']} size={14} /> : null}
+            {on ? <CheckIcon color={colors['text/on-accent']} size={14} /> : null}
           </View>
         </Pressable>;
       })}
@@ -186,7 +186,7 @@ export function ShareScreen({ share, onClose }: { share: GameShare; onClose: () 
         <View style={styles.nameSwitch}>
           <Text style={styles.inkLabel}>Show name</Text>
           <Switch value={showName} disabled={busy} onValueChange={(value) => { setShowName(value); setMessage(null); }} testID="share-show-name"
-            accessibilityLabel={`Show ${share.first}’s name`} trackColor={{ true: colors['action/primary'], false: colors['border/subtle'] }} />
+            accessibilityLabel={`Show ${share.first}’s name`} trackColor={{ true: colors['action/strong'], false: colors['border/subtle'] }} />
         </View>
       </View>
       <View style={styles.destinations}>
@@ -226,7 +226,7 @@ const styles = createStyles({
     paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/2'] },
   fill: { position: 'absolute', left: 0, top: 0, right: 0, bottom: 0 },
   tile: { borderRadius: sizes['radius/lg'], overflow: 'hidden' },
-  tileOn: { borderWidth: 3, borderColor: colors['action/primary'] },
+  tileOn: { borderWidth: 3, borderColor: colors['action/strong'] },
   tileLight: { borderWidth: 1, borderColor: colors['border/subtle'] },
   tilePressed: { transform: [{ scale: 0.97 }] },
   tileStage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
@@ -238,7 +238,7 @@ const styles = createStyles({
   chipText: { ...textStyles['Status/Label'], color: colors['text/primary'] },
   mark: { position: 'absolute', right: sizes['space/2'], top: sizes['space/2'], width: 24, height: 24, borderRadius: sizes['radius/full'],
     alignItems: 'center', justifyContent: 'center' },
-  markOn: { backgroundColor: colors['action/primary'], borderWidth: 2, borderColor: colors['surface/card'] },
+  markOn: { backgroundColor: colors['action/strong'], borderWidth: 2, borderColor: colors['surface/card'] },
   markOffDark: { borderWidth: 2, borderColor: colors['scoreboard/text'], opacity: 0.8 },
   markOffLight: { borderWidth: 2, borderColor: colors['text/primary'], opacity: 0.8 },
   tray: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: sizes['radius/xl'],
@@ -251,7 +251,7 @@ const styles = createStyles({
   inks: { flexDirection: 'row', gap: sizes['space/2'] },
   inkChip: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'], minHeight: sizes['tap/min'], paddingHorizontal: sizes['space/3'],
     borderRadius: sizes['radius/full'], borderWidth: 1, borderColor: colors['border/subtle'], backgroundColor: colors['surface/card'] },
-  inkChipOn: { borderWidth: 2, borderColor: colors['action/primary'] },
+  inkChipOn: { borderWidth: 2, borderColor: colors['action/strong'] },
   swatch: { width: 20, height: 20, borderRadius: sizes['radius/full'], borderWidth: 1, borderColor: colors['border/subtle'] },
   swatchWhite: { backgroundColor: colors['surface/card'] },
   swatchBlack: { backgroundColor: colors['text/primary'] },

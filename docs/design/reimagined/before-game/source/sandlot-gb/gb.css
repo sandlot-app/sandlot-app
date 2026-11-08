@@ -1,0 +1,1000 @@
+/* Sandlot, before the game: Games, Game setup, Lineup, Pregame. Builds on ob.css (the Shell,
+   .ob-page, .ob-h1, .ob-label, .ob-cta, the tab bar). Every rule is scoped to .gb. */
+.gb {
+  /* ---- Shared ---- */
+  .gb-card {
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.06);
+  }
+
+  .gb-chip {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(16, 35, 28, 0.08);
+    color: rgba(16, 35, 28, 0.7);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gb-chip[data-mine] {
+    background: radial-gradient(circle at 40% 35%, #ff9447, var(--fd-orange) 70%);
+    box-shadow: inset 0 0 0 2px #fff, 0 2px 6px rgba(8, 40, 22, 0.25);
+    color: #fff;
+  }
+
+  .gb-stripe {
+    flex: none;
+    width: 5px;
+    height: 22px;
+    border-radius: 3px;
+    background: var(--fd-orange);
+  }
+
+  .gb-stripe--away {
+    background: #2b5fab;
+  }
+
+  .gb-stripe--tall {
+    height: 40px;
+  }
+
+  .gb-nav {
+    position: absolute;
+    top: 58px;
+    right: 16px;
+    left: 16px;
+    display: grid;
+    grid-template-columns: 40px 1fr 40px;
+    align-items: center;
+    height: 40px;
+  }
+
+  .gb-nav__title {
+    text-align: center;
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .gb-body {
+    position: absolute;
+    top: 110px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .gb-first {
+    margin-top: 0;
+  }
+
+  .gb-setup .ob-label {
+    margin-top: 26px;
+  }
+
+  .gb-setup .ob-label.gb-first {
+    margin-top: 0;
+  }
+
+  .gb-foot {
+    position: absolute;
+    right: 16px;
+    bottom: 40px;
+    left: 16px;
+  }
+
+  .gb-foot .ob-cta {
+    margin-top: 0;
+  }
+
+  .gb-cta__in {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .gb-seg {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    height: 40px;
+    padding: 3px;
+    box-sizing: border-box;
+    border-radius: 20px;
+    background: rgba(16, 35, 28, 0.07);
+  }
+
+  .gb-seg span {
+    position: relative;
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: rgba(16, 35, 28, 0.5);
+    transition: color 0.25s ease, transform 0.15s ease;
+    will-change: transform;
+  }
+
+  .gb-seg span[data-on] {
+    color: #10231c;
+  }
+
+  .gb-seg span[data-pressed] {
+    transform: scale(0.95);
+  }
+
+  .gb-seg__thumb {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc(50% - 3px);
+    border-radius: 17px;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(16, 35, 28, 0.12);
+    transition: transform 0.4s cubic-bezier(0.3, 0.8, 0.2, 1);
+  }
+
+  .gb-seg__thumb[data-pos='1'] {
+    transform: translateX(100%);
+  }
+
+  .gb-pos {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    min-width: 38px;
+    height: 26px;
+    padding: 0 8px;
+    box-sizing: border-box;
+    border-radius: 13px;
+    background: rgba(12, 76, 57, 0.09);
+    color: #0c4c39;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .gb-pos[data-wide] {
+    background: rgba(16, 35, 28, 0.06);
+    color: rgba(16, 35, 28, 0.6);
+  }
+
+  .gb .ob-cta,
+  .gb-lrow,
+  .gb-grow,
+  .gb-label,
+  .gb-live,
+  .gb-prow {
+    will-change: transform;
+  }
+
+  .gb .ob-cta[data-pressed],
+  .gb-lrow[data-pressed] {
+    transform: scale(0.97);
+  }
+
+  /* ================= Games ================= */
+  .gb-games {
+    padding: 56px 16px 0;
+    box-sizing: border-box;
+  }
+
+  .gb-head {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 4px;
+  }
+
+  .gb-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 46px;
+    margin-top: 8px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    border-radius: 23px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.06);
+    font-size: 16px;
+    color: rgba(16, 35, 28, 0.42);
+  }
+
+  .gb-search svg {
+    flex: none;
+    color: #10231c;
+    opacity: 0.42;
+  }
+
+  .gb-games .gb-seg {
+    margin-top: 10px;
+  }
+
+  /* Runs under the tab bar's top edge, full width so the live card's shadow isn't cut at the sides */
+  .gb-list {
+    position: absolute;
+    top: 204px;
+    right: 0;
+    bottom: 86px;
+    left: 0;
+    padding: 0 16px;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .gb-label {
+    margin: 16px 4px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  .gb-list > .gb-label:first-child {
+    margin-top: 14px;
+  }
+
+  .gb-later {
+    padding-top: 10px;
+  }
+
+  .gb-gcard {
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.06);
+    overflow: hidden;
+  }
+
+  .gb-grow {
+    display: grid;
+    grid-template-columns: 1fr 136px 1fr;
+    align-items: center;
+    height: 66px;
+    padding: 0 16px;
+    box-sizing: border-box;
+  }
+
+  .gb-grow[data-sep] {
+    border-top: 1px solid rgba(16, 35, 28, 0.07);
+  }
+
+  .gb-side {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 700;
+    transition: color 0.3s ease;
+  }
+
+  .gb-side--home {
+    justify-content: flex-end;
+  }
+
+  .gb-side[data-lost] {
+    color: rgba(16, 35, 28, 0.5);
+    font-weight: 600;
+  }
+
+  /* The followed team's orange dot has a slot of its own, so names stay aligned */
+  .gb-fdot {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--fd-orange);
+    visibility: hidden;
+  }
+
+  .gb-fdot[data-on] {
+    visibility: visible;
+  }
+
+  .gb-mid {
+    display: grid;
+    justify-items: center;
+    gap: 1px;
+    text-align: center;
+  }
+
+  .gb-mid b {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 23px;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gb-mid[data-kind='score'] b {
+    font-size: 21px;
+  }
+
+  .gb-mid small {
+    font-size: 12px;
+    line-height: 16px;
+    color: rgba(16, 35, 28, 0.5);
+    white-space: nowrap;
+  }
+
+  /* The Live now card: the TV score bug, in the dark card */
+  .gb-live {
+    position: relative;
+    padding-bottom: 10px;
+    border-radius: 26px;
+    background: linear-gradient(160deg, #17664e, var(--fd-green) 60%);
+    box-shadow: 0 12px 30px rgba(12, 76, 57, 0.28);
+    color: #fff;
+  }
+
+  .gb-live__head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    height: 42px;
+    padding: 0 18px;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .gb-live__where {
+    margin-left: auto;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: rgba(255, 255, 255, 0.66);
+  }
+
+  .gb-live__dot {
+    position: relative;
+    flex: none;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #ff5a5f;
+  }
+
+  .gb-live__dot::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: #ff5a5f;
+    animation: gb-pulse 1.6s ease-out infinite;
+  }
+
+  .gb-bug {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    height: 88px;
+    margin: 0 10px;
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+  }
+
+  .gb-bug__teams {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    padding: 8px 16px 8px 18px;
+  }
+
+  /* The stripe sits over the Maya chip below it; the names and the line's words share one left edge */
+  .gb-bug__team {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+  }
+
+  .gb-live .gb-stripe--away {
+    background: #5f8ee6;
+  }
+
+  .gb-bug__name {
+    flex: 1;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .gb-bug__team--away .gb-bug__name {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .gb-bug__runs {
+    font-size: 30px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gb-bug__bases,
+  .gb-bug__count {
+    display: grid;
+    align-content: center;
+    padding: 0 16px;
+    border-left: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  .gb-bug__bases {
+    place-items: center;
+  }
+
+  .gb-bases {
+    width: 44px;
+    height: auto;
+  }
+
+  .gb-bug__count {
+    gap: 5px;
+    min-width: 76px;
+  }
+
+  .gb-bug__out {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.58);
+  }
+
+  .gb-live__line {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    margin: 8px 10px 0;
+    padding: 0 12px 0 8px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.09);
+    transition: background 0.4s ease;
+  }
+
+  .gb-live__line[data-hot] {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .gb-live__line > .ss-states {
+    width: 100%;
+  }
+
+  .gb-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+  }
+
+  .gb-line b {
+    font-weight: 700;
+  }
+
+  .gb-line__dim {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .gb-live2 {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    height: 62px;
+    margin: 8px 10px 0;
+    padding: 0 16px;
+    border-radius: 16px;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  .gb-live2__team {
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .gb-live2__team--home {
+    text-align: right;
+  }
+
+  .gb-live2__mid {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+  }
+
+  .gb-live2__score {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .gb-live2__score b {
+    width: 14px;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gb-live2 .gb-bases {
+    width: 32px;
+  }
+
+  .gb-live2__mid small {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.62);
+  }
+
+  /* ================= Game setup ================= */
+  .gb-kv__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 46px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    font-size: 15px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gb-kv__row + .gb-kv__row {
+    border-top: 1px solid rgba(16, 35, 28, 0.07);
+  }
+
+  .gb-kv__row b {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #10231c;
+  }
+
+  .gb-kv__row .gb-stripe {
+    height: 18px;
+  }
+
+  .gb-seg--half {
+    height: 46px;
+    border-radius: 23px;
+  }
+
+  .gb-seg--half .gb-seg__thumb {
+    border-radius: 20px;
+  }
+
+  .gb-note {
+    margin: 10px 4px 0;
+    font-size: 13px;
+    line-height: 18px;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  .gb-lrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 80px;
+    padding: 0 14px 0 16px;
+    box-sizing: border-box;
+    transition: transform 0.15s ease;
+  }
+
+  .gb-lrow + .gb-lrow {
+    border-top: 1px solid rgba(16, 35, 28, 0.07);
+  }
+
+  .gb-lrow__text {
+    display: grid;
+    flex: 1;
+    gap: 3px;
+  }
+
+  .gb-lrow__team {
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .gb-lrow__sub {
+    display: inline-flex;
+    font-size: 14px;
+    font-weight: 600;
+    color: #d65a06;
+    transition: color 0.4s ease;
+  }
+
+  .gb-lrow__sub[data-set] {
+    font-weight: 400;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gb-ok {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 2px solid rgba(16, 35, 28, 0.14);
+    color: #fff;
+    transition: background 0.3s ease, border-color 0.3s ease;
+  }
+
+  .gb-ok svg {
+    opacity: 0;
+    transform: scale(0.4);
+    transition: opacity 0.2s ease, transform 0.4s cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+
+  .gb-ok[data-on] {
+    border-color: #2f9e5b;
+    background: #2f9e5b;
+  }
+
+  .gb-ok[data-on] svg {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0.1s;
+  }
+
+  .gb-lrow__go {
+    display: grid;
+    flex: none;
+    color: #10231c;
+  }
+
+  .gb-lrow__go svg {
+    opacity: 0.3;
+  }
+
+  .gb-count {
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: 14px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  /* ================= Lineup ================= */
+  .gb-hrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 4px 8px;
+  }
+
+  .gb-hrow .ob-label {
+    margin: 0;
+  }
+
+  .gb-hrow--pitcher {
+    margin-top: 14px;
+  }
+
+  .gb-hint {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(16, 35, 28, 0.5);
+    transition: color 0.3s ease;
+  }
+
+  .gb-hint[data-hot] {
+    color: #d65a06;
+  }
+
+  .gb-link {
+    font-size: 14px;
+    font-weight: 700;
+    color: #d65a06;
+  }
+
+  .gb-order {
+    position: relative;
+  }
+
+  /* Hairlines between the rows, drawn once so they stay put while the rows move */
+  .gb-order::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 1px;
+    background: repeating-linear-gradient(180deg, transparent 0 45px, rgba(16, 35, 28, 0.07) 45px 46px);
+  }
+
+  .gb-slot {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 46px;
+    will-change: transform;
+    transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Held: on the finger with no lag, above the rest; the lift eases in */
+  .gb-slot[data-lifted] {
+    z-index: 2;
+    transition: none;
+  }
+
+  .gb-orow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 46px;
+    padding: 0 8px 0 12px;
+    box-sizing: border-box;
+    border-radius: 16px;
+    transition: box-shadow 0.25s ease, scale 0.25s cubic-bezier(0.22, 1, 0.36, 1), rotate 0.25s ease, background 0.2s ease;
+    will-change: transform;
+  }
+
+  .gb-slot[data-lifted] .gb-orow {
+    scale: 1.03;
+    rotate: -0.6deg;
+    background: #fff;
+    box-shadow: 0 12px 26px rgba(16, 35, 28, 0.2), 0 2px 6px rgba(16, 35, 28, 0.1);
+  }
+
+  .gb-num {
+    flex: none;
+    width: 22px;
+    font-size: 17px;
+    font-weight: 800;
+    color: rgba(16, 35, 28, 0.4);
+  }
+
+  .gb-orow__name {
+    flex: 1;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .gb-grip {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 28px;
+    height: 36px;
+    color: #10231c;
+  }
+
+  .gb-grip svg {
+    opacity: 0.32;
+  }
+
+  .gb-pitcher {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 60px;
+    padding: 0 16px 0 14px;
+    box-sizing: border-box;
+  }
+
+  .gb-pitcher__text {
+    display: grid;
+    gap: 2px;
+  }
+
+  .gb-pitcher__name {
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .gb-pitcher__sub {
+    font-size: 13px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gb-pitcher__sub b {
+    font-weight: 700;
+    color: #1f8a4c;
+  }
+
+  .gb-add {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    margin-top: 12px;
+    border-radius: 23px;
+    background: rgba(255, 117, 25, 0.12);
+    color: #d65a06;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  /* ================= Fan view before first pitch ================= */
+  .gb-pregame .bp-runner {
+    display: none;
+  }
+
+  .gb-bug0 .tv-team__name {
+    color: #10231c;
+  }
+
+  .gb-bug0 .tv-count {
+    min-width: 104px;
+  }
+
+  .gb-bug0 .tv-inning {
+    gap: 5px;
+  }
+
+  .gb-bug0 .tv-inning svg {
+    color: var(--fd-orange);
+  }
+
+  .gb-bug0 .tv-label {
+    width: auto;
+    font-size: 12.5px;
+  }
+
+  .gb-soon {
+    position: absolute;
+    top: 168px;
+    left: 16px;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 11px;
+    box-sizing: border-box;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 2px 8px rgba(16, 35, 28, 0.15);
+    font-size: 14px;
+    font-weight: 700;
+    color: #10231c;
+  }
+
+  .gb-soon svg {
+    color: var(--fd-orange);
+  }
+
+  .gb-sheet {
+    will-change: transform;
+    position: absolute;
+    top: 568px;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 4;
+    border-radius: 30px 30px 0 0;
+    background: #f7f4ec;
+    box-shadow: 0 -8px 30px rgba(8, 40, 22, 0.18);
+    transform: translateY(216px);
+    transition: transform 0.8s cubic-bezier(0.3, 0.8, 0.2, 1);
+  }
+
+  .gb-sheet[data-open] {
+    transform: none;
+  }
+
+  .gb-sheet__clip {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: 30px 30px 0 0;
+  }
+
+
+  .gb-grab {
+    display: block;
+    width: 38px;
+    height: 5px;
+    margin: 8px auto 0;
+    border-radius: 3px;
+    background: rgba(16, 35, 28, 0.15);
+  }
+
+  .gb-sheet__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 12px 20px 0;
+  }
+
+  .gb-sheet__title {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .gb-tagpill {
+    padding: 4px 10px;
+    border-radius: 11px;
+    background: rgba(16, 35, 28, 0.07);
+    font-size: 12px;
+    font-weight: 700;
+    color: rgba(16, 35, 28, 0.6);
+  }
+
+  .gb-sheet__cap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 5px 20px 0;
+    font-size: 13px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gb-sheet__cap svg {
+    flex: none;
+    color: #10231c;
+    opacity: 0.35;
+  }
+
+  .gb-pcard {
+    margin: 16px 16px 0;
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.35s ease 0.12s;
+  }
+
+  .gb-sheet[data-open] .gb-pcard {
+    opacity: 1;
+  }
+
+  .gb-prow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    padding: 0 14px 0 12px;
+    box-sizing: border-box;
+    opacity: 0;
+    transform: translateX(28px);
+    transition: opacity 0.4s ease var(--d), transform 0.7s cubic-bezier(0.3, 0.8, 0.2, 1) var(--d);
+  }
+
+  .gb-sheet[data-open] .gb-prow {
+    opacity: 1;
+    transform: none;
+  }
+
+  .gb-prow + .gb-prow {
+    border-top: 1px solid rgba(16, 35, 28, 0.07);
+  }
+
+  .gb-prow[data-mine] {
+    background: #fff8f2;
+    box-shadow: inset 3px 0 0 var(--fd-orange);
+  }
+
+  .gb-pnum {
+    flex: none;
+    width: 20px;
+    font-size: 15px;
+    font-weight: 800;
+    color: rgba(16, 35, 28, 0.4);
+  }
+
+  .gb-pname {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .gb-follow {
+    padding: 2px 8px;
+    border-radius: 9px;
+    background: rgba(255, 117, 25, 0.14);
+    font-size: 12px;
+    font-weight: 700;
+    color: #d65a06;
+  }
+}
+
+@keyframes gb-pulse {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(3); opacity: 0; }
+}

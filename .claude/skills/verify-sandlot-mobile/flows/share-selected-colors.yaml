@@ -1,0 +1,72 @@
+appId: host.exp.Exponent
+---
+# Opens the sticker picker and shows its selected states in the same two
+# states as the Figma frames "Share · Pick stickers": the default (white ink,
+# name off, poster picked), then black ink, name on, jersey and team picked.
+# Use it to compare selected-state colors before and after a token change.
+# Saves nothing.
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+# Wait for the saved game card, so the home screen has finished loading
+# before the tap. A tap during that first load can be dropped.
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- waitForAnimationToEnd
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              id: "share-tile-poster"
+          commands:
+            - tapOn:
+                id: "open-share-sample"
+      - extendedWaitUntil:
+          visible:
+            id: "share-tile-poster"
+          timeout: 15000
+# Default: the poster is picked, the white ink is selected, the name is off.
+- assertVisible: "1 picked"
+- assertVisible:
+    id: "share-ink-white"
+    selected: true
+- assertVisible:
+    id: "share-tile-poster"
+    text: "Poster sticker, Hawks, number 6.*"
+- takeScreenshot: share-default
+# The name switch's state shows in each tile's label: the name replaces the team.
+- tapOn:
+    id: "share-show-name"
+- assertVisible:
+    id: "share-tile-poster"
+    text: "Poster sticker, Javier Ruiz, number 6.*"
+- tapOn:
+    id: "share-ink-black"
+- assertVisible:
+    id: "share-ink-black"
+    selected: true
+- tapOn:
+    id: "share-tile-poster"
+# On a small phone the jersey and team tiles sit under the tray. Scroll them
+# up before tapping, then back to the top for the screenshot.
+- swipe:
+    start: "50%,45%"
+    end: "50%,10%"
+- waitForAnimationToEnd
+- tapOn:
+    id: "share-tile-jersey"
+- tapOn:
+    id: "share-tile-team"
+- assertVisible: "2 picked"
+- swipe:
+    start: "50%,20%"
+    end: "50%,70%"
+- waitForAnimationToEnd
+- takeScreenshot: share-black-name-on

@@ -37,7 +37,7 @@ The beta division is Mustang (ages 9–10): 6 innings, at most 9 outs a day per 
 ### Rules
 - Pregame and Final use overrides on the existing Scoreboard instance (hidden footer and badges, replaced inning text). There is no Pregame/Final Scoreboard variant yet. Adding a "Game state" axis would push the Scoreboard past 30 variants, so it needs a decision (see below).
 - After Final, the Field tab becomes Summary. Plays, Box score and Video stay.
-- Link-style actions use action/primary (blue). Orange is reserved for "followed".
+- Link-style actions use action/primary (blue). Orange is reserved for "followed". (Superseded: the Field Day direction makes action/primary orange. See `docs/design/reimagined/direction/README.md`.)
 
 ### Open questions
 - Should the Scoreboard get real Pregame and Final states, perhaps as a separate "Scoreboard / Final" component, instead of instance overrides? That's a library change, so it waits for your OK.

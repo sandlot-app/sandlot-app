@@ -17,5 +17,6 @@ In the order they were designed:
 9. [Sheet spacing](spec-update-sheet-spacing.md): one spacing rule for every scorer sheet, and the Time limit reached result card
 10. [Milestone 4 screens](spec-update-milestone-4.md): the scorer bar without voice, the milestone 4 More menu, game setup with Season half, and the lineup
 11. [Public game states, Close the book, and the time-limit warning](spec-update-public-states-and-close-the-book.md)
+12. [Reimagined UI direction](reimagined/direction/README.md): the new look chosen on 2026-11-05 (Field Day on the Rec field, the TV score bug, Big buttons, fan, streaming, recruiting and video-plan screens), as animated mockups. It supersedes the look of the screens above; their content decisions still stand.
 
 Sample data in the designs follows Mustang rules for one game, Hawks 2 at Marlins 1 in the Bottom 5. The names in it are made up.

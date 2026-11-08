@@ -1,0 +1,128 @@
+.bt {
+  .bt-board {
+    position: absolute;
+    top: 62px;
+    right: 14px;
+    left: 14px;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    padding: 14px 22px;
+    border-radius: 26px;
+    background: linear-gradient(180deg, #145c46, var(--fd-green));
+    box-shadow: 0 10px 26px rgba(12, 76, 57, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    color: #fff;
+  }
+
+  .bt-team {
+    display: grid;
+    gap: 2px;
+  }
+
+  .bt-team--away {
+    justify-items: end;
+  }
+
+  .bt-team__name {
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.66);
+  }
+
+  .bt-team__runs {
+    font-size: 44px;
+    font-weight: 800;
+    line-height: 46px;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .bt-mid {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    --sl-base-off: #3f7a67;
+  }
+
+  .bt-inning {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .bt-bases {
+    width: 40px;
+    height: auto;
+  }
+
+  .bt-outs {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    --fdx-dot-off: rgba(255, 255, 255, 0.2);
+  }
+
+  .bt-outs .fdx-dots i {
+    width: 9px;
+    height: 9px;
+  }
+
+  /* The count on the buttons */
+  .fd-controls {
+    gap: 26px;
+  }
+
+  .bt-tap {
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .bt-tap__btn {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.08), 0 6px 16px rgba(16, 35, 28, 0.08);
+    transition: transform 0.18s ease;
+  }
+
+  .bt-tap[data-pressed] .bt-tap__btn {
+    transform: scale(0.92);
+  }
+
+  .bt-ring {
+    position: absolute;
+    inset: 0;
+  }
+
+  .bt-ring circle {
+    fill: none;
+    stroke: rgba(16, 35, 28, 0.1);
+    stroke-width: 5;
+    stroke-linecap: round;
+    transition: stroke 0.3s ease;
+  }
+
+  .bt-ring--ball circle[data-on] { stroke: #2fb862; }
+  .bt-ring--strike circle[data-on] { stroke: #f2ac16; }
+
+  .bt-tap__n {
+    font-size: 28px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: #10231c;
+  }
+
+  .bt-tap__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.6);
+  }
+}
