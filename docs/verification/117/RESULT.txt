@@ -1,0 +1,70 @@
+text size: large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+text size: extra-large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+text size: extra-extra-large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+text size: extra-extra-extra-large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+text size: accessibility-extra-extra-extra-large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+text size: large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+
+text size: extra-large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+
+text size: extra-extra-large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+
+text size: extra-extra-extra-large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+
+text size: accessibility-extra-extra-extra-large
+flow: score-screen-text-size
+result: PASS
+commit: d7a04497c29724042da9323fc706d567f79456ac
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+

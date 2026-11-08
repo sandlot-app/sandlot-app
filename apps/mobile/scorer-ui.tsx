@@ -6,6 +6,11 @@ import { barView, type MicStatus } from './src/voice/mic-status.ts';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
+/**
+ * The Scorer Bar's text, the Voice Bar's label included, grows with the phone's text size up to Extra Extra Extra Large
+ * (about 1.35 times), then holds, so the pinned bar never outgrows a small phone at the accessibility sizes above it.
+ */
+const BAR_TEXT_SCALE = 1.36;
 const dragTransform = (translateY: number) => ({ transform: [{ translateY }] });
 const pressTransform = (scale: Animated.Value) => ({ transform: [{ scale }] });
 
@@ -138,7 +143,7 @@ export function PitchButton({ label, kind, onPress, selected, disabled = false, 
       {kind === 'in-play' ? <Image source={require('./assets/scorer/baseball.png')} accessible={false} style={styles.pitchBaseball} />
         : <View style={kind === 'ball' ? styles.ballDot : kind === 'strike' ? styles.strikeDot : styles.foulDot} />}
     </View>
-    <Text style={styles.pitchLabel}>{label}</Text>
+    <Text style={styles.pitchLabel} maxFontSizeMultiplier={BAR_TEXT_SCALE}>{label}</Text>
   </Pressable>;
 }
 
@@ -154,8 +159,8 @@ function SyncStatus({ state, syncTestID }: { state: SyncState; syncTestID?: stri
         : `${last}Offline · ${plays(state.waiting)} saved on this phone`;
   const warning = state.status === 'offline' || state.status === 'stopped';
   return <View style={styles.syncLine}>
-    <Text style={warning ? styles.syncOffline : state.status === 'saving' ? styles.syncMuted : styles.syncSaved}>{state.status === 'saved' ? '✓' : warning ? '●' : '⟳'}</Text>
-    <Text style={warning ? styles.syncOffline : styles.syncMuted} testID={syncTestID}>{label}</Text>
+    <Text style={warning ? styles.syncOffline : state.status === 'saving' ? styles.syncMuted : styles.syncSaved} maxFontSizeMultiplier={BAR_TEXT_SCALE}>{state.status === 'saved' ? '✓' : warning ? '●' : '⟳'}</Text>
+    <Text style={warning ? styles.syncOffline : styles.syncMuted} maxFontSizeMultiplier={BAR_TEXT_SCALE} testID={syncTestID}>{label}</Text>
   </View>;
 }
 
@@ -176,9 +181,9 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, voice, disabled = fal
   return <View style={styles.scorerBar} testID={testID}>
     {choosingStrike ? <View style={styles.strikeControls}>
       <View style={styles.strikeChooser}>
-        <Text style={styles.strikeHeading}>Strike —</Text>
-        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-looking')} style={styles.strikeOption} testID="strike-looking"><Text style={styles.pitchLabel}>Looking</Text></Pressable>
-        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-swinging')} style={styles.strikeOption} testID="strike-swinging"><Text style={styles.pitchLabel}>Swinging</Text></Pressable>
+        <Text style={styles.strikeHeading} maxFontSizeMultiplier={BAR_TEXT_SCALE}>Strike —</Text>
+        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-looking')} style={styles.strikeOption} testID="strike-looking"><Text style={styles.pitchLabel} maxFontSizeMultiplier={BAR_TEXT_SCALE}>Looking</Text></Pressable>
+        <Pressable accessibilityRole="button" onPress={() => recordPitch('strike-swinging')} style={styles.strikeOption} testID="strike-swinging"><Text style={styles.pitchLabel} maxFontSizeMultiplier={BAR_TEXT_SCALE}>Swinging</Text></Pressable>
       </View>
       <View style={styles.strikeProgress}><View style={styles.strikeProgressFill} /></View>
     </View> : null}
@@ -260,7 +265,7 @@ export function VoiceBar({ listening, mic = 'off', disabled = false, onStart, on
     style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, pressTransform(scale)]} testID={testID}>
     {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
     {/* Larger system text shrinks the label to fit the bar, down to 80%, instead of cutting it off. */}
-    <Text style={styles.voiceLabel} numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.8}>{label}</Text>
+    <Text style={styles.voiceLabel} numberOfLines={lines} adjustsFontSizeToFit minimumFontScale={0.8} maxFontSizeMultiplier={BAR_TEXT_SCALE}>{label}</Text>
   </Animated.View>;
 }
 

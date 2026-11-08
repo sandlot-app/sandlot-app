@@ -80,6 +80,7 @@ export default function ScoreScreen() {
   const saving = view.kind === 'saving';
   const enabled = view.kind === 'ready' && state.status !== 'final';
   const largeText = fontScale > 1.35;
+  const below = roomBelowField({ blocked: view.kind === 'blocked', bar: barHeight, dock: dockHeight });
   const lastPlay = game.lastPlay ? playLabel(game.lastPlay) : '';
   const sync: SyncState = syncLine({
     live: game.context.kind === 'synced', waiting: game.waitingPlays, saving, upload, slow: uploadSlow, lastPlay,
@@ -103,7 +104,7 @@ export default function ScoreScreen() {
     </>
   );
   const dock = (
-    <View style={largeText ? null : styles.dock} onLayout={(event) => setDockHeight(event.nativeEvent.layout.height)}>
+    <View style={styles.dock} onLayout={(event) => setDockHeight(event.nativeEvent.layout.height)}>
       {voice.message ? <Text testID="voice-message" style={styles.message} accessibilityLiveRegion="polite">{voice.message}</Text>
         : voice.banner ? <Text testID="voice-banner" style={styles.banner} accessibilityLiveRegion="polite">{voice.banner}</Text>
         : view.kind === 'ready' && view.problem && view.message ? <Text testID="action-message" style={styles.message} accessibilityLiveRegion="polite">{view.message}</Text> : null}
@@ -139,22 +140,23 @@ export default function ScoreScreen() {
       <View style={styles.screen} accessibilityElementsHidden={draft !== null} importantForAccessibility={draft ? 'no-hide-descendants' : 'auto'}>
         <NavBar />
         {largeText ? (
-          // At the largest text sizes nothing fits on one screen, so the page scrolls with the field at full width.
+          // At the largest text sizes nothing fits on one screen, so the matchup and the field, at full width, scroll
+          // under the nav. The dock stays pinned over them as at other sizes, and the page scrolls clear of it.
           <ScrollView testID="game-content" contentContainerStyle={styles.content}>
             {matchup}
             <Field state={state} />
-            {dock}
+            <View style={spacerHeight(below)} />
           </ScrollView>
         ) : (
           <>
             <View style={styles.pinned}>{matchup}</View>
             <View style={styles.room} testID="game-content"
               onLayout={(event) => setRoom({ width: event.nativeEvent.layout.width, height: event.nativeEvent.layout.height })}>
-              <View style={fieldWidth(room, roomBelowField({ blocked: view.kind === 'blocked', bar: barHeight, dock: dockHeight }))}><Field state={state} /></View>
+              <View style={fieldWidth(room, below)}><Field state={state} /></View>
             </View>
-            {dock}
           </>
         )}
+        {dock}
       </View>
       <PlaySheets draft={draft} onChange={setDraft} onClose={() => setDraft(null)} record={record} saving={saving} available={view.kind === 'ready'}
         message={view.kind === 'blocked' ? blockedMessages[view.reason] : view.kind === 'ready' ? view.message : null} />
