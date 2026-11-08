@@ -6,7 +6,8 @@ appId: host.exp.Exponent
 - assertVisible:
     id: "start-game"
 - waitForAnimationToEnd
-# A tap during the home screen's first load can be dropped, so retry it until Game setup opens.
+# Known bug, tracked in #115: the first Start game tap can be dropped on a fresh phone (likely while the app is saving, when
+# the button is disabled). Retry it until Game setup opens. Remove this retry when #115 is fixed so the flow catches it again.
 - retry:
     maxRetries: 2
     commands:
