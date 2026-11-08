@@ -85,10 +85,8 @@ appId: host.exp.Exponent
     id: "score-summary"
 - assertTrue: ${maestro.copiedText === output.before}
 - takeScreenshot: both-undone
-- swipe:
-    from:
-      id: "game-content"
-    direction: UP
 - assertVisible:
-    id: "last-pitch"
+    id: "batter-stat"
+- assertVisible:
+    id: "pitch-total"
 - takeScreenshot: matchup

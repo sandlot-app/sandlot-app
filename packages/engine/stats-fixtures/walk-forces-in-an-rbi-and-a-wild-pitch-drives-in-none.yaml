@@ -1,0 +1,27 @@
+name: A walk with the bases loaded drives in the forced run, and a run that scores on a wild pitch is no one's RBI
+cite: Official Baseball Rules 9.02(a)(2) and (4), 9.04(a)(2) for the bases-loaded walk, 9.04(a)(1) for a run the batter's
+  action didn't score, and 9.13(a) for the wild pitch,
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  nextBatter: { home: 0, away: 3 }
+  bases:
+    1: { player: { kind: opponent, id: away-3 }, chargedTo: { kind: player, id: home-1 } }
+    2: { player: { kind: opponent, id: away-2 }, chargedTo: { kind: player, id: home-1 } }
+    3: { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - [{ kind: pitch, result: ball }]
+  - - kind: runner
+      event: wild_pitch
+      runner: { kind: opponent, id: away-2 }
+      to: home
+then:
+  score: { home: 0, away: 2 }
+batting:
+  away-1: { plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 1, runsBattedIn: 0 }
+  away-2: { plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 1, runsBattedIn: 0 }
+  away-4: { plateAppearances: 1, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 1, hitByPitch: 0, strikeouts: 0, runs: 0, runsBattedIn: 1 }

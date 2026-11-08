@@ -1,0 +1,163 @@
+/* The two-readings card. Scoped to .gd with the rest of the group. */
+.gd {
+  /* The saved card fills the caption slot, as in the voice scorer's long phrases */
+  .fd-caption > .ss-states {
+    display: grid;
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .fd-caption .ss-states__item {
+    justify-content: center;
+  }
+
+  .fd-caption .ss-states__item > .fd-saved {
+    flex: 1;
+  }
+
+  /* The voice sheet, which grows upward to hold the question */
+  .gd-lift {
+    position: absolute;
+    top: 444px;
+    right: 0;
+    bottom: -140px;
+    left: 0;
+    border-radius: 30px 30px 0 0;
+    background: #f7f4ec;
+    box-shadow: 0 -8px 30px rgba(8, 40, 22, 0.18);
+    transform: translateY(126px);
+    transition: transform 0.6s cubic-bezier(0.3, 0.8, 0.2, 1);
+  }
+
+  .gd-lift[data-up] {
+    transform: none;
+  }
+
+  .gd-ctl .fd-micwrap {
+    transition: opacity 0.4s ease;
+  }
+
+  .gd-ctl[data-card] .fd-micwrap {
+    opacity: 0.4;
+  }
+
+  .gd-two {
+    position: absolute;
+    top: 444px;
+    right: 0;
+    left: 0;
+    height: 210px;
+    opacity: 0;
+    transform: translateY(14px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.3s ease;
+  }
+
+  .gd-two[data-on] {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.35s ease 0.2s, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.2s;
+  }
+
+  .gd-two__quote {
+    position: absolute;
+    top: 22px;
+    right: 24px;
+    left: 24px;
+    margin: 0;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 20px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gd-two__title {
+    position: absolute;
+    top: 46px;
+    right: 24px;
+    left: 24px;
+    margin: 0;
+    text-align: center;
+    font-size: 23px;
+    font-weight: 800;
+    line-height: 29px;
+    letter-spacing: -0.015em;
+  }
+
+  .gd-two__row {
+    position: absolute;
+    top: 86px;
+    right: 16px;
+    left: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    height: 112px;
+  }
+
+  .gd-choice {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 6px;
+    box-sizing: border-box;
+    padding: 14px 14px 13px 16px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.07), 0 6px 14px rgba(16, 35, 28, 0.08);
+  }
+
+  .gd-choice__title {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 22px;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+
+  .gd-choice__sub {
+    font-size: 13px;
+    line-height: 17px;
+    color: rgba(16, 35, 28, 0.55);
+    transition: color 0.25s ease;
+  }
+
+  .gd-choice[data-on] {
+    background: radial-gradient(circle at 50% 10%, #ff9447, var(--fd-orange) 75%);
+    box-shadow: 0 8px 18px rgba(255, 117, 25, 0.32);
+    color: #fff;
+  }
+
+  .gd-choice[data-on] .gd-choice__sub {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* A ball hit to short, then thrown across to first */
+  .gd-ball--roll[data-go] {
+    opacity: 1;
+    transition: none;
+    animation: gd-roll 0.5s cubic-bezier(0.3, 0.4, 0.5, 1) forwards;
+  }
+
+  .gd-ball--throw[data-go] {
+    transition: none;
+    animation: gd-throw 0.46s cubic-bezier(0.3, 0.3, 0.45, 1) 0.5s forwards;
+  }
+
+  .gd-ball--throw[data-go] .bp-ball__lift {
+    animation: bp-throwlift 0.46s linear 0.5s both;
+  }
+}
+
+@keyframes gd-roll {
+  0% { offset-distance: 0%; opacity: 1; }
+  92% { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+@keyframes gd-throw {
+  0% { offset-distance: 0%; opacity: 1; }
+  88% { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}

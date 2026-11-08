@@ -1,0 +1,49 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Surface">
+<rect id="Stripe" x="139.556" width="40.1111" height="390" fill="#60A656"/>
+<rect id="Stripe_2" x="219.778" width="40.1111" height="390" fill="#60A656"/>
+<rect id="Stripe_3" x="300" width="40.1111" height="390" fill="#60A656"/>
+<rect id="Stripe_4" x="380.222" width="40.1111" height="390" fill="#60A656"/>
+<rect id="Stripe_5" x="460.444" width="40.1111" height="390" fill="#60A656"/>
+<path id="Warning track" opacity="0.9" d="M595 300C595 462.924 462.924 595 300 595C137.076 595 5 462.924 5 300C5 137.076 137.076 5 300 5C462.924 5 595 137.076 595 300Z" stroke-width="10" stroke="#C8915F"/>
+<circle id="Infield dirt" cx="300" cy="222" r="106" fill="#C8915F"/>
+<circle id="Home circle" cx="300" cy="296" r="26" fill="#C8915F"/>
+<path id="Infield grass" d="M300 282L364 218L300 154L236 218L300 282Z" fill="#56A04B"/>
+<path id="Foul line 3B" opacity="0.85" d="M300 296L119.5 115.5" stroke-width="1.5" stroke="white"/>
+<path id="Foul line 1B" opacity="0.85" d="M300 296L480.5 115.5" stroke-width="1.5" stroke="white"/>
+<circle id="Mound" cx="300" cy="222" r="12" fill="#D49A70"/>
+<rect id="Rubber" x="296.5" y="221" width="7" height="2" fill="white"/>
+<g id="Base first">
+<path d="M378 212L384 218L378 224L372 218L378 212Z" fill="white"/>
+<mask id="stroke0_0_269" maskUnits="userSpaceOnUse" x="370" y="210" width="16" height="16" fill="black">
+<rect fill="white" x="370" y="210" width="16" height="16"/>
+<path d="M378 212L384 218L378 224L372 218L378 212Z"/>
+</mask>
+<path d="M378 212L384 218L378 224L372 218L378 212Z" stroke-width="1.5" stroke="#0E3328" mask="url(#stroke0_0_269)"/>
+</g>
+<g id="Base second">
+<path d="M300 134L306 140L300 146L294 140L300 134Z" fill="white"/>
+<mask id="stroke1_0_269" maskUnits="userSpaceOnUse" x="292" y="132" width="16" height="16" fill="black">
+<rect fill="white" x="292" y="132" width="16" height="16"/>
+<path d="M300 134L306 140L300 146L294 140L300 134Z"/>
+</mask>
+<path d="M300 134L306 140L300 146L294 140L300 134Z" stroke-width="1.5" stroke="#0E3328" mask="url(#stroke1_0_269)"/>
+</g>
+<g id="Base third">
+<path d="M222 212L228 218L222 224L216 218L222 212Z" fill="white"/>
+<mask id="stroke2_0_269" maskUnits="userSpaceOnUse" x="214" y="210" width="16" height="16" fill="black">
+<rect fill="white" x="214" y="210" width="16" height="16"/>
+<path d="M222 212L228 218L222 224L216 218L222 212Z"/>
+</mask>
+<path d="M222 212L228 218L222 224L216 218L222 212Z" stroke-width="1.5" stroke="#0E3328" mask="url(#stroke2_0_269)"/>
+</g>
+<g id="Home plate">
+<path d="M295 291H305V296L300 301L295 296V291Z" fill="white"/>
+<mask id="stroke3_0_269" maskUnits="userSpaceOnUse" x="294" y="290" width="12" height="13" fill="black">
+<rect fill="white" x="294" y="290" width="12" height="13"/>
+<path d="M295 291H305V296L300 301L295 296V291Z"/>
+</mask>
+<path d="M295 291H305V296L300 301L295 296V291Z" stroke-width="1.5" stroke="#0E3328" mask="url(#stroke3_0_269)"/>
+</g>
+</g>
+</svg>

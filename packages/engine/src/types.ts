@@ -184,6 +184,27 @@ export type Alert =
   | { kind: 'time_limit_reached' }
   | { kind: 'defensive_innings_short'; player: PlayerRef; played: number };
 
+/** How a batter's time at bat ended. A ball in play ends it with the play's outcome. */
+export type PlateAppearanceResult = BallInPlayOutcome | 'walk' | 'hit_by_pitch' | 'strikeout';
+
+/** One batter's line for the game, from the plays that stand (OBR 9.02(a)). */
+export type BattingLine = {
+  plateAppearances: number;
+  /** Plate appearances less walks, hit by pitches and sacrifices (OBR 9.02(a)(1)). */
+  atBats: number;
+  hits: number;
+  doubles: number;
+  triples: number;
+  homeRuns: number;
+  walks: number;
+  hitByPitch: number;
+  strikeouts: number;
+  /** Times the player crossed home as a runner (OBR 9.02(a)(2)). */
+  runs: number;
+  /** Runs credited to the batter's plate appearances (OBR 9.04). */
+  runsBattedIn: number;
+};
+
 export type GameState = {
   status: 'pregame' | 'in_progress' | 'final';
   inning: number;

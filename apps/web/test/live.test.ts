@@ -13,9 +13,30 @@ describe('liveReducer', () => {
 
     expect(game.revision).toBe(8);
     expect(game.events).toHaveLength(8);
-    expect(game.plays.at(-1)?.text).toBe('away-1 steals 2nd');
+    expect(game.plays.at(-1)?.text).toBe('#17 steals 2nd');
     expect(game.state).toMatchObject({ inning: 1, half: 'top', outs: 0, bases: { 2: { player: { id: 'away-1' } } } });
     expect(game.status).toBe('connecting');
+  });
+
+  it('keeps the recording when later snapshots arrive', () => {
+    const recording = { playbackId: 'abc123', clockOffsetMs: 1500 };
+    const withVideo = liveReducer(loaded(), { type: 'recording', recording });
+    const next = liveReducer(withVideo, { type: 'snapshot', snapshot: snapshot(events, { afterSeq: 8 }) });
+
+    expect(next.recording).toEqual(recording);
+    expect(next.revision).toBeGreaterThan(withVideo.revision);
+  });
+
+  it('keeps the same game when the recording is unchanged and takes a new asset or offset', () => {
+    const withVideo = liveReducer(loaded(), { type: 'recording', recording: { playbackId: 'abc123', clockOffsetMs: 0 } });
+
+    expect(liveReducer(withVideo, { type: 'recording', recording: { playbackId: 'abc123', clockOffsetMs: 0 } })).toBe(withVideo);
+    expect(
+      liveReducer(withVideo, { type: 'recording', recording: { playbackId: 'abc123', clockOffsetMs: 1800 } }).recording,
+    ).toEqual({ playbackId: 'abc123', clockOffsetMs: 1800 });
+    expect(
+      liveReducer(withVideo, { type: 'recording', recording: { playbackId: 'newAsset', clockOffsetMs: 0 } }).recording,
+    ).toEqual({ playbackId: 'newAsset', clockOffsetMs: 0 });
   });
 
   it('accepts a game that has no events yet', () => {
@@ -32,7 +53,7 @@ describe('liveReducer', () => {
 
     expect(next.revision).toBe(events.at(-1)!.seq);
     expect(next.events).toEqual(events);
-    expect(next.plays).toHaveLength(12);
+    expect(next.plays).toHaveLength(9);
     expect(next.state).toMatchObject({ half: 'bottom', outs: 0 });
   });
 
@@ -61,7 +82,7 @@ describe('liveReducer', () => {
     });
 
     expect(game.state).toEqual(cached);
-    expect(game.plays).toHaveLength(12);
+    expect(game.plays).toHaveLength(9);
     expect(game.plays.every((play) => play.scoreAfter === null)).toBe(true);
   });
 

@@ -16,7 +16,7 @@ export function GameStatus() {
   if (view.kind === 'loading')
     return (
       <View style={styles.status}>
-        <ActivityIndicator color={colors['action/primary']} />
+        <ActivityIndicator color={colors['action/strong']} />
         <Text style={styles.message}>Opening your saved game…</Text>
       </View>
     );
@@ -40,7 +40,11 @@ export function GameStatus() {
 }
 
 const styles = createStyles({
-  status: { padding: sizes['space/4'], gap: sizes['space/4'] },
+  // A card, so it reads clearly when it sits over the field on the score screen.
+  status: {
+    marginHorizontal: sizes['space/4'], marginBottom: sizes['space/2'], padding: sizes['space/4'], gap: sizes['space/4'],
+    borderRadius: sizes['radius/lg'], borderWidth: 1, borderColor: colors['border/subtle'], backgroundColor: colors['surface/card'],
+  },
   message: { fontSize: 15, lineHeight: 22, color: colors['text/secondary'] },
   retry: {
     minHeight: 48,
@@ -49,6 +53,6 @@ const styles = createStyles({
     backgroundColor: colors['action/primary'],
     alignItems: 'center',
   },
-  retryLabel: { fontSize: 16, fontWeight: '600', color: colors['surface/card'] },
+  retryLabel: { fontSize: 16, fontWeight: '600', color: colors['text/on-action'] },
   pressed: { opacity: 0.7 },
 });

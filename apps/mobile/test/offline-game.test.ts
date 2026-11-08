@@ -180,7 +180,7 @@ test('a local storage format changed after opening blocks scoring without append
   assert.equal(opened.kind, 'ready');
   if (opened.kind !== 'ready') return;
   await opened.record({ kind: 'start' });
-  await database.exec('PRAGMA user_version = 2');
+  await database.exec('PRAGMA user_version = 3');
   assert.deepEqual(await opened.record({ kind: 'pitch', result: 'ball' }), {
     kind: 'blocked',
     reason: 'version',
@@ -331,6 +331,29 @@ test('rapid taps get an explicit busy result and never duplicate a pitch', async
       pitches: 2,
     });
   }
+  await database.close();
+});
+
+test('a game saved under engine 0.1.1 reopens with its plays, takes new ones and stays pinned to 0.1.1', async () => {
+  const database = connect(':memory:');
+  const opened = await openOfflineGame(database, boundary);
+  assert.equal(opened.kind, 'ready');
+  if (opened.kind !== 'ready') return;
+  await opened.record({ kind: 'start' });
+  const pitched = await opened.record({ kind: 'pitch', result: 'ball' });
+  assert.equal(pitched.kind, 'saved');
+  if (pitched.kind !== 'saved') return;
+  await database.exec("UPDATE local_games SET engine_version = '0.1.1'");
+
+  const reopened = await openOfflineGame(database, boundary);
+  assert.equal(reopened.kind, 'ready');
+  if (reopened.kind !== 'ready') return;
+  assert.deepEqual(reopened.game, pitched.game);
+  const next = await reopened.record({ kind: 'pitch', result: 'called_strike' });
+  assert.equal(next.kind, 'saved');
+  if (next.kind === 'saved') assert.deepEqual(next.game.state.count, { balls: 1, strikes: 1, pitches: 2 });
+  const pinned = await database.all<{ engine_version: string }>('SELECT engine_version FROM local_games');
+  assert.deepEqual(pinned.map((row) => row.engine_version), ['0.1.1']);
   await database.close();
 });
 
@@ -668,4 +691,63 @@ test('the last pitch number comes from the pitcher who threw the last play, not 
     event: 'wild_pitch', moves: [{ runner, to: 2 }] });
   if (result.kind !== 'saved') throw new Error('Wild pitch must save');
   assert.equal(result.game.lastPitchNumber, null, 'a runner-only play has no pitch number');
+});
+
+test('a voice play saves as a voice event, survives a reopen, and accepts only play commands', async () => {
+  const directory = mkdtempSync(join(tmpdir(), 'sandlot-voice-'));
+  try {
+    const path = join(directory, 'game.db');
+    const first = connect(path);
+    const session = await openOfflineGame(first, boundary);
+    if (session.kind !== 'ready') throw new Error('Session must open');
+    const started = await session.record({ kind: 'start' });
+    if (started.kind !== 'saved') throw new Error('Game must start');
+    const at = '2026-10-26T17:05:00.000Z';
+    const saved = await session.record({ kind: 'voice', at, expectedRevision: started.game.revision,
+      commands: [{ kind: 'pitch', result: 'swinging_strike' }] });
+    assert.equal(saved.kind, 'saved');
+    if (saved.kind !== 'saved') return;
+    assert.deepEqual(saved.game.events.slice(started.game.events.length).map((event) => [event.source, event.at]), [['voice', at]]);
+    assert.equal(saved.game.waitingPlays, started.game.waitingPlays + 1, 'a voice play waits to sync like a tap play');
+
+    const notPlays = [
+      [],
+      [{ kind: 'undo', target: started.game.events[0]!.group }],
+      [{ kind: 'game', control: { kind: 'end_half', reason: 'manual' } }],
+      [{ kind: 'substitution', side: 'home', change: {} }],
+      [{ kind: 'correct', target: started.game.events[0]!.group, replacement: [] }],
+      [{ kind: 'pitch', result: 'ball' }, { kind: 'undo', target: started.game.events[0]!.group }],
+    ];
+    for (const commands of notPlays) {
+      const result = await session.record({ kind: 'voice', at, expectedRevision: saved.game.revision, commands: commands as never });
+      assert.deepEqual(result, { kind: 'rejected', code: 'not_implemented' }, JSON.stringify(commands));
+    }
+    const stale = await session.record({ kind: 'voice', at, expectedRevision: started.game.revision, commands: [{ kind: 'pitch', result: 'ball' }] });
+    assert.equal(stale.kind, 'stale', 'a press that started before the last save never writes on top of it');
+    await first.close();
+
+    const reopened = await openOfflineGame(connect(path), boundary);
+    assert.equal(reopened.kind, 'ready', 'a saved game with voice events loads');
+    if (reopened.kind === 'ready') assert.deepEqual(reopened.game, saved.game);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('#65: an undo pinned to a revision undoes only when the game is still at that revision', async () => {
+  const session = await openOfflineGame(connect(':memory:'), boundary);
+  if (session.kind !== 'ready') throw new Error('Session must open');
+  const started = await session.record({ kind: 'start' });
+  if (started.kind !== 'saved') throw new Error('Game must start');
+  const ball = await session.record({ kind: 'pitch', result: 'ball' });
+  if (ball.kind !== 'saved') throw new Error('Ball must save');
+  const foul = await session.record({ kind: 'pitch', result: 'foul' });
+  if (foul.kind !== 'saved') throw new Error('Foul must save');
+  const stale = await session.record({ kind: 'undo', expectedRevision: ball.game.revision });
+  assert.equal(stale.kind, 'stale');
+  const undone = await session.record({ kind: 'undo', expectedRevision: foul.game.revision });
+  assert.equal(undone.kind, 'saved');
+  if (undone.kind === 'saved') assert.deepEqual(undone.game.state.count, ball.game.state.count);
+  const unpinned = await session.record({ kind: 'undo', expectedRevision: undefined });
+  assert.equal(unpinned.kind, 'saved', 'an undo with no revision is a plain undo, not a stale one');
 });

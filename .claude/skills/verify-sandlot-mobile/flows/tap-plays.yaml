@@ -95,7 +95,7 @@ appId: host.exp.Exponent
 - copyTextFrom:
     id: "pitch-total"
 - evalScript: ${output.doublePitches = maestro.copiedText}
-- assertTrue: ${parseInt(output.doublePitches, 10) === parseInt(output.setupPitches, 10) + 1}
+- assertTrue: ${parseInt(output.doublePitches.match(/(\d+)/)[1], 10) === parseInt(output.setupPitches.match(/(\d+)/)[1], 10) + 1}
 - takeScreenshot: tap-double-saved
 - stopApp
 - openLink: "exp://localhost:8091?__expo_disable_fab=1&__expo_disable_auto_launch=1&__expo_disable_onboarding=1"
@@ -296,8 +296,10 @@ appId: host.exp.Exponent
 - tapOn:
     id: "destination-.*-out"
     index: 1
-- assertVisible:
-    id: "third-out-evidence"
+# On a short phone like the iPhone SE the runners list runs below the fold.
+- scrollUntilVisible:
+    element:
+      id: "third-out-evidence"
 - tapOn:
     id: "out-type-.*-force"
 - takeScreenshot: tap-force-third-out-choice

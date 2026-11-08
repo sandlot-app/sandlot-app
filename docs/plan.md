@@ -89,7 +89,7 @@ type GameState = {
 };
 ```
 
-- Events are never edited or deleted. Undo and fixes are new events that target a group, so one undo reverses everything one press recorded.
+- Events are never edited or deleted. Undo and fixes are new events that target a group, so one undo reverses everything a press saved on its own. Answering a voice card is a tap, and the reading the scorer picks is that press's one play ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)).
 - Game state is always computed from the events. The stored copy on the server is a cache that can be rebuilt.
 - Events and stats refer to players by ID. Names live in one table, which keeps privacy rules in one place.
 - IDs are branded types, so an event ID can never be passed where a group ID belongs.
@@ -103,7 +103,7 @@ The engine is the critical path. Voice, stats, corrections and the family view a
 
 | Function | What it does |
 | --- | --- |
-| `apply`, `applyGroup` | Accept or reject one command, or a whole press, all or nothing |
+| `apply`, `applyGroup` | Accept or reject one command, or a whole play, all or nothing |
 | `replay` | Build the game from its events |
 | `candidates` | List every legal reading of an unclear play, such as "runner scores" with two runners on |
 | `classify` | Decide whether a play saves instantly, needs a confirm, or needs a hit-or-error call |
@@ -161,7 +161,7 @@ The scorer's phone is the source of truth during a game, so scoring never waits 
 - **Handing off.** The scorer hands the lock to another parent while online with nothing left to upload. An admin can force a takeover, and late events from the old phone come back as items to review.
 - **Sync.** The phone uploads queued events when signal returns, when the app opens, every few seconds during a live game, and before the game is finalized. Each event has its own ID, so a retry never duplicates a play.
 - **The screen.** The diamond, count, score and play log all come from the replayed game. Pitches are one tap on a bar that is always visible. A play is one tap on the outcome, or one voice press.
-- **Corrections.** Undo is instant. Every other fix opens a preview of what it changes before it saves. The voice spec from September defines these flows, and it carries over.
+- **Corrections.** Undo is instant. A voice fix of the last play saves right away, with the banner and Undo ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)). Every other fix opens a preview of what it changes before it saves. The voice spec from September defines these flows, and apart from the voice fix it carries over.
 
 The September plan wanted SQLite encryption on the phone because it holds kids' names. Confirm Expo supports it before relying on it.
 
@@ -169,25 +169,29 @@ The September plan wanted SQLite encryption on the phone because it holds kids' 
 
 Voice is the main reason a team would switch, and also the biggest unknown, so a throwaway prototype tests it before the app depends on it. The rule from September stays: the AI proposes a play, and only the engine decides whether it is legal.
 
-1. The scorer holds the mic button. The phone records immediately, before any connection opens, so no words are lost.
+1. The scorer taps the mic button once. There is no hold. The mic stays warm on the scoring screen and keeps the second before the touch, so no words are lost ([ADR 0005](adr/0005-the-mic-stays-warm-on-the-scoring-screen.md)).
 2. Speech goes to a transcription service. September's plan chose OpenAI's gpt-live-transcribe, and the prototype confirms that choice or replaces it.
-3. A small parser on the phone handles common phrases like "ball", "steals second" or "fly out to center" with no AI. Anything else goes to an AI parser, which returns candidate commands.
-4. The engine checks the commands and classifies the play. A simple legal play saves instantly, with a spoken-word banner and undo. An unclear, complex or misheard play shows a confirm card or buttons.
+3. A small parser on the phone handles only pitch calls like "ball" or "foul", and a lone "undo", with no AI. Anything else goes to the AI, which sees the whole game and answers with the whole play's result ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)).
+4. The engine checks the answer. A legal play saves with a banner naming each runner's result, Undo and a one-step fix by voice. A card appears only when two readings are both believable and nothing said picks one, when the same play arrives twice within 3 seconds, or when "confirm everything" is on.
 5. Any failure falls back to tap scoring in one step.
 
-Taps record pitches and voice records plays. That split keeps voice cheap, at about 4 cents a game by September's estimate, and puts voice where it saves the most taps.
+Voice can record pitches too, so a parent can say "ball, strike" the way they would out loud. That costs more than September's estimate of about 4 cents a game, which assumed taps for pitches. The targets are under 25 cents for a game with plays by voice and pitches by tap, and under 40 cents when every pitch is said ([#78](https://github.com/sandlot-app/sandlot-app/issues/78)).
 
 **What the prototype must prove.** Record 100 or more spoken plays over game video with crowd noise playing. Voice goes ahead only if all of these hold:
 
-- [ ] At least 95% of plays parse exactly right
-- [ ] No wrong play would have saved without a confirm
-- [ ] 90% of simple plays show a result within 1.5 seconds of release
-- [ ] 90% of complex plays show a result within 2.5 seconds
-- [ ] Measured cost per game is under 25 cents
+- [ ] At least 95% of plays read exactly right
+- [ ] At most 2% of plays save wrong, and each one is shown on the banner with a one-step fix
+- [ ] Fewer than 1 press in 10 gets a card
+- [ ] The test includes names in the wrong role and plays with two believable readings. No wrong-role name saves as another player, and each two-reading play shows a card with both readings
+- [ ] 90% of simple plays show a result within 1.5 seconds of the press ending
+- [ ] 90% of complex plays show a result within 2.5 seconds of the press ending
+- [ ] Measured cost per game is under 25 cents with plays by voice and pitches by tap, and under 40 cents when every pitch is said
 
-The prototype is thrown away. Its recorded test set and the on-phone phrase parser carry into the real app. September's voice edge-case spec carries over unchanged, apart from deferring parent flags.
+The test also reports the time from the scorer's last word to the result, because that's the wait a parent feels. The typed test on 2026-10-28 had a median of 2.5 seconds per AI press, so the 1.5-second target may not hold. If it misses, it comes back to Christian as a decision.
 
-The first version records the whole press, then uploads the clip for transcription. It is simpler to build and test, and it runs in Expo Go. Streaming transcription, which shows words while the scorer speaks, comes before the beta.
+The prototype is thrown away. Its test set carries into the real app. September's voice edge-case spec carries over unchanged, apart from deferring parent flags.
+
+The first version streams the press for live transcription, so words show while the scorer speaks, as the Figma screens do. When streaming can't connect, the phone uploads the recorded clip instead (spec A4, A5). The contract's Voice section has both endpoints.
 
 ## Family features
 
@@ -223,7 +227,7 @@ After the YC demo, before the beta. The only check before the demo is measuring 
 - **Errors.** Crash and error reporting on the phone, the live page and `sync-events`, through one hosted tool such as Sentry, with personal data stripped. Events carry IDs, never names.
 - **Sync.** Each `sync-events` call logs the game ID, group ID, error code and time taken, never command contents that could identify a player. A dashboard shows groups per minute, rejects by error code and stuck queues.
 - **Live page.** An alert when play-to-page time goes over a few seconds.
-- **Voice.** The prototype's five targets become live metrics: parse accuracy, latency and cost per game.
+- **Voice.** The targets in Voice scoring become live metrics: plays read right, wrong saves, how often a card appears, latency and cost per game.
 - **Video.** Stream health, and the cost of each streamed game for pricing.
 - **Alerts** go to Christian and Kevin, so a Saturday-morning failure is found before a parent reports it.
 - Christian reviews what gets logged, since it is a privacy change.
@@ -262,14 +266,14 @@ Milestones follow dependencies, not dates. Each one ends in a check that has to 
 | 2 | Shared contract | Both | [contract.md](contract.md): event numbering, upload request, commit checks, errors, live page, demo access | Contract agreed in PR 2. Kevin's backend stores an event the engine produced. |
 | 3 | Engine core | Christian | Mustang rules for pitches, walks, strikeouts, balls in play with runner advances, steals, inning changes, score, undo and box score. The interface freezes early so voice and sync can build on it. | Fixtures pass, and one real game replays to the right box score |
 | 4 | Tap scoring app | Christian | Lineup setup, diamond, pitch bar, play outcomes, play log, undo, games saved on the phone | A full game scored by tap from video, in airplane mode |
-| 5 | Voice | Christian | Hold to talk, recorded clip sent for transcription, AI parser, engine check, confirm card | Meets the five targets in Voice scoring |
+| 5 | Voice | Christian | Tap to talk, streaming transcription with a recorded-clip fallback, the AI reading the whole press, engine check, a card only when two readings are both believable | Meets the targets in Voice scoring |
 | 6 | Event sync and family live page | Kevin | Events uploaded to Supabase, live score on a private web link | A second device sees each play within a few seconds |
 | 7 | Live streaming and the demo clip | Kevin | A second phone streams through an existing app to a hosted service, which records it. The live page plays it with the score drawn on top. One clip of one play is cut from the recording using the event's time and an offset entered by hand, and shown on the live page next to the stat card. The demo uses footage that needs no consent. | Video plays on the live page with a correct score overlay, and the clip shows the whole play |
 | 8 | Game stat card | Christian | A card of one child's game line, styled for sharing, exported as an image. It shows only the stats the division uses. | After a scored game, the card exports in one tap and matches the box score |
-| 9 | YC demo | Both | One recorded game scored and streamed end to end, a stat card with one highlight clip, design mock-ups of the top-plays feed and a scout's view labeled as what comes next, the live page at a public link, at least three real parents trying the app, the demo video, the founder video, the written answers. Details in [demo-plan.md](demo-plan.md). | Application submitted |
+| 9 | YC demo | Both | One recorded game scored and streamed end to end, a stat card with one highlight clip, design mock-ups of the top-plays feed and a scout's view labeled as what comes next, the live page at a public link, one real parent trying the app, the demo video, the founder video, the written answers. Details in [demo-plan.md](demo-plan.md). | Application submitted |
 | 10 | Accounts, teams and privacy | Both | Sign in with Apple and Google, invite links, parent claims, row-level security, deletion | Database tests pass for every visibility rule, and a parent claims and deletes a test child |
 | 11 | GameChanger import | Kevin | Rosters and season stat lines from GameChanger's CSV export, marked imported | A real team's export loads, and its season totals match GameChanger's |
-| 12 | Beta with the Moraga Mustang team | Both | Apple developer account, TestFlight, streaming transcription for voice, error tracking, sync and latency dashboards, alerts, weekly releases | Six games in a row match GameChanger's box scores, with zero data loss |
+| 12 | Beta with the Moraga Mustang team | Both | Apple developer account, TestFlight, error tracking, sync and latency dashboards, alerts, weekly releases | Six games in a row match GameChanger's box scores, with zero data loss |
 | 13 | In-app broadcaster, replays and moderation | Kevin | Development build with a streaming module, recording, media consent, replays, report and stop-stream tools | A full game streamed from the app, with a replay |
 | 14 | Highlight clips and the league feed | Both | Clips cut around each of a child's plays, a clip list for each family, one-tap export, the league's top-plays feed ranked by game situation and family reactions, vision models that trim, check and frame clips | After a streamed game, a parent sees clips of only their child and exports one, and the league feed shows only that league's registered families |
 | 15 | Payments | Kevin | The paid family tier through the app stores, priced from the measured cost of a streamed game | Sandbox purchases work on both stores |
@@ -287,7 +291,7 @@ The architecture stays. What changes is the order of work, so the riskiest parts
 | Engine, event log, scorer lock, AI proposes and engine decides | As designed | Kept | These are the right foundations |
 | Voice edge-case spec | Full spec | Kept, with parent flags deferred | It is thorough and still fits |
 | Order of work | Backend, privacy and presets before any game is scored, voice after | Engine, tap app and voice first. Accounts and privacy after the YC demo. | Proves the scoring experience first |
-| Voice transcription | Streaming from the first version | A recorded clip first, streaming before the beta | Simpler to build and test, and it runs in Expo Go |
+| Voice transcription | Streaming from the first version | Streaming first, with a recorded clip as the fallback (changed in October from clip first) | The Figma screens show live words, and the clip path still covers a weak signal |
 | Who builds | Codex writes all the code | Christian and Kevin, each with Claude Code and Codex | Two people with separate directories |
 | Sports | Baseball presets | Baseball and softball in the rule data from day one. Softball presets ship with a softball beta team. | Adding a sport after the types are fixed means a rewrite |
 | Beta presets | Little League Minors and Majors | Moraga Mustang, then Pinto, both PONY | The beta team plays Mustang |

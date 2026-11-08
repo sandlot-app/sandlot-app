@@ -1,15 +1,24 @@
 import { tokens } from '@sandlot/tokens';
-import { useMemo, useState, type ReactNode } from 'react';
-import { Image, PanResponder, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { Animated, Easing, Image, PanResponder, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { MicIcon, MoreHorizontalIcon } from './src/components/icons.tsx';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
 const dragTransform = (translateY: number) => ({ transform: [{ translateY }] });
+const pressTransform = (scale: Animated.Value) => ({ transform: [{ scale }] });
+
+/** Figma's Voice Bar press: ease to 0.98 on touch-down and back on release. */
+function easePress(scale: Animated.Value, held: boolean) {
+  Animated.timing(scale, { toValue: held ? 0.98 : 1, duration: 120, easing: Easing.out(Easing.quad), useNativeDriver: Platform.OS !== 'web' }).start();
+}
 
 export type SyncState =
   | { status: 'saved'; lastPlay: string }
   | { status: 'saving'; lastPlay: string }
-  | { status: 'offline'; lastPlay: string; waiting: number };
+  | { status: 'offline'; lastPlay: string; waiting: number }
+  /** A live game's upload queue stopped. Figma's Sync Status has no frame for it, so it reads like Offline. */
+  | { status: 'stopped'; lastPlay: string; waiting: number; reason: string };
 
 export type Pitch = 'ball' | 'strike-looking' | 'strike-swinging' | 'foul' | 'in-play';
 
@@ -88,9 +97,11 @@ export function PrimaryButton({ label, onPress, disabled = false, testID }: {
   </Pressable>;
 }
 
-export function PlayerChip({ number, name, role, followed = false, layout = 'field', onPress, testID }: {
+export function PlayerChip({ number, name, role, followed = false, layout = 'field', showName = true, onPress, testID }: {
   number: string;
   name: string;
+  /** False on a field too tight for names; the number still shows. */
+  showName?: boolean;
   role: 'fielding' | 'batting' | 'batter';
   layout?: 'field' | 'inline';
   followed?: boolean;
@@ -108,7 +119,7 @@ export function PlayerChip({ number, name, role, followed = false, layout = 'fie
         </View> : null}
       </View>
     </View>
-    <Text style={layout === 'inline' ? styles.inlineName : styles.chipName} numberOfLines={1}>{name}</Text>
+    {showName ? <Text style={layout === 'inline' ? styles.inlineName : styles.chipName} numberOfLines={1}>{name}</Text> : null}
   </View>;
   return onPress ? <Pressable accessibilityRole="button" accessibilityLabel={`${name}, number ${number}`} onPress={onPress} testID={testID}>{chip}</Pressable> : <View testID={testID}>{chip}</View>;
 }
@@ -132,22 +143,28 @@ export function PitchButton({ label, kind, onPress, selected, disabled = false, 
 
 function SyncStatus({ state, syncTestID }: { state: SyncState; syncTestID?: string }) {
   const last = state.lastPlay ? `Last: ${state.lastPlay} · ` : '';
+  const plays = (count: number) => `${count} ${count === 1 ? 'play' : 'plays'}`;
   const label = state.status === 'saved'
     ? `${last}All plays saved`
     : state.status === 'saving'
       ? 'Saving...'
-      : `${last}Offline · ${state.waiting} ${state.waiting === 1 ? 'play' : 'plays'} saved on this phone`;
+      : state.status === 'stopped'
+        ? `${plays(state.waiting)} waiting · Sync stopped: ${state.reason}`
+        : `${last}Offline · ${plays(state.waiting)} saved on this phone`;
+  const warning = state.status === 'offline' || state.status === 'stopped';
   return <View style={styles.syncLine}>
-    <Text style={state.status === 'offline' ? styles.syncOffline : state.status === 'saving' ? styles.syncMuted : styles.syncSaved}>{state.status === 'saved' ? '✓' : state.status === 'offline' ? '●' : '⟳'}</Text>
-    <Text style={state.status === 'offline' ? styles.syncOffline : styles.syncMuted} testID={syncTestID}>{label}</Text>
+    <Text style={warning ? styles.syncOffline : state.status === 'saving' ? styles.syncMuted : styles.syncSaved}>{state.status === 'saved' ? '✓' : warning ? '●' : '⟳'}</Text>
+    <Text style={warning ? styles.syncOffline : styles.syncMuted} testID={syncTestID}>{label}</Text>
   </View>;
 }
 
-export function ScorerBar({ onPitch, onUndo, onMore, sync, disabled = false, undoDisabled = disabled, testID, syncTestID }: {
+export function ScorerBar({ onPitch, onUndo, onMore, sync, voice, disabled = false, undoDisabled = disabled, testID, syncTestID }: {
   onPitch: (pitch: Pitch) => void;
   onUndo: () => void;
   onMore: () => void;
   sync: SyncState;
+  /** The Voice Bar, between Undo and More. */
+  voice: ReactNode;
   disabled?: boolean;
   undoDisabled?: boolean;
   testID?: string;
@@ -172,15 +189,99 @@ export function ScorerBar({ onPitch, onUndo, onMore, sync, disabled = false, und
     </View>
     <View style={styles.barActions}>
       <Pressable accessibilityRole="button" accessibilityLabel={sync.lastPlay ? `Undo · ${sync.lastPlay}` : 'Undo'} accessibilityState={{ disabled: undoDisabled }}
-        disabled={undoDisabled} onPress={onUndo} style={[styles.undoButton, undoDisabled && styles.dimmed]} testID="scorer-undo">
+        disabled={undoDisabled} onPress={onUndo} style={[styles.roundButton, undoDisabled && styles.dimmed]} testID="scorer-undo">
         <Image source={require('./assets/scorer/undo.png')} accessible={false} style={styles.undoIcon} />
-        <Text style={styles.undoText}>{sync.lastPlay ? `Undo · ${sync.lastPlay}` : 'Undo'}</Text>
       </Pressable>
+      {voice}
       <Pressable accessibilityRole="button" accessibilityLabel="More" accessibilityState={{ disabled }} disabled={disabled}
-        onPress={onMore} style={[styles.moreButton, disabled && styles.dimmed]} testID="scorer-more"><Text style={styles.moreGlyph}>•••</Text></Pressable>
+        onPress={onMore} style={[styles.roundButton, disabled && styles.dimmed]} testID="scorer-more"><MoreHorizontalIcon color={colors['text/primary']} /></Pressable>
     </View>
     <SyncStatus state={sync} syncTestID={syncTestID} />
   </View>;
+}
+
+/** What the Transcript Card shows while voice is in use. */
+export type VoiceCard =
+  | { kind: 'listening'; words: string }
+  /** Nothing is saved until the scorer taps a choice. */
+  | { kind: 'choose'; heading: string; words: string; choices: string[]; note: string };
+
+/**
+ * Hold to score by voice. Touch-down starts listening, release applies, and sliding off the bar cancels. The bar keeps
+ * the touch while held, so a scroll can't steal it.
+ */
+export function VoiceBar({ listening, disabled = false, onStart, onRelease, onCancel, testID }: {
+  listening: boolean;
+  disabled?: boolean;
+  onStart: () => void;
+  onRelease: () => void;
+  onCancel: () => void;
+  testID?: string;
+}) {
+  const latest = useRef({ disabled, onStart, onRelease, onCancel });
+  useEffect(() => { latest.current = { disabled, onStart, onRelease, onCancel }; });
+  const size = useRef({ width: 0, height: 0 });
+  const held = useRef(false);
+  const [scale] = useState(() => new Animated.Value(1));
+  const responder = useMemo(() => {
+    const cancel = () => {
+      if (!held.current) return;
+      held.current = false;
+      easePress(scale, false);
+      latest.current.onCancel();
+    };
+    return PanResponder.create({
+      onStartShouldSetPanResponder: () => !latest.current.disabled,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: () => {
+        held.current = true;
+        easePress(scale, true);
+        latest.current.onStart();
+      },
+      onPanResponderMove: (_, gesture) => {
+        if (Math.abs(gesture.dy) > size.current.height || Math.abs(gesture.dx) > size.current.width / 2) cancel();
+      },
+      onPanResponderRelease: () => {
+        if (!held.current) return;
+        held.current = false;
+        easePress(scale, false);
+        latest.current.onRelease();
+      },
+      onPanResponderTerminate: cancel,
+    });
+  }, [scale]);
+  return <Animated.View {...responder.panHandlers} accessible accessibilityRole="button" accessibilityLabel={listening ? 'Listening' : 'Hold to score by voice'}
+    accessibilityState={{ disabled, busy: listening }} onLayout={(event) => { size.current = event.nativeEvent.layout; }}
+    style={[styles.voiceBar, listening && styles.voiceListening, disabled && styles.dimmed, pressTransform(scale)]} testID={testID}>
+    {listening ? <View style={styles.liveDot} /> : <MicIcon color={colors['scoreboard/text']} size={20} />}
+    {/* Larger system text shrinks the label to fit the bar, down to 80%, instead of cutting it off. */}
+    <Text style={styles.voiceLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{listening ? 'Listening…' : 'Hold to score by voice'}</Text>
+  </Animated.View>;
+}
+
+/** Floats above the Scorer Bar while voice is in use: Listening, or Not sure. */
+export function TranscriptCard({ card, onChoose }: { card: VoiceCard; onChoose: (index: number) => void }) {
+  const status = card.kind === 'listening' ? 'Listening…' : card.heading;
+  return (
+    <View style={styles.card} accessibilityLiveRegion="polite" testID="voice-card">
+      <View style={styles.cardHead}>
+        <View style={card.kind === 'listening' ? styles.liveDot : styles.unsureDot} />
+        <Text style={styles.cardStatus} testID="voice-status">{status}</Text>
+      </View>
+      {card.kind === 'listening'
+        ? <Text style={styles.cardWords} testID="voice-words">{card.words ? `“${card.words}` : ''}<Text style={styles.cardPending}>…</Text></Text>
+        : <Text style={styles.cardWords} testID="voice-words">{`“${card.words}”`}</Text>}
+      {card.kind === 'choose' ? <View style={styles.choices}>
+        {card.choices.map((choice, index) => <Pressable key={choice} accessibilityRole="button" onPress={() => onChoose(index)}
+          style={({ pressed }) => [styles.choice, pressed && styles.dimmed]} testID={`voice-choice-${index}`}>
+          <Text style={styles.choiceText}>{choice}</Text>
+        </Pressable>)}
+      </View> : null}
+      <Text style={styles.cardHint}>
+        {card.kind === 'listening' ? 'Say a pitch or a play · release when done' : card.note}
+      </Text>
+    </View>
+  );
 }
 
 const styles = createStyles({
@@ -198,7 +299,7 @@ const styles = createStyles({
   stepActive: { width: 18, height: 6, borderRadius: sizes['radius/full'], backgroundColor: colors['logo/background'] },
   stepInactive: { width: 6, height: 6, borderRadius: sizes['radius/full'], backgroundColor: colors['border/subtle'] },
   headerCancel: { width: 64, minHeight: sizes['tap/min'], justifyContent: 'center', alignItems: 'flex-end' },
-  link: { ...textStyles['Body/Strong'], color: colors['action/primary'] },
+  link: { ...textStyles['Body/Strong'], color: colors['text/link'] },
   sheetScroll: { flexGrow: 0, flexShrink: 1 },
   sheetBody: { paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/4'], paddingBottom: sizes['space/2'], gap: sizes['space/4'] },
   sheetActions: { paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/4'], gap: sizes['space/3'] },
@@ -239,13 +340,24 @@ const styles = createStyles({
   strikeProgressFill: { width: '67%', height: 2, backgroundColor: colors['count/strike'] },
   strikeHeading: { ...textStyles['Body/Strong'], color: colors['text/secondary'] },
   strikeOption: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors['count/strike'], borderRadius: sizes['radius/full'] },
-  barActions: { flexDirection: 'row', gap: sizes['space/3'] },
-  undoButton: { flex: 1, minHeight: sizes['tap/min'], borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/1'] },
-  undoIcon: { width: textStyles['Body/Strong'].lineHeight, height: textStyles['Body/Strong'].lineHeight, tintColor: colors['text/primary'] },
-  undoText: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
-  moreButton: { width: 46, height: 46, borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], alignItems: 'center', justifyContent: 'center' },
+  barActions: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/3'] },
+  roundButton: { width: 46, height: 46, borderWidth: 1, borderColor: colors['border/subtle'], borderRadius: sizes['radius/full'], backgroundColor: colors['surface/card'], alignItems: 'center', justifyContent: 'center' },
+  undoIcon: { width: 22, height: 22, tintColor: colors['text/primary'] },
   dimmed: { opacity: 0.4 },
-  moreGlyph: { ...textStyles['Body/Strong'], color: colors['text/primary'] },
+  voiceBar: { flex: 1, minWidth: 0, height: 52, borderRadius: sizes['radius/full'], backgroundColor: colors['scoreboard/bg'], flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/2'], paddingHorizontal: sizes['space/4'] },
+  voiceListening: { borderWidth: 2, borderColor: colors['scoreboard/text-muted'] },
+  voiceLabel: { ...textStyles['Body/Strong'], fontWeight: '500', letterSpacing: 0.075, color: colors['scoreboard/text'], flexShrink: 1 },
+  liveDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['status/live'] },
+  unsureDot: { width: 8, height: 8, borderRadius: sizes['radius/full'], backgroundColor: colors['count/strike'] },
+  card: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/3'], backgroundColor: colors['text/primary'], borderWidth: 1, borderColor: colors['border/glass'], borderRadius: sizes['radius/xl'], paddingHorizontal: sizes['space/4'], paddingVertical: sizes['space/3'], gap: sizes['space/3'], shadowColor: colors['chip/label/halo'], shadowOpacity: 0.18, shadowRadius: sizes['radius/md'], shadowOffset: { width: 0, height: 8 }, elevation: 6 },
+  cardHead: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
+  cardStatus: { ...textStyles.Caption, fontWeight: '600', color: colors['scoreboard/text-muted'] },
+  cardWords: { ...textStyles['Player/Name'], fontWeight: '500', color: colors['scoreboard/text'] },
+  cardPending: { color: colors['scoreboard/text-muted'] },
+  cardHint: { ...textStyles.Caption, color: colors['scoreboard/text-muted'] },
+  choices: { flexDirection: 'row', flexWrap: 'wrap', gap: sizes['space/2'] },
+  choice: { flexGrow: 1, flexBasis: '40%', minHeight: sizes['tap/min'], borderRadius: sizes['radius/full'], backgroundColor: colors['surface/card'], alignItems: 'center', justifyContent: 'center', paddingHorizontal: sizes['space/3'] },
+  choiceText: { ...textStyles['Body/Strong'], color: colors['text/primary'], textAlign: 'center' },
   syncLine: { minHeight: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: sizes['space/2'] },
   syncSaved: { ...textStyles.Caption, color: colors['count/ball'] },
   syncMuted: { ...textStyles.Caption, color: colors['text/tertiary'] },

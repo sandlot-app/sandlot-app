@@ -1,0 +1,178 @@
+== flow: acceptance-70 simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB) 
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow acceptance-70
+Run flow when id: share-close is visible...
+Run flow when id: share-close is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on id: open-share-sample... COMPLETED
+Run flow when "Share Javier’s game" is not visible...
+Run flow when "Share Javier’s game" is not visible... SKIPPED
+Assert that "Share Javier’s game" is visible... COMPLETED
+Assert that "1 picked", id: share-picked-count is visible... COMPLETED
+Assert that "Poster sticker, Hawks, number 6" is visible... COMPLETED
+Assert that "Lower third sticker, Hawks, number 6" is visible... COMPLETED
+Assert that ".*Ruiz.*" is not visible... COMPLETED
+Take screenshot 01-default-white-name-off... COMPLETED
+Tap on id: share-ink-black... COMPLETED
+Tap on id: share-show-name... COMPLETED
+Assert that "Poster sticker, Javier Ruiz, number 6" is visible... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Assert that "2 picked", id: share-picked-count is visible... COMPLETED
+Assert that "Copy and More send one sticker at a time. Save keeps them all." is visible... COMPLETED
+Take screenshot 02-black-name-on-two-picked... COMPLETED
+Tap on id: share-save... COMPLETED
+Run flow when "Allow Full Access|Allow|OK" is visible...
+Run flow when "Allow Full Access|Allow|OK" is visible... SKIPPED
+Assert that "Saved 2 to Photos." is visible... COMPLETED
+Take screenshot 03-saved-two... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Assert that "1 picked", id: share-picked-count is visible... COMPLETED
+Tap on id: share-copy... COMPLETED
+Assert that "Copied. Paste it into your story." is visible... COMPLETED
+Take screenshot 04-copied-one... COMPLETED
+== flow: acceptance-70-worst simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB) 
+Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+ > Flow acceptance-70-worst
+Run flow when id: share-close is visible...
+  Tap on id: share-close... COMPLETED
+Run flow when id: share-close is visible... COMPLETED
+Open exp://localhost:8091/--/share?game=worst-long... COMPLETED
+Assert that "Share Christopher’s game" is visible... COMPLETED
+Assert that "Poster sticker, Lamorinda Thunderbolts, number 88" is visible... COMPLETED
+Assert that ".*Oberhauser.*" is not visible... COMPLETED
+Take screenshot worst-long-01-name-off... COMPLETED
+Tap on id: share-show-name... COMPLETED
+Assert that "Poster sticker, Christopher Oberhauser-Wettstein, number 88" is visible... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Take screenshot worst-long-02-name-on-top... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot worst-long-03-name-on-middle... COMPLETED
+Tap on id: share-tile-team... COMPLETED
+Assert that "3 picked", id: share-picked-count is visible... COMPLETED
+Tap on id: share-tile-jersey... COMPLETED
+Assert that "4 picked", id: share-picked-count is visible... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on id: share-tile-card... COMPLETED
+Assert that "5 picked", id: share-picked-count is visible... COMPLETED
+Take screenshot worst-long-04-name-on-bottom... COMPLETED
+Tap on id: share-save... COMPLETED
+Run flow when "Allow Full Access|Allow|OK" is visible...
+Run flow when "Allow Full Access|Allow|OK" is visible... SKIPPED
+Assert that "Saved 5 to Photos." is visible... COMPLETED
+Take screenshot worst-long-05-saved... COMPLETED
+Open exp://localhost:8091/--/share?game=worst-accent... COMPLETED
+Assert that "Share Đặng’s game" is visible... COMPLETED
+Tap on id: share-show-name... COMPLETED
+Assert that "Poster sticker, Đặng Nguyễn, number 0" is visible... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Take screenshot worst-accent-01-top... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot worst-accent-02-middle... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on id: share-tile-card... COMPLETED
+Assert that "3 picked", id: share-picked-count is visible... COMPLETED
+Take screenshot worst-accent-03-bottom... COMPLETED
+Tap on id: share-save... COMPLETED
+Assert that "Saved 3 to Photos." is visible... COMPLETED
+== flow: acceptance-70 simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2) 
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow acceptance-70
+Run flow when id: share-close is visible...
+Run flow when id: share-close is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Wait for animation to end within 5000 ms... COMPLETED
+Tap on id: open-share-sample... COMPLETED
+Run flow when "Share Javier’s game" is not visible...
+Run flow when "Share Javier’s game" is not visible... SKIPPED
+Assert that "Share Javier’s game" is visible... COMPLETED
+Assert that "1 picked", id: share-picked-count is visible... COMPLETED
+Assert that "Poster sticker, Hawks, number 6" is visible... COMPLETED
+Assert that "Lower third sticker, Hawks, number 6" is visible... COMPLETED
+Assert that ".*Ruiz.*" is not visible... COMPLETED
+Take screenshot 01-default-white-name-off... COMPLETED
+Tap on id: share-ink-black... COMPLETED
+Tap on id: share-show-name... COMPLETED
+Assert that "Poster sticker, Javier Ruiz, number 6" is visible... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Assert that "2 picked", id: share-picked-count is visible... COMPLETED
+Assert that "Copy and More send one sticker at a time. Save keeps them all." is visible... COMPLETED
+Take screenshot 02-black-name-on-two-picked... COMPLETED
+Tap on id: share-save... COMPLETED
+Run flow when "Allow Full Access|Allow|OK" is visible...
+Run flow when "Allow Full Access|Allow|OK" is visible... SKIPPED
+Assert that "Saved 2 to Photos." is visible... COMPLETED
+Take screenshot 03-saved-two... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Assert that "1 picked", id: share-picked-count is visible... COMPLETED
+Tap on id: share-copy... COMPLETED
+Assert that "Copied. Paste it into your story." is visible... COMPLETED
+Take screenshot 04-copied-one... COMPLETED
+== flow: acceptance-70-worst simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2) 
+Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+ > Flow acceptance-70-worst
+Run flow when id: share-close is visible...
+  Tap on id: share-close... COMPLETED
+Run flow when id: share-close is visible... COMPLETED
+Open exp://localhost:8092/--/share?game=worst-long... COMPLETED
+Assert that "Share Christopher’s game" is visible... COMPLETED
+Assert that "Poster sticker, Lamorinda Thunderbolts, number 88" is visible... COMPLETED
+Assert that ".*Oberhauser.*" is not visible... COMPLETED
+Take screenshot worst-long-01-name-off... COMPLETED
+Tap on id: share-show-name... COMPLETED
+Assert that "Poster sticker, Christopher Oberhauser-Wettstein, number 88" is visible... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Take screenshot worst-long-02-name-on-top... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot worst-long-03-name-on-middle... COMPLETED
+Tap on id: share-tile-team... COMPLETED
+Assert that "3 picked", id: share-picked-count is visible... COMPLETED
+Tap on id: share-tile-jersey... COMPLETED
+Assert that "4 picked", id: share-picked-count is visible... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on id: share-tile-card... COMPLETED
+Assert that "5 picked", id: share-picked-count is visible... COMPLETED
+Take screenshot worst-long-04-name-on-bottom... COMPLETED
+Tap on id: share-save... COMPLETED
+Run flow when "Allow Full Access|Allow|OK" is visible...
+Run flow when "Allow Full Access|Allow|OK" is visible... SKIPPED
+Assert that "Saved 5 to Photos." is visible... COMPLETED
+Take screenshot worst-long-05-saved... COMPLETED
+Open exp://localhost:8092/--/share?game=worst-accent... COMPLETED
+Assert that "Share Đặng’s game" is visible... COMPLETED
+Tap on id: share-show-name... COMPLETED
+Assert that "Poster sticker, Đặng Nguyễn, number 0" is visible... COMPLETED
+Tap on id: share-tile-lowerThird... COMPLETED
+Take screenshot worst-accent-01-top... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Take screenshot worst-accent-02-middle... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Swipe from (50%, 55%) to (50%, 25%) in 1500 ms... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Tap on id: share-tile-card... COMPLETED
+Assert that "3 picked", id: share-picked-count is visible... COMPLETED
+Take screenshot worst-accent-03-bottom... COMPLETED
+Tap on id: share-save... COMPLETED
+Assert that "Saved 3 to Photos." is visible... COMPLETED

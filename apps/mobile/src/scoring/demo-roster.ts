@@ -2,6 +2,8 @@ import type { GameState, PlayerRef, TeamSide } from '@sandlot/engine';
 
 // Display names for the demo game, from the design's sample game. They stay in presentation:
 // events, stats and logs refer to players by ID only.
+// The family live page keeps its own copy of these team names and jersey numbers, without the names, in
+// apps/web/src/roster.ts (PR #73). Rename or renumber a demo player in both places.
 
 export const demoTeams: Record<TeamSide, { name: string; short: string }> = {
   home: { name: 'Hawks', short: 'HAW' },
@@ -28,6 +30,12 @@ const demoPlayers: Record<string, { number: string; name: string }> = {
   'away-8': { number: '14', name: 'H. Lin' },
   'away-9': { number: '21', name: 'M. Webb' },
 };
+
+/** The demo family's child, whose stat stickers and card the family shares after a Final game. */
+export const demoChild = { player: { kind: 'player', id: 'home-6' } as PlayerRef, side: 'home' as TeamSide, first: 'Javier', last: 'Ruiz' };
+
+/** The demo game's division, as the games list and stat card show it. */
+export const demoDivision = 'Mustang';
 
 /** The jersey number and short name a screen shows for a player, falling back to their batting order. */
 export function playerDisplay(state: GameState, side: TeamSide, player: PlayerRef): { number: string; name: string } {

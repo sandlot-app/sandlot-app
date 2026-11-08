@@ -5,6 +5,7 @@
     }
   },
   "enabledPlugins": {
-    "pstack@cursor-plugins": true
+    "pstack@cursor-plugins": true,
+    "expo@claude-plugins-official": true
   }
 }

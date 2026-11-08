@@ -1,0 +1,39 @@
+name: Each hit is an at-bat and a hit, and extra-base hits count by the bases the batter reached
+cite: Official Baseball Rules 9.02(a)(2) and (4) and 9.04 for runs and RBI, 9.02(a)(1), 9.05(a), 9.06, and 5.05(a) for the ground-rule double's two bases,
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+when:
+  - - { kind: pitch, result: in_play }
+    - { kind: ball_in_play, outcome: single, trajectory: line, fielders: [LF], advances: [] }
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: double
+      trajectory: line
+      fielders: [CF]
+      advances: [{ runner: { kind: opponent, id: away-1 }, to: 3 }]
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: triple
+      trajectory: fly
+      fielders: [RF]
+      advances:
+        - { runner: { kind: opponent, id: away-1 }, to: home }
+        - { runner: { kind: opponent, id: away-2 }, to: home }
+  - - { kind: pitch, result: in_play }
+    - kind: ball_in_play
+      outcome: home_run
+      trajectory: fly
+      fielders: [LF]
+      advances: [{ runner: { kind: opponent, id: away-3 }, to: home }]
+  - - { kind: pitch, result: in_play }
+    - { kind: ball_in_play, outcome: ground_rule_double, trajectory: line, fielders: [RF], advances: [] }
+then:
+  score: { home: 0, away: 4 }
+  nextBatter: { home: 0, away: 5 }
+batting:
+  away-1: { plateAppearances: 1, atBats: 1, hits: 1, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 1, runsBattedIn: 0 }
+  away-2: { plateAppearances: 1, atBats: 1, hits: 1, doubles: 1, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 1, runsBattedIn: 0 }
+  away-3: { plateAppearances: 1, atBats: 1, hits: 1, doubles: 0, triples: 1, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 1, runsBattedIn: 2 }
+  away-4: { plateAppearances: 1, atBats: 1, hits: 1, doubles: 0, triples: 0, homeRuns: 1, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 1, runsBattedIn: 2 }
+  away-5: { plateAppearances: 1, atBats: 1, hits: 1, doubles: 1, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 0, runsBattedIn: 0 }

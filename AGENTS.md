@@ -13,7 +13,7 @@ The plan is in [docs/plan.md](docs/plan.md): who owns what, the milestones in or
 ## Commands
 
 - `pnpm install`
-- `pnpm verify` runs typecheck and tests for every package. Run it before every PR.
+- `pnpm verify` runs typecheck and tests for every package. CI runs it on every PR. Before pushing, run only the tests for the files you changed, plus the phone app's typecheck and lint (see `docs/agents/implementation-loop.md`).
 - `pnpm --filter @sandlot/mobile bundle` builds the app's iOS and Android bundles. CI runs it too, which proves the app still imports the engine.
 - `.claude/skills/verify-sandlot-mobile/scripts/verify.sh launch`, then `drive <flow>.yaml` and `cleanup`, opens the app in its own iOS simulator and saves proof that a change works. Read `.claude/skills/verify-sandlot-mobile/SKILL.md` before using it. It needs a Mac with Xcode, Java 17 and Maestro.
 

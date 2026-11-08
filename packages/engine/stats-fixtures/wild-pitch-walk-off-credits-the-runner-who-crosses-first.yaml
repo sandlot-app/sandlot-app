@@ -1,0 +1,27 @@
+name: When a wild-pitch walk-off stops at the winning run, the run goes to the lead runner and is no one's RBI
+cite: Official Baseball Rules 5.08(b) and 7.01(g) for the winning run, 9.02(a)(2), 9.04(a)(1), and 9.13(a) for the wild pitch,
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf
+preset: moraga-mustang-first-half
+started: true
+given:
+  inning: 6
+  half: bottom
+  score: { home: 3, away: 3 }
+  nextBatter: { home: 0, away: 0 }
+  bases:
+    2: { player: { kind: player, id: home-8 }, chargedTo: { kind: opponent, id: away-1 } }
+    3: { player: { kind: player, id: home-9 }, chargedTo: { kind: opponent, id: away-1 } }
+when:
+  - - kind: runner
+      event: wild_pitch
+      runner: { kind: player, id: home-8 }
+      to: home
+    - kind: runner
+      event: wild_pitch
+      runner: { kind: player, id: home-9 }
+      to: home
+then:
+  status: final
+  score: { home: 4, away: 3 }
+batting:
+  home-9: { plateAppearances: 0, atBats: 0, hits: 0, doubles: 0, triples: 0, homeRuns: 0, walks: 0, hitByPitch: 0, strikeouts: 0, runs: 1, runsBattedIn: 0 }

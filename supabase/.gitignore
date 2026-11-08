@@ -1,2 +1,6 @@
 .branches/
 .temp/
+# Function secrets for local serving, like OPENAI_API_KEY. Never commit them.
+.env
+*.env
+functions/.env

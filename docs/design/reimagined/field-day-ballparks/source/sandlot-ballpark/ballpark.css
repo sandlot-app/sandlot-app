@@ -1,0 +1,570 @@
+/* Field Day round three: the ballpark. Every rule is scoped to .bp. */
+.bp {
+  & .ss-stage {
+    --bp-grass: #4e9b47;
+    --bp-mow: rgba(255, 255, 255, 0.07);
+    --bp-mow-2: rgba(0, 40, 10, 0.06);
+    --bp-foul: #418c3e;
+    --bp-dirt: #c48654;
+    --bp-dirt-hi: #dca373;
+    --bp-dirt-lo: #a86f43;
+    --bp-track: #b77f55;
+    --bp-beyond: #b8c6c9;
+    --bp-haze: #d8ebf6;
+    --bp-wall: #154635;
+    --bp-chalk: rgba(255, 255, 255, 0.92);
+    --bp-away: #25447e;
+  }
+
+  .bp-app {
+    background: #f4f1e8;
+  }
+
+  .bp-sky {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 420px;
+    background: linear-gradient(180deg, #b9dcf5 0%, #d6eaf5 45%, #eef0ea 100%);
+  }
+
+  /* The camera: a fixed broadcast view, or a push toward left field */
+  .bp-cam {
+    position: absolute;
+    inset: 0;
+    transform-origin: 14% 40%;
+    transition: transform 1.15s cubic-bezier(0.32, 0.72, 0.2, 1);
+  }
+
+  .bp-app[data-variant='cam'] .bp-cam {
+    clip-path: inset(58px 0 0 0);
+  }
+
+  .bp-cam[data-cam='left'] {
+    transform: scale(1.34);
+  }
+
+  .bp-stadium {
+    position: absolute;
+    top: 70px;
+    left: -79px;
+    width: 560px;
+    height: 560px;
+    perspective: 760px;
+    perspective-origin: 50% -10%;
+  }
+
+  .bp-plane {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    transform-origin: 50% 84%;
+    transform: rotateX(63deg);
+  }
+
+  .bp-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .bp-foul { fill: var(--bp-foul); }
+  .bp-beyond { fill: var(--bp-beyond); }
+  .bp-grass { fill: var(--bp-grass); }
+  .bp-mow rect { fill: var(--bp-mow); }
+  .bp-mow + .bp-mow rect { fill: var(--bp-mow-2); }
+  .bp-mow--in rect { fill: rgba(255, 255, 255, 0.06); }
+  .bp-infield { fill: var(--bp-grass); }
+  .bp-track { fill: none; stroke: var(--bp-track); stroke-width: 22; }
+  .bp-fence { fill: none; stroke: #e8c547; stroke-width: 1.2; }
+  .bp-chalk { fill: none; stroke: var(--bp-chalk); stroke-width: 1.1; }
+  .bp-chalk path:first-child { stroke-width: 1.5; }
+  .bp-base { fill: #fff; }
+  .bp-rubber { fill: #fff; }
+  .bp-ondeck { fill: var(--bp-dirt); stroke: var(--bp-chalk); stroke-width: 0.8; }
+  .bp-dugout rect { fill: #1d2b26; }
+  .bp-dugout .bp-dugout__roof { fill: #2f6f55; }
+
+  /* Things that stand up off the plane */
+  .bp-wall,
+  .bp-stands,
+  .bp-arc {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 100%;
+  }
+
+  .bp-tower,
+  .bp-fielder,
+  .bp-runner,
+  .bp-landing,
+  .bp-burst {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    transform-origin: 0 0;
+    transform-style: preserve-3d;
+  }
+
+  .bp-wall {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    border-top: 2.5px solid #e8c547;
+    background: linear-gradient(180deg, #1c5741, var(--bp-wall));
+  }
+
+  .bp-wall b {
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: #fff;
+  }
+
+  .bp-stands {
+    height: 100px;
+    box-sizing: border-box;
+    border-top: 5px solid #cfd5d7;
+    background:
+      radial-gradient(circle, #f2e7d3 0 1.3px, transparent 1.7px) 0 0 / 6px 6px,
+      radial-gradient(circle, #d4573c 0 1.3px, transparent 1.7px) 3px 3px / 8px 6px,
+      radial-gradient(circle, #3263ac 0 1.2px, transparent 1.6px) 1px 2px / 11px 6px,
+      repeating-linear-gradient(180deg, #66737a 0 5px, #55626a 5px 6px);
+  }
+
+  .bp-stands[data-eye] {
+    border-top-color: #154635;
+    background: linear-gradient(180deg, #123f2f, #1a4c3a);
+  }
+
+  .bp-tower__pole {
+    position: absolute;
+    left: -2px;
+    bottom: 0;
+    width: 4px;
+    height: 176px;
+    background: linear-gradient(90deg, #8e979c, #d6dbdd, #8a9398);
+  }
+
+  .bp-tower__head {
+    position: absolute;
+    left: -18px;
+    bottom: 172px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    width: 36px;
+    height: 18px;
+    padding: 2px;
+    box-sizing: border-box;
+    border-radius: 2px;
+    background: #56616a;
+  }
+
+  .bp-tower__head i {
+    border-radius: 1px;
+    background: #e7ecee;
+  }
+
+  /* Players: a chip standing up off the grass, a shadow on it */
+  .bp-shadow {
+    position: absolute;
+    left: -10px;
+    top: -4px;
+    width: 20px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(8, 40, 22, 0.32);
+  }
+
+  .bp-shadow--small {
+    left: -8px;
+    top: -3px;
+    width: 16px;
+    height: 6px;
+  }
+
+  .bp-stand {
+    position: absolute;
+    left: -40px;
+    bottom: 0;
+    display: grid;
+    justify-items: center;
+    gap: 3px;
+    width: 80px;
+    transform-origin: 50% 100%;
+    transform: rotateX(-63deg) translateY(-2px);
+    will-change: transform;
+  }
+
+  .bp-fielder {
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(0.35, 0.1, 0.25, 1);
+  }
+
+  .bp-fielder__chip {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #3b62a8, var(--bp-away) 70%);
+    box-shadow: inset 0 0 0 2px #fff, 0 2px 5px rgba(8, 30, 40, 0.35);
+  }
+
+  .bp-runner {
+    offset-anchor: 0 0;
+  }
+
+  .bp-runner__chip {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #ff9447, var(--fd-orange) 70%);
+    box-shadow: inset 0 0 0 2.5px #fff, 0 3px 8px rgba(8, 40, 22, 0.32);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .bp-runner__name {
+    padding: 1px 7px;
+    border-radius: 8px;
+    background: rgba(8, 30, 22, 0.66);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+  }
+
+  .bp-runner .bp-stand,
+  .bp-runner .bp-shadow {
+    transition: opacity 0.35s ease;
+  }
+
+  .bp-runner[data-scored] .bp-stand,
+  .bp-runner[data-scored] .bp-shadow {
+    opacity: 0;
+    transition: opacity 0.4s ease 1.75s;
+  }
+
+  /* The ball: lined to left, then thrown in to second */
+  .bp-ball {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    transform-style: preserve-3d;
+    offset-distance: 0%;
+    offset-rotate: 0deg;
+    offset-anchor: 0 0;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .bp-ball__shadow {
+    position: absolute;
+    left: -5px;
+    top: -2.5px;
+    width: 10px;
+    height: 5px;
+    border-radius: 50%;
+    background: rgba(8, 40, 22, 0.35);
+    filter: blur(0.8px);
+  }
+
+  .bp-ball__lift {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-style: preserve-3d;
+  }
+
+  .bp-ball__body {
+    position: absolute;
+    left: -7px;
+    top: -14px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    transform-origin: 50% 100%;
+    transform: rotateX(-63deg);
+    background: radial-gradient(circle at 35% 30%, #fff 0 35%, #ebe6dc 70%, #c9c1b1 100%);
+    box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 0 12px rgba(255, 255, 255, 0.9);
+  }
+
+  [data-phase='hit'] .bp-ball--hit {
+    opacity: 1;
+    offset-distance: 100%;
+    transition: none;
+    animation: bp-fly 1.25s cubic-bezier(0.2, 0.55, 0.35, 1) both;
+  }
+
+  [data-phase='hit'] .bp-ball--hit .bp-ball__lift {
+    animation: bp-lift 1.25s linear both;
+  }
+
+  [data-phase='throw'] .bp-ball--throw {
+    opacity: 1;
+    offset-distance: 100%;
+    transition: none;
+    animation: bp-fly 0.62s cubic-bezier(0.3, 0.3, 0.45, 1) both;
+  }
+
+  [data-phase='throw'] .bp-ball--throw .bp-ball__lift {
+    animation: bp-throwlift 0.62s linear both;
+  }
+
+  [data-phase='reset'] .bp-ball--throw {
+    offset-distance: 100%;
+  }
+
+  /* The ball's line on the grass, drawn as it travels */
+  .bp-groundline {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .bp-groundline svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+
+  .bp-groundline path {
+    fill: none;
+    stroke: rgba(255, 255, 255, 0.6);
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+  }
+
+  [data-phase='hit'] .bp-groundline--hit,
+  [data-phase='throw'] .bp-groundline--hit,
+  [data-phase='throw'] .bp-groundline--throw {
+    opacity: 1;
+    transition: none;
+  }
+
+  [data-phase='hit'] .bp-groundline--hit path {
+    animation: bp-draw 1.25s cubic-bezier(0.2, 0.55, 0.35, 1) both;
+  }
+
+  [data-phase='throw'] .bp-groundline--throw path {
+    stroke: rgba(255, 214, 120, 0.85);
+    animation: bp-draw 0.62s cubic-bezier(0.3, 0.3, 0.45, 1) both;
+  }
+
+  /* Tracking (cam take): the flight drawn in the air, and where it landed */
+  .bp-arc {
+    height: 90px;
+    margin-top: -90px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .bp-arc path {
+    fill: none;
+    stroke: #ffb35c;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 4px rgba(255, 140, 40, 0.9));
+  }
+
+  [data-phase='hit'] .bp-arc,
+  [data-phase='throw'] .bp-arc {
+    opacity: 1;
+    transition: none;
+  }
+
+  [data-phase='hit'] .bp-arc path {
+    animation: bp-draw 1.25s cubic-bezier(0.2, 0.55, 0.35, 1) both;
+  }
+
+  .bp-landing i {
+    position: absolute;
+    left: -14px;
+    top: -14px;
+    width: 28px;
+    height: 28px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 2.5px solid #ffb35c;
+    opacity: 0;
+  }
+
+  .bp-landing .bp-stand {
+    bottom: 30px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .bp-tag {
+    padding: 3px 8px;
+    border-radius: 9px;
+    background: #10231c;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  [data-phase='hit'] .bp-landing i {
+    animation: bp-ring 1s cubic-bezier(0.2, 0.7, 0.3, 1) 1.05s both;
+  }
+
+  [data-phase='hit'] .bp-landing .bp-stand,
+  [data-phase='throw'] .bp-landing .bp-stand {
+    opacity: 1;
+    transition: opacity 0.3s ease 1.05s;
+  }
+
+  [data-phase='throw'] .bp-landing .bp-stand {
+    transition-delay: 0s;
+  }
+
+  /* A ring at the plate when the run comes in */
+  .bp-burst::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: -16px;
+    width: 32px;
+    height: 32px;
+    box-sizing: border-box;
+    border-radius: 50%;
+    border: 3px solid var(--fd-orange);
+    opacity: 0;
+  }
+
+  .bp-burst[data-on]::before {
+    animation: bp-ring 0.9s cubic-bezier(0.2, 0.7, 0.3, 1) 1.55s both;
+  }
+
+  .bp-vignette {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 560px;
+    pointer-events: none;
+  }
+
+  /* The sheet sits a little lower to give the park more room */
+  .fd-sheet { top: 570px; }
+  .fd-caption { top: 586px; }
+  .fd-controls { top: 664px; }
+  .fd-status { top: 770px; }
+
+  /* ---- Golden hour ---- */
+  .bp-app[data-variant='golden'] {
+    --bp-grass: #5b9342;
+    --bp-foul: #4b863a;
+    --bp-mow: rgba(255, 220, 150, 0.09);
+    --bp-dirt: #c98250;
+    --bp-dirt-hi: #e4a36c;
+    --bp-dirt-lo: #a8663a;
+    --bp-track: #b9784d;
+    --bp-haze: #ffd9a8;
+    --bp-chalk: rgba(255, 246, 228, 0.92);
+  }
+
+  .bp-app[data-variant='golden'] .bp-sky {
+    background: linear-gradient(180deg, #f3a96b 0%, #f7c58e 40%, #f6e3c8 100%);
+  }
+
+  .bp-app[data-variant='golden'] .bp-stands:not([data-eye]) {
+    filter: sepia(0.25) brightness(0.92);
+  }
+
+  .bp-app[data-variant='golden'] .bp-tower__head {
+    background: #4b4f58;
+  }
+
+  .bp-app[data-variant='golden'] .bp-tower__head i {
+    background: #fffbe8;
+    box-shadow: 0 0 5px 1px rgba(255, 236, 170, 0.95);
+  }
+
+  .bp-app[data-variant='golden'] .bp-tower__head::after {
+    content: '';
+    position: absolute;
+    inset: -26px -34px;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255, 240, 190, 0.7), transparent);
+  }
+
+  /* Long shadows thrown away from the low sun */
+  .bp-app[data-variant='golden'] .bp-shadow {
+    left: -4px;
+    width: 64px;
+    height: 9px;
+    transform-origin: 0 50%;
+    transform: rotate(-24deg);
+    background: linear-gradient(90deg, rgba(40, 18, 40, 0.55), rgba(40, 18, 40, 0));
+  }
+
+  .bp-app[data-variant='golden'] .bp-shadow--small {
+    width: 50px;
+  }
+
+  .bp-app[data-variant='golden'] .bp-vignette {
+    background:
+      radial-gradient(80% 60% at 85% 10%, rgba(255, 196, 120, 0.28), transparent 70%),
+      linear-gradient(180deg, rgba(255, 170, 90, 0.08), transparent 60%);
+  }
+
+  /* The stands throw their shadow across the outfield */
+  .bp-dusk {
+    position: absolute;
+    inset: -80px -200px 0;
+    background: linear-gradient(172deg, rgba(48, 26, 70, 0.5) 0%, rgba(48, 26, 70, 0.42) 27%, rgba(48, 26, 70, 0) 33%);
+  }
+
+  .bp-app[data-variant='golden'] .bp-cam {
+    filter: sepia(0.22) saturate(1.2) hue-rotate(-6deg);
+  }
+
+  .bp-app[data-variant='golden'] .bp-stands:not([data-eye]) {
+    border-top-color: #ffe7b0;
+    box-shadow: 0 -3px 10px rgba(255, 220, 150, 0.9);
+  }
+}
+
+@keyframes bp-fly {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
+}
+
+@keyframes bp-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes bp-lift {
+  0% { transform: translateZ(4px); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  42% { transform: translateZ(62px); animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.4); }
+  86% { transform: translateZ(0); animation-timing-function: ease-out; }
+  93% { transform: translateZ(8px); animation-timing-function: ease-in; }
+  100% { transform: translateZ(0); }
+}
+
+@keyframes bp-throwlift {
+  0% { transform: translateZ(8px); animation-timing-function: ease-out; }
+  50% { transform: translateZ(30px); animation-timing-function: ease-in; }
+  100% { transform: translateZ(7px); }
+}
+
+@keyframes bp-ring {
+  0% { transform: scale(0.4); opacity: 0.95; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
