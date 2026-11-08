@@ -1,0 +1,57 @@
+appId: host.exp.Exponent
+---
+# The widest score bar a demo game can show (12–10, Bottom 12, 3–2 · 2 outs), from the Scorer UI gallery, at the phone's
+# text size. Set the size first with `xcrun simctl ui <simulator> content_size <size>`. The picture is the proof: screen
+# readers, and so Maestro, only hear the bar's summary, never the drawn line.
+# From the scoring screen, go back to the games list. A tap right after the text size changes can be lost, so retry it.
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - runFlow:
+                when:
+                  visible:
+                    id: "games-navigation"
+                commands:
+                  - tapOn:
+                      id: "games-navigation"
+            - extendedWaitUntil:
+                notVisible:
+                  id: "games-navigation"
+                timeout: 10000
+# The scoring screen shows the Sandlot wordmark too, so wait for the gallery link, which only the home screen has.
+- scrollUntilVisible:
+    element:
+      id: "open-scorer-gallery"
+- waitForAnimationToEnd
+# A tap on the home screen right after it appears can be lost, so try it again until the gallery opens.
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "open-scorer-gallery"
+          commands:
+            - tapOn:
+                id: "open-scorer-gallery"
+      - extendedWaitUntil:
+          visible:
+            id: "score-summary"
+            text: "Away 12, home 10\\..*"
+          timeout: 10000
+- copyTextFrom:
+    id: "score-summary"
+- assertTrue: ${maestro.copiedText.startsWith('Away 12, home 10. Inning 12, bottom. 2 outs. Count 3 balls and 2 strikes.')}
+- waitForAnimationToEnd
+- takeScreenshot: score-bar-widest
+# Back to the home screen, which shows the Sandlot wordmark (the gallery doesn't).
+- tapOn: "‹ Sandlot"
+- extendedWaitUntil:
+    visible:
+      id: "sandlot-brand"
+    timeout: 15000

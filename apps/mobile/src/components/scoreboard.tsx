@@ -7,6 +7,13 @@ import { MiniDiamond } from './field.tsx';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
 
+/**
+ * The compact bar's text grows with the phone's text size up to Extra Extra Large (about 1.24 times), then holds, so
+ * two-digit scores, "Bottom 12" and "3–2 · 2 outs" still fit side by side on an iPhone SE without trimming anything.
+ * Screen readers hear the whole bar as `summary`, at any size.
+ */
+const MAX_TEXT_SCALE = 1.24;
+
 /** Figma Scoreboard (24:372), Size=Compact. Screen readers hear `summary` instead of the parts. */
 export function Scoreboard({ state, summary }: { state: GameState; summary: string }) {
   const final = state.status === 'final';
@@ -14,22 +21,22 @@ export function Scoreboard({ state, summary }: { state: GameState; summary: stri
   return (
     <View style={styles.board} accessible accessibilityLabel={summary} accessibilityLiveRegion="polite" testID="score-summary">
       <View style={styles.team}>
-        <Text style={styles.abbr} numberOfLines={1}>{teamsOf(state.lineups).away.short}</Text>
-        <Text style={styles.score}>{state.score.away}</Text>
+        <Text style={styles.abbr} numberOfLines={1} maxFontSizeMultiplier={MAX_TEXT_SCALE}>{teamsOf(state.lineups).away.short}</Text>
+        <Text style={styles.score} maxFontSizeMultiplier={MAX_TEXT_SCALE}>{state.score.away}</Text>
       </View>
       <View style={styles.state}>
         <MiniDiamond bases={state.bases} />
         <View>
           <View style={styles.inningRow}>
             {final ? null : <View style={styles.liveDot} />}
-            <Text style={styles.inning} numberOfLines={1}>{final ? 'Final' : `${state.half === 'top' ? 'Top' : 'Bottom'} ${state.inning}`}</Text>
+            <Text style={styles.inning} numberOfLines={1} maxFontSizeMultiplier={MAX_TEXT_SCALE}>{final ? 'Final' : `${state.half === 'top' ? 'Top' : 'Bottom'} ${state.inning}`}</Text>
           </View>
-          {final ? null : <Text style={styles.count} numberOfLines={1}>{balls}–{strikes} · {state.outs} out{state.outs === 1 ? '' : 's'}</Text>}
+          {final ? null : <Text style={styles.count} numberOfLines={1} maxFontSizeMultiplier={MAX_TEXT_SCALE}>{balls}–{strikes} · {state.outs} out{state.outs === 1 ? '' : 's'}</Text>}
         </View>
       </View>
       <View style={[styles.team, styles.home]}>
-        <Text style={styles.score}>{state.score.home}</Text>
-        <Text style={styles.abbr} numberOfLines={1}>{teamsOf(state.lineups).home.short}</Text>
+        <Text style={styles.score} maxFontSizeMultiplier={MAX_TEXT_SCALE}>{state.score.home}</Text>
+        <Text style={styles.abbr} numberOfLines={1} maxFontSizeMultiplier={MAX_TEXT_SCALE}>{teamsOf(state.lineups).home.short}</Text>
       </View>
     </View>
   );
@@ -101,12 +108,13 @@ const styles = createStyles({
   },
   team: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: sizes['space/1'] },
   home: { justifyContent: 'flex-end' },
-  abbr: { ...textStyles['Status/Label'], color: colors['scoreboard/text-muted'], textTransform: 'uppercase', maxWidth: 44 },
+  // If a team side ever runs short of room, its abbreviation trims first, so the score is never squeezed.
+  abbr: { ...textStyles['Status/Label'], color: colors['scoreboard/text-muted'], textTransform: 'uppercase', maxWidth: 44, flexShrink: 1 },
   score: { ...textStyles['Score/Compact'], color: colors['scoreboard/text'], fontVariant: ['tabular-nums'] },
   state: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
   inningRow: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/1'] },
   liveDot: { width: 6, height: 6, borderRadius: sizes['radius/full'], backgroundColor: colors['status/live'] },
-  // No width cap on the inning and count: at bigger iPhone text sizes they need more room, and the team sides give it up.
+  // No width cap on the inning and count: at bigger text sizes they take the room they need, up to MAX_TEXT_SCALE.
   inning: { ...textStyles.Caption, fontWeight: '600', color: colors['scoreboard/text'] },
   count: { ...textStyles.Caption, color: colors['scoreboard/text-muted'] },
   // Expanded: 20 above and to the sides (space/4 + space/1). Figma's 14 around the hairline is space/3 here.

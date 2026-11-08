@@ -2,6 +2,7 @@ appId: host.exp.Exponent
 ---
 # The score bar's count line at the phone's text size: a picture of the bar, one called strike, another picture, then Undo.
 # Set the text size first with `xcrun simctl ui <simulator> content_size <size>`.
+# The pictures are the proof that the line reads in full: Maestro only reads the bar's screen reader summary.
 - runFlow: _ready.yaml
 # Right after launch the first tap on Start can land before the home screen is ready, so wait for it to settle.
 # A later run at another text size starts on the scoring screen instead.
@@ -10,19 +11,64 @@ appId: host.exp.Exponent
       id: "start-game|resume-game|score-summary"
     timeout: 15000
 - waitForAnimationToEnd
+# Known bug, tracked in #115: the first Start demo game tap can be dropped, so retry it until Game setup opens, then set up
+# the game as _start-local-game.yaml does. Go back to `runFlow: _start-local-game.yaml` when #115 is fixed.
 - runFlow:
     when:
       visible:
         id: "start-game"
     commands:
-      - runFlow: _start-local-game.yaml
-- runFlow:
-    when:
-      visible:
-        id: "resume-game"
-    commands:
+      - retry:
+          maxRetries: 2
+          commands:
+            - runFlow:
+                when:
+                  notVisible:
+                    id: "start-setup"
+                commands:
+                  - tapOn:
+                      id: "start-game"
+            - extendedWaitUntil:
+                visible:
+                  id: "start-setup"
+                timeout: 15000
+      - scrollUntilVisible:
+          element:
+            id: "lineup-home"
+      - scroll
       - tapOn:
-          id: "resume-game"
+          id: "lineup-home"
+      - scrollUntilVisible:
+          element:
+            id: "save-lineup"
+      - scroll
+      - tapOn:
+          id: "save-lineup"
+      - tapOn:
+          id: "lineup-away"
+      - scrollUntilVisible:
+          element:
+            id: "save-lineup"
+      - scroll
+      - tapOn:
+          id: "save-lineup"
+      - tapOn:
+          id: "start-setup"
+# A tap on the home screen right after it appears can be lost, so try Continue scoring again until the game opens.
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "resume-game"
+          commands:
+            - tapOn:
+                id: "resume-game"
+      - extendedWaitUntil:
+          visible:
+            id: "score-summary"
+          timeout: 10000
 - extendedWaitUntil:
     visible:
       id: "score-summary"

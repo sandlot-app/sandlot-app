@@ -1,17 +1,28 @@
+import { initialState, type GameState } from '@sandlot/engine';
 import { tokens } from '@sandlot/tokens';
 import { useState } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { PitchButton, PlayerChip, PrimaryButton, ScorerBar, Sheet, SheetHeader, SheetSection, VoiceBar, type Pitch, type SyncState } from './scorer-ui';
+import { Scoreboard } from './src/components/scoreboard.tsx';
+import { gameSummary } from './src/scoring/game-summary.ts';
+import { demoSetup } from './src/scoring/demo-game.ts';
 import { barView, type MicStatus } from './src/voice/mic-status.ts';
 import { createStyles } from './style';
 
 const { colors, sizes, textStyles } = tokens.modes.Light;
-type GallerySection = 'all' | 'sheet' | 'headers' | 'button' | 'chips' | 'bar';
+type GallerySection = 'all' | 'score' | 'sheet' | 'headers' | 'button' | 'chips' | 'bar';
+
+/** The widest score bar a demo game can show: two-digit scores, extra innings and a full count with two outs. */
+const widestScore: GameState = {
+  ...initialState(demoSetup), status: 'in_progress', inning: 12, half: 'bottom', outs: 2,
+  count: { balls: 3, strikes: 2, pitches: 0 }, score: { away: 12, home: 10 },
+};
 
 function requestedSection(): GallerySection {
   if (Platform.OS !== 'web') return 'all';
   const value = new URLSearchParams(globalThis.location.search).get('gallery');
-  return value === 'sheet' || value === 'headers' || value === 'button' || value === 'chips' || value === 'bar' ? value : 'all';
+  return value === 'score' || value === 'sheet' || value === 'headers' || value === 'button' || value === 'chips' || value === 'bar' ? value : 'all';
 }
 
 export default function ScorerGallery({ onExit }: { onExit: () => void }) {
@@ -25,10 +36,15 @@ export default function ScorerGallery({ onExit }: { onExit: () => void }) {
   const saved: SyncState = { status: 'saved', lastPlay: lastPitch };
   const voiceBarFor = (mic: MicStatus) => <VoiceBar listening={false} mic={mic} onStart={() => setBarResult('Voice pressed')} onRelease={() => {}} onCancel={() => {}} />;
   const voiceBar = voiceBarFor('off');
-  return <View style={styles.root}>
+  // Clear of the status bar and Dynamic Island, so the way back to Sandlot can be tapped.
+  return <SafeAreaView style={styles.root} edges={['top']}>
     <ScrollView contentContainerStyle={styles.content}>
       <Pressable accessibilityRole="button" onPress={onExit} style={styles.exit}><Text style={styles.exitText}>‹ Sandlot</Text></Pressable>
       <Text style={styles.title}>Scorer UI gallery</Text>
+      {show('score') ? <View style={styles.section} testID="gallery-score-bar">
+        <Text style={styles.heading}>Score bar, widest</Text>
+        <Scoreboard state={widestScore} summary={gameSummary(widestScore)} />
+      </View> : null}
       {show('sheet') ? <View style={styles.section}>
         <Text style={styles.heading}>Sheet</Text>
         <Text style={styles.caption}>Bottom anchored · scrim or drag down to close</Text>
@@ -84,7 +100,7 @@ export default function ScorerGallery({ onExit }: { onExit: () => void }) {
       <SheetSection label="Sample section"><View style={styles.sampleRow}><Text style={styles.rowText}>First option</Text></View><View style={styles.sampleRow}><Text style={styles.rowText}>Second option</Text></View></SheetSection>
       <SheetSection label="Another section"><View style={styles.sampleRow}><Text style={styles.rowText}>Third option</Text></View></SheetSection>
     </Sheet>
-  </View>;
+  </SafeAreaView>;
 }
 
 const styles = createStyles({
