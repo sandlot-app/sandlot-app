@@ -1,0 +1,83 @@
+appId: host.exp.Exponent
+---
+# The Field tab at the phone's text size: every pitch button, the strike choices, Undo and the "plays saved" line are
+# on screen without scrolling. It scores one called strike and undoes it, so each text size starts from the same count.
+# Set the text size first with `xcrun simctl ui <simulator> content_size <size>`. Built from score-bar-text-size.yaml.
+- runFlow: _ready.yaml
+# Right after launch the first tap on Start can land before the home screen is ready, so wait for it to settle.
+# A later run at another text size starts on the scoring screen instead.
+- extendedWaitUntil:
+    visible:
+      id: "start-game|resume-game|score-summary"
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - runFlow: _start-local-game.yaml
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+- waitForAnimationToEnd
+- assertVisible:
+    id: "pitch-ball"
+- assertVisible:
+    id: "pitch-strike"
+- assertVisible:
+    id: "pitch-foul"
+- assertVisible:
+    id: "pitch-in-play"
+- assertVisible:
+    id: "scorer-undo"
+- assertVisible:
+    id: "scorer-more"
+- assertVisible:
+    id: "voice-bar"
+- assertVisible:
+    id: "waiting-plays"
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- evalScript: ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}
+- takeScreenshot: field-start
+- tapOn:
+    id: "pitch-strike"
+- extendedWaitUntil:
+    visible:
+      id: "strike-looking"
+    timeout: 5000
+- assertVisible:
+    id: "strike-swinging"
+- assertVisible:
+    id: "pitch-in-play"
+- assertVisible:
+    id: "waiting-plays"
+- takeScreenshot: strike-choices
+- tapOn:
+    id: "strike-looking"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+      text: ".*outs?\\. Count [0-3] balls? and ${output.strikes + 1} strikes?\\..*"
+    timeout: 15000
+- assertVisible:
+    id: "waiting-plays"
+- takeScreenshot: strike-saved
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+      text: ".*Count [0-3] balls? and ${output.strikes} strikes?\\..*"
+    timeout: 15000
+- takeScreenshot: strike-undone

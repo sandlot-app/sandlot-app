@@ -139,12 +139,15 @@ export default function ScoreScreen() {
       <View style={styles.screen} accessibilityElementsHidden={draft !== null} importantForAccessibility={draft ? 'no-hide-descendants' : 'auto'}>
         <NavBar />
         {largeText ? (
-          // At the largest text sizes nothing fits on one screen, so the page scrolls with the field at full width.
-          <ScrollView testID="game-content" contentContainerStyle={styles.content}>
-            {matchup}
-            <Field state={state} />
+          // At the largest text sizes nothing fits on one screen. The matchup and the field, at full width, scroll
+          // under the nav, and the dock stays below them, so the pitch buttons, Undo and the sync line never leave it.
+          <>
+            <ScrollView testID="game-content" style={styles.scroll} contentContainerStyle={[styles.content, styles.scrollEnd]}>
+              {matchup}
+              <Field state={state} />
+            </ScrollView>
             {dock}
-          </ScrollView>
+          </>
         ) : (
           <>
             <View style={styles.pinned}>{matchup}</View>
@@ -172,6 +175,8 @@ const styles = createStyles({
   pinned: { gap: sizes['space/3'], paddingTop: sizes['space/1'], paddingBottom: sizes['space/3'], paddingHorizontal: sizes['space/4'] },
   room: { flex: 1, alignItems: 'center', marginHorizontal: sizes['space/4'] },
   content: { gap: sizes['space/3'], paddingHorizontal: sizes['space/4'] },
+  scroll: { flex: 1 },
+  scrollEnd: { paddingBottom: sizes['space/3'] },
   dock: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   belowBar: { backgroundColor: colors['surface/card'] },
   message: { marginHorizontal: sizes['space/4'], marginBottom: sizes['space/2'], padding: sizes['space/3'], borderRadius: sizes['radius/md'], backgroundColor: colors['surface/warning'], color: colors['text/primary'] },
