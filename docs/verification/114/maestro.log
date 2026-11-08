@@ -12,12 +12,22 @@ Retry 2 times...
   Assert that id: share-tile-poster is visible... COMPLETED
 Retry 2 times... COMPLETED
 Assert that "1 picked" is visible... COMPLETED
+Assert that id: share-ink-white, selected is visible... COMPLETED
+Assert that "Poster sticker, Hawks, number 6.*", id: share-tile-poster is visible... COMPLETED
+Take screenshot share-default... COMPLETED
 Tap on id: share-show-name... COMPLETED
-Assert that id: share-show-name is visible... COMPLETED
-Take screenshot share-white-ink... COMPLETED
+Assert that "Poster sticker, Javier Ruiz, number 6.*", id: share-tile-poster is visible... COMPLETED
 Tap on id: share-ink-black... COMPLETED
 Assert that id: share-ink-black, selected is visible... COMPLETED
-Take screenshot share-black-ink... COMPLETED
+Tap on id: share-tile-poster... COMPLETED
+Swipe from (50%,45%) to (50%,10%) in 400 ms... COMPLETED
+Wait for animation to end... COMPLETED
+Tap on id: share-tile-jersey... COMPLETED
+Tap on id: share-tile-team... COMPLETED
+Assert that "2 picked" is visible... COMPLETED
+Swipe from (50%,20%) to (50%,70%) in 400 ms... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot share-black-name-on... COMPLETED
 
 == flow: share-selected-colors simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
 Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
@@ -33,10 +43,20 @@ Retry 2 times...
   Assert that id: share-tile-poster is visible... COMPLETED
 Retry 2 times... COMPLETED
 Assert that "1 picked" is visible... COMPLETED
+Assert that id: share-ink-white, selected is visible... COMPLETED
+Assert that "Poster sticker, Hawks, number 6.*", id: share-tile-poster is visible... COMPLETED
+Take screenshot share-default... COMPLETED
 Tap on id: share-show-name... COMPLETED
-Assert that id: share-show-name is visible... COMPLETED
-Take screenshot share-white-ink... COMPLETED
+Assert that "Poster sticker, Javier Ruiz, number 6.*", id: share-tile-poster is visible... COMPLETED
 Tap on id: share-ink-black... COMPLETED
 Assert that id: share-ink-black, selected is visible... COMPLETED
-Take screenshot share-black-ink... COMPLETED
+Tap on id: share-tile-poster... COMPLETED
+Swipe from (50%,45%) to (50%,10%) in 400 ms... COMPLETED
+Wait for animation to end... COMPLETED
+Tap on id: share-tile-jersey... COMPLETED
+Tap on id: share-tile-team... COMPLETED
+Assert that "2 picked" is visible... COMPLETED
+Swipe from (50%,20%) to (50%,70%) in 400 ms... COMPLETED
+Wait for animation to end... COMPLETED
+Take screenshot share-black-name-on... COMPLETED
 
