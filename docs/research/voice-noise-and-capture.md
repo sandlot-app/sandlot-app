@@ -67,3 +67,9 @@ None of the vendor pages read gives a noisy-environment accuracy number, so ther
 3. **Stop clipping words on release.** Add a short tail (for example keep the mic and append for a few hundred ms after release) and a short pre-roll before the press. Pure app change in `press.ts`/`voice-service.ts`. Also consider a "min press length" that pads instead of sending a tiny clip.
 4. **Fall back on empty, not only on failure.** When the live transcript is empty, resend the buffered clip to `voice-parse` (`gpt-transcribe`) once before saying "Didn't catch that" (`press.ts:103-110` currently only falls back when streaming returned `null`). This is the one change aimed squarely at empty results.
 5. **Measure before buying more.** Record real stand audio (the clip is already in memory), replay it against `gpt-live-transcribe` with and without options 1-2, `gpt-transcribe`, and a Deepgram/AssemblyAI trial. Track empty, truncated and slow results separately, as OpenAI's checklist advises. Separately, read the Apple and Android pages above and decide whether a native voice-processing or `voice_recognition` mic source is worth a native module.
+
+## Measuring it (issue #86)
+
+The harness is in `apps/mobile/scripts/voice-loop/` (its README has the commands). `voice-batch` runs every test clip, clean and with crowd noise, with 0, 300 and 600 ms cut off the start, under today's settings, `noise_reduction` far field and near field, a higher `delay` and a short `prompt`. It counts right, name-dropped, wrong, blank and failed results apart, with the time to the final transcript, and prints the tables.
+
+Not run yet: it needs an OpenAI key. The results go here when it has run. Note the API reference lists `delay` for `gpt-realtime-whisper` only, while the transcription guide lists it for `gpt-live-transcribe`, so OpenAI may turn that setting down; the batch reports it if so.
