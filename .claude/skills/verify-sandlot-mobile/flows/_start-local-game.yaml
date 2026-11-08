@@ -3,11 +3,16 @@ appId: host.exp.Exponent
 # Starts the local demo game the way a scorer does: Game setup, both lineups saved as they are, then Start.
 - tapOn:
     id: "start-game"
+- scrollUntilVisible:
+    element:
+      id: "lineup-home"
+- scroll
 - tapOn:
     id: "lineup-home"
 - scrollUntilVisible:
     element:
       id: "save-lineup"
+- scroll
 - tapOn:
     id: "save-lineup"
 - tapOn:
@@ -15,6 +20,7 @@ appId: host.exp.Exponent
 - scrollUntilVisible:
     element:
       id: "save-lineup"
+- scroll
 - tapOn:
     id: "save-lineup"
 - tapOn:

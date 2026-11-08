@@ -5,13 +5,23 @@ appId: host.exp.Exponent
 - runFlow: _ready.yaml
 - assertVisible:
     id: "start-game"
-- tapOn:
-    id: "start-game"
+- waitForAnimationToEnd
+# A tap during the home screen's first load can be dropped, so retry it until Game setup opens.
+- retry:
+    maxRetries: 2
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              id: "start-setup"
+          commands:
+            - tapOn:
+                id: "start-game"
+      - extendedWaitUntil:
+          visible:
+            id: "start-setup"
+          timeout: 15000
 # Game setup: Start is off, the half is pre-filled, and the rows say Not set yet.
-- extendedWaitUntil:
-    visible:
-      id: "start-setup"
-    timeout: 15000
 - assertVisible: "New game"
 - assertVisible: "Set both lineups to start"
 - assertVisible:
@@ -29,22 +39,36 @@ appId: host.exp.Exponent
 # Hawks lineup: bats only, a position change and back, a drag and back, and the starting pitcher changed and back.
 - tapOn:
     id: "lineup-away"
+# Save lineup is the last thing in the scrolling page, so on a phone it is below the fold: wait for the title instead.
 - extendedWaitUntil:
-    visible:
-      id: "save-lineup"
+    visible: "Hawks lineup"
     timeout: 15000
-- assertVisible: "Hawks lineup"
 - assertVisible: "Everyone here bats, in this order. Drag to reorder, and tap a position to change it."
-- assertVisible: "B. Lane, Bats only. Change position"
-- assertVisible: "Fully rested · 75 pitches available today"
 - takeScreenshot: lineup-hawks-top
+# The tenth batter and the pitcher's note are below the fold on a small phone: scroll to them, then back up.
+- scrollUntilVisible:
+    element:
+      text: "B. Lane, Bats only. Change position"
+- assertVisible: "B. Lane, Bats only. Change position"
+- scrollUntilVisible:
+    element:
+      id: "starting-pitcher"
+- assertVisible:
+    id: "starting-pitcher"
+    text: ".*Fully rested · 75 pitches available today"
+- scrollUntilVisible:
+    element:
+      id: "position-1"
+    direction: UP
 - tapOn:
     id: "position-1"
 - extendedWaitUntil:
     visible:
       id: "position-sheet"
     timeout: 15000
-- assertVisible: "Swaps with K. Moss"
+- assertVisible:
+    id: "position-choice-CF"
+    text: ".*Swaps with K. Moss"
 - takeScreenshot: lineup-position-sheet
 - tapOn:
     id: "position-choice-CF"
@@ -74,6 +98,7 @@ appId: host.exp.Exponent
 - scrollUntilVisible:
     element:
       id: "change-pitcher"
+- scroll
 - tapOn:
     id: "change-pitcher"
 - extendedWaitUntil:
@@ -81,6 +106,11 @@ appId: host.exp.Exponent
       id: "pitcher-sheet"
     timeout: 15000
 - takeScreenshot: lineup-pitcher-sheet
+# The sheet's list runs under the Pitch first button on a phone: scroll the row clear of it before tapping.
+- scrollUntilVisible:
+    element:
+      id: "pitcher-choice-home-2"
+- scroll
 - tapOn:
     id: "pitcher-choice-home-2"
 - assertVisible: "Pitch first"
@@ -91,6 +121,10 @@ appId: host.exp.Exponent
     text: ".*M. Ortiz.*"
 - tapOn:
     id: "change-pitcher"
+- scrollUntilVisible:
+    element:
+      id: "pitcher-choice-home-1"
+- scroll
 - tapOn:
     id: "pitcher-choice-home-1"
 - tapOn:
@@ -102,6 +136,7 @@ appId: host.exp.Exponent
 - scrollUntilVisible:
     element:
       id: "add-player"
+- scroll
 - tapOn:
     id: "add-player"
 - assertVisible: "Everyone on the roster is already in the lineup."
@@ -113,11 +148,18 @@ appId: host.exp.Exponent
       id: "position-9"
 - tapOn:
     id: "position-9"
+# Not playing today is the last row of the position list and starts below the screen on a phone: scroll it into view first.
 - extendedWaitUntil:
     visible:
-      id: "position-remove"
+      id: "position-sheet"
     timeout: 15000
-- assertVisible: "Takes B. Lane out of today’s lineup"
+- scrollUntilVisible:
+    element:
+      id: "position-remove"
+- scroll
+- assertVisible:
+    id: "position-remove"
+    text: ".*Takes B. Lane out of today’s lineup"
 - takeScreenshot: lineup-position-remove
 - tapOn:
     id: "position-remove"
@@ -125,6 +167,7 @@ appId: host.exp.Exponent
 - scrollUntilVisible:
     element:
       id: "add-player"
+- scroll
 - tapOn:
     id: "add-player"
 - extendedWaitUntil:
@@ -138,6 +181,7 @@ appId: host.exp.Exponent
 - scrollUntilVisible:
     element:
       id: "save-lineup"
+- scroll
 - takeScreenshot: lineup-hawks-bottom
 - tapOn:
     id: "save-lineup"
@@ -155,22 +199,32 @@ appId: host.exp.Exponent
     enabled: false
 - takeScreenshot: setup-hawks-set
 # Marlins lineup: nobody pitching is saved, and Start is rejected with the engine's reason.
+- scrollUntilVisible:
+    element:
+      id: "lineup-home"
+- scroll
 - tapOn:
     id: "lineup-home"
 - extendedWaitUntil:
-    visible:
-      id: "save-lineup"
+    visible: "Marlins lineup"
     timeout: 15000
-- assertVisible: "Marlins lineup"
 - tapOn:
     id: "position-0"
+- scrollUntilVisible:
+    element:
+      id: "position-choice-Bats only"
+- scroll
 - tapOn:
     id: "position-choice-Bats only"
+- scrollUntilVisible:
+    element:
+      id: "starting-pitcher-none"
 - assertVisible:
     id: "starting-pitcher-none"
 - scrollUntilVisible:
     element:
       id: "save-lineup"
+- scroll
 - tapOn:
     id: "save-lineup"
 - extendedWaitUntil:
@@ -187,11 +241,16 @@ appId: host.exp.Exponent
       text: "The Marlins need a starting pitcher."
     timeout: 15000
 - takeScreenshot: setup-rejected
+- scrollUntilVisible:
+    element:
+      id: "lineup-home"
+- scroll
 - tapOn:
     id: "lineup-home"
 - scrollUntilVisible:
     element:
       id: "change-pitcher"
+- scroll
 - tapOn:
     id: "change-pitcher"
 - tapOn:
@@ -201,6 +260,7 @@ appId: host.exp.Exponent
 - scrollUntilVisible:
     element:
       id: "save-lineup"
+- scroll
 - tapOn:
     id: "save-lineup"
 - extendedWaitUntil:
