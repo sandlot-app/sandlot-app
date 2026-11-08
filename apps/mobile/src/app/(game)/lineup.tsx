@@ -91,7 +91,7 @@ const styles = createStyles({
   hint: { ...textStyles.Caption, color: colors['text/secondary'] },
   section: { gap: sizes['space/2'] },
   linkTap: { alignItems: 'center', justifyContent: 'center' },
-  link: { ...textStyles['Body/Strong'], color: colors['action/primary'], textAlign: 'center' },
+  link: { ...textStyles['Body/Strong'], color: colors['text/link'], textAlign: 'center' },
   none: { ...textStyles['Body/Regular'], color: colors['text/secondary'] },
   actions: { gap: sizes['space/3'], paddingTop: sizes['space/2'] },
 });
