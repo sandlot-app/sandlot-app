@@ -1,0 +1,395 @@
+/* Fix a play. Scoped to .gd with the rest of the group. */
+.gd {
+  /* ---- The plays list ---- */
+  .gd-list,
+  .gd-review,
+  .gd-edit {
+    position: absolute;
+    right: 0;
+    left: 0;
+    border-radius: 30px 30px 0 0;
+    background: #f7f4ec;
+    box-shadow: 0 -10px 40px rgba(8, 40, 22, 0.24);
+    transform: translateY(105%);
+    transition: transform 0.6s cubic-bezier(0.3, 0.8, 0.2, 1);
+    will-change: transform;
+  }
+
+  .gd-list[data-show],
+  .gd-review[data-show],
+  .gd-edit[data-show] {
+    transform: none;
+  }
+
+  .gd-list {
+    box-shadow: 0 -4px 14px rgba(8, 40, 22, 0.2);
+    top: 164px;
+    z-index: 7;
+    height: 740px;
+  }
+
+  .gd-list__sub {
+    position: absolute;
+    top: 64px;
+    left: 16px;
+    margin: 0;
+    padding-left: 4px;
+    font-size: 15px;
+    line-height: 20px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gd-plays {
+    position: absolute;
+    top: 98px;
+    right: 16px;
+    left: 16px;
+    display: grid;
+    gap: 20px;
+  }
+
+  .gd-group {
+    display: grid;
+    gap: 6px;
+  }
+
+  .gd-group > .gd-glabel {
+    padding-left: 4px;
+  }
+
+  .gd-card {
+    overflow: hidden;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.06), 0 6px 14px rgba(16, 35, 28, 0.06);
+  }
+
+  .gd-prow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 64px;
+    box-sizing: border-box;
+    padding: 0 14px 0 12px;
+    color: #b9beba;
+  }
+
+  .gd-prow + .gd-prow {
+    border-top: 1px solid rgba(16, 35, 28, 0.07);
+  }
+
+  .gd-prow[data-on] {
+    background: #fff1e6;
+    color: var(--fd-orange);
+  }
+
+  .gd-prow__text {
+    display: grid;
+    flex: 1;
+    gap: 1px;
+    min-width: 0;
+    color: #10231c;
+  }
+
+  .gd-prow__title {
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 21px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gd-prow__sub {
+    font-size: 13px;
+    line-height: 17px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gd-earlier {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    height: 54px;
+    box-sizing: border-box;
+    padding: 0 14px 0 16px;
+    border-radius: 20px;
+    background: rgba(16, 35, 28, 0.06);
+    font-size: 16px;
+    font-weight: 700;
+    color: #4a5a53;
+  }
+
+  .gd-earlier svg:first-child {
+    margin-right: -4px;
+  }
+
+  .gd-earlier {
+    justify-content: flex-start;
+  }
+
+  .gd-earlier svg:last-child {
+    margin-left: auto;
+    color: #b9beba;
+  }
+
+  /* ---- The step sheet under the Fixing banner ---- */
+  .gd-edit {
+    top: 536px;
+    z-index: 5;
+    height: 420px;
+  }
+
+  .gd-banner {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    left: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 44px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border-radius: 16px;
+    background: radial-gradient(circle at 50% 0%, #ff9447, var(--fd-orange) 80%);
+    box-shadow: 0 6px 14px rgba(255, 117, 25, 0.28);
+    color: #fff;
+  }
+
+  .gd-banner__icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  .gd-banner__text {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .gd-q {
+    position: absolute;
+    top: 70px;
+    right: 16px;
+    left: 16px;
+    margin: 0;
+    text-align: center;
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 26px;
+    letter-spacing: -0.01em;
+  }
+
+  .gd-etiles {
+    position: absolute;
+    top: 106px;
+    right: 16px;
+    left: 16px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: 48px 48px;
+    gap: 8px;
+  }
+
+  .gd-et {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.07), 0 6px 14px rgba(16, 35, 28, 0.07), inset 0 0 0 2px transparent;
+    font-size: 17px;
+    font-weight: 700;
+    color: rgba(16, 35, 28, 0.6);
+    transition: background 0.25s ease, box-shadow 0.25s ease, color 0.25s ease, transform 0.15s ease;
+  }
+
+  .gd-et[data-on] {
+    background: #fff8f2;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.07), inset 0 0 0 2px var(--fd-orange);
+    color: #10231c;
+  }
+
+  .gd-et__check {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--fd-orange);
+    box-shadow: 0 0 0 2px #f7f4ec;
+    color: #fff;
+    transform: scale(0);
+    transition: transform 0.3s cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+
+  .gd-et__check svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .gd-et[data-on] .gd-et__check {
+    transform: scale(1);
+  }
+
+  .gd-remove {
+    position: absolute;
+    top: 224px;
+    right: 16px;
+    left: 16px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #cc3a3f;
+  }
+
+  /* ---- Review the fix ---- */
+  .gd-review {
+    top: 300px;
+    z-index: 8;
+    height: 640px;
+  }
+
+  .gd-cancel {
+    font-size: 16px;
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gd-wn {
+    position: absolute;
+    top: 74px;
+    right: 16px;
+    left: 16px;
+    display: grid;
+    overflow: hidden;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.06), 0 6px 14px rgba(16, 35, 28, 0.06);
+  }
+
+  .gd-wn__line {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    height: 54px;
+    box-sizing: border-box;
+    padding: 0 16px 0 14px;
+  }
+
+  .gd-wn__line--now {
+    border-top: 1px solid rgba(16, 35, 28, 0.07);
+    background: #fff8f2;
+  }
+
+  .gd-tag {
+    flex: none;
+    width: 42px;
+    padding: 3px 0;
+    border-radius: 8px;
+    background: rgba(16, 35, 28, 0.07);
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 16px;
+    text-transform: uppercase;
+    color: #5a6a63;
+  }
+
+  .gd-tag--now {
+    background: var(--fd-orange);
+    color: #fff;
+  }
+
+  .gd-wn__text {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.005em;
+  }
+
+  .gd-wn__text--was {
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gd-changes-label {
+    position: absolute;
+    top: 204px;
+    left: 20px;
+    margin: 0;
+  }
+
+  .gd-changes {
+    position: absolute;
+    top: 226px;
+    right: 16px;
+    left: 16px;
+  }
+
+  .gd-ch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    height: 46px;
+    box-sizing: border-box;
+    padding: 0 16px;
+  }
+
+  .gd-ch + .gd-ch {
+    border-top: 1px solid rgba(16, 35, 28, 0.07);
+  }
+
+  .gd-ch__k {
+    font-size: 15px;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gd-ch__v {
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .gd-ch__v--quiet {
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .gd-note--review {
+    text-wrap: balance;
+    position: absolute;
+    top: 376px;
+    right: 24px;
+    left: 24px;
+    margin: 0;
+    text-align: center;
+    font-size: 13px;
+    line-height: 18px;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  .gd-savefix {
+    position: absolute;
+    top: 424px;
+    height: 58px;
+    right: 16px;
+    left: 16px;
+  }
+}

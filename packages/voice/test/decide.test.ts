@@ -3,7 +3,7 @@ import { readAnswer } from '../src/answer.ts';
 import { pressContext, readContext } from '../src/context.ts';
 import { decide, type Heard } from '../src/decide.ts';
 import { readLocally } from '../src/local.ts';
-import { fits } from '../src/players.ts';
+import { fits, words } from '../src/players.ts';
 import type { RosterEntry } from '../src/state.ts';
 import { append, buildGame, entryByName, roster, withLastPlay } from './game.ts';
 import { expandShort, type Short } from './short.ts';
@@ -33,6 +33,20 @@ describe('the name policy', () => {
     const crowded = roster.map((entry) => entry.name === 'S. Bell' ? parks : entry);
     expect(fits(crowded, park, said('Parker'))).toBe(false);
     expect(fits(crowded, park, said('Park'))).toBe(true);
+  });
+
+  it('matches a name the AI echoes back the way the phone cleaned it ("St.-Pierre" shown as "St -Pierre")', () => {
+    const roster2 = roster.map((entry) => entry.name === 'D. Park' ? { ...entry, name: "R. St.-Pierre" } : entry.name === 'K. Moss' ? { ...entry, name: "K. O.'Neil" } : entry);
+    const holder = (name: string) => roster2.find((entry) => entry.name === name)!;
+    const shown = (name: string) => pressContext({ ...buildGame({ half: 'bottom', up: 'D. Park' }), roster: roster2.map((entry) => ({ ...entry, name: entry.name === name ? name : entry.name })) });
+    expect(shown('R. St.-Pierre').batter.name).toBe('R. St -Pierre');
+    expect(fits(roster2, holder('R. St.-Pierre'), said('R. St -Pierre'))).toBe(true);
+    expect(fits(roster2, holder("K. O.'Neil"), said("K. O 'Neil"))).toBe(true);
+    // Splitting a dotted word can push a name past four words; the surname still survives.
+    const long = roster.map((entry) => entry.name === 'D. Park' ? { ...entry, name: "Mary Ann K. O.'Neil" } : entry);
+    const longShown = pressContext({ ...buildGame({ half: 'bottom', up: 'D. Park' }), roster: long }).batter.name;
+    expect(longShown).toBe("Mary K. O 'Neil");
+    expect(fits(long, long.find((entry) => entry.name === "Mary Ann K. O.'Neil")!, said(longShown))).toBe(true);
   });
 
   it('lets the role tell two players with one surname apart', () => {
@@ -115,7 +129,18 @@ describe('the context the phone sends', () => {
     const base = buildGame({ outs: 0, on: { '1': 'L. Darcy' }, up: 'J. Soto' });
     for (const name of names) {
       const game = { ...base, roster: base.roster.map((entry) => entry.name === 'J. Soto' ? { ...entry, name } : entry) };
-      expect(readContext(JSON.parse(JSON.stringify(pressContext(game)))), JSON.stringify(name)).not.toBeNull();
+      const context = pressContext(game);
+      expect(readContext(JSON.parse(JSON.stringify(context))), JSON.stringify(name)).not.toBeNull();
+      // The name the AI sees reads as the same words as the roster's, so a name it echoes back still matches. A name
+      // cut to four words or 40 characters, or with nothing left to keep, is the only exception.
+      const shown = context.batter.name;
+      if (shown === 'Unknown player') continue;
+      // A name cut to four words or 40 characters loses words from the middle: what's shown is the roster's words, in
+      // order, ending with the same surname.
+      const full = words(name);
+      const left = [...full];
+      const inOrder = words(shown).every((word) => { const at = left.indexOf(word); if (at < 0) return false; left.splice(0, at + 1); return true; });
+      expect(inOrder && words(shown).at(-1) === full.at(-1), `${JSON.stringify(name)} shown as ${JSON.stringify(shown)}`).toBe(true);
     }
   });
 

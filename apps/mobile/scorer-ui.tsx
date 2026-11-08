@@ -299,7 +299,7 @@ const styles = createStyles({
   stepActive: { width: 18, height: 6, borderRadius: sizes['radius/full'], backgroundColor: colors['logo/background'] },
   stepInactive: { width: 6, height: 6, borderRadius: sizes['radius/full'], backgroundColor: colors['border/subtle'] },
   headerCancel: { width: 64, minHeight: sizes['tap/min'], justifyContent: 'center', alignItems: 'flex-end' },
-  link: { ...textStyles['Body/Strong'], color: colors['action/primary'] },
+  link: { ...textStyles['Body/Strong'], color: colors['text/link'] },
   sheetScroll: { flexGrow: 0, flexShrink: 1 },
   sheetBody: { paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/4'], paddingBottom: sizes['space/2'], gap: sizes['space/4'] },
   sheetActions: { paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/4'], gap: sizes['space/3'] },

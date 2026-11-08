@@ -1,0 +1,201 @@
+/* More menu, simple. Scoped to .s2 with the rest of the group. */
+.s2 {
+  .s2-more {
+    position: absolute;
+    top: 372px;
+    right: 0;
+    left: 0;
+    z-index: 6;
+    height: 520px;
+    border-radius: 30px 30px 0 0;
+    background: #f7f4ec;
+    box-shadow: 0 -10px 40px rgba(8, 40, 22, 0.24);
+    transform: translateY(540px);
+    transition: transform 0.6s cubic-bezier(0.3, 0.8, 0.2, 1);
+    will-change: transform;
+  }
+
+  .s2-more[data-open] {
+    transform: none;
+  }
+
+  .s2-more-grab {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    width: 38px;
+    height: 5px;
+    margin-left: -19px;
+    border-radius: 3px;
+    background: rgba(16, 35, 28, 0.16);
+  }
+
+  .s2-more-head {
+    position: absolute;
+    top: 22px;
+    right: 16px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 40px;
+    padding-left: 4px;
+  }
+
+  .s2-more-title {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 32px;
+    letter-spacing: -0.015em;
+  }
+
+  .s2-more-close {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(16, 35, 28, 0.07);
+    color: #5a6a63;
+  }
+
+  /* ---- The hint: you can just say it ---- */
+  .s2-more-body {
+    position: absolute;
+    top: 74px;
+    right: 16px;
+    left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .s2-more-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    box-sizing: border-box;
+    height: 56px;
+    padding: 0 14px 0 10px;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.06), 0 6px 14px rgba(16, 35, 28, 0.06);
+  }
+
+  .s2-more-mic {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 30%, #ff9447, var(--fd-orange) 70%);
+    box-shadow: 0 4px 10px rgba(255, 117, 25, 0.3);
+    color: #fff;
+  }
+
+  .s2-more-hint__text {
+    font-size: 15px;
+    line-height: 20px;
+    white-space: nowrap;
+    color: rgba(16, 35, 28, 0.6);
+  }
+
+  .s2-more-hint__text b {
+    font-weight: 700;
+    color: var(--fd-green);
+  }
+
+  /* ---- Four big tiles ---- */
+  .s2-more-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 106px 106px;
+    gap: 10px;
+  }
+
+  .s2-more-tile {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+    padding: 14px 14px 14px 14px;
+    border-radius: 20px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.07), 0 6px 14px rgba(16, 35, 28, 0.07), inset 0 0 0 2px transparent;
+    color: #10231c;
+  }
+
+  .s2-more-tile[data-on] {
+    background: #fff6ee;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.07), 0 6px 14px rgba(16, 35, 28, 0.07), inset 0 0 0 2px var(--fd-orange);
+  }
+
+  .s2-more-tile__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .s2-more-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #e3efe8;
+    color: var(--fd-green);
+  }
+
+  .s2-more-tile__label {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 22px;
+    letter-spacing: -0.01em;
+  }
+
+  /* The app's guess, shown before you tap: the only runner on base */
+  .s2-more-guess {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 7px 4px 4px;
+    border-radius: 14px;
+    background: rgba(255, 117, 25, 0.12);
+    color: #c25205;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+
+  .s2-more-guess__num {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--fd-orange);
+    color: #fff;
+    font-size: 11px;
+    font-style: normal;
+    font-weight: 800;
+  }
+
+  /* ---- The quiet way out to everything else ---- */
+  .s2-more-other {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 40px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #858e89;
+  }
+}

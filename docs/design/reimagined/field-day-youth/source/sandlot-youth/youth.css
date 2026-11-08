@@ -1,0 +1,156 @@
+/* Field Day round four: a youth field. Builds on the ballpark rules; every rule is scoped to .yf. */
+.yf {
+  & .ss-stage {
+    --yf-grass: #56a04b;
+    --yf-ground: #4d9445;
+    --yf-dirt: #c8915f;
+    --yf-dirt-hi: #dcaa79;
+    --yf-tree: #3f7f3a;
+  }
+
+  .bp-sky {
+    background: linear-gradient(180deg, #a9d5f5 0%, #cfe6f5 40%, #e9f1ea 100%);
+  }
+
+  /* Hills far off, behind the trees */
+  .yf-hills {
+    position: absolute;
+    top: 150px;
+    right: 0;
+    left: 0;
+    height: 120px;
+    background:
+      radial-gradient(55% 90% at 18% 100%, #a7cba2 0 62%, transparent 63%),
+      radial-gradient(65% 80% at 82% 100%, #b4d3ad 0 62%, transparent 63%);
+  }
+
+  /* The camera from the first Field Day, a touch lower */
+  .bp-stadium {
+    top: 70px;
+    perspective: 820px;
+    perspective-origin: 50% -18%;
+  }
+
+  .bp-plane {
+    transform: rotateX(55deg);
+  }
+
+  .bp-stand,
+  .yf-tree__art {
+    transform: rotateX(-55deg) translateY(-2px);
+  }
+
+  .bp-ball__body {
+    transform: rotateX(-55deg);
+  }
+
+  .yf-ground { fill: var(--yf-ground); }
+  .yf-grass { fill: var(--yf-grass); }
+  .yf-mow rect { fill: rgba(255, 255, 255, 0.06); }
+  .yf-worn ellipse { fill: rgba(200, 178, 112, 0.42); }
+  .yf-track { fill: none; stroke: var(--yf-dirt); stroke-width: 14; opacity: 0.9; }
+  .yf-infield { fill: var(--yf-grass); }
+  .yf-chalk { fill: none; stroke: rgba(255, 255, 255, 0.9); stroke-width: 1.2; }
+  .yf-chalk path { stroke-width: 1.5; }
+  .yf-base,
+  .yf-rubber { fill: #fff; }
+
+  /* Chain-link with a yellow safety cap, a post at every panel */
+  .yf-fence,
+  .yf-temp,
+  .yf-bleach {
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-sizing: border-box;
+    transform-origin: 0 100%;
+  }
+
+  .yf-fence {
+    border-top: 3px solid #f4c430;
+    border-left: 1.2px solid #8f999e;
+    background:
+      repeating-linear-gradient(45deg, rgba(225, 231, 233, 0.75) 0 0.7px, transparent 0.7px 3.6px),
+      repeating-linear-gradient(-45deg, rgba(225, 231, 233, 0.75) 0 0.7px, transparent 0.7px 3.6px);
+  }
+
+  .yf-banner {
+    position: absolute;
+    inset: 1px 0 2px;
+    display: grid;
+    place-items: center;
+    background: var(--yf-banner);
+  }
+
+  .yf-banner::after {
+    content: '';
+    width: 60%;
+    height: 2px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.85);
+  }
+
+  .yf-banner[data-color='navy'] { --yf-banner: #25447e; }
+  .yf-banner[data-color='orange'] { --yf-banner: #ff7519; }
+  .yf-banner[data-color='green'] { --yf-banner: #0c4c39; }
+
+  /* Orange temporary fence on stakes */
+  .yf-temp {
+    border-top: 1.5px solid #ff7a1a;
+    border-left: 1.2px solid #7b6a55;
+    background:
+      repeating-linear-gradient(90deg, rgba(255, 122, 26, 0.9) 0 1.4px, transparent 1.4px 4px),
+      repeating-linear-gradient(0deg, rgba(255, 122, 26, 0.9) 0 1.2px, transparent 1.2px 3px);
+  }
+
+  /* Trees: cut-outs standing up past the fence */
+  .yf-tree {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    transform-style: preserve-3d;
+  }
+
+  .yf-tree[data-tone='1'] { --yf-tree: #4b8d3e; }
+  .yf-tree[data-tone='2'] { --yf-tree: #356f37; }
+
+  .yf-tree__art {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    transform-origin: 50% 100%;
+  }
+
+  .yf-tree__art i {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 30%, color-mix(in srgb, var(--yf-tree), #fff 22%), var(--yf-tree) 60%, color-mix(in srgb, var(--yf-tree), #000 18%));
+  }
+
+  .yf-tree__art i:nth-child(1) { left: 0; bottom: 22%; width: 62%; height: 56%; }
+  .yf-tree__art i:nth-child(2) { right: 0; bottom: 26%; width: 60%; height: 54%; }
+  .yf-tree__art i:nth-child(3) { left: 18%; top: 0; width: 64%; height: 60%; }
+
+  .yf-tree__art b {
+    position: absolute;
+    left: 46%;
+    bottom: 0;
+    width: 8%;
+    height: 30%;
+    border-radius: 2px;
+    background: #6d5640;
+  }
+
+  /* Aluminum bleachers, a few parents sitting in them */
+  .yf-bleach {
+    background:
+      radial-gradient(circle, #ff7519 0 2.2px, transparent 2.6px) 6px 4px / 23px 13px,
+      radial-gradient(circle, #25447e 0 2.2px, transparent 2.6px) 15px 10px / 29px 13px,
+      radial-gradient(circle, #f2e7d3 0 2.2px, transparent 2.6px) 2px 9px / 37px 13px,
+      repeating-linear-gradient(180deg, #e2e6e8 0 3px, #9ba4a9 3px 6.5px);
+    border-radius: 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+  }
+}

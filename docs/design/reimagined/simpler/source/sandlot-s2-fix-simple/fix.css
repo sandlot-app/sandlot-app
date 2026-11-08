@@ -1,0 +1,274 @@
+/* Fix a play, simple. Scoped to .s2 with the rest of the group. */
+.s2 {
+  /* The white plate is the card's body: it grows from the saved card to the chooser.
+     It carries no text, so only its box moves. */
+  .s2-fix-plate {
+    position: absolute;
+    top: 580px;
+    right: 18px;
+    left: 18px;
+    z-index: 4;
+    height: 58px;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(16, 35, 28, 0.06), 0 10px 28px rgba(16, 35, 28, 0.1);
+    transition: top 0.6s cubic-bezier(0.3, 0.8, 0.2, 1), right 0.6s cubic-bezier(0.3, 0.8, 0.2, 1), left 0.6s cubic-bezier(0.3, 0.8, 0.2, 1), height 0.6s cubic-bezier(0.3, 0.8, 0.2, 1), border-radius 0.6s ease, box-shadow 0.6s ease;
+  }
+
+  .s2-fix-plate[data-open] {
+    top: 496px;
+    right: 14px;
+    left: 14px;
+    height: 300px;
+    border-radius: 26px;
+    box-shadow: 0 2px 4px rgba(16, 35, 28, 0.08), 0 18px 44px rgba(8, 40, 22, 0.28);
+  }
+
+  /* The content never moves: it sits at the chooser's size and a clip reveals it,
+     so the words stay on their pixels while the plate grows under them. */
+  .s2-fix-card {
+    position: absolute;
+    top: 496px;
+    right: 14px;
+    left: 14px;
+    z-index: 5;
+    height: 300px;
+    clip-path: inset(84px 4px 158px 4px round 18px);
+    transition: clip-path 0.6s cubic-bezier(0.3, 0.8, 0.2, 1);
+  }
+
+  .s2-fix-card[data-open] {
+    clip-path: inset(0 0 0 0 round 26px);
+  }
+
+  /* ---- Closed: the saved play, Undo and Fix ---- */
+  .s2-fix-saved {
+    position: absolute;
+    top: 84px;
+    right: 4px;
+    left: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 58px;
+    padding: 0 10px 0 12px;
+    transition: opacity 0.28s ease 0.04s;
+  }
+
+  .s2-fix-card[data-open] .s2-fix-saved {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+  }
+
+  .s2-fix-tick {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--fd-green);
+    color: #fff;
+  }
+
+  .s2-fix-text {
+    display: grid;
+    flex: 1;
+    gap: 2px;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .s2-fix-title {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 20px;
+  }
+
+  .s2-fix-sub {
+    font-size: 13px;
+    line-height: 17px;
+    white-space: nowrap;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .s2-fix-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 5px;
+    margin-left: -4px;
+    padding: 8px 13px 8px 11px;
+    border-radius: 16px;
+    background: rgba(16, 35, 28, 0.07);
+    color: #3d4d46;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  /* ---- Open: What was it really? ---- */
+  .s2-fix-choose {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
+  }
+
+  .s2-fix-card[data-open] .s2-fix-choose {
+    opacity: 1;
+    transition: opacity 0.3s ease 0.12s;
+  }
+
+  .s2-fix-head {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 28px;
+  }
+
+  .s2-fix-q {
+    font-size: 21px;
+    font-weight: 800;
+    line-height: 28px;
+    letter-spacing: -0.012em;
+  }
+
+  .s2-fix-cancel {
+    font-size: 15px;
+    font-weight: 600;
+    color: rgba(16, 35, 28, 0.5);
+  }
+
+  .s2-fix-tiles {
+    position: absolute;
+    top: 62px;
+    right: 16px;
+    left: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 56px 56px;
+    gap: 8px;
+  }
+
+  .s2-fix-tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: #f6f3ea;
+    box-shadow: inset 0 0 0 2px transparent;
+    font-size: 17px;
+    font-weight: 700;
+    color: #10231c;
+  }
+
+  .s2-fix-tile[data-on] {
+    background: #fff6ee;
+    box-shadow: inset 0 0 0 2px var(--fd-orange);
+  }
+
+  .s2-fix-tile__label {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* The pick shows as a tick that opens beside the word */
+  .s2-fix-check {
+    display: grid;
+    flex: none;
+    place-items: center;
+    overflow: hidden;
+    width: 0;
+    height: 20px;
+    margin-right: 0;
+    color: var(--fd-orange);
+    opacity: 0;
+    transition: width 0.3s cubic-bezier(0.3, 0.8, 0.2, 1), margin-right 0.3s cubic-bezier(0.3, 0.8, 0.2, 1), opacity 0.18s ease 0.1s;
+  }
+
+  .s2-fix-check svg {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+
+  .s2-fix-tile[data-on] .s2-fix-check {
+    width: 18px;
+    margin-right: 8px;
+    opacity: 1;
+  }
+
+  .s2-fix-line {
+    position: absolute;
+    top: 196px;
+    right: 16px;
+    left: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 20px;
+  }
+
+  .s2-fix-line > .ss-states {
+    display: grid;
+    justify-items: center;
+    width: 100%;
+  }
+
+  .s2-fix-say {
+    font-size: 15px;
+    line-height: 20px;
+    white-space: nowrap;
+    color: rgba(16, 35, 28, 0.55);
+  }
+
+  .s2-fix-say b {
+    font-weight: 700;
+    color: #10231c;
+  }
+
+  .s2-fix-save {
+    position: absolute;
+    top: 230px;
+    right: 16px;
+    left: 16px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    height: 54px;
+    border-radius: 27px;
+    background: rgba(16, 35, 28, 0.08);
+    color: rgba(16, 35, 28, 0.38);
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .s2-fix-save::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 20%, #ff9447, var(--fd-orange) 70%);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .s2-fix-save[data-ready] {
+    color: #fff;
+    box-shadow: 0 8px 18px rgba(255, 117, 25, 0.3);
+  }
+
+  .s2-fix-save[data-ready]::before {
+    opacity: 1;
+  }
+
+  .s2-fix-save__text {
+    position: relative;
+  }
+}

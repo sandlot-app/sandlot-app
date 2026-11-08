@@ -1,0 +1,43 @@
+appId: host.exp.Exponent
+---
+# Shows the score screen's field and the play sheet's small field, so a
+# token or field-art change can be compared before and after. Saves nothing.
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- takeScreenshot: game-list
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - tapOn:
+          id: "start-game"
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "pitch-in-play"
+    timeout: 15000
+- takeScreenshot: score-field
+- tapOn:
+    id: "pitch-in-play"
+- tapOn:
+    id: "outcome-double"
+- extendedWaitUntil:
+    visible:
+      id: "fielder-CF"
+    timeout: 10000
+- takeScreenshot: play-sheet-field

@@ -85,7 +85,7 @@ const styles = createStyles({
   root: { flex: 1, backgroundColor: colors['surface/page'] },
   content: { paddingHorizontal: sizes['space/4'], paddingTop: sizes['space/6'], paddingBottom: sizes['space/6'], gap: sizes['space/6'] },
   exit: { minHeight: sizes['tap/min'], justifyContent: 'center' },
-  exitText: { ...textStyles['Body/Strong'], color: colors['action/primary'] },
+  exitText: { ...textStyles['Body/Strong'], color: colors['text/link'] },
   title: { ...textStyles['Player/Name'], color: colors['text/primary'] },
   section: { gap: sizes['space/3'] },
   heading: { ...textStyles['Body/Strong'], color: colors['text/primary'] },

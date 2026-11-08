@@ -1,0 +1,541 @@
+@import '../sandlot-shared/shared.css';
+
+/* Sandlot concept 2, Night Game. Every rule is scoped to this example. */
+.ng {
+  & .ss-stage {
+    --ng-orange: #ff7519;
+    --ng-amber: #ffb21e;
+    --ng-green: #0c4c39;
+    --ng-ui: cubic-bezier(0.3, 0.75, 0.1, 1);
+    overflow: hidden;
+    border-radius: 14px;
+    background: #0a0f0d;
+  }
+
+  .ng-wash {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(55% 40% at 50% 8%, rgba(255, 178, 30, 0.14), transparent 70%),
+      radial-gradient(70% 50% at 50% 100%, rgba(12, 76, 57, 0.55), transparent 70%);
+  }
+
+  .ng-phone {
+    position: absolute;
+    top: 40px;
+    left: 50px;
+  }
+
+  .ss-stage[data-layout='compact'] .ng-phone {
+    top: 32px;
+    left: 16px;
+  }
+
+  .ng-app {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    background: radial-gradient(120% 60% at 50% 62%, #0f2a20 0%, #08120e 60%, #050807 100%);
+    font-family: -apple-system, 'SF Pro Text', system-ui, sans-serif;
+    color: #fff;
+  }
+
+  /* Four light towers: pools of warm white over the park */
+  .ng-towers {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(42% 26% at 0% 30%, rgba(255, 244, 214, 0.2), transparent 70%),
+      radial-gradient(42% 26% at 100% 30%, rgba(255, 244, 214, 0.2), transparent 70%),
+      radial-gradient(50% 22% at 50% 64%, rgba(255, 244, 214, 0.1), transparent 70%);
+  }
+
+  .ng-app:not([data-dark]) .ng-towers {
+    animation: ng-power 0.9s steps(1, end) both;
+  }
+
+  /* ---- The scoreboard ---- */
+
+  .ng-board {
+    position: absolute;
+    top: 62px;
+    right: 14px;
+    left: 14px;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    gap: 10px 14px;
+    padding: 14px 16px 12px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, #131a17, #0b100e);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07), 0 18px 40px rgba(0, 0, 0, 0.5);
+  }
+
+  .ng-board__rows {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 4px 12px;
+  }
+
+  .ng-board__team {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .ng-board__team--us {
+    color: #fff;
+  }
+
+  .ng-led {
+    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+    font-weight: 800;
+    color: var(--ng-amber);
+    text-shadow: 0 0 10px rgba(255, 178, 30, 0.55);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ng-board__runs {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 36px;
+    border-radius: 8px;
+    background: #050807;
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .ng-board__side {
+    display: grid;
+    align-content: space-between;
+    justify-items: center;
+    padding-left: 14px;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .ng-board__inn {
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+  }
+
+  .ng-board__small {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .ng-board__innnum {
+    font-size: 26px;
+    line-height: 30px;
+  }
+
+  .ng-bases {
+    --sl-base-off: #2a332f;
+  }
+
+  .ng-board__foot {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 18px;
+  }
+
+  .ng-bulbs {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .ng-bulbs__label {
+    margin-right: 2px;
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .ng-bulbs i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #232b28;
+    transition: background 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .ng-bulbs i[data-on] {
+    background: var(--ng-amber);
+    box-shadow: 0 0 8px rgba(255, 178, 30, 0.7);
+  }
+
+  .ng-marquee {
+    grid-column: 1 / -1;
+    display: grid;
+    height: 30px;
+    align-items: center;
+    padding: 0 12px;
+    border-radius: 8px;
+    background: #050807;
+    overflow: hidden;
+  }
+
+  .ng-marquee > .ss-states {
+    width: 100%;
+  }
+
+  .ng-marquee__text {
+    font-family: 'SF Mono', ui-monospace, Menlo, monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 210, 122, 0.85);
+  }
+
+  .ng-marquee__text--hr {
+    font-size: 16px;
+    color: var(--ng-orange);
+    text-shadow: 0 0 12px rgba(255, 117, 25, 0.8);
+  }
+
+  .ng-marquee[data-hr] .ng-marquee__text--hr {
+    animation: ng-blink 0.5s steps(1, end) 4;
+  }
+
+  /* ---- The park ---- */
+
+  .ng-park {
+    position: absolute;
+    top: 196px;
+    left: 1px;
+    width: 400px;
+    height: 400px;
+  }
+
+  .ng-art .sl-field__foul { fill: #0d2a1e; }
+  .ng-art .sl-field__grass { fill: #17462f; }
+  .ng-art .sl-field__stripes rect { fill: rgba(255, 255, 255, 0.035); }
+  .ng-art .sl-field__track { fill: none; stroke: #0a1e16; stroke-width: 7; stroke-linejoin: round; }
+  .ng-art .sl-field__dirt { fill: #6e4c34; }
+  .ng-art .sl-field__infield { fill: #17462f; }
+  .ng-art .sl-field__chalk { fill: none; stroke: #f4f1e6; stroke-width: 1.4; filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7)); }
+  .ng-art .sl-field__base { fill: #fff; filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.8)); }
+  .ng-art .sl-field__rubber { fill: #fff; }
+
+  .ng-flight {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    transition: opacity 0.5s ease;
+  }
+
+  .ng-flight[data-ball='ready'] {
+    opacity: 0;
+    transition: none;
+  }
+
+  .ng-flight[data-ball='gone'] {
+    opacity: 0;
+    transition: opacity 0.8s ease;
+  }
+
+  .ng-flight path {
+    fill: none;
+    stroke-linecap: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  .ng-flight__track {
+    stroke: rgba(255, 255, 255, 0.18);
+    stroke-width: 1.4;
+  }
+
+  .ng-flight__arc {
+    stroke: url(#ng-comet);
+    stroke-width: 4;
+    filter: drop-shadow(0 0 6px rgba(255, 140, 50, 0.8));
+  }
+
+  .ng-flight:not([data-ball='ready']) path {
+    animation: ng-draw 1.5s cubic-bezier(0.3, 0.45, 0.45, 1) forwards;
+  }
+
+  .ng-flight:not([data-ball='ready']) path {
+    stroke-dashoffset: 0;
+  }
+
+  .ng-ball:not([data-ball='ready']) {
+    offset-distance: 100%;
+  }
+
+  .ng-ball {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    offset-distance: 0%;
+    offset-rotate: 0deg;
+    offset-anchor: 0 0;
+    opacity: 0;
+  }
+
+  .ng-ball:not([data-ball='ready']) {
+    animation: ng-fly 1.5s cubic-bezier(0.3, 0.45, 0.45, 1) forwards;
+  }
+
+  .ng-ball[data-ball='hit'] {
+    opacity: 1;
+  }
+
+  .ng-ball[data-ball='gone'] {
+    transition: opacity 0.4s ease;
+  }
+
+  .ng-ball__body {
+    position: absolute;
+    left: -8px;
+    top: -8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #fff 0 40%, #f3ead8 75%, #d8cbb2 100%);
+    box-shadow: 0 0 16px 4px rgba(255, 220, 160, 0.75);
+  }
+
+  .ng-ball:not([data-ball='ready']) .ng-ball__body {
+    animation: ng-near 1.5s ease-in-out forwards;
+  }
+
+  /* A flash where the ball leaves the park */
+  .ng-flash {
+    position: absolute;
+    left: 34px;
+    top: 62px;
+    width: 0;
+    height: 0;
+  }
+
+  .ng-flash::before {
+    content: '';
+    position: absolute;
+    left: -30px;
+    top: -30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 210, 122, 0.9), rgba(255, 117, 25, 0.3) 45%, transparent 70%);
+    opacity: 0;
+  }
+
+  .ng-flash[data-on]::before {
+    animation: ng-flash 1s cubic-bezier(0.2, 0.7, 0.3, 1) 1.4s forwards;
+  }
+
+  .ng-runner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    offset-anchor: 0 0;
+    will-change: transform;
+  }
+
+  .ng-runner__chip {
+    position: absolute;
+    left: -14px;
+    top: -14px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--ng-orange);
+    box-shadow: 0 0 0 2px #fff, 0 0 14px rgba(255, 117, 25, 0.75);
+    font-size: 12px;
+    font-weight: 800;
+    transition: opacity 0.4s ease;
+  }
+
+  .ng-runner__name {
+    position: absolute;
+    top: 17px;
+    left: -30px;
+    width: 60px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    transition: opacity 0.4s ease;
+  }
+
+  .ng-runner[data-scored] .ng-runner__chip,
+  .ng-runner[data-scored] .ng-runner__name {
+    opacity: 0;
+    transition-delay: 2s;
+  }
+
+  .ng-runner[data-scored] + .ng-runner[data-scored] .ng-runner__chip,
+  .ng-runner[data-scored] + .ng-runner[data-scored] .ng-runner__name {
+    transition-delay: 2.9s;
+  }
+
+  /* ---- Caption and the orb ---- */
+
+  .ng-caption {
+    position: absolute;
+    top: 566px;
+    right: 22px;
+    left: 22px;
+    display: grid;
+    height: 64px;
+    align-items: center;
+  }
+
+  .ng-caption > .ss-states {
+    width: 100%;
+  }
+
+  .ng-hint {
+    font-size: 16px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .ng-said {
+    display: block;
+    max-width: 330px;
+    margin: 0 auto;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 28px;
+    text-wrap: balance;
+  }
+
+  .ng-saved {
+    display: grid;
+    justify-items: center;
+    gap: 4px;
+  }
+
+  .ng-saved__title {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 26px;
+    color: var(--ng-amber);
+  }
+
+  .ng-saved__sub {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.65);
+  }
+
+  .ng-orbwrap {
+    position: absolute;
+    top: 656px;
+    left: 50%;
+    width: 96px;
+    height: 96px;
+    margin-left: -48px;
+  }
+
+  .ng-orb {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 35%, #ffb066 0%, var(--ng-orange) 55%, #c94f05 100%);
+    box-shadow: 0 0 0 6px rgba(255, 117, 25, 0.14), 0 0 40px rgba(255, 117, 25, 0.55);
+    color: #fff;
+    transition: transform 0.45s var(--ng-ui), box-shadow 0.45s ease;
+  }
+
+  .ng-orb[data-pressed] {
+    transform: scale(0.93);
+  }
+
+  .ng-orb[data-mic='listening'] {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 10px rgba(255, 117, 25, 0.2), 0 0 70px rgba(255, 117, 25, 0.8);
+  }
+
+  .ng-halo {
+    position: absolute;
+    inset: -26px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 117, 25, 0.35), transparent 65%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+
+  .ng-halo[data-on] {
+    opacity: 1;
+    animation: ng-breathe 1.2s ease-in-out infinite alternate;
+  }
+
+  /* Lights out between halves */
+  .ng-dark {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  .ng-dark[data-on] {
+    opacity: 1;
+    transition: opacity 0.6s ease;
+  }
+}
+
+@keyframes ng-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes ng-fly {
+  to { offset-distance: 100%; }
+}
+
+/* Nearer the camera at the top of the arc, smaller as it leaves */
+@keyframes ng-near {
+  0% { transform: scale(0.7); }
+  45% { transform: scale(1.5); }
+  100% { transform: scale(0.55); }
+}
+
+@keyframes ng-flash {
+  0% { transform: scale(0.3); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+@keyframes ng-blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+
+@keyframes ng-breathe {
+  from { transform: scale(0.94); }
+  to { transform: scale(1.06); }
+}
+
+/* The towers come up the way stadium lights do: a flicker, then on */
+@keyframes ng-power {
+  0% { opacity: 0.2; }
+  20% { opacity: 0.8; }
+  32% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
