@@ -38,6 +38,12 @@ A version may be listed only when the current engine gives every result it recor
 
 If that test fails because a result really changed, the engine no longer replays that version's games as they were recorded. Do not edit the frozen file. Take the version out of the list, delete its file, and say in the PR which games stop replaying.
 
+### A recorded exception
+
+Christian can instead keep a version listed on purpose, when the change only narrows what the engine accepts and no stored game is known to hold a play it now refuses. That is an exception, and it is written down in three places: the `recordedDrift` list in `packages/engine/test/replayable-versions.test.ts` names each drifted fixture and why, the PR says which games could stop replaying, and [Version pins](contract.md#version-pins) names the remaining risk. The test then ignores exactly those fixtures. Any other drift still fails, and an entry that no longer drifts fails too, so the list cannot go stale. Do not add an entry to make a failing test pass without that decision.
+
+The one exception today is engine 0.3.0 (OBR 5.09(b)(9), `runner_passed`; `duplicate_runner` for a runner moved twice in one runner play). Two fixtures recorded such a play under 0.2.0 and 0.1.1: `home-run-moves-only-listed-runners.yaml` (renamed) and `single-moves-listed-runners-atomically.yaml`. Before it was listed, the one hosted game's events were checked: it holds none.
+
 The frozen lock covers what the fixtures cover, which is the rule engine's accepted and rejected plays. It does not cover the stats read from a log (`battingLines`).
 
 ## Reproduce a randomized failure
