@@ -54,9 +54,19 @@ appId: host.exp.Exponent
     selected: true
 - tapOn:
     id: "share-tile-poster"
+# On a small phone the jersey and team tiles sit under the tray. Scroll them
+# up before tapping, then back to the top for the screenshot.
+- swipe:
+    start: "50%,45%"
+    end: "50%,10%"
+- waitForAnimationToEnd
 - tapOn:
     id: "share-tile-jersey"
 - tapOn:
     id: "share-tile-team"
 - assertVisible: "2 picked"
+- swipe:
+    start: "50%,20%"
+    end: "50%,70%"
+- waitForAnimationToEnd
 - takeScreenshot: share-black-name-on
