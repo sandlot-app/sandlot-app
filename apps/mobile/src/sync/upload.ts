@@ -17,7 +17,7 @@ export type UploadResult = { status: UploadStatus; game: SavedGame | null };
 
 export type UploadStatus =
   | { kind: 'synced' }
-  /** No signal, a server error or a lost answer: the same play is sent again later. */
+  /** No signal, a rate limit, a server error or a lost answer: the same play is sent again later. */
   | { kind: 'waiting' }
   | { kind: 'stopped'; reason: StopReason };
 
@@ -45,7 +45,7 @@ export async function uploadWaiting(store: UploadStore, send: Send): Promise<Upl
     // The contract's phone action for unauthenticated: refresh the sign-in, then retry. A second one means signed out.
     if (answer?.status === 401) answer = await send(request, true);
     if (answer?.status === 401) return { status: { kind: 'stopped', reason: 'signed_out' }, game };
-    if (!answer || answer.status >= 500) return { status: { kind: 'waiting' }, game };
+    if (!answer || answer.status === 429 || answer.status >= 500) return { status: { kind: 'waiting' }, game };
     if (answer.status !== 200) {
       return { status: { kind: 'stopped', reason: stops[errorCode(answer.body) ?? ''] ?? 'conflict' }, game };
     }
