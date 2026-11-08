@@ -33,13 +33,31 @@ const isCount = (value: unknown): value is number =>
 const isOneOf = <T extends string | number>(value: unknown, choices: readonly T[]): value is T =>
   choices.some((choice) => choice === value);
 
-// Postgres text and jsonb cannot hold U+0000, including in unknown command fields.
-const hasNull = (value: unknown): boolean =>
-  typeof value === 'string'
-    ? value.includes('\0')
-    : Array.isArray(value)
-      ? value.some(hasNull)
-      : isRecord(value) && Object.entries(value).some(([key, item]) => key.includes('\0') || hasNull(item));
+const onlyKeys = (value: Record<string, unknown>, keys: readonly string[]): boolean =>
+  Object.keys(value).every((key) => keys.includes(key));
+
+function boundedWire(value: unknown): boolean {
+  const pending = [{ value, depth: 0 }];
+  let nodes = 0;
+  while (pending.length) {
+    const current = pending.pop()!;
+    if (++nodes > 20_000 || current.depth > 32) return false;
+    if (typeof current.value === 'string') {
+      if (current.value.length > 128 || current.value.includes('\0')) return false;
+    } else if (Array.isArray(current.value)) {
+      if (current.value.length > 40) return false;
+      for (const child of current.value) pending.push({ value: child, depth: current.depth + 1 });
+    } else if (isRecord(current.value)) {
+      const entries = Object.entries(current.value);
+      if (entries.length > 16) return false;
+      for (const [key, child] of entries) {
+        if (key.length > 64 || key.includes('\0')) return false;
+        pending.push({ value: child, depth: current.depth + 1 });
+      }
+    }
+  }
+  return true;
+}
 
 function parseArray<T>(value: unknown, parse: (item: unknown) => T | null): T[] | null {
   if (!Array.isArray(value)) return null;
@@ -53,7 +71,7 @@ function parseArray<T>(value: unknown, parse: (item: unknown) => T | null): T[] 
 }
 
 function parsePlayerRef(value: unknown): PlayerRef | null {
-  if (!isRecord(value) || !isText(value.id)) return null;
+  if (!isRecord(value) || !onlyKeys(value, ['kind', 'id']) || !isId(value.id)) return null;
   const kind = value.kind as PlayerRef['kind'];
   switch (kind) {
     case 'player': return { ...value, kind, id: value.id as PlayerId };
@@ -63,7 +81,7 @@ function parsePlayerRef(value: unknown): PlayerRef | null {
 }
 
 function parseAdvance(value: unknown): Advance | null {
-  if (!isRecord(value) || !isOneOf(value.to, DESTINATIONS)) return null;
+  if (!isRecord(value) || !onlyKeys(value, ['runner', 'to', 'outType']) || !isOneOf(value.to, DESTINATIONS)) return null;
   const runner = parsePlayerRef(value.runner);
   if (!runner) return null;
   if (value.to === 'out') {
@@ -83,19 +101,20 @@ function parseSubstitution(value: unknown): Substitution | null {
     case 'pinch_hitter':
     case 'pinch_runner':
     case 'courtesy_runner': {
+      if (!onlyKeys(value, ['kind', 'in', 'out'])) return null;
       const outgoing = parsePlayerRef(value.out);
       return outgoing ? { ...value, kind, in: incoming, out: outgoing } : null;
     }
     case 'defensive':
-      return isOneOf(value.position, POSITIONS) ? { ...value, kind, in: incoming, position: value.position } : null;
+      return onlyKeys(value, ['kind', 'in', 'position']) && isOneOf(value.position, POSITIONS) ? { ...value, kind, in: incoming, position: value.position } : null;
     case 'pitching_change':
-    case 'late_arrival': return { ...value, kind, in: incoming };
+    case 'late_arrival': return onlyKeys(value, ['kind', 'in']) ? { kind, in: incoming } : null;
     default: kind satisfies never; return null;
   }
 }
 
 function parseLineupSlot(value: unknown): LineupSlot | null {
-  if (!isRecord(value) || (value.position !== null && !isOneOf(value.position, POSITIONS))) return null;
+  if (!isRecord(value) || !onlyKeys(value, ['player', 'position']) || (value.position !== null && !isOneOf(value.position, POSITIONS))) return null;
   const player = parsePlayerRef(value.player);
   return player ? { ...value, player, position: value.position } : null;
 }
@@ -105,16 +124,16 @@ function parseGameControl(value: unknown): GameControl | null {
   const kind = value.kind as GameControl['kind'];
   switch (kind) {
     case 'lineup_set': {
-      if (!isOneOf(value.side, SIDES)) return null;
+      if (!onlyKeys(value, ['kind', 'side', 'lineup']) || !isOneOf(value.side, SIDES)) return null;
       const lineup = parseArray(value.lineup, parseLineupSlot);
       return lineup ? { ...value, kind, side: value.side, lineup } : null;
     }
     case 'start':
-      return isText(value.umpireStart) ? { ...value, kind, umpireStart: value.umpireStart as Timestamp } : null;
+      return onlyKeys(value, ['kind', 'umpireStart']) && isText(value.umpireStart) ? { ...value, kind, umpireStart: value.umpireStart as Timestamp } : null;
     case 'end_half':
-      return isOneOf(value.reason, ['manual', 'time_limit']) ? { ...value, kind, reason: value.reason } : null;
+      return onlyKeys(value, ['kind', 'reason']) && isOneOf(value.reason, ['manual', 'time_limit']) ? { ...value, kind, reason: value.reason } : null;
     case 'end_game':
-      return isOneOf(value.reason, ['final', 'called', 'time_limit']) ? { ...value, kind, reason: value.reason } : null;
+      return onlyKeys(value, ['kind', 'reason']) && isOneOf(value.reason, ['final', 'called', 'time_limit']) ? { ...value, kind, reason: value.reason } : null;
     default: kind satisfies never; return null;
   }
 }
@@ -124,34 +143,35 @@ function parseCommand(value: unknown): Command | null {
   const kind = value.kind as Command['kind'];
   switch (kind) {
     case 'pitch':
-      return isOneOf(value.result, PITCH_RESULTS) ? { ...value, kind, result: value.result } : null;
+      return onlyKeys(value, ['kind', 'result']) && isOneOf(value.result, PITCH_RESULTS) ? { ...value, kind, result: value.result } : null;
     case 'ball_in_play': {
-      if (!isOneOf(value.outcome, OUTCOMES) ||
+      if (!onlyKeys(value, ['kind', 'outcome', 'trajectory', 'fielders', 'advances']) || !isOneOf(value.outcome, OUTCOMES) ||
         (value.trajectory !== null && !isOneOf(value.trajectory, TRAJECTORIES))) return null;
       const fielders = parseArray(value.fielders, (position) => isOneOf(position, POSITIONS) ? position : null);
       const advances = parseArray(value.advances, parseAdvance);
       return fielders && advances ? { ...value, kind, outcome: value.outcome, trajectory: value.trajectory, fielders, advances } : null;
     }
     case 'runner': {
-      if (!isOneOf(value.event, RUNNER_EVENTS) || !isOneOf(value.to, DESTINATIONS)) return null;
+      if (!onlyKeys(value, ['kind', 'event', 'runner', 'to']) || !isOneOf(value.event, RUNNER_EVENTS) || !isOneOf(value.to, DESTINATIONS)) return null;
       const runner = parsePlayerRef(value.runner);
       return runner ? { ...value, kind, event: value.event, runner, to: value.to } : null;
     }
     case 'batter_out':
-      return isOneOf(value.reason, BATTER_OUT_REASONS) ? { ...value, kind, reason: value.reason } : null;
+      return onlyKeys(value, ['kind', 'reason']) && isOneOf(value.reason, BATTER_OUT_REASONS) ? { ...value, kind, reason: value.reason } : null;
     case 'substitution': {
-      if (!isOneOf(value.side, SIDES)) return null;
+      if (!onlyKeys(value, ['kind', 'side', 'change']) || !isOneOf(value.side, SIDES)) return null;
       const change = parseSubstitution(value.change);
       return change ? { ...value, kind, side: value.side, change } : null;
     }
     case 'game': {
+      if (!onlyKeys(value, ['kind', 'control'])) return null;
       const control = parseGameControl(value.control);
       return control ? { ...value, kind, control } : null;
     }
     case 'undo':
-      return isId(value.target) ? { ...value, kind, target: value.target as GroupId } : null;
+      return onlyKeys(value, ['kind', 'target']) && isId(value.target) ? { ...value, kind, target: value.target as GroupId } : null;
     case 'correct': {
-      if (!isId(value.target)) return null;
+      if (!onlyKeys(value, ['kind', 'target', 'replacement']) || !isId(value.target)) return null;
       const replacement = parseArray(value.replacement, parseCommand);
       return replacement ? { ...value, kind, target: value.target as GroupId, replacement } : null;
     }
@@ -160,7 +180,7 @@ function parseCommand(value: unknown): Command | null {
 }
 
 function parseEvent(value: unknown): Event | null {
-  if (!isRecord(value) || hasNull(value)) return null;
+  if (!isRecord(value) || !onlyKeys(value, ['id', 'gameId', 'seq', 'group', 'lockEpoch', 'source', 'at', 'command'])) return null;
   const { id, gameId, seq, group, lockEpoch, source, at } = value;
   if (!isId(id) || !isText(gameId) || !UUID.test(gameId) || !isCount(seq) || !isId(group) ||
     !isCount(lockEpoch) || !isOneOf(source, ['tap', 'voice']) || !isText(at)) return null;
@@ -179,7 +199,7 @@ function parseEvent(value: unknown): Event | null {
 export function parseUploadRequest(body: unknown): ParsedUpload {
   if (!isRecord(body) || !isText(body.sessionId) || !Array.isArray(body.events) || body.events.length < 1) return INVALID;
   if (body.schemaVersion !== EVENT_SCHEMA_VERSION) return { ok: false, code: 'unsupported_version' };
-  if (!UUID.test(body.sessionId) || body.events.length > 20) return INVALID;
+  if (!onlyKeys(body, ['schemaVersion', 'sessionId', 'events']) || !UUID.test(body.sessionId) || body.events.length > 20 || !boundedWire(body)) return INVALID;
   const events = parseArray(body.events, parseEvent);
   const first = events?.[0];
   if (!events || !first) return INVALID;

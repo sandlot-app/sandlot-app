@@ -93,12 +93,13 @@ export async function syncEvents(userId: string, body: unknown, store: Store): P
   // Before the engine on purpose: a retry after a lost response is a group the
   // server already saved, and replaying it would reject an accepted play.
   const stored = await store.findGroup(first.gameId, first.group);
-  if (stored) return savedOutcome(stored, userId, hash);
+  if (stored?.userId === userId) return savedOutcome(stored, userId, hash);
 
   // Before the base on purpose: getBase reads as the database owner, so without this
   // a caller who does not hold scoring could probe a private game through engine reasons.
   const epoch = await store.sessionEpoch(first.gameId, sessionId, userId);
   if (epoch === null || epoch !== first.lockEpoch) return { ok: false, code: 'stale_session' };
+  if (stored) return { ok: false, code: 'id_conflict' };
 
   const base = await store.getBase(first.gameId);
   if (!base) return { ok: false, code: 'invalid' };

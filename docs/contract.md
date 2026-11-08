@@ -47,12 +47,12 @@ The caller's identity comes from the sign-in token only, never from the request 
 
 `sync-events` does these steps in this order:
 
-1. Reject a request with no token or an `anon` token.
+1. Reject a request with no valid user token. Reserve the shared per-user sync quota, then read the byte-bounded JSON body. Return 429 on quota exhaustion, 413 on overflow, or 503 if authentication or quota storage is unavailable.
 2. Parse the request with `parseUploadRequest`. A request with a missing or different `schemaVersion` returns `unsupported_version`. Any other malformed request returns `invalid`.
 3. Look up the group by `(game_id, group_id)`.
-   - If the content hash and the user match, return the stored acknowledgment and stop.
-   - If the hash or the user differs, return `id_conflict` and stop.
-   - If the group is not there, check that the request's session is this user's current session for the game and that its epoch matches the events' `lockEpoch`. If not, return `stale_session` and stop. A caller who does not hold scoring never reaches the engine. `commit_group` checks again under the lock.
+   - If the stored user matches, compare the content hash. Return the stored acknowledgment for an exact retry, or `id_conflict` for changed content. This also works after handoff.
+   - Otherwise check that the request's session is this user's current session for the game and that its epoch matches the events' `lockEpoch`. If not, return `stale_session` whether the group exists or not.
+   - After that check, an existing group owned by someone else returns `id_conflict`. A caller who does not hold scoring never reaches the engine. `commit_group` checks again under the lock.
 4. Call `get_base(game_id)`. It returns the pins, the revision, and every accepted event in one statement.
    - If the engine cannot replay the game's `engineVersion` pin (`canReplay` is false, see [Version pins](#version-pins)), or its `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
 5. If the revision is not the group's first `seq` minus 1, look up the group again. If it is there now, apply the rule in step 3. If it is still missing, return `stale_revision`.
@@ -104,6 +104,10 @@ Christian owns these functions:
 - `parseUploadRequest(unknown)` returns an `UploadRequest`, `invalid`, or `unsupported_version`. It has no dependencies. It is one exhaustive `switch` over `Command['kind']`, so a new command kind does not compile until the parser handles it. A test parses one example of every kind.
 
 The engine takes the event list rather than a cached state, because undo needs to know which groups exist. The game's roster IDs are part of `setup`, and the engine rejects a player ID that is not on the roster. Time comes only from `Event.at` and the `start` command.
+
+Uploads are capped at 262,144 UTF-8 bytes while streaming, before JSON parsing, hashing or replay. Oversized bodies return 413, including chunked uploads with no Content-Length. Each authenticated user has a persistent quota of 120 sync requests per database-clock minute; exhaustion returns 429 and a quota-store failure returns 503. The phone can retry the exact saved play later. These response codes do not discard saved plays.
+
+For the current schema, unknown fields are rejected at every envelope, event, command and nested record. IDs and timestamp text are limited to 128 characters. Arrays are limited to 40 items, with the existing 20-event upload limit unchanged. The parser rejects input deeper than 32 levels or larger than 20,000 values before its recursive command decoding. It rejects U+0000 in keys or values. It does not silently strip fields before hashing. An old stored upload with extra fields is now invalid even on retry; it is not rewritten or duplicated. Engine rules, event schema and engine version are unchanged by this hardening.
 
 The contract types and `parseUploadRequest` live in `packages/engine/src/contract.ts`. Engine imports use `.ts` extensions with `allowImportingTsExtensions`, so Deno, Metro, and Vitest load the same files. `tsconfig.base.json` already sets `noEmit`, which that option requires.
 
@@ -197,6 +201,9 @@ The phone takes one action for each error:
 | Network failure | none | Retry the same request later |
 | Server error | 5xx | Retry the same request later |
 | `unauthenticated` | 401 | Refresh the token, then retry |
+| `slow_down` | 429 | Keep the saved play queued and retry later |
+| `sync_unavailable` | 503 | Keep the saved play queued and retry later |
+| `too_long` | 413 | Stop the queue. The phone sent a request that exceeds the size limit. |
 | `invalid` | 400 | Stop the queue. The phone has a bug. |
 | `rejected` | 422 | Stop the queue and show that sync is stuck. The response carries the engine's reject code as `reason`. |
 | `id_conflict` | 409 | Stop the queue. The phone has a bug. |
@@ -242,11 +249,11 @@ When the queue stops, the phone shows how many plays are waiting, for example "3
 
 ## Voice
 
-Two functions serve voice scoring. Both need a signed-in phone (an anonymous sign-in is enough for the demo), allow 30 requests a minute per user, and return `502 voice_unavailable` when OpenAI fails, which the phone treats as "Voice is unavailable right now. Tap to score." (A10). Neither writes to the database or logs a request body, a transcript, an answer or a name: bodies carry display names, jersey numbers and what was said (rule 5). The scorer-lock check (A8) and the monthly limit (A9) wait until the phone uploads games (#29).
+Two functions serve voice scoring. Both authenticate the phone and require its user to hold at least one current scoring session, with the session epoch matching its game lock. An anonymous sign-in alone is not enough. The two endpoints share one persistent quota of 30 requests per user per database-clock minute, and return `502 voice_unavailable` when OpenAI fails, which the phone treats as "Voice is unavailable right now. Tap to score." (A10). The only voice database write is a counter with user ID, scope, minute and request count. Neither logs a request body, a transcript, an answer or a name. Bodies carry display names, jersey numbers and what was said (rule 5). This user-level billing capability also permits local demo voice for a user provisioned as a current server scorer; it does not read another game from the server. A user with only an expired scoring epoch is refused. Admission failures return 503 before any OpenAI call.
 
 The phone gives each request its own timeout, about 25 seconds, because a clip goes through two OpenAI calls, and on a timeout it falls back to taps. A `401` can also come from the Supabase gateway before the function runs, with the gateway's own body, so the phone branches on the status, not the `error` code.
 
-**Cost.** The per-user rate limit and the 60-second secret are not a spending cap. The secret only limits when a session can start: once connected, OpenAI keeps a transcription session open for up to 60 minutes, so the phone closes the socket when the scorer lets go. A hard monthly budget on the OpenAI project is the real cap, and setting it is a required step before the first deploy, until the monthly limit (A9) arrives with #29.
+**Cost.** The shared fixed-minute quota permits a bounded burst across minute boundaries. The quota and the 60-second secret are not a spending cap. The secret only limits when a session can start: once connected, OpenAI keeps a transcription session open for up to 60 minutes, so the phone closes the socket when the scorer lets go. The [client-secret API](https://developers.openai.com/api/reference/resources/realtime/subresources/client_secrets/methods/create) documents no shorter server-enforced transcription-session duration field. Do not treat the phone closing its socket as protection against a malicious client. Before deploying, Christian must verify actual OpenAI spending controls, anonymous-sign-in protections and zero data retention. An alert-only project budget is not a hard spending cap. These hosted checks remain open under #77.
 
 **Privacy.** Audio, the transcript and the game the phone sends go to OpenAI. `voice-session` sends only last names as transcription keywords. `voice-parse` sends the parser model, with `store: false`, the game as the AI needs it to read a whole press ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)): display names and jersey numbers labeled by role (the batter due up, the pitcher, each runner by base, the batting order and the fielders by position), the inning, outs, count and score, and the last play in words, which also carries display names. It sends no player IDs and no event log. The model's answer names players only by role and base, plus the words the scorer used for each one. Its free-text notes are dropped inside `voice-parse` and never returned, shown or logged. OpenAI still keeps API data for up to 30 days for abuse monitoring unless the project has zero data retention, which has to be in place before any real children's game ([#77](https://github.com/sandlot-app/sandlot-app/issues/77), item 3). Christian reviews this paragraph and Kevin signs off before `voice-parse` is deployed with it.
 
@@ -305,6 +312,7 @@ The model only proposes. The phone maps each reading to commands, checks that ev
 | Error | HTTP status | Phone action |
 | --- | --- | --- |
 | `unauthenticated` | 401 | Sign in again, then retry |
+| `not_scorer` | 403 | Voice is unavailable; tap to score. Provision this user as a current scorer before retrying. |
 | `slow_down` | 429 | Tap to score for now |
 | `too_long` | 413 | Tap to score |
 | `invalid` | 400 | The phone has a bug. Tap to score |

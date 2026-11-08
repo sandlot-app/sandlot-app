@@ -1,0 +1,111 @@
+appId: host.exp.Exponent
+---
+- runFlow:
+    when:
+      visible: 'Open in .*Expo Go.*'
+    commands:
+      - tapOn: "Open"
+- extendedWaitUntil:
+    visible:
+      id: "sandlot-brand"
+    timeout: 90000
+- takeScreenshot: native77-se-ready
+- repeat:
+    times: 3
+    while:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+      - waitForAnimationToEnd
+- scrollUntilVisible:
+    element:
+      id: "live-waiting"
+    direction: DOWN
+- tapOn:
+    id: "(start-live|resume-live)"
+    retryTapIfNoChange: true
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".*All plays saved"
+    timeout: 20000
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- takeScreenshot: native77-before-pitch
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".*Offline · 1 play saved on this phone"
+    timeout: 10000
+- assertNotVisible: ".*Sync stopped.*"
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.saved = maestro.copiedText}
+- assertTrue: ${output.saved !== output.before}
+- takeScreenshot: native77-rate-limited-saved
+- tapOn:
+    id: "games-navigation"
+- scrollUntilVisible:
+    element:
+      id: "live-waiting"
+    direction: DOWN
+- assertVisible:
+    id: "live-waiting"
+    text: "1 play waiting to upload"
+- takeScreenshot: native77-pending-on-home
+- tapOn:
+    id: "resume-live"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+      text: ${output.saved}
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".*All plays saved"
+    timeout: 90000
+- assertVisible:
+    id: "score-summary"
+    text: ${output.saved}
+- takeScreenshot: native77-retried-without-conflict
+- tapOn:
+    id: "games-navigation"
+- scrollUntilVisible:
+    element:
+      id: "live-waiting"
+    direction: DOWN
+- assertVisible:
+    id: "live-waiting"
+    text: "Every play is on the server."
+- takeScreenshot: native77-uploaded-on-home
+- stopApp: host.exp.Exponent
+- openLink: "exp://localhost:8092?__expo_disable_fab=1&__expo_disable_auto_launch=1&__expo_disable_onboarding=1"
+- extendedWaitUntil:
+    visible:
+      id: "sandlot-brand"
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      id: "resume-live"
+    direction: DOWN
+- tapOn:
+    id: "resume-live"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+      text: ${output.saved}
+    timeout: 20000
+- assertVisible:
+    id: "waiting-plays"
+    text: ".*All plays saved"
+- takeScreenshot: native77-reopened
