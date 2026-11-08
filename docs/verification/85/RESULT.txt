@@ -1,0 +1,36 @@
+flow: voice-warm-mic-first-open
+result: PASS
+commit: 9b1e9bb6345888ddf92f7107f5fc6422581de099
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+flow: voice-warm-mic
+result: PASS
+commit: 9b1e9bb6345888ddf92f7107f5fc6422581de099
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+flow: voice-warm-mic-refused
+result: PASS
+commit: 9b1e9bb6345888ddf92f7107f5fc6422581de099
+simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+device: iPhone-17-Pro
+
+flow: voice-warm-mic-first-open
+result: PASS
+commit: 9b1e9bb6345888ddf92f7107f5fc6422581de099
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+
+flow: voice-warm-mic
+result: PASS
+commit: 9b1e9bb6345888ddf92f7107f5fc6422581de099
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+
+flow: voice-warm-mic-refused
+result: PASS
+commit: 9b1e9bb6345888ddf92f7107f5fc6422581de099
+simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+device: iPhone-SE-3rd-generation
+

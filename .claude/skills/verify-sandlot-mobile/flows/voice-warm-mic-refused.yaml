@@ -1,0 +1,74 @@
+appId: host.exp.Exponent
+# Needs Metro started with EXPO_PUBLIC_VOICE_STUB="strike swinging" EXPO_PUBLIC_VOICE_STUB_MIC=denied.
+# See features/voice-scoring.md.
+---
+- runFlow:
+    when:
+      visible:
+        id: "games-navigation"
+    commands:
+      - tapOn:
+          id: "games-navigation"
+- extendedWaitUntil:
+    visible: "Start demo game|Continue scoring"
+    timeout: 15000
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - runFlow: _start-local-game.yaml
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+    timeout: 15000
+- copyTextFrom:
+    id: "waiting-plays"
+- evalScript: ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}
+
+# 1. With the mic refused, the bar says to turn it on in Settings.
+- extendedWaitUntil:
+    visible:
+      id: "voice-bar"
+      text: "Turn on the mic in Settings"
+    timeout: 15000
+- takeScreenshot: mic-refused
+
+# 2. A press says why it can't listen, and saves nothing.
+- longPressOn:
+    id: "voice-bar"
+- extendedWaitUntil:
+    visible:
+      id: "voice-message"
+      text: "Sandlot can’t use the microphone. Allow it in Settings, or tap to score."
+    timeout: 15000
+- assertVisible:
+    id: "waiting-plays"
+    text: ".* ${output.waiting} plays? saved on this phone"
+- takeScreenshot: mic-refused-press
+
+# 3. Tap scoring still works.
+- tapOn:
+    id: "pitch-ball"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 1} plays? saved on this phone"
+    timeout: 15000
+- takeScreenshot: mic-refused-tap-saved
+
+# Put the game back: undo the tapped ball.
+- tapOn:
+    id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "waiting-plays"
+      text: ".* ${output.waiting + 2} plays? saved on this phone"
+    timeout: 15000

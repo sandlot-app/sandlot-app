@@ -119,6 +119,49 @@ for (const [name, setup] of [
   });
 }
 
+/** A press that streams, lets go, and gets this final transcript. */
+async function finishWith(transcript: string, api: ReturnType<typeof fakeApi>) {
+  const mic = fakeMic();
+  const socket = fakeSocket();
+  const { press, done } = run(mic, api, socket);
+  await tick();
+  socket.open();
+  mic.push([1, 0, 2, 0]);
+  press.release();
+  await tick();
+  socket.server({ type: 'conversation.item.input_audio_transcription.completed', transcript });
+  return done;
+}
+
+test('a blank live transcript is retried once with the recording, and what that hears is what the press heard', async () => {
+  for (const blank of ['', '  ', 'um']) {
+    const api = fakeApi(undefined, { ok: true, value: { transcript: 'ball', answer: null } });
+    const result = await finishWith(blank, api);
+    assert.deepEqual(api.parsed, [{ audio: toBase64(Uint8Array.from([1, 0, 2, 0])), context }]);
+    assert.equal(result.kind === 'heard' && result.transcript, 'ball');
+    assert.equal(result.kind === 'heard' && result.heard.kind, 'pitches');
+  }
+});
+
+test('when the retry is blank too the press heard nothing, so decide() says it didn\'t catch that, after one retry only', async () => {
+  const api = fakeApi(undefined, { ok: true, value: { transcript: '', answer: null } });
+  const result = await finishWith('', api);
+  assert.equal(api.parsed.length, 1);
+  assert.equal(result.kind === 'heard' && result.transcript, '');
+  assert.equal(result.kind === 'heard' && result.heard.kind, 'empty');
+});
+
+test('when the retry itself fails the scorer hears why, not "didn\'t catch that"', async () => {
+  const result = await finishWith('', fakeApi(undefined, { ok: false, failure: 'offline' }));
+  assert.deepEqual(result, { kind: 'failed', failure: 'offline' });
+});
+
+test('words on the live transcript are never retried', async () => {
+  const api = fakeApi();
+  await finishWith('ball', api);
+  assert.equal(api.parsed.length, 0);
+});
+
 test('A10: a clip voice-parse refuses falls back to taps with the reason', async () => {
   for (const failure of ['slow_down', 'too_long', 'voice_unavailable', 'timeout', 'offline'] as const) {
     const mic = fakeMic();

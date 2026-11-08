@@ -1,0 +1,180 @@
+== flow: voice-warm-mic-first-open simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow voice-warm-mic-first-open
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Run ${output.fresh = false}... COMPLETED
+Run flow when id: start-game is visible...
+  Run ${output.fresh = true}... COMPLETED
+Run flow when id: start-game is visible... COMPLETED
+Run flow when ${output.fresh} is true...
+  Run _start-local-game.yaml...
+    Tap on id: start-game... COMPLETED
+    Scrolling DOWN until id: lineup-home is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: lineup-home... COMPLETED
+    Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: save-lineup... COMPLETED
+    Tap on id: lineup-away... COMPLETED
+    Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: save-lineup... COMPLETED
+    Tap on id: start-setup... COMPLETED
+  Run _start-local-game.yaml... COMPLETED
+Run flow when true is true... COMPLETED
+Run flow when ${!output.fresh} is true...
+Run flow when false is true... SKIPPED
+Assert that "Sandlot listens only while you're on this screen, and only sends what you say after you press.", id: voice-message is visible... COMPLETED
+Assert that "Hold to score by voice", id: voice-bar is visible... COMPLETED
+Take screenshot mic-first-open-line... COMPLETED
+Assert that "Mic ready.*", id: voice-bar is visible... COMPLETED
+Assert that id: voice-message is not visible... COMPLETED
+Take screenshot mic-first-open-ready... COMPLETED
+
+== flow: voice-warm-mic simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow voice-warm-mic
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Assert that "Mic ready.*", id: voice-bar is visible... COMPLETED
+Assert that id: voice-message is not visible... COMPLETED
+Take screenshot mic-ready... COMPLETED
+Long press on id: voice-bar... COMPLETED
+Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Assert that "Mic ready.*", id: voice-bar is visible... COMPLETED
+Take screenshot mic-ready-after-press... COMPLETED
+Tap on id: tab-plays... COMPLETED
+Assert that id: plays-content is visible... COMPLETED
+Assert that id: voice-bar is not visible... COMPLETED
+Tap on id: tab-field... COMPLETED
+Assert that "Mic ready.*", id: voice-bar is visible... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.waiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+
+== flow: voice-warm-mic-refused simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow voice-warm-mic-refused
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Assert that "Turn on the mic in Settings", id: voice-bar is visible... COMPLETED
+Take screenshot mic-refused... COMPLETED
+Long press on id: voice-bar... COMPLETED
+Assert that "Sandlot can’t use the microphone. Allow it in Settings, or tap to score.", id: voice-message is visible... COMPLETED
+Assert that ".* ${output.waiting} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot mic-refused-press... COMPLETED
+Tap on id: pitch-ball... COMPLETED
+Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot mic-refused-tap-saved... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.waiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+
+== flow: voice-warm-mic-first-open simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow voice-warm-mic-first-open
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Run ${output.fresh = false}... COMPLETED
+Run flow when id: start-game is visible...
+  Run ${output.fresh = true}... COMPLETED
+Run flow when id: start-game is visible... COMPLETED
+Run flow when ${output.fresh} is true...
+  Run _start-local-game.yaml...
+    Tap on id: start-game... COMPLETED
+    Scrolling DOWN until id: lineup-home is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: lineup-home... COMPLETED
+    Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: save-lineup... COMPLETED
+    Tap on id: lineup-away... COMPLETED
+    Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: save-lineup... COMPLETED
+    Tap on id: start-setup... COMPLETED
+  Run _start-local-game.yaml... COMPLETED
+Run flow when true is true... COMPLETED
+Run flow when ${!output.fresh} is true...
+Run flow when false is true... SKIPPED
+Assert that "Sandlot listens only while you're on this screen, and only sends what you say after you press.", id: voice-message is visible... COMPLETED
+Assert that "Hold to score by voice", id: voice-bar is visible... COMPLETED
+Take screenshot mic-first-open-line... COMPLETED
+Assert that "Mic ready.*", id: voice-bar is visible... COMPLETED
+Assert that id: voice-message is not visible... COMPLETED
+Take screenshot mic-first-open-ready... COMPLETED
+
+== flow: voice-warm-mic simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow voice-warm-mic
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Assert that "Mic ready.*", id: voice-bar is visible... COMPLETED
+Assert that id: voice-message is not visible... COMPLETED
+Take screenshot mic-ready... COMPLETED
+Long press on id: voice-bar... COMPLETED
+Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Assert that "Mic ready.*", id: voice-bar is visible... COMPLETED
+Take screenshot mic-ready-after-press... COMPLETED
+Tap on id: tab-plays... COMPLETED
+Assert that id: plays-content is visible... COMPLETED
+Assert that id: voice-bar is not visible... COMPLETED
+Tap on id: tab-field... COMPLETED
+Assert that "Mic ready.*", id: voice-bar is visible... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.waiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+
+== flow: voice-warm-mic-refused simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow voice-warm-mic-refused
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Assert that "Turn on the mic in Settings", id: voice-bar is visible... COMPLETED
+Take screenshot mic-refused... COMPLETED
+Long press on id: voice-bar... COMPLETED
+Assert that "Sandlot can’t use the microphone. Allow it in Settings, or tap to score.", id: voice-message is visible... COMPLETED
+Assert that ".* ${output.waiting} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot mic-refused-press... COMPLETED
+Tap on id: pitch-ball... COMPLETED
+Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot mic-refused-tap-saved... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.waiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+

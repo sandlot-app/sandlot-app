@@ -1,18 +1,23 @@
-import { readLocally, type Heard, type PressContext } from '@sandlot/voice';
+import { isEmptyTranscript, readLocally, type Heard, type PressContext } from '@sandlot/voice';
 import { Clip, SAMPLE_RATE, toBase64 } from './pcm.ts';
 import { liveTimeouts, openLive, type Live, type LiveTimeouts, type OpenSocket } from './realtime.ts';
 import type { Session, VoiceApi, VoiceFailure } from './voice-api.ts';
 
-// One hold of the voice bar. The mic starts on touch-down, before any connection opens, so no words are lost
-// (plan, Voice scoring step 1). Live words stream while the scorer holds. On release the final transcript is read
-// by the phone only when it's pitch calls or a lone undo; anything else goes to voice-parse, where the AI reads the
-// whole press with the game in view (ADR 0007). When streaming didn't connect, the recorded clip goes to voice-parse
-// instead (spec A4, A5). Nothing here saves a play: the caller passes what was heard to decide(), and the engine
-// decides (rule 6).
+// One tap or hold of the voice bar. A press starts with the second before the touch when the mic is warm (ADR 0005), so
+// no words are lost, and the mic opens on touch-down only when it isn't (plan, Voice scoring step 1). Live words stream
+// during the press. When it ends the final transcript is read by the phone only when it's pitch calls or a lone undo;
+// anything else goes to voice-parse, where the AI reads the whole press with the game in view (ADR 0007). When streaming
+// didn't connect, or came back blank, the recorded clip goes to voice-parse instead, once (spec A4, A5, and the blank
+// retry). Nothing here saves a play: the caller passes what was heard to decide(), and the engine decides (rule 6).
+// Nothing is sent before a press starts, so the warm mic's audio stays on the phone until then.
 
 export type Mic = {
-  /** Starts capture. Resolves false when the scorer hasn't allowed the microphone. */
+  /**
+   * Starts this press's audio. With the warm mic the last second before now comes first, then everything after. Resolves
+   * false when the scorer hasn't allowed the microphone.
+   */
   start(onChunk: (chunk: Uint8Array, sampleRate: number) => void): Promise<boolean>;
+  /** Ends this press's audio. The warm mic keeps listening on the phone; a mic the press opened closes. */
   stop(): void;
 };
 
@@ -104,7 +109,9 @@ export function startPress(deps: VoiceDeps, input: PressInput, onUpdate: (update
     const streamed = stream ? await stream.finish() : null;
     stream?.close();
     if (cancelled) return;
-    if (streamed !== null) return heard(streamed);
+    // A blank live transcript gets the same one retry as a stream that failed: the recording goes to voice-parse before
+    // the scorer hears "Didn't catch that".
+    if (streamed !== null && !isEmptyTranscript(streamed)) return heard(streamed);
     const result = await deps.api.parse({ audio: toBase64(clip.join()), context: input.context });
     if (!result.ok) return emit({ kind: 'failed', failure: result.failure });
     const { transcript, answer } = result.value;
