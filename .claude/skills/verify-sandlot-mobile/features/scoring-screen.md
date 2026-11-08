@@ -7,7 +7,7 @@ The scorer's Field tab, built to the Figma frames "Scorer — Field tab (milesto
 - `screen-scoreboard` shows team abbreviations, score, runners on the mini diamond, inning, count and outs. Screen readers hear the whole game summary (`score-summary`).
 - `screen-field` places each fielder, runner and the batter at the Figma spots. The field is hidden from screen readers (the scoreboard summary carries the runners), so Maestro can't see it; check runners through `score-summary`.
 - `screen-matchup` is the scalloped ticket under the scoreboard: the batter with "At bat · 3 for 4, 2B, HR" (or "First up"), and the pitcher with "Pitching · 24/75", amber from 65 and red from 75 (`matchup`, `batter-stat`, `pitch-total`). Names shorten with an ellipsis and stat lines never do; both icon marks hide when a stat line would wrap. League alerts sit under the ticket (`league-alert-<kind>`).
-- `screen-field` keeps Figma's 361 × 390 shape and shrinks to fit above the Scorer Bar. At font scale above 1.35 the whole page scrolls instead (`game-content`).
+- `screen-field` keeps Figma's 361 × 390 shape and shrinks to fit above the Scorer Bar. At font scale above 1.35 (iOS text size Extra Extra Extra Large and up) the matchup and a full-width field scroll instead (`game-content`), while the Scorer Bar stays pinned at the bottom and the page scrolls clear of it, so the pitch buttons, strike choices, Undo, More and the sync line never leave the screen. The bar's text stops growing past Extra Extra Extra Large, so at the accessibility sizes it still fits a small phone.
 - `screen-undo` is labeled "Undo · <play>" and is dimmed when nothing can be undone (`scorer-undo`).
 - `screen-hit-by-pitch` records Hit by pitch from More in one tap (`more-hit_by_pitch`). The pitch bar has no Hit by pitch button.
 
@@ -24,6 +24,7 @@ Preconditions:
 
 - **Screen, Undo and Hit by pitch.** Run `verify.sh drive scoring-screen.yaml`. It captures the screen, records a Ball and sees "Undo · Ball", opens More (screenshot `more`), records Hit by pitch and sees "Undo · Hit by pitch" with a runner on first in the summary, undoes both, and checks the summary matches the start. It ends on the matchup ticket (screenshot `matchup`).
 - **Matchup ticket.** Run `verify.sh drive matchup-ticket.yaml`. It checks the scoreboard, ticket and whole Scorer Bar are on screen together, records a Ball and sees the ticket's pitch count go up by one, then undoes it and sees the count and batter line return.
+- **Text sizes.** For each of Large, Extra Large, Extra Extra Large, Extra Extra Extra Large and the largest accessibility size (`accessibility-extra-extra-extra-large`), set it with `xcrun simctl ui <simulator> content_size <size>` and run `verify.sh drive score-screen-text-size.yaml`. It requires every pitch button, Undo, More, the Voice Bar and the sync line on screen without scrolling, then records a called strike through the strike choices and undoes it (screenshots `field-start`, `strike-choices`, `strike-saved`, `strike-undone`). Run it on `sandlot-verify-38` and `sandlot-verify-se`.
 - **Figma pairs.** The `field` and `more` screenshots are the app halves of the Figma comparison. They go in the ticket's `proof-<number>` release as `figma-field-pair.png` and `figma-more-pair.png`, as the implementation loop's Proof release section says.
 
 ## Gotchas
