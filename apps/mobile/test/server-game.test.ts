@@ -26,6 +26,18 @@ test('no session means the seed script hasn’t named this phone the scorer yet'
   assert.deepEqual(await findServerGame(rows({ session: null })), { kind: 'none' });
 });
 
+test('a game pinned to 0.1.1 is found, since this engine still replays and continues 0.1.1 games', async () => {
+  const older = { ...game, engine_version: '0.1.1' };
+  assert.deepEqual(await findServerGame(rows({ game: older })), {
+    kind: 'found', server: { gameId: session.game_id, sessionId: session.id, lockEpoch: 2 },
+  });
+  // Only the engine version is allowed to differ: the rest of the pins, the plays and the scorer are checked as before.
+  assert.deepEqual(await findServerGame(rows({ game: { ...older, schema_version: EVENT_SCHEMA_VERSION + 1 } })), { kind: 'mismatch' });
+  assert.deepEqual(await findServerGame(rows({ game: { ...older, setup: { ...setup, pitcherOutsEarlierToday: { 'home-1': 3 } } } })), { kind: 'mismatch' });
+  assert.deepEqual(await findServerGame(rows({ game: { ...older, revision: 4 } })), { kind: 'mismatch' });
+  assert.deepEqual(await findServerGame(rows({ game: { ...older, lock_epoch: 3 } })), { kind: 'mismatch' });
+});
+
 test('a game that doesn’t match this app, or already has plays, or moved to another scorer, is refused', async () => {
   assert.deepEqual(await findServerGame(rows({ game: { ...game, engine_version: '0.1.0' } })), { kind: 'mismatch' });
   assert.deepEqual(await findServerGame(rows({ game: { ...game, setup: { ...setup, pitcherOutsEarlierToday: { 'home-1': 3 } } } })), { kind: 'mismatch' });

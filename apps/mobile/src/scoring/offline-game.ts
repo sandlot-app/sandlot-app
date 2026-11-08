@@ -1,5 +1,6 @@
 import {
   applyGroup,
+  canReplay,
   ENGINE_VERSION,
   EVENT_SCHEMA_VERSION,
   parseUploadRequest,
@@ -226,8 +227,9 @@ async function load(connection: SqlConnection): Promise<LoadedGame | null> {
   }
   const row = rows[0]!;
   if (rows.length !== 1) throw new SavedDataError('corrupt');
+  // A game keeps the engine version it was saved under; this engine opens it while it still replays that version.
   if (
-    row.engine_version !== ENGINE_VERSION ||
+    !canReplay(row.engine_version) ||
     row.schema_version !== EVENT_SCHEMA_VERSION
   )
     throw new SavedDataError('version');

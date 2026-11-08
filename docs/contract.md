@@ -47,14 +47,14 @@ The caller's identity comes from the sign-in token only, never from the request 
 
 `sync-events` does these steps in this order:
 
-1. Reject a request with no token or an `anon` token.
+1. Reject a request with no valid user token. Reserve the shared per-user sync quota, then read the byte-bounded JSON body. Return 429 on quota exhaustion, 413 on overflow, or 503 if authentication or quota storage is unavailable.
 2. Parse the request with `parseUploadRequest`. A request with a missing or different `schemaVersion` returns `unsupported_version`. Any other malformed request returns `invalid`.
 3. Look up the group by `(game_id, group_id)`.
-   - If the content hash and the user match, return the stored acknowledgment and stop.
-   - If the hash or the user differs, return `id_conflict` and stop.
-   - If the group is not there, check that the request's session is this user's current session for the game and that its epoch matches the events' `lockEpoch`. If not, return `stale_session` and stop. A caller who does not hold scoring never reaches the engine. `commit_group` checks again under the lock.
+   - If the stored user matches, compare the content hash. Return the stored acknowledgment for an exact retry, or `id_conflict` for changed content. This also works after handoff.
+   - Otherwise check that the request's session is this user's current session for the game and that its epoch matches the events' `lockEpoch`. If not, return `stale_session` whether the group exists or not.
+   - After that check, an existing group owned by someone else returns `id_conflict`. A caller who does not hold scoring never reaches the engine. `commit_group` checks again under the lock.
 4. Call `get_base(game_id)`. It returns the pins, the revision, and every accepted event in one statement.
-   - If the game's `engineVersion` pin differs from the server's `ENGINE_VERSION`, or its `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
+   - If the engine cannot replay the game's `engineVersion` pin (`canReplay` is false, see [Version pins](#version-pins)), or its `schemaVersion` pin differs from the request's `schemaVersion`, return `unsupported_version` and stop.
 5. If the revision is not the group's first `seq` minus 1, look up the group again. If it is there now, apply the rule in step 3. If it is still missing, return `stale_revision`.
 6. Replay the accepted events and apply the group with the engine. If the engine rejects any command, reject the whole group. The `rejected` response carries the engine's reject code as `reason`.
    - Before it returns `rejected`, look up the group again. If an accepted group with that ID is there now, apply the rule in step 3 instead.
@@ -105,6 +105,10 @@ Christian owns these functions:
 
 The engine takes the event list rather than a cached state, because undo needs to know which groups exist. The game's roster IDs are part of `setup`, and the engine rejects a player ID that is not on the roster. Time comes only from `Event.at` and the `start` command.
 
+Uploads are capped at 262,144 UTF-8 bytes while streaming, before JSON parsing, hashing or replay. Oversized bodies return 413, including chunked uploads with no Content-Length. Each authenticated user has a persistent quota of 120 sync requests per database-clock minute; exhaustion returns 429 and a quota-store failure returns 503. The phone can retry the exact saved play later. These response codes do not discard saved plays.
+
+For the current schema, unknown fields are rejected at every envelope, event, command and nested record. IDs and timestamp text are limited to 128 characters. Arrays are limited to 40 items, with the existing 20-event upload limit unchanged. The parser rejects input deeper than 32 levels or larger than 20,000 values before its recursive command decoding. It rejects U+0000 in keys or values. It does not silently strip fields before hashing. An old stored upload with extra fields is now invalid even on retry; it is not rewritten or duplicated. Engine rules, event schema and engine version are unchanged by this hardening.
+
 The contract types and `parseUploadRequest` live in `packages/engine/src/contract.ts`. Engine imports use `.ts` extensions with `allowImportingTsExtensions`, so Deno, Metro, and Vitest load the same files. `tsconfig.base.json` already sets `noEmit`, which that option requires.
 
 ## Ball-in-play outs and runs
@@ -134,6 +138,8 @@ The scorer records what happened. Starting bases alone cannot prove that a force
 - A play whose outs would take the half-inning past three is rejected with `too_many_outs`, such as a double play with two outs or a triple play with one.
 - Explicit outs occur in `advances` array order. Safe destinations describe final bases, not intermediate touches or timing.
 - A home entry asserts an eligible crossing before the third out, if any. Omit crossings after the third out. `Event.at` does not establish timing within a play.
+- A runner who passes a runner who started ahead of them, before that runner is out, is out (OBR 5.09(b)(9)). The engine does not guess who was out: it rejects the play as recorded with `runner_passed`, and the scorer says what happened. A runner who is out on the same play can be passed. A runner left where they were counts as finishing there, so leaving the lead runner behind while a trailing runner or the batter finishes ahead is a pass. A home entry that crosses while a runner who started ahead of it makes the third out is a pass too, because a run counts only if it crosses before the third out (OBR 5.08(a)).
+- The runner commands next to each other in one play move together, as a ball in play's runners do, and their outs occur in listed order, as `advances` do. Listing order changes nothing else: it never changes the reject code, and it picks the runner who makes the third out only because outs occur in listed order. A runner command that moves the same runner twice in one play is rejected with `duplicate_runner`.
 - Under [OBR 5.08(a) and 5.09(b)(6)](https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf), a third out classified as `force` or `batter_before_first` suppresses every run on that play. Otherwise eligible home entries count. An earlier force out alone does not suppress a run on a later non-force third out.
 - In the home half of the last regulation inning or an extra inning, an ordinary walkoff counts only the runs needed to take the lead. A `home_run` retains all eligible runs under the out-of-field home-run exception. Third-out suppression still applies. See OBR 7.01(e)(3) and 9.06(f) and (g).
 
@@ -161,10 +167,15 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 ## Version pins
 
 - Each `games` row stores `engine_version`, `schema_version`, the fully resolved `rules`, and `setup`. A trigger blocks changes to them after insert.
-- The engine exports `EVENT_SCHEMA_VERSION = 2` and `ENGINE_VERSION = '0.1.1'`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
+- The engine exports `EVENT_SCHEMA_VERSION = 2`, `ENGINE_VERSION = '0.3.0'`, `REPLAYABLE_ENGINE_VERSIONS = ['0.3.0', '0.2.0', '0.1.1']` and `canReplay(version)`. Every YAML fixture's full result is committed in `packages/engine/src/fixture-results.json` beside the version exports.
+- A new game is pinned to `ENGINE_VERSION`. A game keeps its pin for good, and this engine replays and continues it while `canReplay` accepts that version. The server (`sync-events`), the phone (its saved game and `findServerGame`) and the live page all ask `canReplay`, so one list decides. None of them compares version strings. A version `canReplay` refuses is `unsupported_version` on the server, a blocked saved game or a `mismatch` on the phone, and the server's cached state without per-play scores on the live page.
+- Why 0.2.0 and 0.1.1 still replay under 0.3.0, by a recorded exception: engine 0.3.0 rejects a runner who passes a runner ahead of them (`runner_passed`, OBR 5.09(b)(9)) and a runner moved twice in one runner play (`duplicate_runner`). 0.2.0 and 0.1.1 accepted both, so two fixture results differ from their locks: `home-run-moves-only-listed-runners.yaml` (renamed) and `single-moves-listed-runners-atomically.yaml`. Every other fixture result is the same, and the 0.3.0 lock only adds fixtures. The engine test names those two as the recorded exception and fails on any other difference. Both versions stay listed because no stored history is known to hold such a play: the app never makes a pass by itself (voice filters them, and taps default to legal moves), so one exists only if a scorer tapped the runners' destinations by hand, and the phone already blocks a runner moved twice. The one hosted game, pinned 0.1.1 with 22 events, holds only pitches, undos, the lineups, the start and one single with the bases empty. `packages/engine/compat/fixture-results-0.2.0.json` is the 0.2.0 lock, frozen byte for byte from commit `f4bd5b5`, and `fixture-results-0.1.1.json` the 0.1.1 lock, frozen from `53342cc`.
+- The remaining risk: a phone-only saved game, never uploaded, whose history holds a hand-tapped pass would refuse to open on the phone, and a hosted game that gained one later would stop syncing. The hosted check covers only the games that existed when 0.3.0 was listed. Engine 0.2.0 also changed no existing fixture result: its lock only gained the twelve `correct-*` fixtures, and 0.1.1 rejected every `correct` command as `not_implemented`, so no stored 0.1.1 history holds one. 0.1.0 is not listed, because 0.1.1 changed two of its fixture results and dropped two (the undo reject reasons).
+- A Fix or any new play on an older game: the engine does not branch on a game's pin. A game pinned to 0.1.1 or 0.2.0 continues under 0.3.0's rules, so it takes a Fix (which 0.1.1 itself would have rejected as `not_implemented`) and refuses a pass. Its pin stays as it was, and nothing it already holds replays differently, except a pass or a double runner move as above. Only a game that holds a Fix needs engine 0.2.0 or newer, and only a game that refuses a pass needs 0.3.0, so rolling the server or the page back to an older engine would stop a game at its first Fix.
+- When `ENGINE_VERSION` goes up, the outgoing version leaves the list unless it is kept on purpose, with its lock frozen in `compat/` (steps in [Engine verification](engine-verification.md#keep-an-older-version-replaying)). Dropping a version means every game pinned to it stops replaying on the server, the phone and the page, so the PR that drops it says so.
 - Local verification compares that artifact with the current engine and fixtures. CI also compares it with the trusted PR base or main-push predecessor and rejects changed results without an engine-version increase. [Engine verification](engine-verification.md) describes the commands and the initial release baseline.
 - Each upload carries `schemaVersion`. The server returns `unsupported_version` when it differs from the server's `EVENT_SCHEMA_VERSION` or from the game's pinned `schema_version`. The parser checks it before any command, so an old-format request returns `unsupported_version`, not `invalid`.
-- The server also returns `unsupported_version` for a game pinned to a different engine version. Milestone 6 still requires the phone to refuse scoring under mismatched pins.
+- The server also returns `unsupported_version` for a game pinned to an engine version `canReplay` refuses. Milestone 6 still requires the phone to refuse scoring under pins it cannot replay.
 - Joint decision #13 uses schema 2 without an old-request decoder. Existing stored games are first-connection test games. The existing reset workflow must clear those test games before the next full scoring and sync rehearsal. Targets and execution are tracked in [#21](https://github.com/sandlot-app/sandlot-app/issues/21). This local change performs no hosted reset or deployment.
 - Do not rewrite historical events, hashes, or immutable pins. An old offline request retains its original content.
 
@@ -175,6 +186,15 @@ Missed-base appeals, advantageous fourth outs, interference, and other special r
 - Undo works before the game starts too, so it can take back the start or a lineup. When no group is left to undo, it is rejected with `nothing_to_undo`.
 - An undo group cannot itself be undone. The demo has no redo.
 
+## Fix
+
+- A Fix is an ordinary group with one `correct` command: `{ kind: 'correct', target, replacement }`. The earlier play's events are never changed or removed. The Fix is a new group after them.
+- Like Undo, a Fix targets the latest group that is not already undone. Fixes of older plays stay in [#41](https://github.com/sandlot-app/sandlot-app/issues/41). An older, undone or unknown target is rejected with `correct_not_latest`. A group that mixes a Fix with other commands, an undo included, is rejected with `correct_must_be_alone`.
+- The replacement is a list of play commands. The engine plays it from the game as it stood just before the target play, and the result is the game from then on. If the engine refuses the replacement, the Fix is rejected with the replacement's own reason, and the game stays as it was. A replacement that holds an undo or another Fix is rejected with `correct_replacement_not_a_play`. An empty replacement removes the play and leaves the game exactly as it stood before it, as an Undo of that play does.
+- A Fix can also follow the game's end, because it replays the game from just before the target play. Closing the book is not built yet.
+- Undo after a Fix reverses the Fix: the Fix group is the latest group, so it is the one Undo targets, and the original play counts again. A Fix of a Fix replaces the first Fix, and Undo then brings back the first Fix.
+- A Fix's replacement is not a play of its own for Undo, so Undo targets the Fix group's ID, never the original play's.
+
 ## Errors
 
 The phone takes one action for each error:
@@ -184,6 +204,9 @@ The phone takes one action for each error:
 | Network failure | none | Retry the same request later |
 | Server error | 5xx | Retry the same request later |
 | `unauthenticated` | 401 | Refresh the token, then retry |
+| `slow_down` | 429 | Keep the saved play queued and retry later |
+| `sync_unavailable` | 503 | Keep the saved play queued and retry later |
+| `too_long` | 413 | Stop the queue. The phone sent a request that exceeds the size limit. |
 | `invalid` | 400 | Stop the queue. The phone has a bug. |
 | `rejected` | 422 | Stop the queue and show that sync is stuck. The response carries the engine's reject code as `reason`. |
 | `id_conflict` | 409 | Stop the queue. The phone has a bug. |
@@ -206,7 +229,7 @@ A `rejected` response's `reason` is one of the engine's reject codes, `REJECT_CO
 | `in_play_needs_outcome` | an `in_play` pitch isn't followed by its ball in play |
 | `base_occupied` | a runner moves to a base another runner still holds |
 | `runner_not_on_base` | a runner it moves isn't on base |
-| `duplicate_runner` | a ball in play moves the same runner twice |
+| `duplicate_runner` | a ball in play or a runner play moves the same runner twice |
 | `batter_destination_missing` | a double or triple play doesn't say where the batter went |
 | `outs_dont_match_outcome` | a double play doesn't record two outs, or a triple play three |
 | `too_many_outs` | its outs would take the half-inning past three |
@@ -215,22 +238,26 @@ A `rejected` response's `reason` is one of the engine's reject codes, `REJECT_CO
 | `undo_must_be_alone` | it mixes an undo with other commands |
 | `cannot_undo_undo` | an undo targets another undo |
 | `nothing_to_undo` | an undo comes when no group is left to undo |
+| `correct_must_be_alone` | it mixes a Fix with other commands |
+| `correct_not_latest` | a Fix targets a group that isn't the latest active one: an older play, an undone play, or one that doesn't exist |
+| `correct_replacement_not_a_play` | a Fix's replacement holds an undo or another Fix |
 | `game_over` | the game has already ended |
 | `invalid_runner_destination` | a runner goes backward or stays, a caught stealing or pickoff isn't an out, or a stolen base is |
 | `stealing_home_not_allowed` | a runner steals home where the rules allow scoring only on a passed ball |
 | `balks_not_allowed` | it records a balk where the rules have none |
 | `pitcher_reentry_not_allowed` | a removed pitcher comes back where the rules don't allow it |
 | `bunting_not_allowed` | it records a bunt where the rules don't allow bunting |
+| `runner_passed` | a runner finishes ahead of a runner who started in front of them and isn't out, including one left where they were, or scores while a runner who started in front of them makes the third out (OBR 5.08(a), 5.09(b)(9)) |
 
 When the queue stops, the phone shows how many plays are waiting, for example "3 plays waiting. Tap to fix." The fix is **Discard from here**. It deletes the stuck group and every group after it on the phone, and it runs only when the scorer taps it. The phone never deletes pending plays on its own.
 
 ## Voice
 
-Two functions serve voice scoring. Both need a signed-in phone (an anonymous sign-in is enough for the demo), allow 30 requests a minute per user, and return `502 voice_unavailable` when OpenAI fails, which the phone treats as "Voice is unavailable right now. Tap to score." (A10). Neither writes to the database or logs a request body, a transcript, an answer or a name: bodies carry display names, jersey numbers and what was said (rule 5). The scorer-lock check (A8) and the monthly limit (A9) wait until the phone uploads games (#29).
+Two functions serve voice scoring. Both authenticate the phone and require its user to hold at least one current scoring session, with the session epoch matching its game lock. An anonymous sign-in alone is not enough. The two endpoints share one persistent quota of 30 requests per user per database-clock minute, and return `502 voice_unavailable` when OpenAI fails, which the phone treats as "Voice is unavailable right now. Tap to score." (A10). The only voice database write is a counter with user ID, scope, minute and request count. Neither logs a request body, a transcript, an answer or a name. Bodies carry display names, jersey numbers and what was said (rule 5). This user-level billing capability also permits local demo voice for a user provisioned as a current server scorer; it does not read another game from the server. A user with only an expired scoring epoch is refused. Admission failures return 503 before any OpenAI call.
 
 The phone gives each request its own timeout, about 25 seconds, because a clip goes through two OpenAI calls, and on a timeout it falls back to taps. A `401` can also come from the Supabase gateway before the function runs, with the gateway's own body, so the phone branches on the status, not the `error` code.
 
-**Cost.** The per-user rate limit and the 60-second secret are not a spending cap. The secret only limits when a session can start: once connected, OpenAI keeps a transcription session open for up to 60 minutes, so the phone closes the socket when the scorer lets go. A hard monthly budget on the OpenAI project is the real cap, and setting it is a required step before the first deploy, until the monthly limit (A9) arrives with #29.
+**Cost.** The shared fixed-minute quota permits a bounded burst across minute boundaries. The quota and the 60-second secret are not a spending cap. The secret only limits when a session can start: once connected, OpenAI keeps a transcription session open for up to 60 minutes, so the phone closes the socket when the scorer lets go. The [client-secret API](https://developers.openai.com/api/reference/resources/realtime/subresources/client_secrets/methods/create) documents no shorter server-enforced transcription-session duration field. Do not treat the phone closing its socket as protection against a malicious client. Before deploying, Christian must verify actual OpenAI spending controls, anonymous-sign-in protections and zero data retention. An alert-only project budget is not a hard spending cap. These hosted checks remain open under #77.
 
 **Privacy.** Audio, the transcript and the game the phone sends go to OpenAI. `voice-session` sends only last names as transcription keywords. `voice-parse` sends the parser model, with `store: false`, the game as the AI needs it to read a whole press ([ADR 0007](adr/0007-the-ai-reads-the-whole-press.md)): display names and jersey numbers labeled by role (the batter due up, the pitcher, each runner by base, the batting order and the fielders by position), the inning, outs, count and score, and the last play in words, which also carries display names. It sends no player IDs and no event log. The model's answer names players only by role and base, plus the words the scorer used for each one. Its free-text notes are dropped inside `voice-parse` and never returned, shown or logged. OpenAI still keeps API data for up to 30 days for abuse monitoring unless the project has zero data retention, which has to be in place before any real children's game ([#77](https://github.com/sandlot-app/sandlot-app/issues/77), item 3). Christian reviews this paragraph and Kevin signs off before `voice-parse` is deployed with it.
 
@@ -289,6 +316,7 @@ The model only proposes. The phone maps each reading to commands, checks that ev
 | Error | HTTP status | Phone action |
 | --- | --- | --- |
 | `unauthenticated` | 401 | Sign in again, then retry |
+| `not_scorer` | 403 | Voice is unavailable; tap to score. Provision this user as a current scorer before retrying. |
 | `slow_down` | 429 | Tap to score for now |
 | `too_long` | 413 | Tap to score |
 | `invalid` | 400 | The phone has a bug. Tap to score |
@@ -322,7 +350,7 @@ The demo meets every milestone 6 check in Kevin's design, with these changes:
 
 - Scoring handoff has `take_over` and its tests, but no screen.
 - Rejected work has **Discard from here**, but no review screen.
-- A version mismatch refuses to score. There is no upgrade path.
+- A game pinned to an engine version the app cannot replay refuses to score. There is no upgrade path.
 - Corrections to older plays wait for the beta.
 
 Kevin must agree to these changes before they count.

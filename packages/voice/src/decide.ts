@@ -73,6 +73,7 @@ export function rejectMessage(code: RejectCode): string {
     case 'too_many_outs': return "That's more than three outs.";
     case 'game_over': return 'This game is over.';
     case 'game_not_started': return "The game hasn't started.";
+    case 'runner_passed': return "A runner can't pass the runner ahead of them.";
     default: return "That play can't be recorded right now.";
   }
 }

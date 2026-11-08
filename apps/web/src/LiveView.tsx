@@ -1,4 +1,5 @@
 import { useState, type KeyboardEvent } from 'react';
+import type { GroupId } from '@sandlot/engine';
 import emblem from './assets/logo-emblem.svg';
 import { clipUrl, streamUrl } from './clips.ts';
 import { Field } from './components/Field.tsx';
@@ -48,8 +49,9 @@ function Connection({ status }: { status: Exclude<ConnectionStatus, 'not_found'>
 }
 
 /** The live stream, or the clip of the play a family picked. Null when the game has no recording or hasn't started. */
-function streamView(game: LiveGame, watching: Play | null): StreamView | null {
+export function streamView(game: LiveGame, selectedGroup: GroupId | null): StreamView | null {
   if (!game.recording) return null;
+  const watching = game.plays.find((play) => play.group === selectedGroup && play.onField);
   if (watching) {
     const src = clipUrl(game.recording, watching.at);
     return { kind: 'clip', src, score: watching.scoreAfter, inning: playInning(watching), text: watching.text };
@@ -95,7 +97,7 @@ function Tabs({ tabs, tab, onSelect }: { tabs: readonly (typeof TABS)[number][];
 
 export function LiveView({ game, initialTab = 'field' }: { game: LiveGame; initialTab?: Tab }) {
   const [chosen, setTab] = useState<Tab>(initialTab);
-  const [watching, setWatching] = useState<Play | null>(null);
+  const [watching, setWatching] = useState<GroupId | null>(null);
   if (game.status === 'not_found') return <Message>Game not found or not public.</Message>;
   if (game.pins === null) {
     return (
@@ -112,7 +114,7 @@ export function LiveView({ game, initialTab = 'field' }: { game: LiveGame; initi
   const tabs = game.recording ? TABS : TABS.filter(({ id }) => id !== 'video');
   const tab = tabs.some(({ id }) => id === chosen) ? chosen : 'field';
   const watch = (play: Play) => {
-    setWatching(play);
+    setWatching(play.group);
     setTab('video');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

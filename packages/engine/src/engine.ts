@@ -38,12 +38,16 @@ export const REJECT_CODES = [
   'undo_must_be_alone',
   'cannot_undo_undo',
   'nothing_to_undo',
+  'correct_must_be_alone',
+  'correct_not_latest',
+  'correct_replacement_not_a_play',
   'game_over',
   'invalid_runner_destination',
   'stealing_home_not_allowed',
   'balks_not_allowed',
   'pitcher_reentry_not_allowed',
   'bunting_not_allowed',
+  'runner_passed',
 ] as const;
 
 export type RejectCode = (typeof REJECT_CODES)[number];
@@ -93,7 +97,8 @@ export function applyGroupFrom(setup: GameSetup, from: GameState, events: Event[
 }
 
 /**
- * Each batter's line from the plays that stand, keyed by player or opponent ID. An undone play counts for no one.
+ * Each batter's line from the plays that stand, keyed by player or opponent ID. An undone play counts for no one,
+ * and a Fix counts in place of the play it replaced, until an Undo of the Fix brings that play back.
  * It reads a log `replay` accepts; on one it rejects, the lines stop before the rejected play.
  */
 export function battingLines(setup: GameSetup, events: Event[]): Record<string, BattingLine> {
@@ -102,12 +107,27 @@ export function battingLines(setup: GameSetup, events: Event[]): Record<string, 
 
 /** `battingLines` from a given state instead of the start. Fixtures use it to begin mid-game; the app and server never do. */
 export function battingLinesFrom(setup: GameSetup, from: GameState, events: Event[]): Record<string, BattingLine> {
-  const standing: { id: GroupId; state: GameState; tally: PlayTally }[] = [];
+  const standing: StandingBatting[] = [];
   for (const play of plays(events)) {
     const [first] = play.commands;
     if (first?.kind === 'undo') {
       if (standing.at(-1)?.id !== first.target) break;
-      standing.pop();
+      const undone = standing.pop()!;
+      if (undone.replaced) standing.push(undone.replaced);
+      continue;
+    }
+    if (first?.kind === 'correct') {
+      const latest = standing.pop();
+      if (!latest) break;
+      const tally: PlayTally = { appearances: [], runs: [] };
+      const result = refusedFix(play.commands, first, latest.id)
+        ? null
+        : applyPlay(setup, standing.at(-1)?.state ?? from, first.replacement, tally);
+      if (!result?.ok) {
+        standing.push(latest);
+        break;
+      }
+      standing.push({ id: play.id, state: result.state, tally, replaced: latest });
       continue;
     }
     const tally: PlayTally = { appearances: [], runs: [] };
@@ -143,6 +163,8 @@ type PlateAppearance = { batter: PlayerRef; result: PlateAppearanceResult };
 /** A run that counted, and the batter credited with driving it in, if any (OBR 9.04). */
 type ScoredRun = { runner: PlayerRef; battedInBy: PlayerRef | null };
 type PlayTally = { appearances: PlateAppearance[]; runs: ScoredRun[] };
+/** A play that stands while `battingLines` reads the log. A Fix keeps the play it replaced, which Undo brings back. */
+type StandingBatting = { id: GroupId; state: GameState; tally: PlayTally; replaced?: StandingBatting };
 
 // OBR 9.02(a)(1): no time at bat for a sacrifice, a walk or a hit by pitch. OBR 9.05(a): the safe hits.
 const notAtBats = new Set<PlateAppearanceResult>(['walk', 'hit_by_pitch', 'sacrifice_fly', 'sacrifice_bunt']);
@@ -168,22 +190,31 @@ function plays(events: Event[]): StoredPlay[] {
   return result;
 }
 
+/** A play that stands while the log folds. A Fix keeps the play it replaced, which Undo brings back. */
+type Standing = StoredPlay & { replaced?: Standing };
+
+type Fix = Extract<Command, { kind: 'correct' }>;
+
+/**
+ * Why a Fix is refused before its replacement is tried, or null. Like Undo, a Fix targets the latest play that stands,
+ * so an older play, an undone play and an unknown one are all `correct_not_latest`.
+ */
+function refusedFix(commands: Command[], fix: Fix, latest: GroupId | undefined): RejectCode | null {
+  if (commands.length !== 1) return 'correct_must_be_alone';
+  if (fix.replacement.some((command) => command.kind === 'undo' || command.kind === 'correct')) return 'correct_replacement_not_a_play';
+  return latest === fix.target ? null : 'correct_not_latest';
+}
+
 function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending?: Command[]): ApplyResult {
   let state = from;
-  const active: StoredPlay[] = [];
+  const active: Standing[] = [];
   const undoGroups = new Set<GroupId>();
 
-  function next(commands: Command[]): ApplyResult {
-    const undo = commands.find((command) => command.kind === 'undo');
-    if (!undo) return applyPlay(setup, state, commands);
-    if (commands.length !== 1) return { ok: false, code: 'undo_must_be_alone' };
-    if (undoGroups.has(undo.target)) return { ok: false, code: 'cannot_undo_undo' };
-    const latest = active.at(-1);
-    if (!latest) return { ok: false, code: 'nothing_to_undo' };
-    if (latest.id !== undo.target) return { ok: false, code: 'undo_not_latest' };
-    active.pop();
+  function replayActive(): ApplyResult {
     let restored = from;
     for (const play of active) {
+      // A play removed by a Fix is nothing to play, and playing nothing would still clear the alerts.
+      if (play.commands.length === 0) continue;
       const result = applyPlay(setup, restored, play.commands);
       if (!result.ok) return result;
       restored = result.state;
@@ -191,14 +222,43 @@ function foldHistory(setup: GameSetup, from: GameState, events: Event[], pending
     return { ok: true, state: restored };
   }
 
+  /** Applies one play, and keeps it in `active` when it stands. */
+  function next(id: GroupId, commands: Command[]): ApplyResult {
+    const undo = commands.find((command) => command.kind === 'undo');
+    const fix = commands.find((command) => command.kind === 'correct');
+    if (fix) {
+      const latest = active.at(-1);
+      const code = refusedFix(commands, fix, latest?.id);
+      if (code) return { ok: false, code };
+      active.pop();
+      const before = replayActive();
+      // Removing a play leaves the game just as it stood before it, alerts included, as an Undo does.
+      const result = before.ok && fix.replacement.length > 0 ? applyPlay(setup, before.state, fix.replacement) : before;
+      if (result.ok) active.push({ id, commands: fix.replacement, replaced: latest! });
+      return result;
+    }
+    if (undo) {
+      if (commands.length !== 1) return { ok: false, code: 'undo_must_be_alone' };
+      if (undoGroups.has(undo.target)) return { ok: false, code: 'cannot_undo_undo' };
+      const latest = active.at(-1);
+      if (!latest) return { ok: false, code: 'nothing_to_undo' };
+      if (latest.id !== undo.target) return { ok: false, code: 'undo_not_latest' };
+      active.pop();
+      if (latest.replaced) active.push(latest.replaced);
+      return replayActive();
+    }
+    const result = applyPlay(setup, state, commands);
+    if (result.ok) active.push({ id, commands });
+    return result;
+  }
+
   for (const play of plays(events)) {
-    const result = next(play.commands);
+    const result = next(play.id, play.commands);
     if (!result.ok) return result;
     state = result.state;
-    if (play.commands[0]?.kind === 'undo') undoGroups.add(play.id);
-    else active.push(play);
+    if (play.commands.some((command) => command.kind === 'undo')) undoGroups.add(play.id);
   }
-  return pending ? next(pending) : { ok: true, state };
+  return pending ? next('' as GroupId, pending) : { ok: true, state };
 }
 
 function applyPlay(setup: GameSetup, state: GameState, commands: Command[], tally?: PlayTally): ApplyResult {
@@ -289,25 +349,38 @@ function changePitcher(setup: GameSetup, game: GameState, side: TeamSide, incomi
 }
 
 /**
- * Moves every runner on one play before the play's outs and runs count, so the third out or a winning run
- * ends the half only after all of them.
+ * Moves every runner on one play together, as a ball in play does, before the play's outs and runs count,
+ * so the third out or a winning run ends the half only after all of them.
  */
 function moveRunners(setup: GameSetup, game: GameState, commands: RunnerCommand[]): RejectCode | null {
   const outs = game.outs + commands.filter(({ to }) => to === 'out').length;
   if (outs > 3) return 'too_many_outs';
-  // Lead runner first, so a walk-off that stops at the winning run credits the runner who crossed first.
-  const baseOf = (runner: PlayerRef) => ([3, 2, 1] as const).find((base) => {
-    const player = game.bases[base]?.player;
-    return player !== undefined && samePlayer(player, runner);
-  }) ?? 0;
-  const scorers = commands
-    .filter(({ to }) => to === 'home')
-    .map(({ runner }) => runner)
-    .sort((a, b) => baseOf(b) - baseOf(a));
+  const moves: { from: Base; to: Destination }[] = [];
   for (const command of commands) {
-    const code = moveRunner(setup, game, command);
-    if (code) return code;
+    const from = runnerStart(setup, game, command);
+    if (typeof from === 'string') return from;
+    if (moves.some((move) => move.from === from)) return 'duplicate_runner';
+    moves.push({ from, to: command.to });
   }
+  const bases = { ...game.bases };
+  for (const { from } of moves) delete bases[from];
+  for (const { from, to } of moves) {
+    if (typeof to !== 'number') continue;
+    if (bases[to]) return 'base_occupied';
+    bases[to] = game.bases[from]!;
+  }
+  const finishes = ([1, 2, 3] as const).filter((from) => game.bases[from]).map((from) => ({
+    from,
+    to: moves.find((move) => move.from === from)?.to ?? from,
+  }));
+  const thirdOut = outs === 3 ? moves.filter(({ to }) => to === 'out')[2 - game.outs]!.from : null;
+  if (passesRunner(finishes, thirdOut)) return 'runner_passed';
+  // Lead runner first, so a walk-off that stops at the winning run credits the runner who crossed first.
+  const scorers = moves
+    .filter(({ to }) => to === 'home')
+    .sort((a, b) => b.from - a.from)
+    .map(({ from }) => game.bases[from]!.player);
+  game.bases = bases;
   // A runner event never makes a force out, so its runs count even when the play makes the third out (OBR 5.08(a)).
   const runs = game.half === 'bottom' && game.inning >= setup.rules.innings
     ? Math.min(scorers.length, game.score.away - game.score.home + 1)
@@ -319,7 +392,8 @@ function moveRunners(setup: GameSetup, game: GameState, commands: RunnerCommand[
   return null;
 }
 
-function moveRunner(setup: GameSetup, game: GameState, command: RunnerCommand): RejectCode | null {
+/** Checks one runner command against the bases before the play and returns the base the runner starts from. */
+function runnerStart(setup: GameSetup, game: GameState, command: RunnerCommand): Base | RejectCode {
   if (command.event === 'balk' && !setup.rules.balks) return 'balks_not_allowed';
   if (!['stolen_base', 'caught_stealing', 'pickoff', 'wild_pitch', 'passed_ball', 'advance_on_error'].includes(command.event)) {
     return 'not_implemented';
@@ -336,11 +410,7 @@ function moveRunner(setup: GameSetup, game: GameState, command: RunnerCommand): 
   if ((command.event === 'caught_stealing' || command.event === 'pickoff') && to !== 'out') return 'invalid_runner_destination';
   if (command.event === 'stolen_base' && to === 'out') return 'invalid_runner_destination';
   if (typeof to === 'number' && to <= from) return 'invalid_runner_destination';
-  if (typeof to === 'number' && game.bases[to]) return 'base_occupied';
-  const runner = game.bases[from]!;
-  delete game.bases[from];
-  if (typeof to === 'number') game.bases[to] = runner;
-  return null;
+  return from;
 }
 
 function applyControl(setup: GameSetup, game: GameState, control: GameControl): RejectCode | null {
@@ -485,6 +555,14 @@ function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball
       bases[to] = runner;
     }
   }
+  const finishes = active.map(({ from }) => ({
+    from,
+    to: destinations.find((advance) => advance.from === from)?.to ?? from,
+  }));
+  const thirdOut = game.outs + recordedOuts === 3
+    ? destinations.filter(({ to }) => to === 'out')[2 - game.outs]!.from
+    : null;
+  if (passesRunner(finishes, thirdOut)) return 'runner_passed';
   let forceThrough = 0;
   for (const base of [1, 2, 3] as const) {
     if (!game.bases[base]) break;
@@ -520,6 +598,17 @@ function planBallInPlay(game: GameState, command: Extract<Command, { kind: 'ball
   // scorer's judgment, so the engine never gives it.
   const batterDrivesThemIn = command.outcome !== 'error' && !forceDoublePlay;
   return { bases, scorers, batterDrivesThemIn, totalOuts };
+}
+
+/**
+ * A runner who passes a runner ahead of them, before that runner is out, is out (OBR 5.09(b)(9)), so the play as recorded
+ * can't stand. A run counts only if it crosses before the third out (OBR 5.08(a)), so a trailing runner who scores while
+ * the runner ahead of them makes the third out passed them too.
+ */
+function passesRunner(finishes: { from: 0 | Base; to: Destination | 0 }[], thirdOut: 0 | Base | null): boolean {
+  const safe = finishes.flatMap(({ from, to }) => (to === 'out' ? [] : [{ from, at: to === 'home' ? 4 : to }]));
+  if (thirdOut !== null && safe.some(({ from, at }) => at === 4 && from < thirdOut)) return true;
+  return safe.some((trailing) => safe.some((lead) => lead.from > trailing.from && trailing.at > lead.at));
 }
 
 function samePlayer(a: PlayerRef, b: PlayerRef): boolean {
