@@ -45,8 +45,8 @@ const leadFirst = <T extends { from: BaseKey }>(moves: T[]) => [...moves].sort((
 
 /**
  * The commands for one reading, applied to the game as it stood before the press (`before`). Runner events go first,
- * lead runner first because the engine checks each runner's base as it moves them, then the pitches, then the ball in
- * play. A runner who stayed put is left out, so the engine keeps them on their base and the banner says they held.
+ * lead runner first because the engine takes a play's outs in the order they are listed, then the pitches, then the
+ * ball in play. A runner who stayed put is left out, so the engine keeps them on their base and the banner says they held.
  */
 export function toCommands(game: PressGame, before: GameState, reading: AnswerReading): Mapped {
   const runnerOn = (key: BaseKey): PlayerRef | undefined => before.bases[toBase(key)]?.player;

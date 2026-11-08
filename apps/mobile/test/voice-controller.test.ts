@@ -107,7 +107,8 @@ test('#103: a question shows both readings, each checked by the engine, and the 
 });
 
 test('#103: a name in the wrong role saves nothing, and the line says who is up', async () => {
-  const scoring = await scorer(true, undefined, answering('Vance doubles', play(double('Vance', []))));
+  // Soto goes to third, so the double passes no one: the engine refuses a pass (`runner_passed`) before the names are checked.
+  const scoring = await scorer(true, undefined, answering('Vance doubles', play(double('Vance', [{ from: '1', to: '3', ...said('Soto') }]))));
   await walked(scoring);
   (await scoring.hold())('Vance doubles');
   await settle();

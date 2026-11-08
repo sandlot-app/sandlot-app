@@ -1,0 +1,23 @@
+name: A runner may finish ahead of a lead runner who is put out on the same play
+cite: Official Baseball Rules 5.09(b)(9) (a runner who passes a preceding runner before that runner is out is out),
+  https://mktg.mlbstatic.com/mlb/official-information/2026-official-baseball-rules.pdf;
+  the lead runner here is out on the same play, so the trailing runner may pass them
+preset: moraga-mustang-first-half
+started: true
+given:
+  bases:
+    "1": { player: { kind: opponent, id: away-2 }, chargedTo: { kind: player, id: home-1 } }
+    "2": { player: { kind: opponent, id: away-1 }, chargedTo: { kind: player, id: home-1 } }
+when:
+  - - kind: runner
+      event: pickoff
+      runner: { kind: opponent, id: away-1 }
+      to: out
+    - kind: runner
+      event: stolen_base
+      runner: { kind: opponent, id: away-2 }
+      to: 3
+then:
+  outs: 1
+  bases:
+    "3": { player: { kind: opponent, id: away-2 }, chargedTo: { kind: player, id: home-1 } }

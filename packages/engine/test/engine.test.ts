@@ -129,7 +129,7 @@ describe('applyGroup', () => {
     const before = structuredClone(opened.state);
     expect(applyGroupFrom(setup, opened.state, [], [
       { kind: 'runner', event: 'advance_on_error', runner: away(1), to: 'home' },
-      { kind: 'runner', event: 'wild_pitch', runner: away(1), to: 2 },
+      { kind: 'runner', event: 'wild_pitch', runner: away(2), to: 2 },
     ])).toEqual({ ok: false, code: 'runner_not_on_base' });
     expect(opened.state).toEqual(before);
   });
