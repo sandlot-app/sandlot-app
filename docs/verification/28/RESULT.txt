@@ -1,9 +1,71 @@
-flow: acceptance-28
-result: PASS
-commit: 62f209251c0ba22d1c244abbf9305b43b6015e91
-simulator: sandlot-verify-38 (78D40883-CCF7-4337-9B4C-07709498B0AB)
+Mac proof for #28 (Game setup and Lineup screens), app code at 666e4c2 (main merged in).
+
+What ran, in order. The two phones ran one after the other, never together, with Metro on port 8091 for each.
+  iPhone 17 Pro, iOS 26.5
+    acceptance-28 (lineups, tap plays, scoring screen, matchup ticket, play log) on sandlot-107-pro-b
+    field-colors, voice-scoring and acceptance-103 (the #103 whole-press flow) on sandlot-107-current-pro
+  iPhone SE (3rd generation), iOS 26.5
+    acceptance-28, field-colors, voice-scoring and acceptance-103 on sandlot-107-se-b
+
+Spare phones. lineups-28 needs a phone with no saved game. sandlot-verify-38 holds a saved game from another run and
+sandlot-verify-se was used for an earlier attempt, and nothing was cleared or deleted, so new spare phones were used instead
+(sandlot-107-pro-b and sandlot-107-se-b; sandlot-107-current-pro is a spare iPhone 17 Pro left from an earlier try at this PR).
+The voice flows need a saved game, so they ran after acceptance-28 on the SE, and on the spare Pro that already held one.
+
+Flow files. Every commit line below reads 666e4c2, the commit checked out at run time. The flow fixes in 81804d1 (scroll steps,
+label matches and a retry for a dropped first tap, all made because lineups-28 had never run on a phone) were uncommitted
+in the working tree for the runs. The iPhone SE ran all of them. The iPhone 17 Pro's acceptance-28 ran before four of them were
+added while the SE was being checked (scrolling to the T. Nguyen row, to the Marlins row, to Bats only and to the no-pitcher
+message). They only add scrolling, and the Pro was not rerun on the final text.
+
+Not covered. The start-game branch of _start-local-game.yaml (every other flow found a saved game and took resume-game), and
+a no-signal cold launch.
 
 flow: acceptance-28
 result: PASS
-commit: 62f209251c0ba22d1c244abbf9305b43b6015e91
-simulator: sandlot-verify-se (64B83E02-9EDE-479F-B2CD-3082928D00F2)
+commit: 666e4c2bc132f2542d16f2944017b992138601eb
+simulator: sandlot-107-pro-b (18A0812D-E2FC-454B-A5B6-44781BEDAA6D)
+device: iPhone-17-Pro
+
+flow: field-colors
+result: PASS
+commit: 666e4c2bc132f2542d16f2944017b992138601eb
+simulator: sandlot-107-current-pro (43533383-423C-44BC-845C-F1F8FBF34447)
+device: iPhone-17-Pro
+
+flow: voice-scoring
+result: PASS
+commit: 666e4c2bc132f2542d16f2944017b992138601eb
+simulator: sandlot-107-current-pro (43533383-423C-44BC-845C-F1F8FBF34447)
+device: iPhone-17-Pro
+
+flow: acceptance-103
+result: PASS
+commit: 666e4c2bc132f2542d16f2944017b992138601eb
+simulator: sandlot-107-current-pro (43533383-423C-44BC-845C-F1F8FBF34447)
+device: iPhone-17-Pro
+
+flow: acceptance-28
+result: PASS
+commit: 666e4c2bc132f2542d16f2944017b992138601eb
+simulator: sandlot-107-se-b (1F7687D6-898F-47F1-B4D3-38AA0232214D)
+device: iPhone-SE-3rd-generation
+
+flow: field-colors
+result: PASS
+commit: 666e4c2bc132f2542d16f2944017b992138601eb
+simulator: sandlot-107-se-b (1F7687D6-898F-47F1-B4D3-38AA0232214D)
+device: iPhone-SE-3rd-generation
+
+flow: voice-scoring
+result: PASS
+commit: 666e4c2bc132f2542d16f2944017b992138601eb
+simulator: sandlot-107-se-b (1F7687D6-898F-47F1-B4D3-38AA0232214D)
+device: iPhone-SE-3rd-generation
+
+flow: acceptance-103
+result: PASS
+commit: 666e4c2bc132f2542d16f2944017b992138601eb
+simulator: sandlot-107-se-b (1F7687D6-898F-47F1-B4D3-38AA0232214D)
+device: iPhone-SE-3rd-generation
+
