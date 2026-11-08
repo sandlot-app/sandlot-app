@@ -106,8 +106,9 @@ const styles = createStyles({
   state: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/2'] },
   inningRow: { flexDirection: 'row', alignItems: 'center', gap: sizes['space/1'] },
   liveDot: { width: 6, height: 6, borderRadius: sizes['radius/full'], backgroundColor: colors['status/live'] },
-  inning: { ...textStyles.Caption, fontWeight: '600', color: colors['scoreboard/text'], maxWidth: 84 },
-  count: { ...textStyles.Caption, color: colors['scoreboard/text-muted'], maxWidth: 84 },
+  // No width cap on the inning and count: at bigger iPhone text sizes they need more room, and the team sides give it up.
+  inning: { ...textStyles.Caption, fontWeight: '600', color: colors['scoreboard/text'] },
+  count: { ...textStyles.Caption, color: colors['scoreboard/text-muted'] },
   // Expanded: 20 above and to the sides (space/4 + space/1). Figma's 14 around the hairline is space/3 here.
   expanded: { padding: sizes['space/4'], backgroundColor: colors['scoreboard/bg'], borderRadius: sizes['radius/xl'], borderWidth: 1, borderColor: colors['border/glass'] },
   expandedInner: { paddingHorizontal: sizes['space/1'], paddingTop: sizes['space/1'] },

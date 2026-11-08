@@ -1,0 +1,69 @@
+appId: host.exp.Exponent
+---
+# The score bar's count line at the phone's text size: a picture of the bar, one called strike, another picture, then Undo.
+# Set the text size first with `xcrun simctl ui <simulator> content_size <size>`.
+- runFlow: _ready.yaml
+# Right after launch the first tap on Start can land before the home screen is ready, so wait for it to settle.
+# A later run at another text size starts on the scoring screen instead.
+- extendedWaitUntil:
+    visible:
+      id: "start-game|resume-game|score-summary"
+    timeout: 15000
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible:
+        id: "start-game"
+    commands:
+      - runFlow: _start-local-game.yaml
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 15000
+# At the biggest text sizes the "plays saved" line sits below the screen, so this reads the score bar instead.
+- copyTextFrom:
+    id: "score-summary"
+- evalScript: ${output.before = maestro.copiedText}
+- assertTrue: ${/\d outs?\./.test(output.before)}
+- takeScreenshot: score-bar-start
+- evalScript: ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}
+# From extra-extra-extra-large up, the pitch buttons or the strike choices sit below the screen, so the strike is optional.
+- tapOn:
+    id: "pitch-strike"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "strike-looking"
+    timeout: 5000
+    optional: true
+- tapOn:
+    id: "strike-looking"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+      text: ".*outs?\\. Count [0-3] balls? and ${output.strikes + 1} strikes?\\..*"
+    timeout: 15000
+    optional: true
+- takeScreenshot: score-bar
+# Undo the strike, only if it landed, so the next text size starts from the same count.
+- runFlow:
+    when:
+      visible:
+        id: "score-summary"
+        text: ".*outs?\\. Count [0-3] balls? and ${output.strikes + 1} strikes?\\..*"
+    commands:
+      - tapOn:
+          id: "scorer-undo"
+      - extendedWaitUntil:
+          visible:
+            id: "score-summary"
+            text: ".*Count [0-3] balls? and ${output.strikes} strikes?\\..*"
+          timeout: 15000
