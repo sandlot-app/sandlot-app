@@ -38,5 +38,5 @@ const styles = createStyles({
   screen: { flex: 1, backgroundColor: colors['surface/page'], padding: sizes['space/6'], gap: sizes['space/4'] },
   message: { ...textStyles['Body/Regular'], color: colors['text/secondary'] },
   back: { minHeight: sizes['tap/min'], justifyContent: 'center' },
-  backText: { ...textStyles['Body/Strong'], color: colors['action/primary'] },
+  backText: { ...textStyles['Body/Strong'], color: colors['text/link'] },
 });

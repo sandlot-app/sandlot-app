@@ -1,0 +1,103 @@
+:root {
+  color-scheme: light;
+  font-family: -apple-system, 'SF Pro Text', 'Inter', system-ui, sans-serif;
+  color: #10231c;
+  background: #fbfaf6;
+}
+
+body { margin: 0; }
+
+.sc {
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 56px 24px 80px;
+}
+
+.sc-head {
+  max-width: 720px;
+  margin-bottom: 40px;
+}
+
+.sc-eyebrow {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ff7519;
+}
+
+.sc-head h1 {
+  margin: 0;
+  font-size: 44px;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  color: #0c4c39;
+}
+
+.sc-lede {
+  margin: 14px 0 0;
+  font-size: 19px;
+  line-height: 1.5;
+  color: rgba(16, 35, 28, 0.65);
+}
+
+.sc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(358px, 1fr));
+  gap: 40px 24px;
+}
+
+.sc-card {
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.sc-demo {
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.sc-copy {
+  max-width: 440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.sc-n {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(16, 35, 28, 0.45);
+}
+
+.sc-copy h2 {
+  margin: 4px 0 2px;
+  font-size: 28px;
+  letter-spacing: -0.015em;
+}
+
+.sc-line {
+  margin: 0 0 10px;
+  font-size: 17px;
+  font-weight: 600;
+  color: #0c4c39;
+}
+
+.sc-body {
+  margin: 0 0 10px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: rgba(16, 35, 28, 0.75);
+}
+
+.sc-from {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(16, 35, 28, 0.5);
+}

@@ -156,7 +156,7 @@ export default function GamesScreen() {
 
 const styles = createStyles({
   galleryLink: { minHeight: sizes['tap/min'], justifyContent: 'center' },
-  galleryText: { fontSize: 15, fontWeight: '600', color: colors['action/primary'] },
+  galleryText: { fontSize: 15, fontWeight: '600', color: colors['text/link'] },
   screen: { flex: 1, backgroundColor: colors['surface/page'] },
   content: { padding: sizes['space/6'], gap: sizes['space/3'] },
   brand: {
@@ -195,6 +195,6 @@ const styles = createStyles({
     padding: sizes['space/4'],
     alignItems: 'center',
   },
-  buttonLabel: { fontSize: 17, fontWeight: '600', color: colors['surface/card'] },
+  buttonLabel: { fontSize: 17, fontWeight: '600', color: colors['text/on-action'] },
   pressed: { opacity: 0.65 },
 });
