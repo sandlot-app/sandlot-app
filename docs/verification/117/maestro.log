@@ -1,0 +1,617 @@
+== text size: large flow: score-screen-text-size simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+    Tap on id: resume-game... COMPLETED
+  Run flow when id: resume-game is visible... COMPLETED
+  Assert that id: score-summary is visible... FAILED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+Assertion is false: id: score-summary is visible
+
+Assertion 'id: score-summary is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+== text size: extra-large flow: score-screen-text-size simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+  Run flow when id: resume-game is visible... SKIPPED
+  Assert that id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... FAILED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+Assertion is false: id: strike-looking is visible
+
+Assertion 'id: strike-looking is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+== text size: extra-extra-large flow: score-screen-text-size simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+  Run flow when id: resume-game is visible... SKIPPED
+  Assert that id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+== text size: extra-extra-extra-large flow: score-screen-text-size simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+  Run flow when id: resume-game is visible... SKIPPED
+  Assert that id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+== text size: accessibility-extra-extra-extra-large flow: score-screen-text-size simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B)
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+  Run flow when id: resume-game is visible... SKIPPED
+  Assert that id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+== text size: large flow: score-screen-text-size simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+    Tap on id: resume-game... COMPLETED
+  Run flow when id: resume-game is visible... COMPLETED
+  Assert that id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+== text size: extra-large flow: score-screen-text-size simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+  Run flow when id: resume-game is visible... SKIPPED
+  Assert that id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+== text size: extra-extra-large flow: score-screen-text-size simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+  Run flow when id: resume-game is visible... SKIPPED
+  Assert that id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... FAILED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+Assertion is false: id: strike-looking is visible
+
+Assertion 'id: strike-looking is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+== text size: extra-extra-extra-large flow: score-screen-text-size simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+  Run flow when id: resume-game is visible... SKIPPED
+  Assert that id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... FAILED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+Assertion is false: id: strike-looking is visible
+
+Assertion 'id: strike-looking is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+== text size: accessibility-extra-extra-extra-large flow: score-screen-text-size simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E)
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow score-screen-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Retry 2 times...
+  Run flow when id: resume-game is visible...
+  Run flow when id: resume-game is visible... SKIPPED
+  Assert that id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Assert that id: pitch-ball is visible... COMPLETED
+Assert that id: pitch-strike is visible... COMPLETED
+Assert that id: pitch-foul is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: scorer-more is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Assert that ${output.strikes < 2} is true... COMPLETED
+Take screenshot field-start... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is not visible...
+    Tap on id: pitch-strike... COMPLETED
+  Run flow when id: strike-looking is not visible... COMPLETED
+  Assert that id: strike-looking is visible... FAILED
+Retry 2 times... COMPLETED
+Assert that id: strike-swinging is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Assert that id: scorer-undo is visible... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-choices... COMPLETED
+Retry 2 times...
+  Run flow when id: strike-looking is visible...
+    Tap on id: strike-looking... COMPLETED
+  Run flow when id: strike-looking is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Assert that id: waiting-plays is visible... COMPLETED
+Take screenshot strike-saved... COMPLETED
+Retry 2 times...
+  Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+    Tap on id: scorer-undo... COMPLETED
+  Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+  Assert that ".*outs?\. Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Retry 2 times... COMPLETED
+Take screenshot strike-undone... COMPLETED
+
+Assertion is false: id: strike-looking is visible
+
+Assertion 'id: strike-looking is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
