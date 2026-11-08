@@ -251,7 +251,7 @@ test('walks, strikeouts, and repeated undo use the saved engine history and stop
     result = await opened.record({ kind: 'pitch', result: 'ball' });
   assert.equal(result.kind, 'saved');
   if (result.kind === 'saved') {
-    assert.equal(result.game.state.bases[1]?.player.id, 'away-1');
+    assert.equal(result.game.state.bases[1]?.player.id, 'home-8', 'K. Moss leads off for the Hawks, who bat in the top half');
     assert.equal(result.game.state.nextBatter.away, 1);
     assert.equal(result.game.waitingPlays, 5);
   }
@@ -503,8 +503,8 @@ test('a selected double is one atomic play and whole-play undo survives reopenin
   await scorer.save({ kind: 'ball_in_play', at: boundary.now(), expectedRevision: before.revision,
     outcome: 'double', trajectory: null, fielders: ['RF'], advances: [{ runner, to: 'home' }] });
   assert.equal(scorer.game.state.score.away, 1);
-  assert.equal(scorer.game.state.bases[2]?.player.id, 'away-2');
-  assert.equal(scorer.game.state.pitchCounts['home-1'], 2);
+  assert.equal(scorer.game.state.bases[2]?.player.id, 'home-6');
+  assert.equal(scorer.game.state.pitchCounts['away-1'], 2);
   assert.equal(scorer.game.waitingPlays, before.waitingPlays + 1);
   const groups = await scorer.database.all<{event_count:number}>('SELECT event_count FROM local_outbox ORDER BY first_seq');
   assert.deepEqual(groups.map((group) => group.event_count), [3, 2, 2]);
@@ -553,7 +553,7 @@ test('two aboard lets the scorer choose the runner and multiple runner moves rem
     moves:[{runner:trail,to:2},{runner:lead,to:'home'}]});
   assert.equal(scorer.game.state.score.away, 1);
   assert.equal(scorer.game.state.bases[2]?.player.id, trail.id);
-  assert.equal(scorer.game.state.pitchCounts['home-1'], 2);
+  assert.equal(scorer.game.state.pitchCounts['away-1'], 2);
   assert.equal(scorer.game.waitingPlays, before.waitingPlays + 1);
   await scorer.save({kind:'undo'});
   assert.deepEqual(scorer.game.state, before.state);
@@ -678,8 +678,8 @@ test('the last pitch number comes from the pitcher who threw the last play, not 
   for (let pitch = 0; pitch < 9; pitch++) result = await session.record({ kind: 'pitch', result: 'called_strike' });
   if (result.kind !== 'saved') throw new Error('Strikeouts must save');
   assert.equal(result.game.state.half, 'bottom', 'three strikeouts end the top half');
-  assert.equal(result.game.state.pitchCounts['away-1'], 0, 'the new pitcher has thrown nothing');
-  assert.equal(result.game.lastPitchNumber, 9, 'the third out was the home pitcher\'s ninth pitch');
+  assert.equal(result.game.state.pitchCounts['home-1'], 0, 'the new pitcher has thrown nothing');
+  assert.equal(result.game.lastPitchNumber, 9, 'the third out was the Marlins pitcher\'s ninth pitch');
   result = await session.record({ kind: 'undo' });
   if (result.kind !== 'saved') throw new Error('Undo must save');
   assert.equal(result.game.lastPitchNumber, 8);

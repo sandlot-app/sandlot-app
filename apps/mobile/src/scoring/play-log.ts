@@ -1,7 +1,6 @@
 import { applyGroup, initialState } from '@sandlot/engine';
-import type { Base, Command, Event, GameState, PitchResult, PlayerRef, Position, TeamSide } from '@sandlot/engine';
-import { demoSetup } from './demo-game.ts';
-import { demoTeams, playerDisplay } from './demo-roster.ts';
+import type { Base, Command, Event, GameSetup, GameState, PitchResult, PlayerRef, Position, TeamSide } from '@sandlot/engine';
+import { playerDisplay, teamsOf } from './demo-roster.ts';
 import type { SavedGame } from './offline-game.ts';
 import { playLabel } from './play-label.ts';
 
@@ -127,7 +126,7 @@ function describe(play: Play): string {
 }
 
 /** Every play after the game's setup, with the game before and after it. An undo marks its target instead of adding a play. */
-function savedPlays(events: Event[]): Play[] {
+function savedPlays(setup: GameSetup, events: Event[]): Play[] {
   const groups: Event[][] = [];
   for (const event of events) {
     if (groups.at(-1)?.[0]!.group !== event.group) groups.push([]);
@@ -135,7 +134,7 @@ function savedPlays(events: Event[]): Play[] {
   }
   const plays: Play[] = [];
   const seen: Event[] = [];
-  let state = initialState(demoSetup);
+  let state = initialState(setup);
   for (const group of groups) {
     const commands = group.map((event) => event.command);
     const first = commands[0]!;
@@ -144,7 +143,7 @@ function savedPlays(events: Event[]): Play[] {
       if (target) target.undone = true;
       state = target?.before ?? state;
     } else {
-      const applied = applyGroup(demoSetup, seen, commands);
+      const applied = applyGroup(setup, seen, commands);
       if (!applied.ok) break;
       if (first.kind !== 'game') plays.push({ id: group[0]!.group, commands, before: state, after: applied.state, undone: false });
       state = applied.state;
@@ -225,7 +224,7 @@ function resumable(atBats: Play[][], play: Play): Play[] | null {
 export function playLog(game: SavedGame): HalfInning[] {
   const { state } = game;
   const halves = new Map<number, { before: GameState; atBats: Play[][] }>();
-  for (const play of savedPlays(game.events)) {
+  for (const play of savedPlays(game.setup, game.events)) {
     const order = halfOrder(play.before);
     const half = halves.get(order) ?? { before: play.before, atBats: [] };
     halves.set(order, half);
@@ -250,7 +249,7 @@ export function playLog(game: SavedGame): HalfInning[] {
       return {
         key: String(order),
         label: `${before.half === 'top' ? 'Top' : 'Bottom'} ${before.inning}`,
-        batting: demoTeams[side].name,
+        batting: teamsOf(state.lineups)[side].name,
         totals: `${runs} R · ${hitCount} H${current ? '' : ` · ${errors} E`}`,
         current,
         // An at-bat with nothing standing shows only while that batter is still up, with the undone plays in it.
@@ -271,9 +270,9 @@ const appearanceOutcomes: Partial<Record<string, AppearanceResult>> = {
 };
 
 /** How each of `player`'s finished plate appearances ended, in game order. Undone plays don't count. */
-export function appearances(events: Event[], player: PlayerRef): Appearance[] {
+export function appearances(setup: GameSetup, events: Event[], player: PlayerRef): Appearance[] {
   const found: Appearance[] = [];
-  for (const play of standing(savedPlays(events))) {
+  for (const play of standing(savedPlays(setup, events))) {
     if (!endsAppearance(play)) continue;
     const side = battingSide(play.before);
     if (play.before.lineups[side][play.before.nextBatter[side]]?.player.id !== player.id) continue;

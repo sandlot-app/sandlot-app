@@ -1,6 +1,5 @@
 import type { TeamSide } from '@sandlot/engine';
 import { pressContext, type PressGame, type Reading, type RosterEntry } from '@sandlot/voice';
-import { demoSetup } from '../scoring/demo-game.ts';
 import { playerDisplay } from '../scoring/demo-roster.ts';
 import type { SavedGame } from '../scoring/offline-game.ts';
 import type { PressInput } from './press.ts';
@@ -39,7 +38,7 @@ export function roster(game: SavedGame): RosterEntry[] {
 }
 
 export function pressGame(game: SavedGame): PressGame {
-  return { setup: demoSetup, events: game.events, roster: roster(game) };
+  return { setup: game.setup, events: game.events, roster: roster(game) };
 }
 
 /** What a press sends: the display names for the transcriber's keywords, and the game as the AI sees it, built from the same game decide() reads. */

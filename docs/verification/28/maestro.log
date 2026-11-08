@@ -1,6 +1,140 @@
-=== sandlot-verify-38 (iPhone 17 Pro)
-Running on sandlot-verify-38 - iOS 26.5 - 78D40883-CCF7-4337-9B4C-07709498B0AB
+== flow: acceptance-28 simulator: sandlot-107-pro-b (18A0812D-E2FC-454B-A5B6-44781BEDAA6D)
+Running on sandlot-107-pro-b - iOS 26.5 - 18A0812D-E2FC-454B-A5B6-44781BEDAA6D
  > Flow acceptance-28
+Run lineups-28.yaml...
+  Run _ready.yaml...
+    Assert that id: sandlot-brand is visible... COMPLETED
+  Run _ready.yaml... COMPLETED
+  Assert that id: start-game is visible... COMPLETED
+  Wait for animation to end... COMPLETED
+  Retry 2 times...
+    Run flow when id: start-setup is not visible...
+      Tap on id: start-game... COMPLETED
+    Run flow when id: start-setup is not visible... COMPLETED
+    Assert that id: start-setup is visible... FAILED
+  Retry 2 times... COMPLETED
+  Assert that "New game" is visible... COMPLETED
+  Assert that "Set both lineups to start" is visible... COMPLETED
+  Assert that id: start-setup, disabled is visible... COMPLETED
+  Assert that "Second half since Oct 1, so pitchers can get 9 outs a day. Change it if your league switched on another date." is visible... COMPLETED
+  Assert that "Not set yet", id: lineup-summary-away is visible... COMPLETED
+  Take screenshot setup-empty... COMPLETED
+  Tap on id: half-first... COMPLETED
+  Tap on id: half-second... COMPLETED
+  Tap on id: lineup-away... COMPLETED
+  Assert that "Hawks lineup" is visible... COMPLETED
+  Assert that "Everyone here bats, in this order. Drag to reorder, and tap a position to change it." is visible... COMPLETED
+  Take screenshot lineup-hawks-top... COMPLETED
+  Scrolling DOWN until "B. Lane, Bats only. Change position" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Assert that "B. Lane, Bats only. Change position" is visible... COMPLETED
+  Scrolling DOWN until id: starting-pitcher is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Assert that ".*Fully rested · 75 pitches available today", id: starting-pitcher is visible... COMPLETED
+  Scrolling UP until id: position-1 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Tap on id: position-1... COMPLETED
+  Assert that id: position-sheet is visible... COMPLETED
+  Assert that ".*Swaps with K. Moss", id: position-choice-CF is visible... COMPLETED
+  Take screenshot lineup-position-sheet... COMPLETED
+  Tap on id: position-choice-CF... COMPLETED
+  Assert that "J. Ruiz, CF. Change position" is visible... COMPLETED
+  Assert that "K. Moss, SS. Change position" is visible... COMPLETED
+  Tap on id: position-1... COMPLETED
+  Tap on id: position-choice-SS... COMPLETED
+  Assert that "J. Ruiz, SS. Change position" is visible... COMPLETED
+  Assert that "K. Moss, CF. Change position" is visible... COMPLETED
+  Swiping in DOWN direction on id: drag-handle-0... COMPLETED
+  Assert that "Reorder K. Moss, batting 1" is not visible... COMPLETED
+  Assert that "Reorder K. Moss, batting .*" is visible... COMPLETED
+  Take screenshot lineup-reordered... COMPLETED
+  Swiping in UP direction on "Reorder K. Moss, batting .*"... COMPLETED
+  Assert that "Reorder K. Moss, batting 1" is visible... COMPLETED
+  Scrolling DOWN until id: change-pitcher is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: change-pitcher... COMPLETED
+  Assert that id: pitcher-sheet is visible... COMPLETED
+  Take screenshot lineup-pitcher-sheet... COMPLETED
+  Scrolling DOWN until id: pitcher-choice-home-2 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: pitcher-choice-home-2... COMPLETED
+  Assert that "Pitch first" is visible... COMPLETED
+  Tap on id: pitcher-confirm... COMPLETED
+  Assert that ".*M. Ortiz.*", id: starting-pitcher is visible... COMPLETED
+  Tap on id: change-pitcher... COMPLETED
+  Tap on id: pitcher-choice-home-1... COMPLETED
+  Tap on id: pitcher-confirm... COMPLETED
+  Assert that ".*T. Nguyen.*", id: starting-pitcher is visible... COMPLETED
+  Scrolling DOWN until id: add-player is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: add-player... COMPLETED
+  Assert that "Everyone on the roster is already in the lineup." is visible... COMPLETED
+  Take screenshot lineup-add-sheet... COMPLETED
+  Tap on "Cancel"... COMPLETED
+  Scrolling DOWN until id: position-9 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Tap on id: position-9... COMPLETED
+  Assert that id: position-sheet is visible... COMPLETED
+  Scrolling DOWN until id: position-remove is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Assert that ".*Takes B. Lane out of today’s lineup", id: position-remove is visible... COMPLETED
+  Take screenshot lineup-position-remove... COMPLETED
+  Tap on id: position-remove... COMPLETED
+  Assert that "B. Lane, Bats only. Change position" is not visible... COMPLETED
+  Scrolling DOWN until id: add-player is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: add-player... COMPLETED
+  Assert that id: add-choice-home-10 is visible... COMPLETED
+  Take screenshot lineup-add-sheet-lane... COMPLETED
+  Tap on id: add-choice-home-10... COMPLETED
+  Assert that "B. Lane, Bats only. Change position" is visible... COMPLETED
+  Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Take screenshot lineup-hawks-bottom... COMPLETED
+  Tap on id: save-lineup... COMPLETED
+  Assert that "10 players · T. Nguyen pitching", id: lineup-summary-away is visible... COMPLETED
+  Assert that "Not set yet", id: lineup-summary-home is visible... COMPLETED
+  Assert that id: start-setup, disabled is visible... COMPLETED
+  Take screenshot setup-hawks-set... COMPLETED
+  Tap on id: lineup-home... COMPLETED
+  Assert that "Marlins lineup" is visible... COMPLETED
+  Tap on id: position-0... COMPLETED
+  Tap on id: position-choice-Bats only... COMPLETED
+  Assert that id: starting-pitcher-none is visible... COMPLETED
+  Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: save-lineup... COMPLETED
+  Assert that "9 players · no starting pitcher yet", id: lineup-summary-home is visible... COMPLETED
+  Assert that "Start game" is visible... COMPLETED
+  Tap on id: start-setup... COMPLETED
+  Assert that "The Marlins need a starting pitcher.", id: setup-message is visible... COMPLETED
+  Take screenshot setup-rejected... COMPLETED
+  Tap on id: lineup-home... COMPLETED
+  Scrolling DOWN until id: change-pitcher is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: change-pitcher... COMPLETED
+  Tap on id: pitcher-choice-away-1... COMPLETED
+  Tap on id: pitcher-confirm... COMPLETED
+  Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: save-lineup... COMPLETED
+  Assert that "9 players · J. Soto pitching", id: lineup-summary-home is visible... COMPLETED
+  Assert that "Start game", id: start-setup, enabled is visible... COMPLETED
+  Assert that id: setup-message is not visible... COMPLETED
+  Take screenshot setup-ready... COMPLETED
+  Tap on id: start-setup... COMPLETED
+  Assert that id: score-summary is visible... COMPLETED
+  Tap on id: pitch-ball... COMPLETED
+  Assert that id: scorer-undo, enabled is visible... COMPLETED
+  Tap on id: scorer-undo... COMPLETED
+  Tap on id: tab-plays... COMPLETED
+  Assert that "Undone" is visible... COMPLETED
+  Take screenshot plays-undone... COMPLETED
+  Tap on id: games-navigation... COMPLETED
+  Assert that id: resume-game is visible... COMPLETED
+  Tap on id: resume-game... COMPLETED
+  Assert that id: score-summary is visible... COMPLETED
+  Tap on id: tab-plays... COMPLETED
+  Assert that "Undone" is visible... COMPLETED
+  Take screenshot plays-undone-reopened... COMPLETED
+  Tap on id: games-navigation... COMPLETED
+Run lineups-28.yaml... COMPLETED
 Run tap-plays.yaml...
   Run _ready.yaml...
     Assert that id: sandlot-brand is visible... COMPLETED
@@ -160,7 +294,7 @@ Run tap-plays.yaml...
     Tap on id: pitch-strike... COMPLETED
     Tap on id: strike-looking... COMPLETED
     Assert that ".* ${output.beforePitch + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
-  Repeat 3 times... COMPLETED
+  Repeat 6 times... COMPLETED
   Copy text from element with id: score-summary... COMPLETED
   Run ${output.thirdOutBefore = maestro.copiedText}... COMPLETED
   Run ${output.thirdOutBeforeScore = output.thirdOutBefore.split('. Inning')[0]}... COMPLETED
@@ -208,7 +342,7 @@ Run tap-plays.yaml...
     Run ${output.beforeUndo = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
     Tap on id: scorer-undo... COMPLETED
     Assert that ".* ${output.beforeUndo + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
-  Repeat 4 times... COMPLETED
+  Repeat 7 times... COMPLETED
   Copy text from element with id: score-summary... COMPLETED
   Assert that ${maestro.copiedText === output.setupSummary} is true... COMPLETED
   Repeat 3 times...
@@ -331,9 +465,270 @@ Run play-log.yaml...
   Take screenshot field-after-plays... COMPLETED
 Run play-log.yaml... COMPLETED
 
-=== sandlot-verify-se (iPhone SE 3rd generation)
-Running on sandlot-verify-se - iOS 26.5 - 64B83E02-9EDE-479F-B2CD-3082928D00F2
+Assertion is false: id: start-setup is visible
+
+Assertion 'id: start-setup is visible' failed. Check the UI hierarchy in debug artifacts to verify the element state and properties.
+
+Possible causes:
+- Element selector may be incorrect - check if there are similar elements with slightly different names/properties.
+- Element may be temporarily unavailable due to loading state
+- This could be a real regression that needs to be addressed
+
+== flow: field-colors simulator: sandlot-107-current-pro (43533383-423C-44BC-845C-F1F8FBF34447)
+Running on sandlot-107-current-pro - iOS 26.5 - 43533383-423C-44BC-845C-F1F8FBF34447
+ > Flow field-colors
+Run flow when id: games-navigation is visible...
+  Tap on id: games-navigation... COMPLETED
+Run flow when id: games-navigation is visible... COMPLETED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Take screenshot game-list... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Take screenshot score-field... COMPLETED
+Tap on id: pitch-in-play... COMPLETED
+Tap on id: outcome-double... COMPLETED
+Assert that id: fielder-CF is visible... COMPLETED
+Take screenshot play-sheet-field... COMPLETED
+
+== flow: voice-scoring simulator: sandlot-107-current-pro (43533383-423C-44BC-845C-F1F8FBF34447)
+Running on sandlot-107-current-pro - iOS 26.5 - 43533383-423C-44BC-845C-F1F8FBF34447
+ > Flow voice-scoring
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that "Hold to score by voice" is visible... COMPLETED
+Take screenshot voice-idle... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Long press on id: voice-bar... COMPLETED
+Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Assert that id: voice-card is not visible... COMPLETED
+Assert that "Undo · Strike" is visible... COMPLETED
+Assert that "Hold to score by voice" is visible... COMPLETED
+Take screenshot voice-saved... COMPLETED
+Long press on id: voice-bar... COMPLETED
+Assert that "Not sure — which one?", id: voice-status is visible... COMPLETED
+Assert that "“strike”" is visible... COMPLETED
+Assert that "Strike looking" is visible... COMPLETED
+Assert that "Strike swinging" is visible... COMPLETED
+Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot voice-not-sure... COMPLETED
+Tap on id: voice-choice-0... COMPLETED
+Assert that ".* ${output.waiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Assert that id: voice-card is not visible... COMPLETED
+Take screenshot voice-chosen... COMPLETED
+Swiping in UP direction on id: voice-bar... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that id: voice-card is not visible... COMPLETED
+Assert that ".* ${output.waiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot voice-cancelled... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.waiting + 3} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.waiting + 4} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+
+== flow: acceptance-103 simulator: sandlot-107-current-pro (43533383-423C-44BC-845C-F1F8FBF34447)
+Running on sandlot-107-current-pro - iOS 26.5 - 43533383-423C-44BC-845C-F1F8FBF34447
+ > Flow acceptance-103
+Run voice-whole-press.yaml...
+  Run flow when id: games-navigation is visible...
+  Run flow when id: games-navigation is visible... SKIPPED
+  Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+  Run flow when id: start-game is visible...
+  Run flow when id: start-game is visible... SKIPPED
+  Run flow when id: resume-game is visible...
+    Tap on id: resume-game... COMPLETED
+  Run flow when id: resume-game is visible... COMPLETED
+  Assert that id: voice-bar is visible... COMPLETED
+  Copy text from element with id: waiting-plays... COMPLETED
+  Run ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+  Long press on id: voice-bar... COMPLETED
+  Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Assert that ".* doubles.*", id: voice-banner is visible... COMPLETED
+  Assert that id: voice-card is not visible... COMPLETED
+  Take screenshot voice-whole-play-banner... COMPLETED
+  Long press on id: voice-bar... COMPLETED
+  Assert that ".* is up, not J\. Soto\.", id: voice-message is visible... COMPLETED
+  Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Take screenshot voice-wrong-role... COMPLETED
+  Repeat 4 times...
+    Tap on id: pitch-ball... COMPLETED
+    Wait for animation to end within 2000 ms... COMPLETED
+  Repeat 4 times... COMPLETED
+  Assert that ".* ${output.waiting + 5} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Long press on id: voice-bar... COMPLETED
+  Assert that "Not sure — which one?", id: voice-status is visible... COMPLETED
+  Assert that id: voice-choice-0 is visible... COMPLETED
+  Assert that id: voice-choice-1 is visible... COMPLETED
+  Assert that ".* ${output.waiting + 5} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Take screenshot voice-two-readings... COMPLETED
+  Tap on id: voice-choice-1... COMPLETED
+  Assert that ".* ${output.waiting + 6} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Assert that id: voice-card is not visible... COMPLETED
+  Take screenshot voice-reading-chosen... COMPLETED
+  Repeat 6 times...
+    Tap on id: scorer-undo... COMPLETED
+    Wait for animation to end within 2000 ms... COMPLETED
+  Repeat 6 times... COMPLETED
+  Assert that ".* ${output.waiting + 12} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Run voice-whole-press.yaml... COMPLETED
+
+== flow: acceptance-28 simulator: sandlot-107-se-b (1F7687D6-898F-47F1-B4D3-38AA0232214D)
+Running on sandlot-107-se-b - iOS 26.5 - 1F7687D6-898F-47F1-B4D3-38AA0232214D
  > Flow acceptance-28
+Run lineups-28.yaml...
+  Run _ready.yaml...
+    Assert that id: sandlot-brand is visible... COMPLETED
+  Run _ready.yaml... COMPLETED
+  Assert that id: start-game is visible... COMPLETED
+  Wait for animation to end... COMPLETED
+  Retry 2 times...
+    Run flow when id: start-setup is not visible...
+      Tap on id: start-game... COMPLETED
+    Run flow when id: start-setup is not visible... COMPLETED
+    Assert that id: start-setup is visible... COMPLETED
+  Retry 2 times... COMPLETED
+  Assert that "New game" is visible... COMPLETED
+  Assert that "Set both lineups to start" is visible... COMPLETED
+  Assert that id: start-setup, disabled is visible... COMPLETED
+  Assert that "Second half since Oct 1, so pitchers can get 9 outs a day. Change it if your league switched on another date." is visible... COMPLETED
+  Assert that "Not set yet", id: lineup-summary-away is visible... COMPLETED
+  Take screenshot setup-empty... COMPLETED
+  Tap on id: half-first... COMPLETED
+  Tap on id: half-second... COMPLETED
+  Tap on id: lineup-away... COMPLETED
+  Assert that "Hawks lineup" is visible... COMPLETED
+  Assert that "Everyone here bats, in this order. Drag to reorder, and tap a position to change it." is visible... COMPLETED
+  Take screenshot lineup-hawks-top... COMPLETED
+  Scrolling DOWN until "B. Lane, Bats only. Change position" is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Assert that "B. Lane, Bats only. Change position" is visible... COMPLETED
+  Scrolling DOWN until id: starting-pitcher is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Assert that ".*Fully rested · 75 pitches available today", id: starting-pitcher is visible... COMPLETED
+  Scrolling UP until id: position-1 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Tap on id: position-1... COMPLETED
+  Assert that id: position-sheet is visible... COMPLETED
+  Assert that ".*Swaps with K. Moss", id: position-choice-CF is visible... COMPLETED
+  Take screenshot lineup-position-sheet... COMPLETED
+  Tap on id: position-choice-CF... COMPLETED
+  Assert that "J. Ruiz, CF. Change position" is visible... COMPLETED
+  Assert that "K. Moss, SS. Change position" is visible... COMPLETED
+  Tap on id: position-1... COMPLETED
+  Tap on id: position-choice-SS... COMPLETED
+  Assert that "J. Ruiz, SS. Change position" is visible... COMPLETED
+  Assert that "K. Moss, CF. Change position" is visible... COMPLETED
+  Swiping in DOWN direction on id: drag-handle-0... COMPLETED
+  Assert that "Reorder K. Moss, batting 1" is not visible... COMPLETED
+  Assert that "Reorder K. Moss, batting .*" is visible... COMPLETED
+  Take screenshot lineup-reordered... COMPLETED
+  Swiping in UP direction on "Reorder K. Moss, batting .*"... COMPLETED
+  Assert that "Reorder K. Moss, batting 1" is visible... COMPLETED
+  Scrolling DOWN until id: change-pitcher is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: change-pitcher... COMPLETED
+  Assert that id: pitcher-sheet is visible... COMPLETED
+  Take screenshot lineup-pitcher-sheet... COMPLETED
+  Scrolling DOWN until id: pitcher-choice-home-2 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: pitcher-choice-home-2... COMPLETED
+  Assert that "Pitch first" is visible... COMPLETED
+  Tap on id: pitcher-confirm... COMPLETED
+  Assert that ".*M. Ortiz.*", id: starting-pitcher is visible... COMPLETED
+  Tap on id: change-pitcher... COMPLETED
+  Scrolling DOWN until id: pitcher-choice-home-1 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: pitcher-choice-home-1... COMPLETED
+  Tap on id: pitcher-confirm... COMPLETED
+  Assert that ".*T. Nguyen.*", id: starting-pitcher is visible... COMPLETED
+  Scrolling DOWN until id: add-player is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: add-player... COMPLETED
+  Assert that "Everyone on the roster is already in the lineup." is visible... COMPLETED
+  Take screenshot lineup-add-sheet... COMPLETED
+  Tap on "Cancel"... COMPLETED
+  Scrolling DOWN until id: position-9 is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Tap on id: position-9... COMPLETED
+  Assert that id: position-sheet is visible... COMPLETED
+  Scrolling DOWN until id: position-remove is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Assert that ".*Takes B. Lane out of today’s lineup", id: position-remove is visible... COMPLETED
+  Take screenshot lineup-position-remove... COMPLETED
+  Tap on id: position-remove... COMPLETED
+  Assert that "B. Lane, Bats only. Change position" is not visible... COMPLETED
+  Scrolling DOWN until id: add-player is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: add-player... COMPLETED
+  Assert that id: add-choice-home-10 is visible... COMPLETED
+  Take screenshot lineup-add-sheet-lane... COMPLETED
+  Tap on id: add-choice-home-10... COMPLETED
+  Assert that "B. Lane, Bats only. Change position" is visible... COMPLETED
+  Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Take screenshot lineup-hawks-bottom... COMPLETED
+  Tap on id: save-lineup... COMPLETED
+  Assert that "10 players · T. Nguyen pitching", id: lineup-summary-away is visible... COMPLETED
+  Assert that "Not set yet", id: lineup-summary-home is visible... COMPLETED
+  Assert that id: start-setup, disabled is visible... COMPLETED
+  Take screenshot setup-hawks-set... COMPLETED
+  Scrolling DOWN until id: lineup-home is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: lineup-home... COMPLETED
+  Assert that "Marlins lineup" is visible... COMPLETED
+  Tap on id: position-0... COMPLETED
+  Scrolling DOWN until id: position-choice-Bats only is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: position-choice-Bats only... COMPLETED
+  Scrolling DOWN until id: starting-pitcher-none is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Assert that id: starting-pitcher-none is visible... COMPLETED
+  Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: save-lineup... COMPLETED
+  Assert that "9 players · no starting pitcher yet", id: lineup-summary-home is visible... COMPLETED
+  Assert that "Start game" is visible... COMPLETED
+  Tap on id: start-setup... COMPLETED
+  Assert that "The Marlins need a starting pitcher.", id: setup-message is visible... COMPLETED
+  Take screenshot setup-rejected... COMPLETED
+  Scrolling DOWN until id: lineup-home is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: lineup-home... COMPLETED
+  Scrolling DOWN until id: change-pitcher is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: change-pitcher... COMPLETED
+  Tap on id: pitcher-choice-away-1... COMPLETED
+  Tap on id: pitcher-confirm... COMPLETED
+  Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+  Scroll vertically... COMPLETED
+  Tap on id: save-lineup... COMPLETED
+  Assert that "9 players · J. Soto pitching", id: lineup-summary-home is visible... COMPLETED
+  Assert that "Start game", id: start-setup, enabled is visible... COMPLETED
+  Assert that id: setup-message is not visible... COMPLETED
+  Take screenshot setup-ready... COMPLETED
+  Tap on id: start-setup... COMPLETED
+  Assert that id: score-summary is visible... COMPLETED
+  Tap on id: pitch-ball... COMPLETED
+  Assert that id: scorer-undo, enabled is visible... COMPLETED
+  Tap on id: scorer-undo... COMPLETED
+  Tap on id: tab-plays... COMPLETED
+  Assert that "Undone" is visible... COMPLETED
+  Take screenshot plays-undone... COMPLETED
+  Tap on id: games-navigation... COMPLETED
+  Assert that id: resume-game is visible... COMPLETED
+  Tap on id: resume-game... COMPLETED
+  Assert that id: score-summary is visible... COMPLETED
+  Tap on id: tab-plays... COMPLETED
+  Assert that "Undone" is visible... COMPLETED
+  Take screenshot plays-undone-reopened... COMPLETED
+  Tap on id: games-navigation... COMPLETED
+Run lineups-28.yaml... COMPLETED
 Run tap-plays.yaml...
   Run _ready.yaml...
     Assert that id: sandlot-brand is visible... COMPLETED
@@ -488,7 +883,12 @@ Run tap-plays.yaml...
   Assert that id: save-play is not visible... COMPLETED
   Run ${output.clarificationPitches = (2 - parseInt(output.setupSummary.match(/([0-2]) outs?/)[1], 10)) * 3}... COMPLETED
   Repeat indefinitely...
-  Repeat indefinitely... SKIPPED
+    Copy text from element with id: waiting-plays... COMPLETED
+    Run ${output.beforePitch = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+    Tap on id: pitch-strike... COMPLETED
+    Tap on id: strike-looking... COMPLETED
+    Assert that ".* ${output.beforePitch + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Repeat 6 times... COMPLETED
   Copy text from element with id: score-summary... COMPLETED
   Run ${output.thirdOutBefore = maestro.copiedText}... COMPLETED
   Run ${output.thirdOutBeforeScore = output.thirdOutBefore.split('. Inning')[0]}... COMPLETED
@@ -536,7 +936,7 @@ Run tap-plays.yaml...
     Run ${output.beforeUndo = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
     Tap on id: scorer-undo... COMPLETED
     Assert that ".* ${output.beforeUndo + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
-  Repeat indefinitely... COMPLETED
+  Repeat 7 times... COMPLETED
   Copy text from element with id: score-summary... COMPLETED
   Assert that ${maestro.copiedText === output.setupSummary} is true... COMPLETED
   Repeat 3 times...
@@ -658,3 +1058,113 @@ Run play-log.yaml...
   Assert that ".* ${output.waiting + 4} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
   Take screenshot field-after-plays... COMPLETED
 Run play-log.yaml... COMPLETED
+
+== flow: field-colors simulator: sandlot-107-se-b (1F7687D6-898F-47F1-B4D3-38AA0232214D)
+Running on sandlot-107-se-b - iOS 26.5 - 1F7687D6-898F-47F1-B4D3-38AA0232214D
+ > Flow field-colors
+Run flow when id: games-navigation is visible...
+  Tap on id: games-navigation... COMPLETED
+Run flow when id: games-navigation is visible... COMPLETED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Take screenshot game-list... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: pitch-in-play is visible... COMPLETED
+Take screenshot score-field... COMPLETED
+Tap on id: pitch-in-play... COMPLETED
+Tap on id: outcome-double... COMPLETED
+Assert that id: fielder-CF is visible... COMPLETED
+Take screenshot play-sheet-field... COMPLETED
+
+== flow: voice-scoring simulator: sandlot-107-se-b (1F7687D6-898F-47F1-B4D3-38AA0232214D)
+Running on sandlot-107-se-b - iOS 26.5 - 1F7687D6-898F-47F1-B4D3-38AA0232214D
+ > Flow voice-scoring
+Run flow when id: games-navigation is visible...
+Run flow when id: games-navigation is visible... SKIPPED
+Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+  Tap on id: resume-game... COMPLETED
+Run flow when id: resume-game is visible... COMPLETED
+Assert that id: voice-bar is visible... COMPLETED
+Assert that "Hold to score by voice" is visible... COMPLETED
+Take screenshot voice-idle... COMPLETED
+Copy text from element with id: waiting-plays... COMPLETED
+Run ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+Long press on id: voice-bar... COMPLETED
+Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Assert that id: voice-card is not visible... COMPLETED
+Assert that "Undo · Strike" is visible... COMPLETED
+Assert that "Hold to score by voice" is visible... COMPLETED
+Take screenshot voice-saved... COMPLETED
+Long press on id: voice-bar... COMPLETED
+Assert that "Not sure — which one?", id: voice-status is visible... COMPLETED
+Assert that "“strike”" is visible... COMPLETED
+Assert that "Strike looking" is visible... COMPLETED
+Assert that "Strike swinging" is visible... COMPLETED
+Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot voice-not-sure... COMPLETED
+Tap on id: voice-choice-0... COMPLETED
+Assert that ".* ${output.waiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Assert that id: voice-card is not visible... COMPLETED
+Take screenshot voice-chosen... COMPLETED
+Swiping in UP direction on id: voice-bar... COMPLETED
+Wait for animation to end within 3000 ms... COMPLETED
+Assert that id: voice-card is not visible... COMPLETED
+Assert that ".* ${output.waiting + 2} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Take screenshot voice-cancelled... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.waiting + 3} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Tap on id: scorer-undo... COMPLETED
+Assert that ".* ${output.waiting + 4} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+
+== flow: acceptance-103 simulator: sandlot-107-se-b (1F7687D6-898F-47F1-B4D3-38AA0232214D)
+Running on sandlot-107-se-b - iOS 26.5 - 1F7687D6-898F-47F1-B4D3-38AA0232214D
+ > Flow acceptance-103
+Run voice-whole-press.yaml...
+  Run flow when id: games-navigation is visible...
+  Run flow when id: games-navigation is visible... SKIPPED
+  Assert that "Start demo game|Continue scoring" is visible... COMPLETED
+  Run flow when id: start-game is visible...
+  Run flow when id: start-game is visible... SKIPPED
+  Run flow when id: resume-game is visible...
+    Tap on id: resume-game... COMPLETED
+  Run flow when id: resume-game is visible... COMPLETED
+  Assert that id: voice-bar is visible... COMPLETED
+  Copy text from element with id: waiting-plays... COMPLETED
+  Run ${output.waiting = parseInt(maestro.copiedText.match(/(\d+) plays? saved/)[1], 10)}... COMPLETED
+  Long press on id: voice-bar... COMPLETED
+  Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Assert that ".* doubles.*", id: voice-banner is visible... COMPLETED
+  Assert that id: voice-card is not visible... COMPLETED
+  Take screenshot voice-whole-play-banner... COMPLETED
+  Long press on id: voice-bar... COMPLETED
+  Assert that ".* is up, not J\. Soto\.", id: voice-message is visible... COMPLETED
+  Assert that ".* ${output.waiting + 1} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Take screenshot voice-wrong-role... COMPLETED
+  Repeat 4 times...
+    Tap on id: pitch-ball... COMPLETED
+    Wait for animation to end within 2000 ms... COMPLETED
+  Repeat 4 times... COMPLETED
+  Assert that ".* ${output.waiting + 5} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Long press on id: voice-bar... COMPLETED
+  Assert that "Not sure — which one?", id: voice-status is visible... COMPLETED
+  Assert that id: voice-choice-0 is visible... COMPLETED
+  Assert that id: voice-choice-1 is visible... COMPLETED
+  Assert that ".* ${output.waiting + 5} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Take screenshot voice-two-readings... COMPLETED
+  Tap on id: voice-choice-1... COMPLETED
+  Assert that ".* ${output.waiting + 6} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+  Assert that id: voice-card is not visible... COMPLETED
+  Take screenshot voice-reading-chosen... COMPLETED
+  Repeat 6 times...
+    Tap on id: scorer-undo... COMPLETED
+    Wait for animation to end within 2000 ms... COMPLETED
+  Repeat 6 times... COMPLETED
+  Assert that ".* ${output.waiting + 12} plays? saved on this phone", id: waiting-plays is visible... COMPLETED
+Run voice-whole-press.yaml... COMPLETED
+

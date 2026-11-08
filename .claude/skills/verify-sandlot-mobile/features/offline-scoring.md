@@ -14,7 +14,7 @@ A scorer records pitches and latest-play undo through the real engine. The app s
 
 ## How to get to it (user POV)
 
-- Tap Start demo game from Your games when the slot is empty.
+- Tap Start demo game from Your games when the slot is empty, then save both lineups in Game setup and tap Start game (`_start-local-game.yaml` does these steps; see lineups.md).
 - Tap Continue scoring from Your games when a local game exists.
 
 ## Driving it with Maestro
