@@ -32,7 +32,7 @@ Our players are orange chips with the number and a dark name pill under them; th
 
 ## Colors
 
-These are the direction's colors. **They are not in `@sandlot/tokens` yet.** The implementation loop's Done rule says screens use tokens only, never raw hex, so the first ticket in this direction updates the tokens (`packages/tokens/figma-variables.json`, then regenerate). Screen tickets come after it and use the token names, never the hex values below.
+These are the direction's colors. They are in `@sandlot/tokens` since #112 (2026-11-07); the "Token today" column shows the values from before it. The implementation loop's Done rule says screens use tokens only, never raw hex, so screen tickets use the token names, never the hex values below.
 
 | Name | Hex | Used for | Token today | Change |
 |---|---|---|---|---|
@@ -48,6 +48,8 @@ These are the direction's colors. **They are not in `@sandlot/tokens` yet.** The
 | Paper | #F4F1E8 | Bottom sheet, pages | `surface/page` #F7F5EF | Update |
 
 Labels and icons on orange fills use `text/on-action` (near-black, 6.24:1), not white: white on #FF7519 is 2.69:1, under every contrast minimum. Link-style actions on the page and cards use `text/link` (#A84706, a deeper orange, 5.21:1 on paper), not `action/primary`, which is 2.38:1 as text. Christian chose both on 2026-11-07 in the tokens PR.
+
+Selected-state graphics on light backgrounds (outlines, switch tracks, small marks, spinners) use `action/strong` (the same #A84706, 5.88:1 on white), not `action/primary`, which is 2.69:1 on white, under the 3:1 bar for graphics. Icons on an `action/strong` fill are white `text/on-accent` (5.88:1): the dark `text/on-action` is 2.85:1 on the deeper orange. Large button fills stay `action/primary`. Christian chose the white check on the share screen's picked mark on 2026-11-07.
 
 The orange primary replaces the old rule in `docs/design/spec-update-game-states.md` that link-style actions are blue and orange is reserved for "followed". `ring/followed` (#F07A1A) is now almost the same color as `action/primary`, so the first screen ticket that shows a followed player picks a new followed-ring color.
 
