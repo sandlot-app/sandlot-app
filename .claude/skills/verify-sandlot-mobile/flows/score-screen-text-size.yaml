@@ -24,6 +24,19 @@ appId: host.exp.Exponent
     commands:
       - tapOn:
           id: "resume-game"
+# The first tap right after launch is sometimes lost on the simulator, so tap Continue scoring again if it is still there.
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "resume-game"
+    commands:
+      - tapOn:
+          id: "resume-game"
 - extendedWaitUntil:
     visible:
       id: "score-summary"
@@ -50,8 +63,22 @@ appId: host.exp.Exponent
 - evalScript: ${output.before = maestro.copiedText}
 - evalScript: ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}
 - takeScreenshot: field-start
+# On the simulator a tap is sometimes cancelled before it lifts, at any text size: the app logs the touch as
+# terminated, with no re-render under the finger. So each tap below is made once more only if it plainly didn't land.
 - tapOn:
     id: "pitch-strike"
+- extendedWaitUntil:
+    visible:
+      id: "strike-looking"
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      notVisible:
+        id: "strike-looking"
+    commands:
+      - tapOn:
+          id: "pitch-strike"
 - extendedWaitUntil:
     visible:
       id: "strike-looking"
@@ -66,6 +93,18 @@ appId: host.exp.Exponent
 - tapOn:
     id: "strike-looking"
 - extendedWaitUntil:
+    notVisible:
+      id: "strike-looking"
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "strike-looking"
+    commands:
+      - tapOn:
+          id: "strike-looking"
+- extendedWaitUntil:
     visible:
       id: "score-summary"
       text: ".*outs?\\. Count [0-3] balls? and ${output.strikes + 1} strikes?\\..*"
@@ -75,6 +114,20 @@ appId: host.exp.Exponent
 - takeScreenshot: strike-saved
 - tapOn:
     id: "scorer-undo"
+- extendedWaitUntil:
+    visible:
+      id: "score-summary"
+      text: ".*Count [0-3] balls? and ${output.strikes} strikes?\\..*"
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      visible:
+        id: "score-summary"
+        text: ".*Count [0-3] balls? and ${output.strikes + 1} strikes?\\..*"
+    commands:
+      - tapOn:
+          id: "scorer-undo"
 - extendedWaitUntil:
     visible:
       id: "score-summary"
