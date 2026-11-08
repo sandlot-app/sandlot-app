@@ -1,0 +1,250 @@
+== flow: score-bar-text-size simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B) text size: large
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow score-bar-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+  Run _start-local-game.yaml...
+    Tap on id: start-game... COMPLETED
+    Scrolling DOWN until id: lineup-home is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: lineup-home... COMPLETED
+    Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: save-lineup... COMPLETED
+    Tap on id: lineup-away... COMPLETED
+    Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: save-lineup... COMPLETED
+    Tap on id: start-setup... COMPLETED
+  Run _start-local-game.yaml... COMPLETED
+Run flow when id: start-game is visible... COMPLETED
+Run flow when id: resume-game is visible...
+Run flow when id: resume-game is visible... SKIPPED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Assert that ${/\d outs?\./.test(output.before)} is true... COMPLETED
+Take screenshot score-bar-start... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Tap on (Optional) id: pitch-strike... COMPLETED
+Assert that (Optional) id: strike-looking is visible... COMPLETED
+Tap on (Optional) id: strike-looking... COMPLETED
+Assert that (Optional) ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Take screenshot score-bar... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".*Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+
+== flow: score-bar-text-size simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B) text size: extra-large
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow score-bar-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+Run flow when id: resume-game is visible... SKIPPED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Assert that ${/\d outs?\./.test(output.before)} is true... COMPLETED
+Take screenshot score-bar-start... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Tap on (Optional) id: pitch-strike... COMPLETED
+Assert that (Optional) id: strike-looking is visible... COMPLETED
+Tap on (Optional) id: strike-looking... COMPLETED
+Assert that (Optional) ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Take screenshot score-bar... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".*Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+
+== flow: score-bar-text-size simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B) text size: extra-extra-large
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow score-bar-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+Run flow when id: resume-game is visible... SKIPPED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Assert that ${/\d outs?\./.test(output.before)} is true... COMPLETED
+Take screenshot score-bar-start... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Tap on (Optional) id: pitch-strike... COMPLETED
+Assert that (Optional) id: strike-looking is visible... COMPLETED
+Tap on (Optional) id: strike-looking... COMPLETED
+Assert that (Optional) ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Take screenshot score-bar... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".*Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+
+== flow: score-bar-text-size simulator: sandlot-verify-38 (F5303CA6-1E9A-48F1-BB45-CE3C68C8214B) text size: extra-extra-extra-large
+Running on sandlot-verify-38 - iOS 26.5 - F5303CA6-1E9A-48F1-BB45-CE3C68C8214B
+ > Flow score-bar-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+Run flow when id: resume-game is visible... SKIPPED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Assert that ${/\d outs?\./.test(output.before)} is true... COMPLETED
+Take screenshot score-bar-start... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Tap on (Optional) id: pitch-strike... COMPLETED
+Assert that (Optional) id: strike-looking is visible... COMPLETED
+Tap on (Optional) id: strike-looking... COMPLETED
+Assert that (Optional) ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Take screenshot score-bar... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".*Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+
+== flow: score-bar-text-size simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E) text size: large
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow score-bar-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+  Run _start-local-game.yaml...
+    Tap on id: start-game... COMPLETED
+    Scrolling DOWN until id: lineup-home is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: lineup-home... COMPLETED
+    Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: save-lineup... COMPLETED
+    Tap on id: lineup-away... COMPLETED
+    Scrolling DOWN until id: save-lineup is visible with speed 40, visibility percentage 100%, timeout 20000 ms, with centering disabled... COMPLETED
+    Scroll vertically... COMPLETED
+    Tap on id: save-lineup... COMPLETED
+    Tap on id: start-setup... COMPLETED
+  Run _start-local-game.yaml... COMPLETED
+Run flow when id: start-game is visible... COMPLETED
+Run flow when id: resume-game is visible...
+Run flow when id: resume-game is visible... SKIPPED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Assert that ${/\d outs?\./.test(output.before)} is true... COMPLETED
+Take screenshot score-bar-start... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Tap on (Optional) id: pitch-strike... COMPLETED
+Assert that (Optional) id: strike-looking is visible... COMPLETED
+Tap on (Optional) id: strike-looking... COMPLETED
+Assert that (Optional) ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Take screenshot score-bar... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".*Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+
+== flow: score-bar-text-size simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E) text size: extra-large
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow score-bar-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+Run flow when id: resume-game is visible... SKIPPED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Assert that ${/\d outs?\./.test(output.before)} is true... COMPLETED
+Take screenshot score-bar-start... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Tap on (Optional) id: pitch-strike... COMPLETED
+Assert that (Optional) id: strike-looking is visible... COMPLETED
+Tap on (Optional) id: strike-looking... COMPLETED
+Assert that (Optional) ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Take screenshot score-bar... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".*Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+
+== flow: score-bar-text-size simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E) text size: extra-extra-large
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow score-bar-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+Run flow when id: resume-game is visible... SKIPPED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Assert that ${/\d outs?\./.test(output.before)} is true... COMPLETED
+Take screenshot score-bar-start... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Tap on (Optional) id: pitch-strike... COMPLETED
+Assert that (Optional) id: strike-looking is visible... COMPLETED
+Tap on (Optional) id: strike-looking... COMPLETED
+Assert that (Optional) ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... COMPLETED
+Take screenshot score-bar... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+  Tap on id: scorer-undo... COMPLETED
+  Assert that ".*Count [0-3] balls? and ${output.strikes} strikes?\..*", id: score-summary is visible... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... COMPLETED
+
+== flow: score-bar-text-size simulator: sandlot-verify-se (0FAEB0B5-9D01-4CC0-B0D3-4E578454007E) text size: extra-extra-extra-large
+Running on sandlot-verify-se - iOS 26.5 - 0FAEB0B5-9D01-4CC0-B0D3-4E578454007E
+ > Flow score-bar-text-size
+Run _ready.yaml...
+  Assert that id: sandlot-brand is visible... COMPLETED
+Run _ready.yaml... COMPLETED
+Assert that id: start-game|resume-game|score-summary is visible... COMPLETED
+Wait for animation to end... COMPLETED
+Run flow when id: start-game is visible...
+Run flow when id: start-game is visible... SKIPPED
+Run flow when id: resume-game is visible...
+Run flow when id: resume-game is visible... SKIPPED
+Assert that id: score-summary is visible... COMPLETED
+Copy text from element with id: score-summary... COMPLETED
+Run ${output.before = maestro.copiedText}... COMPLETED
+Assert that ${/\d outs?\./.test(output.before)} is true... COMPLETED
+Take screenshot score-bar-start... COMPLETED
+Run ${output.strikes = parseInt(output.before.match(/Count [0-3] balls? and ([0-2]) strikes?/)[1], 10)}... COMPLETED
+Tap on (Optional) id: pitch-strike... WARNED
+Assert that (Optional) id: strike-looking is visible... WARNED
+Tap on (Optional) id: strike-looking... WARNED
+Assert that (Optional) ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible... WARNED
+Take screenshot score-bar... COMPLETED
+Run flow when ".*outs?\. Count [0-3] balls? and ${output.strikes + 1} strikes?\..*", id: score-summary is visible...
+Run flow when ".*outs?\. Count [0-3] balls? and 1 strikes?\..*", id: score-summary is visible... SKIPPED
+
